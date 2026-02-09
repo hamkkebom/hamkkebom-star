@@ -1,0 +1,403 @@
+// 함께봄-스타 Prisma 스키마
+// 13개 모델 | Supabase PostgreSQL | Supavisor 트랜잭션 모드
+//
+// prisma@7.3.0 + @prisma/adapter-pg@7.3.0
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// 1. User — 중심 엔티티
+// ============================================================
+enum Role {
+  ADMIN
+  STAR
+}
+
+model User {
+  id        String   @id @default(cuid())
+  authId    String   @unique // Supabase Auth UUID
+  email     String   @unique
+  name      String
+  phone     String?
+  avatarUrl String?
+  role      Role     @default(STAR)
+  baseRate  Decimal? @db.Decimal(10, 2) // STAR 기본 단가 (ADMIN이 설정)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdRequests  ProjectRequest[]  @relation("CreatedRequests")
+  assignments      ProjectAssignment[]
+  submissions      Submission[]
+  feedbacks        Feedback[]        @relation("AuthoredFeedbacks")
+  videos           Video[]
+  settlements      Settlement[]
+  portfolio        Portfolio?
+  settlementItems  SettlementItem[]  // 정산 항목 (건별)
+
+  @@map("users")
+}
+
+// ============================================================
+// 2. ProjectRequest — 제작요청 게시판
+// ============================================================
+enum RequestStatus {
+  OPEN
+  FULL
+  CLOSED
+  CANCELLED
+}
+
+enum AssignmentType {
+  SINGLE
+  MULTIPLE
+}
+
+model ProjectRequest {
+  id              String         @id @default(cuid())
+  title           String
+  categories      String[]       // 분류 태그
+  deadline        DateTime
+  assignmentType  AssignmentType @default(MULTIPLE)
+  maxAssignees    Int            @default(3)
+  estimatedBudget Decimal?       @db.Decimal(10, 2) // 참고용 예산
+  requirements    String?        @db.Text
+  referenceUrls   String[]
+  status          RequestStatus  @default(OPEN)
+
+  createdById String
+  createdBy   User   @relation("CreatedRequests", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  assignments ProjectAssignment[]
+
+  @@map("project_requests")
+}
+
+// ============================================================
+// 3. ProjectAssignment — STAR의 요청 수락
+// ============================================================
+enum AssignmentStatus {
+  ACCEPTED
+  IN_PROGRESS
+  SUBMITTED
+  COMPLETED
+  CANCELLED
+}
+
+model ProjectAssignment {
+  id     String           @id @default(cuid())
+  status AssignmentStatus @default(ACCEPTED)
+
+  starId    String
+  star      User           @relation(fields: [starId], references: [id])
+  requestId String
+  request   ProjectRequest @relation(fields: [requestId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  submissions Submission[]
+
+  @@unique([starId, requestId]) // STAR당 요청당 1개 수락
+  @@map("project_assignments")
+}
+
+// ============================================================
+// 4. Submission — 영상 제출 (다중 버전)
+// ============================================================
+enum SubmissionStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  REVISED
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  versionSlot  Int              // 1~5 (최대 5개 버전)
+  versionTitle String?          // "경쾌한 톤", "차분한 톤" 등
+  version      String           @default("1.0") // v1.0, v1.1...
+  status       SubmissionStatus @default(PENDING)
+
+  // Cloudflare Stream
+  streamUid    String?          // Cloudflare Stream UID
+  r2Key        String?          // R2 백업 키
+  duration     Float?           // 영상 길이 (초)
+  thumbnailUrl String?
+
+  starId       String
+  star         User              @relation(fields: [starId], references: [id])
+  assignmentId String
+  assignment   ProjectAssignment @relation(fields: [assignmentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  feedbacks      Feedback[]
+  settlementItem SettlementItem?
+
+  @@unique([assignmentId, versionSlot, version]) // 동일 슬롯+버전 중복 방지
+  @@map("submissions")
+}
+
+// ============================================================
+// 5. Feedback — 타임코드 + Canvas 마킹
+// ============================================================
+enum FeedbackType {
+  SUBTITLE      // 자막
+  BGM           // BGM
+  CUT_EDIT      // 컷편집
+  COLOR_GRADE   // 색보정
+  GENERAL       // 일반
+}
+
+enum FeedbackPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum FeedbackStatus {
+  PENDING
+  RESOLVED
+  WONTFIX
+}
+
+model Feedback {
+  id         String           @id @default(cuid())
+  type       FeedbackType     @default(GENERAL)
+  priority   FeedbackPriority @default(NORMAL)
+  status     FeedbackStatus   @default(PENDING)
+  content    String           @db.Text // 피드백 내용
+  startTime  Float?           // 시작 타임코드 (초)
+  endTime    Float?           // 종료 타임코드 (초)
+  annotation Json?            // Fabric.js Canvas 마킹 데이터
+
+  authorId     String
+  author       User       @relation("AuthoredFeedbacks", fields: [authorId], references: [id])
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("feedbacks")
+}
+
+// ============================================================
+// 6. Video — 승인된 영상 자산
+// ============================================================
+enum VideoStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  FINAL
+}
+
+model Video {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?     @db.Text
+  categoryId   String?
+  category     Category?   @relation(fields: [categoryId], references: [id])
+  status       VideoStatus @default(DRAFT)
+  thumbnailUrl String?
+
+  // Cloudflare
+  streamUid String? @unique // Cloudflare Stream UID
+  r2Key     String?         // R2 백업 키
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  technicalSpec VideoTechnicalSpec?
+  eventLogs     VideoEventLog[]
+
+  @@map("videos")
+}
+
+// ============================================================
+// 7. VideoTechnicalSpec — 기술 스펙
+// ============================================================
+model VideoTechnicalSpec {
+  id       String @id @default(cuid())
+  videoId  String @unique
+  video    Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  // 파일 정보
+  filename String?
+  format   String?  // mp4, webm 등
+  fileSize BigInt?  // bytes
+
+  // 비디오 스트림
+  videoCodec  String?
+  width       Int?
+  height      Int?
+  fps         Float?
+  aspectRatio String?
+  bitrate     Int?
+  duration    Float?  // 초
+
+  // 오디오 스트림
+  audioCodec    String?
+  audioChannels Int?
+  sampleRate    Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("video_technical_specs")
+}
+
+// ============================================================
+// 8. VideoEventLog — 상태 변경 이력
+// ============================================================
+model VideoEventLog {
+  id      String @id @default(cuid())
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  event     String  // 상태 변경 설명
+  fromState String?
+  toState   String?
+  metadata  Json?   // 추가 데이터
+
+  createdAt DateTime @default(now())
+
+  @@map("video_event_logs")
+}
+
+// ============================================================
+// 9. Settlement — 월별 정산
+// ============================================================
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Settlement {
+  id          String           @id @default(cuid())
+  starId      String
+  star        User             @relation(fields: [starId], references: [id])
+  year        Int              // 정산 연도
+  month       Int              // 정산 월 (1~12)
+  totalAmount Decimal          @default(0) @db.Decimal(12, 2)
+  status      SettlementStatus @default(PENDING)
+  note        String?          @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  items SettlementItem[]
+
+  @@unique([starId, year, month]) // STAR당 연월 1개
+  @@map("settlements")
+}
+
+// ============================================================
+// 10. SettlementItem — 정산 개별 항목 (건별 금액)
+// ============================================================
+model SettlementItem {
+  id             String     @id @default(cuid())
+  settlementId   String
+  settlement     Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  submissionId   String     @unique // 제출물 1:1
+  submission     Submission @relation(fields: [submissionId], references: [id])
+  starId         String
+  star           User       @relation(fields: [starId], references: [id])
+
+  baseAmount     Decimal  @db.Decimal(10, 2) // STAR 기본 단가 시점 스냅샷
+  adjustedAmount Decimal? @db.Decimal(10, 2) // ADMIN 조정 금액 (null = 기본 단가)
+  finalAmount    Decimal  @db.Decimal(10, 2) // 최종 적용 금액
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("settlement_items")
+}
+
+// ============================================================
+// 11. Portfolio — STAR 포트폴리오
+// ============================================================
+model Portfolio {
+  id      String @id @default(cuid())
+  userId  String @unique
+  user    User   @relation(fields: [userId], references: [id])
+
+  bio         String?  @db.Text
+  showreel    String?  // 쇼릴 URL
+  website     String?
+  socialLinks Json?    // { instagram: "...", youtube: "..." }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  items PortfolioItem[]
+
+  @@map("portfolios")
+}
+
+// ============================================================
+// 12. PortfolioItem — 포트폴리오 개별 작품
+// ============================================================
+model PortfolioItem {
+  id          String    @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  title        String
+  description  String?   @db.Text
+  thumbnailUrl String?
+  videoUrl     String?   // Cloudflare Stream URL 또는 외부 URL
+  sortOrder    Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("portfolio_items")
+}
+
+// ============================================================
+// 13. Category — 영상 분류 메타데이터
+// ============================================================
+model Category {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+  icon String? // 아이콘 식별자
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  videos Video[]
+
+  @@map("categories")
+}
