@@ -97,7 +97,7 @@ return NextResponse.json({
 ## ENDPOINT MAP
 
 ### Users
-- `GET/PATCH /api/users/me` — 내 프로필 (⚠️ bypass 중)
+- `GET/PATCH /api/users/me` — 내 프로필 (Supabase auth 직접 호출)
 
 ### Admin
 - `GET /api/admin/users` — 유저 목록 (검색, 승인 필터, 페이지네이션)
@@ -167,6 +167,38 @@ return NextResponse.json({
 - 검색: `{ contains: search, mode: "insensitive" }`
 - 정렬: `orderBy: { createdAt: "desc" }` 기본
 
+## AUTH PATTERN
+
+```typescript
+// getAuthUser() 내부 동작:
+// 1. createClient() → Supabase 서버 클라이언트 (cookies 기반)
+// 2. supabase.auth.getUser() → authUser
+// 3. prisma.user.findUnique({ where: { authId: authUser.id } })
+// 4. User | null 반환
+
+const user = await getAuthUser();
+if (!user) return 401;           // 미인증
+if (user.role !== "ADMIN") return 403;  // 권한 없음
+```
+
+**예외**: `/api/users/me`는 Supabase auth를 직접 호출 (getAuthUser 대신 createClient + auth.getUser)
+
+## TRANSACTION PATTERN (다단계 작업)
+
+```typescript
+// 예: 제작요청 수락 (assignment 생성 + request 상태 변경)
+const result = await prisma.$transaction(async (tx) => {
+  const assignment = await tx.projectAssignment.create({ data: { ... } });
+  const currentCount = await tx.projectAssignment.count({ where: { requestId } });
+  if (currentCount >= request.maxAssignees) {
+    await tx.projectRequest.update({ where: { id: requestId }, data: { status: "FULL" } });
+  }
+  return assignment;
+});
+```
+
+사용처: `/projects/requests/[id]/accept`, `/submissions` POST, `/submissions/[id]/approve`
+
 ## ANTI-PATTERNS
 
 - role 체크 없이 데이터 반환 금지
@@ -174,3 +206,4 @@ return NextResponse.json({
 - Zod 검증 없이 body 사용 금지
 - 직접 SQL 실행 금지 → Prisma만 사용
 - 응답에 내부 에러 스택 노출 금지
+- getAuthUser 결과를 캐시하지 말 것 → 매 요청마다 호출

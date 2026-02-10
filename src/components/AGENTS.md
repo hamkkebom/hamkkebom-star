@@ -68,7 +68,7 @@ export function SomeForm() {
 }
 ```
 
-**참고 구현**: `project/request-form.tsx` (복잡한 폼), `auth/login-form.tsx` (인증 폼)
+**참고 구현**: `project/request-form.tsx` (복잡한 폼, text→array 변환), `auth/login-form.tsx` (인증 폼, role별 리다이렉트)
 
 ## DATA FETCHING PATTERN (TanStack Query)
 
@@ -118,12 +118,25 @@ const mutation = useMutation({
 
 ## VIDEO COMPONENTS
 
-- `video-player.tsx` — HLS.js 동적 import, seek/duration 콜백. `import("hls.js")` 패턴
-- `upload-dropzone.tsx` — 3단계: (1) POST /api/submissions/upload-url (2) XHR PUT CF (3) POST /api/submissions. 진행률 추적
+- `video-player.tsx` — HLS.js 동적 import (`import("hls.js")`), Safari native fallback, seek/duration 콜백
+- `upload-dropzone.tsx` — 3단계: (1) POST /api/submissions/upload-url (2) XHR PUT CF (3) POST /api/submissions. xhr.upload progress 추적
 - `upload-progress.tsx` — Progress 바 표시
 - `video-card.tsx` — 썸네일 + 메타 표시. compact 모드 지원
-- `submission-list.tsx` — 제출물 목록 표시
+- `submission-list.tsx` — useQuery + Skeleton 로딩, 중첩 데이터 (submission→assignment→request)
 - `swimlane-row.tsx` — 타임라인/스위레인 뷰
+
+## AUTH COMPONENTS
+
+- `login-form.tsx` — 애니메이션 orb + gradient 텍스트 브랜딩 패널, Supabase signInWithPassword, role별 리다이렉트
+- `signup-form.tsx` — 다중 필드 (name, chineseName, email, phone, password), Supabase signUp + user_metadata
+- `forgot-password-form.tsx` — 이메일 기반 비밀번호 재설정
+- `reset-password-form.tsx` — 새 비밀번호 + confirmPassword .refine() 검증
+- `auth-card-wrapper.tsx` — Server Component, 중앙 정렬 카드 래퍼
+
+## FEEDBACK COMPONENTS
+
+- `feedback-form.tsx` — 타임코드 캡처 (`handleCaptureTime()` → VideoPlayer currentTime), type/priority 선택, 조건부 startTime
+- `feedback-list.tsx` — useQuery 10s refetch, 타임코드 버튼 클릭 → `onTimecodeClick(time)`, priority/type 뱃지
 
 ## CONVENTIONS
 

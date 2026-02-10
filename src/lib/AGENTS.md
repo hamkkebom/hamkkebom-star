@@ -8,8 +8,9 @@
 lib/
 ├── supabase/
 │   ├── client.ts       # createBrowserClient (클라이언트 사이드)
-│   ├── server.ts       # createServerClient + cookies() (서버 사이드)
-│   └── middleware.ts    # updateSession — 세션 갱신 + role 리다이렉트
+│   ├── server.ts       # createServerClient + cookies() (서버 사이드, API Route)
+│   ├── middleware.ts    # re-export: updateSession from proxy.ts
+│   └── proxy.ts        # Supabase SSR Proxy 패턴 — getClaims() 기반 인증
 ├── cloudflare/
 │   ├── stream.ts       # CF Stream API (tus 업로드, 상태조회, 서명URL, 삭제)
 │   └── r2.ts           # CF R2 스토리지 (설정 반환, 공용 URL)
@@ -22,7 +23,7 @@ lib/
 │   ├── portfolio.ts    # updatePortfolio, createItem, reorderItems
 │   └── settlement.ts   # generateSettlement, adjustItem
 ├── prisma.ts           # PrismaClient 싱글턴 (PrismaPg adapter)
-├── auth-helpers.ts     # getAuthUser() (⚠️ bypass 중)
+├── auth-helpers.ts     # getAuthUser() — Supabase→Prisma User 조회
 └── utils.ts            # cn() — clsx + tailwind-merge
 ```
 
@@ -44,25 +45,42 @@ export const prisma = new PrismaClient({ adapter });
 ## AUTH HELPERS
 
 ```typescript
-// ⚠️ 현재 BYPASS — mock ADMIN 반환
-// 원래: Supabase authUser.id → prisma.user.findUnique({ authId })
-export async function getAuthUser(): Promise<User | null>
+// lib/auth-helpers.ts — Supabase → Prisma User 조회
+export async function getAuthUser(): Promise<User | null> {
+  const supabase = await createClient();                    // server.ts
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser?.id) return null;
+  return prisma.user.findUnique({ where: { authId: authUser.id } });
+}
 ```
 
-**bypass 복원 파일 4개**: middleware.ts, auth-helpers.ts, hooks/use-auth.ts, api/users/me/route.ts
-모든 파일에 원래 코드가 주석으로 보존됨.
+## SUPABASE SSR PROXY 패턴
 
-## SUPABASE SSR 패턴
+```typescript
+// lib/supabase/proxy.ts — Next.js 16 Proxy 패턴 (핵심)
+export async function updateSession(request: NextRequest) {
+  // 1. createServerClient + cookies 프록시 (request → supabaseResponse)
+  // 2. getClaims() — getUser() 대신 JWT claims에서 인증 정보 추출
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const authId = getAuthIdFromClaims(claimsData?.claims);  // claims.sub
+
+  // 3. 미인증 → /auth/login 리다이렉트 (/auth/* 경로 제외)
+  // 4. 인증 + "/" → getRoleFromClaims → role별 리다이렉트
+  //    role 없으면 DB 조회 fallback (supabase.from("users").select("role"))
+}
+```
 
 | 파일 | 용도 | 사용처 |
 |------|------|--------|
 | `client.ts` | `createBrowserClient()` | 클라이언트 컴포넌트 (로그인, 로그아웃) |
 | `server.ts` | `createServerClient()` + cookies() | Server Components, API Routes |
-| `middleware.ts` | `updateSession()` 세션 갱신 | src/middleware.ts |
+| `middleware.ts` | `updateSession()` re-export | src/middleware.ts |
+| `proxy.ts` | 실제 updateSession 구현 | middleware.ts에서 import |
 
-**핵심 규칙**: `supabase.auth.getUser()` 앞에 코드 삽입 금지 — 세션 갱신 간섭
-
-**Key 이름**: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (anon key 아님)
+**핵심 규칙**:
+- middleware에서 `getClaims()` 사용 (getUser 대신) — Next.js 16 Proxy 패턴
+- API Route에서는 `getAuthUser()` → `supabase.auth.getUser()` 사용 (정확한 인증 필요)
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (anon key 아님)
 
 ## CLOUDFLARE STREAM
 
@@ -126,5 +144,6 @@ export type CreateSomethingInput = z.infer<typeof createSomethingSchema>;
 
 - Prisma native client import 금지 → `@/lib/prisma` 사용
 - Supabase client를 서버에서 직접 생성 금지 → `@/lib/supabase/server` 사용
+- middleware에서 getUser() 사용 금지 → getClaims() 사용 (Proxy 패턴)
 - 검증 로직을 API route에 인라인 금지 → `validations/` 분리
 - env 직접 참조 금지 (CF) → `isConfigured()` 체크 후 사용
