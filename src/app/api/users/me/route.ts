@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const updateUserSchema = z.object({
   name: z.string().min(2, "이름은 2자 이상이어야 합니다.").optional(),
+  email: z.string().email("올바른 이메일을 입력해주세요.").optional(),
   phone: z.string().nullable().optional(),
   avatarUrl: z.string().url("올바른 URL을 입력해주세요.").nullable().optional(),
 });

@@ -60,3 +60,8 @@ supabase-api-keys.png
 next-env.d.ts
 
 .vercel
+
+.vercel
+.env*.local
+
+users_export.csv
