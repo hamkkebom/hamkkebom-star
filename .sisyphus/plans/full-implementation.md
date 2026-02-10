@@ -85,7 +85,7 @@
   - placeholder env vars 설정
   - **병렬화**: Track A와 병렬 (parallel with Track A)
 
-- [ ] **Task 2B.2**: (선택) husky + lint-staged
+- [x] **Task 2B.2**: (선택) husky + lint-staged
   - `.husky/pre-commit` 생성
   - `package.json`에 lint-staged 설정 추가
   - **병렬화**: Track A와 병렬 (parallel with Track A)

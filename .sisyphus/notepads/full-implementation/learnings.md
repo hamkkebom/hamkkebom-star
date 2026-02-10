@@ -437,3 +437,68 @@ coverage: {
 - ESLint flat config (`eslint.config.mjs`) uses `globalIgnores()` instead of `.eslintignore`
 - React hooks linter is strict about setState in effects - use setTimeout pattern for hydration safety
 - Test files can have unused imports/variables without blocking lint (warnings only)
+
+## [2026-02-10T17:05:00+09:00] Task 2B.2: Husky + Lint-Staged Setup
+
+### Setup Completed ✅
+
+**Packages Installed:**
+- `husky@^9.1.7` (latest stable)
+- `lint-staged@^15.5.2` (latest stable)
+
+**Files Created/Modified:**
+1. `.husky/pre-commit` - Hook script that runs `pnpm lint-staged`
+2. `package.json` - Added `lint-staged` configuration and `prepare` script
+
+### Configuration Details
+
+**`.husky/pre-commit`:**
+```bash
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+pnpm lint-staged
+```
+
+**`package.json` lint-staged config:**
+```json
+"lint-staged": {
+  "*.{ts,tsx,js,jsx,mjs,cjs}": [
+    "eslint --fix"
+  ]
+}
+```
+
+**`package.json` prepare script:**
+```json
+"prepare": "husky"
+```
+
+### Verification Results
+
+✅ **Hook Execution Test:**
+- Staged TypeScript file (test-hook.ts)
+- Pre-commit hook triggered automatically
+- lint-staged backed up original state
+- eslint --fix ran on staged files
+- Modifications applied successfully
+- Commit completed
+
+✅ **Lint Status:**
+- 0 errors, 7 warnings (unchanged from Task 3.2)
+- No new lint issues introduced
+
+### Key Learnings
+
+1. **Husky 9 Pattern**: `npx husky init` automatically creates `.husky/` directory and adds `prepare` script to package.json
+2. **lint-staged Behavior**: Only runs on files matching the configured patterns (*.{ts,tsx,js,jsx,mjs,cjs})
+3. **File Pattern Matching**: Non-code files (package.json, .md, etc.) are correctly excluded from linting
+4. **Hook Execution**: Pre-commit hook runs automatically before each commit, preventing lint violations from being committed
+5. **Deprecation Warning**: Husky 9 shows deprecation warning about shebang lines, but they still work (will be removed in v10)
+
+### Next Steps
+
+- Task 2B.3: Configure ESLint auto-fix in IDE (optional)
+- Task 2B.4: Add commit message linting (commitlint) if needed
+- Monitor hook performance in CI/CD pipeline
+
