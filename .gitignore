@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -24,18 +22,17 @@
 .DS_Store
 *.pem
 
-# debug
+# debug / logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
 # env files
 .env
 .env.local
 .env.*.local
-
-# keep .env.example
 !.env.example
 
 # prisma generated
@@ -44,6 +41,10 @@ src/generated/
 # vercel
 .vercel
 
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
 # windows special files
 nul
 D
@@ -51,17 +52,13 @@ D
 # build artifacts
 build-output.txt
 
-# screenshots (dev only)
+# screenshots / images (dev only)
 screenshot-*.png
 supabase-api-keys.png
+e2e-*.png
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# agent artifacts
+.sisyphus/
 
-.vercel
-
-.vercel
-.env*.local
-
+# data exports
 users_export.csv
