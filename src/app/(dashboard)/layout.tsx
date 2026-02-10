@@ -8,7 +8,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getAuthUser();
+  const user = await getAuthUser({ skipApprovalCheck: true });
 
   if (!user || user.role !== "STAR") {
     redirect("/");
