@@ -1,7 +1,16 @@
+// ============================================================
+// 🔒 AUTH BYPASS: 로그인 기능 전체 주석 처리 (2026-02-10)
+// Supabase 인증 없이 DB의 ADMIN 유저를 반환합니다.
+// 복원하려면 아래 주석 블록의 원래 코드로 교체하세요.
+// ============================================================
+
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+
+// --- 원래 import (주석 처리됨) ---
+// import { createClient } from "@/lib/supabase/server";
+// --- 원래 import 끝 ---
 
 const updateUserSchema = z.object({
   name: z.string().min(2, "이름은 2자 이상이어야 합니다.").optional(),
@@ -11,17 +20,26 @@ const updateUserSchema = z.object({
 });
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  // AUTH BYPASS: Supabase 인증 없이 DB에서 ADMIN 유저를 조회합니다.
+  // --- 원래 supabase 인증 코드 (주석 처리됨) ---
+  // const supabase = await createClient();
+  // const {
+  //   data: { user: authUser },
+  // } = await supabase.auth.getUser();
+  //
+  // if (!authUser?.id) {
+  //   return NextResponse.json({ message: "인증이 필요합니다." }, { status: 401 });
+  // }
+  //
+  // const user = await prisma.user.findUnique({
+  //   where: { authId: authUser.id },
+  //   ...
+  // });
+  // --- 원래 코드 끝 ---
 
-  if (!authUser?.id) {
-    return NextResponse.json({ message: "인증이 필요합니다." }, { status: 401 });
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { authId: authUser.id },
+  const user = await prisma.user.findFirst({
+    where: { role: "ADMIN" },
+    orderBy: { createdAt: "asc" },
     select: {
       id: true,
       authId: true,
@@ -47,12 +65,13 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  // AUTH BYPASS: Supabase 인증 없이 ADMIN 유저를 업데이트합니다.
+  const adminUser = await prisma.user.findFirst({
+    where: { role: "ADMIN" },
+    orderBy: { createdAt: "asc" },
+  });
 
-  if (!authUser?.id) {
+  if (!adminUser) {
     return NextResponse.json({ message: "인증이 필요합니다." }, { status: 401 });
   }
 
@@ -79,7 +98,7 @@ export async function PATCH(request: Request) {
   }
 
   const user = await prisma.user.update({
-    where: { authId: authUser.id },
+    where: { id: adminUser.id },
     data: updateData,
     select: {
       id: true,
