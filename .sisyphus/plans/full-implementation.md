@@ -33,7 +33,7 @@
   - 검증: `pnpm build` + `pnpm lint` 성공
   - **병렬화**: 단독 (sequential)
 
-- [ ] **Task 1.2**: 5개 bypass 파일 복원
+- [x] **Task 1.2**: 5개 bypass 파일 복원
   - `src/middleware.ts` — bypass 제거, 원래 코드 복원
   - `src/lib/auth-helpers.ts` — bypass 제거, 원래 코드 복원
   - `src/hooks/use-auth.ts` — bypass 제거, 원래 코드 복원
@@ -41,13 +41,13 @@
   - `src/components/auth/login-form.tsx` — 167~190줄 bypass UI 제거
   - **병렬화**: Task 1.3과 동시 (parallel with 1.3)
 
-- [ ] **Task 1.3**: (dashboard) 레이아웃에 STAR 역할 가드 추가
+- [x] **Task 1.3**: (dashboard) 레이아웃에 STAR 역할 가드 추가
   - `src/app/(dashboard)/layout.tsx` 수정
   - `src/app/(admin)/layout.tsx` 패턴 따름: `getAuthUser()` + `user.role !== "STAR"` 체크
   - **주의**: Task 1.2와 반드시 동시 적용 (bypass 상태에서 먼저 추가 금지)
   - **병렬화**: Task 1.2와 동시 (parallel with 1.2)
 
-- [ ] **Task 1.4**: Auth 통합 검증
+- [x] **Task 1.4**: Auth 통합 검증
   - `grep -r "AUTH BYPASS" src/` → 0건
   - `pnpm build` → Exit 0
   - `pnpm lint` → Exit 0
@@ -60,26 +60,26 @@
 
 #### Track A: Vitest 테스트 확장
 
-- [ ] **Task 2A.1**: API 라우트 테스트 12개 작성
+- [x] **Task 2A.1**: API 라우트 테스트 12개 작성
   - 우선순위 API: users/me, admin/users, projects/requests, submissions, feedbacks, videos, settlements, notifications/badge, categories
   - 각 API 테스트 항목: 401 (비인증), 403 (권한 불일치), 200/201 (성공), 400 (잘못된 입력), 404 (존재하지 않음)
   - 기존 `videos.test.ts` mock 패턴 사용
   - 생성 디렉토리: `src/__tests__/api/`
   - **병렬화**: Track B와 병렬 (parallel with Track B)
 
-- [ ] **Task 2A.2**: 컴포넌트 테스트 8개 작성
+- [x] **Task 2A.2**: 컴포넌트 테스트 8개 작성
   - 우선순위 컴포넌트: login-form, signup-form, request-form, request-card, video-card, sidebar, feedback-form, filter-bar
   - 기존 `video-card.test.tsx` 패턴 사용
   - 생성 디렉토리: `src/__tests__/components/`
   - **병렬화**: Track B와 병렬 (parallel with Track B)
 
-- [ ] **Task 2A.3**: 커버리지 설정
+- [x] **Task 2A.3**: 커버리지 설정
   - `vitest.config.ts`에 coverage 설정 추가: provider v8, reporter text/html, include api/components, exclude generated/ui
   - **병렬화**: Track B와 병렬 (parallel with Track B)
 
 #### Track B: GitHub Actions CI/CD
 
-- [ ] **Task 2B.1**: CI 워크플로우 생성
+- [x] **Task 2B.1**: CI 워크플로우 생성
   - `.github/workflows/ci.yml` 생성
   - pnpm install → lint → test → build 순서
   - placeholder env vars 설정
@@ -94,12 +94,12 @@
 
 ### Wave 3: 마무리 (P2, 선택)
 
-- [ ] **Task 3.1**: 커버리지 임계값 설정
+- [x] **Task 3.1**: 커버리지 임계값 설정
   - vitest.config.ts에 최소 커버리지 설정
   - CI에서 커버리지 리포트 업로드
   - **병렬화**: Task 3.2와 병렬 (parallel with 3.2)
 
-- [ ] **Task 3.2**: 린트/타입 체크 정리
+- [x] **Task 3.2**: 린트/타입 체크 정리
   - 기존 경고 정리 (있을 경우)
   - tsconfig strict 설정 확인
   - **병렬화**: Task 3.1과 병렬 (parallel with 3.1)
