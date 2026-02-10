@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +19,6 @@ import { createClient } from "@/lib/supabase/client";
 import { signupSchema, type SignupInput } from "@/lib/validations/auth";
 
 export function SignupForm() {
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<SignupInput>({
@@ -57,9 +55,9 @@ export function SignupForm() {
         return;
       }
 
-      // Redirect to callback to create Prisma user record
-      // Callback will check isApproved and redirect to pending-approval
-      router.push("/auth/callback");
+      // Full-page redirect to Route Handler — router.push()는 클라이언트 SPA 네비게이션이라
+      // Route Handler(route.ts)가 실행되지 않으므로 반드시 window.location.href 사용
+      window.location.href = "/auth/callback";
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "회원가입 중 오류가 발생했습니다.";

@@ -31,7 +31,7 @@ const features = [
   { icon: Film, title: "영상 제작 관리", desc: "프로젝트 요청부터 완성까지" },
   { icon: MessageSquare, title: "실시간 피드백", desc: "타임코드 기반 정밀 리뷰" },
   { icon: Upload, title: "간편 업로드", desc: "드래그 & 드롭으로 바로 전송" },
-  { icon: DollarSign, title: "투명한 정산", desc: "자동 정산 & 실시간 확인" },
+  { icon: DollarSign, title: "투명한 정산", desc: "정산 확인 & 조회" },
 ];
 
 export function LoginForm() {
@@ -120,7 +120,7 @@ export function LoginForm() {
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-500/20">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-white">함께봄 스타</span>
+            <span className="text-xl font-bold tracking-tight text-white">별들에게 물어봐</span>
           </div>
 
           {/* Main Content */}
@@ -135,7 +135,7 @@ export function LoginForm() {
                 </span>
               </h1>
               <p className="max-w-md text-base leading-relaxed text-white/50">
-                프로젝트 요청부터 피드백, 정산까지 — 함께봄 스타와 함께하는 스마트한 제작 워크플로우.
+                프로젝트 요청부터 피드백, 정산까지 — 별들에게 물어봐와 함께하는 스마트한 제작 워크플로우.
               </p>
             </div>
 
@@ -170,7 +170,7 @@ export function LoginForm() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Star className="h-5 w-5" />
           </div>
-          <span className="text-xl font-bold">함께봄 스타</span>
+          <span className="text-xl font-bold">별들에게 물어봐</span>
         </div>
 
         <div className="w-full max-w-sm animate-fade-in space-y-6">

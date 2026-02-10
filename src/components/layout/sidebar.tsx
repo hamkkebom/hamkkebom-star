@@ -47,7 +47,7 @@ export function Sidebar() {
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
             봄
           </span>
-          <span className="text-lg font-bold text-sidebar-foreground">함께봄 스타</span>
+          <span className="text-lg font-bold text-sidebar-foreground">별들에게 물어봐</span>
         </Link>
       </div>
       <Separator />

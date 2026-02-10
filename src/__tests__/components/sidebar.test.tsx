@@ -22,7 +22,7 @@ describe("Sidebar", () => {
 
   it("renders brand name", () => {
     render(<Sidebar />);
-    expect(screen.getByText("함께봄 스타")).toBeInTheDocument();
+    expect(screen.getByText("별들에게 물어봐")).toBeInTheDocument();
   });
 
   it("renders brand logo character", () => {

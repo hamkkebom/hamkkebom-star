@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "함께봄 스타",
+  title: "별들에게 물어봐",
   description: "영상 제작 관리 플랫폼",
 };
 

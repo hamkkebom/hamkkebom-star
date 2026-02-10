@@ -9,7 +9,7 @@ export function AuthCardWrapper({ children }: { children: React.ReactNode }) {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Star className="h-5 w-5" />
           </div>
-          <h1 className="text-xl font-bold">함께봄 스타</h1>
+          <h1 className="text-xl font-bold">별들에게 물어봐</h1>
           <p className="text-sm text-muted-foreground">영상 제작 관리 플랫폼</p>
         </div>
         <Card className="shadow-lg">
