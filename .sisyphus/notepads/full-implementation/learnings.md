@@ -194,3 +194,62 @@ Wave 2 tasks:
 - Placeholder env vars prevent build failures in CI
 - frozen-lockfile ensures reproducible dependency installation
 - Cache strategy uses pnpm's built-in cache action
+
+
+## [2026-02-10T16:30:00+09:00] Task 2A.1: API 라우트 테스트 12개 작성
+
+### 결과: 14 파일, 93 테스트 전체 통과 ✅
+
+### 작성한 테스트 파일 (12개 신규)
+
+| 파일 | API | 테스트 수 | 케이스 |
+|------|-----|-----------|--------|
+| `users-me.test.ts` | GET/PATCH `/api/users/me` | 8 | 401, 404, 200, 400(JSON/Zod) |
+| `admin-users.test.ts` | GET `/api/admin/users` | 5 | 401, 403, 200(페이지네이션/검색/필터) |
+| `admin-users-approve.test.ts` | PATCH `/api/admin/users/[id]/approve` | 6 | 401, 403, 400(JSON/값누락), 404, 200 |
+| `projects-requests.test.ts` | POST `/api/projects/requests` | 5 | 401, 403, 400(JSON/Zod), 201 |
+| `projects-requests-accept.test.ts` | POST `/api/projects/requests/[id]/accept` | 6 | 401, 403, 404, 409, 201, 500 |
+| `submissions.test.ts` | POST/GET `/api/submissions` | 10 | POST: 401,403,400(JSON/Zod),404,201; GET: 401,403,200,400 |
+| `submissions-approve.test.ts` | PATCH `/api/submissions/[id]/approve` | 5 | 401, 403, 404, 200, 500 |
+| `feedbacks.test.ts` | POST/GET `/api/feedbacks` | 11 | POST: 401,403,400(JSON/Zod),404,201; GET: 401,400,403,200(ADMIN/STAR) |
+| `videos-api.test.ts` | GET `/api/videos` | 5 | 200(비인증/ADMIN/페이지네이션), 400(정렬/상태) |
+| `settlements-generate.test.ts` | POST `/api/settlements/generate` | 7 | 401, 403, 400(JSON/Zod), 409, 201, 500 |
+| `notifications-badge.test.ts` | GET `/api/notifications/badge` | 4 | 401, 200(STAR), 200(ADMIN), 403(미지원role) |
+| `categories.test.ts` | GET `/api/categories` | 3 | 200(목록/빈목록/_count) |
+
+### Mock 패턴 2가지
+
+**패턴 A: `getAuthUser()` mock** (대부분의 API)
+```typescript
+const mockGetAuthUser = vi.fn();
+vi.mock("@/lib/auth-helpers", () => ({
+  getAuthUser: () => mockGetAuthUser(),
+}));
+```
+
+**패턴 B: `createClient()` mock** (users/me — Supabase 직접 사용)
+```typescript
+const mockGetUser = vi.fn();
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn().mockResolvedValue({
+    auth: { getUser: () => mockGetUser() },
+  }),
+}));
+```
+
+### 핵심 주의사항
+
+1. **`users/me/route.ts`는 `getAuthUser()` 안 씀**: Supabase `createClient()` 직접 호출 → 별도 mock 필요
+2. **트랜잭션 사용 API**: `$transaction` mock은 함수 자체를 mock하되, 성공 시 결과값 반환, 실패 시 에러 객체 throw
+3. **Next.js 16 params**: `{ params: Promise<{ id: string }> }` — 반드시 `Promise.resolve({ id })` 형태
+4. **Zod schema mock**: `vi.mock("@/lib/validations/...", async () => { const { z } = await import("zod"); ... })` 패턴으로 실제 z 사용
+5. **enum mock**: `vi.mock("@/generated/prisma/client", () => ({ VideoStatus: { ... } }))` — 실제 DB enum 값 그대로 복제
+6. **공개 API (videos, categories)**: `getAuthUser().catch(() => null)` 패턴 — 비인증이어도 접근 가능
+7. **ESLint forEach return**: `Object.entries().forEach(([k,v]) => url.searchParams.set(k,v))` 대신 `for...of` 사용
+
+### 테스트 전략
+
+- 각 API에 대해 **인증 → 권한 → 입력검증 → 비즈니스로직 → 성공** 순으로 작성
+- HTTP status code 기준: 401 → 403 → 400 → 404 → 200/201 → 409/500
+- mock 데이터는 한국어 포함 (실제 사용 시나리오 반영)
+- 트랜잭션 API는 에러 객체 throw 패턴으로 404/409 시뮬레이션
