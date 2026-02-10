@@ -114,3 +114,83 @@ export default async function DashboardLayout({ children }) {
 - ADMIN 또는 미인증 사용자는 루트(`/`)로 리다이렉트
 - Task 1.2 (bypass 복원) 완료 후 실제 Supabase 인증으로 동작
 
+
+## Task 1.4: Auth Integration Verification (2026-02-10)
+
+### Verification Completed ✅
+
+**All checks passed:**
+1. AUTH BYPASS markers: 0 occurrences (fully removed)
+2. Build: ✓ Compiled successfully (7.7s)
+3. Lint (auth files): 0 errors, 0 warnings
+4. Middleware: Redirect logic enabled (unauthenticated → /auth/login)
+5. Auth helpers: Supabase integration restored
+6. Role guard: STAR-only dashboard access enforced
+
+### Key Findings
+
+**Proxy Pattern Success:**
+- `src/lib/supabase/proxy.ts` implements proper auth flow
+- `getRoleFromClaims()` extracts role from JWT metadata
+- `getAuthIdFromClaims()` extracts auth ID from JWT sub claim
+- Unauthenticated users redirected to /auth/login
+- Authenticated users at "/" redirected to role-specific dashboard
+
+**Auth Helpers Restored:**
+- `getAuthUser()` now uses Supabase auth + Prisma lookup
+- Proper error handling for missing users
+- Returns User | null type
+
+**Role Guard Implementation:**
+- Dashboard layout checks `user.role === "STAR"`
+- Redirects non-STAR users to home
+- Prevents unauthorized access to STAR-only features
+
+**Build Quality:**
+- No auth-related lint errors
+- Clean compilation (53/53 static pages)
+- Ready for production deployment
+
+### Lessons Learned
+
+1. **Proxy pattern is robust**: Centralizing auth logic in middleware reduces duplication
+2. **JWT metadata extraction**: Checking both app_metadata and user_metadata provides flexibility
+3. **Role-based redirects**: Middleware-level role detection enables seamless UX
+4. **Supabase SSR pattern**: Proper cookie handling in middleware is critical for session persistence
+
+### Next Steps
+
+Wave 2 tasks:
+- Expand test coverage for auth flows
+- Set up CI/CD pipeline (GitHub Actions)
+- Add integration tests for protected routes
+- Monitor auth performance in production
+
+
+## CI/CD Setup (2026-02-10)
+
+### GitHub Actions Workflow Created
+- **File**: `.github/workflows/ci.yml`
+- **Triggers**: PR and push to `main` branch
+- **Node version**: 22 (matches project requirement)
+- **pnpm version**: 9 (explicit version for consistency)
+
+### Pipeline Steps
+1. **Checkout**: actions/checkout@v4
+2. **pnpm setup**: pnpm/action-setup@v4 with version 9
+3. **Node setup**: actions/setup-node@v4 with pnpm cache
+4. **Dependencies**: `pnpm install --frozen-lockfile` (reproducible builds)
+5. **Lint**: `pnpm lint` (ESLint)
+6. **Test**: `pnpm test` (vitest run)
+7. **Build**: `pnpm build` (prisma generate && next build)
+
+### Environment Variables (Placeholder)
+- `NEXT_PUBLIC_SUPABASE_URL`: https://placeholder.supabase.co
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: sb_publishable_placeholder
+- `DATABASE_URL`: postgresql://placeholder:placeholder@localhost:5432/placeholder
+
+### Notes
+- YAML validated with yaml-lint (no syntax errors)
+- Placeholder env vars prevent build failures in CI
+- frozen-lockfile ensures reproducible dependency installation
+- Cache strategy uses pnpm's built-in cache action
