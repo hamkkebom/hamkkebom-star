@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,7 +34,6 @@ const features = [
 ];
 
 export function LoginForm() {
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<LoginInput>({
@@ -76,14 +74,14 @@ export function LoginForm() {
       if (!data.data.isApproved) {
         await supabase.auth.signOut();
         toast.error("관리자 승인 대기 중입니다. 승인 후 로그인할 수 있습니다.");
-        router.replace("/auth/pending-approval");
+        window.location.href = "/auth/pending-approval";
         return;
       }
 
       const nextPath = data.data.role === "ADMIN" ? "/admin" : "/stars/dashboard";
 
-      router.replace(nextPath);
-      router.refresh();
+      // Full page navigation ensures middleware runs and server-side auth works
+      window.location.href = nextPath;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "로그인 중 오류가 발생했습니다.";

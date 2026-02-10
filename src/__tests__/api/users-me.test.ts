@@ -11,11 +11,13 @@ vi.mock("@/lib/supabase/server", () => ({
 
 const mockFindUnique = vi.fn();
 const mockUpdate = vi.fn();
+const mockCreate = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: {
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
       update: (...args: unknown[]) => mockUpdate(...args),
+      create: (...args: unknown[]) => mockCreate(...args),
     },
   },
 }));
@@ -55,15 +57,35 @@ describe("GET /api/users/me", () => {
     expect(json.error.code).toBe("UNAUTHORIZED");
   });
 
-  it("404 — Supabase 인증 O, DB 사용자 없음", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: mockAuthUser } });
+  it("200 — Supabase 인증 O, DB 사용자 없음 → 자동 생성", async () => {
+    const authUserWithMeta = {
+      id: "auth-uuid-123",
+      email: "star@example.com",
+      user_metadata: { name: "김영상", phone: "010-1234-5678" },
+    };
+    mockGetUser.mockResolvedValue({ data: { user: authUserWithMeta } });
     mockFindUnique.mockResolvedValue(null);
+    mockCreate.mockResolvedValue({
+      id: "user-cuid-new",
+      authId: "auth-uuid-123",
+      email: "star@example.com",
+      name: "김영상",
+      phone: "010-1234-5678",
+      avatarUrl: null,
+      role: "STAR",
+      isApproved: false,
+      baseRate: null,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+    });
 
     const res = await GET();
     const json = await res.json();
 
-    expect(res.status).toBe(404);
-    expect(json.error.code).toBe("NOT_FOUND");
+    expect(res.status).toBe(200);
+    expect(json.data.email).toBe("star@example.com");
+    expect(json.data.name).toBe("김영상");
+    expect(mockCreate).toHaveBeenCalledTimes(1);
   });
 
   it("200 — 성공", async () => {

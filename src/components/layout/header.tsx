@@ -23,7 +23,8 @@ export function Header() {
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/auth/login");
+    // Full page navigation ensures server-side session is fully cleared
+    window.location.href = "/auth/login";
   };
 
   return (

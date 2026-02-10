@@ -1,6 +1,6 @@
 # CORE LIBRARY (src/lib/)
 
-프로젝트 핵심 모듈. 인증, DB, 외부 서비스, 검증 스키마.
+프로젝트 핵심 모듈 16파일. 인증, DB, 외부 서비스, 검증 스키마.
 
 ## STRUCTURE
 
@@ -46,13 +46,18 @@ export const prisma = new PrismaClient({ adapter });
 
 ```typescript
 // lib/auth-helpers.ts — Supabase → Prisma User 조회
-export async function getAuthUser(): Promise<User | null> {
+export async function getAuthUser(options?: { skipApprovalCheck?: boolean }): Promise<User | null> {
   const supabase = await createClient();                    // server.ts
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser?.id) return null;
-  return prisma.user.findUnique({ where: { authId: authUser.id } });
+  const user = await prisma.user.findUnique({ where: { authId: authUser.id } });
+  if (!user || (!options?.skipApprovalCheck && !user.isApproved)) return null;
+  return user;
 }
 ```
+
+- 기본: `isApproved === false` → null 반환 (승인 게이트)
+- `skipApprovalCheck: true` → layout에서 사용 (미승인 유저를 pending-approval로 리다이렉트)
 
 ## SUPABASE SSR PROXY 패턴
 
@@ -81,6 +86,7 @@ export async function updateSession(request: NextRequest) {
 - middleware에서 `getClaims()` 사용 (getUser 대신) — Next.js 16 Proxy 패턴
 - API Route에서는 `getAuthUser()` → `supabase.auth.getUser()` 사용 (정확한 인증 필요)
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (anon key 아님)
+- role 추출: JWT `app_metadata.role` 또는 `user_metadata.role`, 없으면 DB fallback
 
 ## CLOUDFLARE STREAM
 
@@ -140,6 +146,24 @@ export type CreateSomethingInput = z.infer<typeof createSomethingSchema>;
 - type export: `z.infer<typeof schema>`
 - 새 도메인 추가 시 `validations/{domain}.ts` 생성
 
+## DEPENDENCY GRAPH
+
+```
+API Routes (34)
+  ├─ @/lib/auth-helpers (getAuthUser → RBAC)
+  ├─ @/lib/prisma (DB operations)
+  ├─ @/lib/validations/{domain} (Zod validation)
+  └─ @/lib/cloudflare/stream (upload-url routes)
+
+Components (30+)
+  ├─ @/lib/utils (cn())
+  ├─ @/lib/supabase/client (auth forms, useAuth hook)
+  └─ @/lib/validations/{domain} (form schemas)
+
+Middleware
+  └─ @/lib/supabase/proxy (updateSession → getClaims)
+```
+
 ## ANTI-PATTERNS
 
 - Prisma native client import 금지 → `@/lib/prisma` 사용
@@ -147,3 +171,5 @@ export type CreateSomethingInput = z.infer<typeof createSomethingSchema>;
 - middleware에서 getUser() 사용 금지 → getClaims() 사용 (Proxy 패턴)
 - 검증 로직을 API route에 인라인 금지 → `validations/` 분리
 - env 직접 참조 금지 (CF) → `isConfigured()` 체크 후 사용
+- DATABASE_URL(6543)과 DIRECT_URL(5432) 혼용 금지 → 런타임은 6543, CLI만 5432
+- Zod 에러 메시지 영어 사용 금지 → 한국어만

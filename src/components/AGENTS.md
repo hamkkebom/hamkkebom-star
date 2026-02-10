@@ -1,17 +1,20 @@
 # COMPONENTS
 
-도메인별 분리. shadcn/ui 기반. Server Component 기본, `"use client"` 명시만 클라이언트.
+도메인별 분리. shadcn/ui 기반. Server Component 기본, `"use client"` 명시만 클라이언트. 48 파일.
 
 ## STRUCTURE
 
 ```
 components/
-├── ui/           # shadcn/ui — DO NOT EDIT. `npx shadcn@latest add {name}`
-├── layout/       # 레이아웃 쉘 (Sidebar, Header, PublicHeader/Footer)
-├── project/      # 제작요청 (RequestForm, RequestCard, FilterBar, AdminRequestsPanel)
-├── video/        # 영상 (VideoPlayer, UploadDropzone, VideoCard, SubmissionList)
-├── feedback/     # 피드백 (FeedbackForm, FeedbackList)
-└── auth/         # 인증 (LoginForm, SignupForm, AuthCardWrapper)
+├── ui/           # shadcn/ui 22개 — DO NOT EDIT. `npx shadcn@latest add {name}`
+├── layout/       # 레이아웃 쉘 7개 (Sidebar, AdminSidebar, Header, PublicHeader/Footer, NotificationBadge, ThemeToggle)
+├── project/      # 제작요청 6개 (RequestForm, RequestCard, RequestList, FilterBar, AdminRequestsPanel, AcceptButton)
+├── video/        # 영상 6개 (VideoPlayer, UploadDropzone, VideoCard, UploadProgress, SubmissionList, SwimLaneRow)
+├── feedback/     # 피드백 2개 (FeedbackForm, FeedbackList)
+├── auth/         # 인증 5개 (LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm, AuthCardWrapper)
+├── portfolio/    # 포트폴리오 관리
+├── settlement/   # 정산 표시
+└── dashboard/    # 대시보드 위젯
 ```
 
 ## FORM PATTERN (react-hook-form + zod)
@@ -128,7 +131,7 @@ const mutation = useMutation({
 ## AUTH COMPONENTS
 
 - `login-form.tsx` — 애니메이션 orb + gradient 텍스트 브랜딩 패널, Supabase signInWithPassword, role별 리다이렉트
-- `signup-form.tsx` — 다중 필드 (name, chineseName, email, phone, password), Supabase signUp + user_metadata
+- `signup-form.tsx` — 다중 필드 (name, chineseName, email, phone, password), Supabase signUp + user_metadata, `window.location.href` 리다이렉트 (router.push 아님!)
 - `forgot-password-form.tsx` — 이메일 기반 비밀번호 재설정
 - `reset-password-form.tsx` — 새 비밀번호 + confirmPassword .refine() 검증
 - `auth-card-wrapper.tsx` — Server Component, 중앙 정렬 카드 래퍼
@@ -138,17 +141,33 @@ const mutation = useMutation({
 - `feedback-form.tsx` — 타임코드 캡처 (`handleCaptureTime()` → VideoPlayer currentTime), type/priority 선택, 조건부 startTime
 - `feedback-list.tsx` — useQuery 10s refetch, 타임코드 버튼 클릭 → `onTimecodeClick(time)`, priority/type 뱃지
 
+## ANIMATION PATTERNS
+
+**Tailwind 커스텀 애니메이션**:
+- `animate-[float_8s_ease-in-out_infinite]` — 떠다니는 orb (login-form)
+- `animate-fade-in` — 페이드인
+- `animate-pulse` — Skeleton 로딩
+
+**Transition 클래스**:
+- `transition-all duration-300` — Sidebar nav, 호버 효과
+- `transition-all duration-500` — VideoCard 이미지 교체
+- `transition-colors` — 버튼/링크 호버
+- `transition-transform duration-300` — 스케일 애니메이션 (group-hover:scale-110)
+
+**VideoCard 호버**: 300ms 딜레이 후 animated GIF 프리뷰 표시, scale-105 정적 이미지
+
 ## CONVENTIONS
 
 - **shadcn/ui 수정 금지**: `src/components/ui/*` 직접 편집 NO → `npx shadcn@latest add` 사용
 - **"use client" 최소화**: 인터랙티브 컴포넌트만 클라이언트
 - **에러 처리**: try/catch + `toast.error()` (sonner)
-- **로딩 UI**: Skeleton 컴포넌트 또는 isLoading 상태
+- **로딩 UI**: Skeleton 컴포넌트 또는 isLoading 상태 (loading.tsx 없음, 컴포넌트 내부 처리)
 - **날짜 표시**: `Intl.DateTimeFormat("ko-KR", { year:"numeric", month:"2-digit", day:"2-digit" })`
 - **금액 표시**: `Intl.NumberFormat("ko-KR").format(n) + "원"`
 - **아이콘**: lucide-react만 사용
 - **텍스트→배열 변환**: 쉼표 구분 텍스트를 split/trim/filter로 배열 변환 (request-form 참고)
 - **URL 상태 동기화**: useSearchParams + useRouter + 350ms debounce (filter-bar 참고)
+- **Route Handler 리다이렉트**: `window.location.href` 사용 (router.push는 SPA 네비게이션이라 route.ts 실행 안됨)
 
 ## ANTI-PATTERNS
 
@@ -157,3 +176,5 @@ const mutation = useMutation({
 - form.handleSubmit 밖에서 form 데이터 접근 금지
 - useEffect 내 직접 fetch → useQuery로 대체
 - 인라인 스타일 사용 금지 → Tailwind 유틸리티 클래스
+- router.push()로 Route Handler(route.ts) 경로 이동 금지 → window.location.href 사용
+- hex/rgb 색상 사용 금지 → oklch만 사용

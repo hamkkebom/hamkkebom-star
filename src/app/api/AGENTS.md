@@ -1,6 +1,6 @@
 # API ROUTES
 
-42개 엔드포인트. 도메인별 route.ts 파일. 모든 라우트 동일 패턴 준수.
+42개 엔드포인트. 도메인별 route.ts 파일. 모든 라우트 동일 패턴 준수. 100% 일관성 — 예외 없음.
 
 ## ROUTE PATTERN (모든 라우트 필수)
 
@@ -129,10 +129,10 @@ return NextResponse.json({
 - `PATCH /api/videos/[id]/replace` — 영상 교체
 - `POST /api/videos/upload-url` — CF Stream tus URL 발급
 
-### Feedback
-- `POST/GET /api/feedbacks` — 피드백 (POST=ADMIN, GET=role별 필터)
+### Feedback (Dual Endpoint — 주의!)
+- `POST/GET /api/feedbacks` — 피드백 신규 메인 (POST=ADMIN, GET=role별 필터)
 - `GET/PATCH/DELETE /api/feedback/[id]` — 피드백 상세
-- `GET /api/feedback` — 레거시 (submissionId 쿼리)
+- `GET /api/feedback` — 레거시 (submissionId 쿼리). 신규 개발 시 `/api/feedbacks` 사용
 
 ### Portfolios
 - `GET/PATCH /api/portfolios/me` — 내 포트폴리오
@@ -183,6 +183,17 @@ if (user.role !== "ADMIN") return 403;  // 권한 없음
 
 **예외**: `/api/users/me`는 Supabase auth를 직접 호출 (getAuthUser 대신 createClient + auth.getUser)
 
+## PUBLIC API (인증 불필요)
+
+- `GET /api/health` — 헬스체크
+- `GET /api/videos` — 영상 목록 (공개: APPROVED/FINAL only, ADMIN: 전체)
+- `GET /api/videos/search` — 검색
+- `GET /api/stars` — STAR 목록
+- `GET /api/stars/[id]` — STAR 프로필
+- `GET /api/portfolios/user/[userId]` — 공개 포트폴리오
+
+패턴: `const user = await getAuthUser().catch(() => null)` → role별 조건부 where 절
+
 ## TRANSACTION PATTERN (다단계 작업)
 
 ```typescript
@@ -207,3 +218,6 @@ const result = await prisma.$transaction(async (tx) => {
 - 직접 SQL 실행 금지 → Prisma만 사용
 - 응답에 내부 에러 스택 노출 금지
 - getAuthUser 결과를 캐시하지 말 것 → 매 요청마다 호출
+- 새 피드백 API는 `/api/feedbacks` 사용 (`/api/feedback`는 레거시)
+- pageSize 50 초과 금지 → 자동 클램핑 (Math.min(50, ...))
+- Prisma P2002 에러(unique 위반) → CONFLICT/SLOT_OCCUPIED 409로 처리
