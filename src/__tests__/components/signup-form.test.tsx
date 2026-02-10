@@ -7,10 +7,9 @@ vi.mock("next/link", () => ({
     <a href={href} {...props}>{children}</a>,
 }));
 
-const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
-    push: mockPush,
+    push: vi.fn(),
     replace: vi.fn(),
     refresh: vi.fn(),
     back: vi.fn(),

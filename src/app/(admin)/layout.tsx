@@ -14,6 +14,10 @@ export default async function AdminLayout({
     redirect("/");
   }
 
+  if (!user.isApproved) {
+    redirect("/auth/pending-approval");
+  }
+
   return (
     <div className="flex h-screen">
       <AdminSidebar />

@@ -60,5 +60,5 @@ export async function PATCH(
     },
   });
 
-  return NextResponse.json(updated);
+  return NextResponse.json({ data: updated });
 }

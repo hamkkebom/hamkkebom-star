@@ -26,17 +26,17 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
 
-  if (!code) {
-    return NextResponse.redirect(new URL("/auth/login", requestUrl.origin));
-  }
-
   const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-  if (error) {
-    return NextResponse.redirect(new URL("/auth/login", requestUrl.origin));
+  // If code present (email/OAuth flow), exchange it for a session
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      return NextResponse.redirect(new URL("/auth/login", requestUrl.origin));
+    }
   }
 
+  // Get authenticated user from session (works for both code exchange and direct signUp)
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser();
@@ -45,15 +45,12 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/auth/login", requestUrl.origin));
   }
 
-  const existingUser = await prisma.user.findUnique({
+  // Find or create Prisma user
+  let existingUser = await prisma.user.findUnique({
     where: { authId: authUser.id },
   });
 
-  let appRole: "ADMIN" | "STAR" = "STAR";
-
-  if (existingUser) {
-    appRole = existingUser.role;
-  } else {
+  if (!existingUser) {
     const metadata: Record<string, unknown> =
       authUser.user_metadata && typeof authUser.user_metadata === "object"
         ? authUser.user_metadata
@@ -61,9 +58,10 @@ export async function GET(request: Request) {
 
     const name = extractNameFromMetadata(metadata, authUser.email);
     const phone = typeof metadata.phone === "string" ? metadata.phone : null;
-    const chineseName = typeof metadata.chineseName === "string" ? metadata.chineseName : null;
+    const chineseName =
+      typeof metadata.chineseName === "string" ? metadata.chineseName : null;
 
-    const createdUser = await prisma.user.create({
+    existingUser = await prisma.user.create({
       data: {
         authId: authUser.id,
         email: authUser.email,
@@ -72,10 +70,16 @@ export async function GET(request: Request) {
         chineseName,
       },
     });
-
-    appRole = createdUser.role;
   }
 
-  const redirectPath = getRedirectPath(appRole);
+  // Check admin approval
+  if (!existingUser.isApproved) {
+    await supabase.auth.signOut();
+    return NextResponse.redirect(
+      new URL("/auth/pending-approval", requestUrl.origin)
+    );
+  }
+
+  const redirectPath = getRedirectPath(existingUser.role);
   return NextResponse.redirect(new URL(redirectPath, requestUrl.origin));
 }

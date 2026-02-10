@@ -57,8 +57,9 @@ export function SignupForm() {
         return;
       }
 
-      toast.success("가입 완료! 이메일을 확인해주세요.");
-      router.push("/auth/verify-email");
+      // Redirect to callback to create Prisma user record
+      // Callback will check isApproved and redirect to pending-approval
+      router.push("/auth/callback");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "회원가입 중 오류가 발생했습니다.";

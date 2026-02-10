@@ -21,8 +21,9 @@ import { createClient } from "@/lib/supabase/client";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 
 type MeResponse = {
-  user: {
+  data: {
     role: "ADMIN" | "STAR";
+    isApproved: boolean;
   };
 };
 
@@ -70,7 +71,16 @@ export function LoginForm() {
       }
 
       const data = (await response.json()) as MeResponse;
-      const nextPath = data.user.role === "ADMIN" ? "/admin" : "/stars/dashboard";
+
+      // Block unapproved users
+      if (!data.data.isApproved) {
+        await supabase.auth.signOut();
+        toast.error("관리자 승인 대기 중입니다. 승인 후 로그인할 수 있습니다.");
+        router.replace("/auth/pending-approval");
+        return;
+      }
+
+      const nextPath = data.data.role === "ADMIN" ? "/admin" : "/stars/dashboard";
 
       router.replace(nextPath);
       router.refresh();

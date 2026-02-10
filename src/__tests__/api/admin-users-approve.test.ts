@@ -114,7 +114,7 @@ describe("PATCH /api/admin/users/[id]/approve", () => {
     const json = await res.json();
 
     expect(res.status).toBe(200);
-    expect(json.id).toBe("target-user-id");
-    expect(json.isApproved).toBe(true);
+    expect(json.data.id).toBe("target-user-id");
+    expect(json.data.isApproved).toBe(true);
   });
 });
