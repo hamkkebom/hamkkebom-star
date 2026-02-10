@@ -14,9 +14,11 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBadge } from "@/components/layout/notification-badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { useAuthStore } from "@/stores/auth-store";
 
 export function Header() {
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -37,21 +39,25 @@ export function Header() {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => router.push("/stars/profile")}>
-              <User className="mr-2 h-4 w-4" />
-              프로필
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/stars/settings")}>
-              <Settings className="mr-2 h-4 w-4" />
-              설정
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              로그아웃
-            </DropdownMenuItem>
-          </DropdownMenuContent>
+           <DropdownMenuContent align="end" className="w-48">
+             {user?.role === "STAR" && (
+               <>
+                 <DropdownMenuItem onClick={() => router.push("/stars/profile")}>
+                   <User className="mr-2 h-4 w-4" />
+                   프로필
+                 </DropdownMenuItem>
+                 <DropdownMenuItem onClick={() => router.push("/stars/settings")}>
+                   <Settings className="mr-2 h-4 w-4" />
+                   설정
+                 </DropdownMenuItem>
+                 <DropdownMenuSeparator />
+               </>
+             )}
+             <DropdownMenuItem onClick={handleSignOut}>
+               <LogOut className="mr-2 h-4 w-4" />
+               로그아웃
+             </DropdownMenuItem>
+           </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </header>
