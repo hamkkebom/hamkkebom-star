@@ -35,8 +35,8 @@ export default function SettingsPage() {
     queryFn: async () => {
       const res = await fetch("/api/users/me", { cache: "no-store" });
       if (!res.ok) throw new Error("설정을 불러오지 못했습니다.");
-      const json = (await res.json()) as { user: UserData };
-      return json.user;
+      const json = (await res.json()) as { data: UserData };
+      return json.data;
     },
   });
 

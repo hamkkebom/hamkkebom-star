@@ -42,8 +42,8 @@ export default function ProfilePage() {
     queryFn: async () => {
       const res = await fetch("/api/users/me", { cache: "no-store" });
       if (!res.ok) throw new Error("프로필을 불러오지 못했습니다.");
-      const json = (await res.json()) as { user: UserData };
-      return json.user;
+      const json = (await res.json()) as { data: UserData };
+      return json.data;
     },
   });
 
