@@ -330,3 +330,52 @@ const { ComponentName } = await import("@/components/domain/component-name");
 - Server Component(request-card)는 mock 최소화, Client Component는 mock 필수
 - form 컴포넌트: label/placeholder 기반 요소 탐색, input type/value 확인
 - layout 컴포넌트: nav link href 확인, active class 확인
+
+## [2026-02-10T16:45:00+09:00] Task 2A.3: 커버리지 설정
+
+### 결과: vitest.config.ts 커버리지 설정 추가 완료 ✅
+
+### 설정 내용
+
+**파일**: `vitest.config.ts`
+
+```typescript
+coverage: {
+  provider: "v8",
+  reporter: ["text", "html"],
+  include: ["src/**/*.{ts,tsx}"],
+  exclude: ["src/generated/**", "src/components/ui/**", "src/__tests__/**"],
+}
+```
+
+### 설정 상세
+
+| 항목 | 값 | 설명 |
+|------|-----|------|
+| provider | v8 | V8 엔진 기반 커버리지 (Node.js 내장) |
+| reporter | text, html | 콘솔 출력 + HTML 리포트 생성 |
+| include | src/**/*.{ts,tsx} | 모든 소스 파일 포함 |
+| exclude | src/generated/**, src/components/ui/**, src/__tests__/** | 자동생성/UI/테스트 파일 제외 |
+
+### 설치 과정
+
+1. **@vitest/coverage-v8 설치**: `pnpm add -D @vitest/coverage-v8 4.0.18`
+   - vitest 4.0.18과 동일 버전 설치 (호환성)
+   - 10개 subdependency 추가
+
+2. **실행 명령**: `pnpm test -- --coverage`
+   - 모든 159개 테스트 통과 ✓
+   - 커버리지 리포트 생성 (text + html)
+
+### 주의사항
+
+1. **include 패턴**: 초기 `src/app/api/**` 패턴은 커버리지 생성 안 됨 → 전체 `src/**/*.{ts,tsx}` 사용
+2. **exclude 우선순위**: `src/generated/**` 제외 필수 (Prisma 자동생성 파일)
+3. **outputDir 미지원**: v8 provider는 `outputDir` 속성 없음 → 기본값 `./coverage` 사용
+4. **all 속성 미지원**: v8 provider는 `all: true` 속성 없음 (istanbul과 다름)
+
+### 다음 단계
+
+- Task 2A.4: 커버리지 임계값 설정 (lines, functions, branches, statements)
+- Task 2A.5: CI/CD 파이프라인에 커버리지 리포트 통합
+
