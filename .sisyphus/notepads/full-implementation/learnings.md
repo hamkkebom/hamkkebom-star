@@ -379,3 +379,34 @@ coverage: {
 - Task 2A.4: 커버리지 임계값 설정 (lines, functions, branches, statements)
 - Task 2A.5: CI/CD 파이프라인에 커버리지 리포트 통합
 
+
+## Coverage Thresholds Configuration (2026-02-10)
+
+### Changes Made
+1. **vitest.config.ts**: Added coverage thresholds
+   - lines: 40%
+   - functions: 40%
+   - branches: 30%
+   - statements: 40%
+   - Added reporters: ["text", "html", "json"]
+   - Added reportsDirectory: "./coverage"
+
+2. **.github/workflows/ci.yml**: Updated test step
+   - Changed from `pnpm test` to `pnpm test -- --coverage`
+   - Step name updated to "Test with Coverage"
+
+### Rationale
+- Conservative thresholds (30-40%) chosen to be achievable with current test suite
+- 159 tests across 21 test files provide good coverage foundation
+- Thresholds will enforce minimum coverage standards in CI/CD pipeline
+- Branches threshold set lower (30%) due to complexity of conditional logic
+
+### Verification
+- All 159 tests pass with coverage thresholds enabled
+- CI workflow will now run coverage checks on every push/PR to main
+- Coverage reports will be generated in ./coverage directory (text, html, json formats)
+
+### Notes
+- Coverage directory generation on Windows may have issues with v8 provider
+- Thresholds are enforced at runtime - tests will fail if coverage drops below thresholds
+- HTML reports can be viewed locally for detailed coverage analysis
