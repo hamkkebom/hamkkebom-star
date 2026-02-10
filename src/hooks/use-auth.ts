@@ -10,13 +10,8 @@ export function useAuth() {
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        fetchUser();
-      } else {
-        clearUser();
-      }
-    });
+    // Fetch user on mount - server will verify auth
+    fetchUser();
 
     const {
       data: { subscription },
