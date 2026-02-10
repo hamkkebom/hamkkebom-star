@@ -73,7 +73,14 @@ export async function updateSession(request: NextRequest) {
 
   const authId = getAuthIdFromClaims(claims);
 
-  if (!authId && !request.nextUrl.pathname.startsWith("/auth")) {
+  // Public paths that don't require authentication
+  const publicPaths = ["/videos", "/stars"];
+  const pathname = request.nextUrl.pathname;
+  const isPublicPath = publicPaths.some(
+    (p) => pathname === p || pathname.startsWith(p + "/")
+  );
+
+  if (!authId && !request.nextUrl.pathname.startsWith("/auth") && !isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
