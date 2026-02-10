@@ -1,11 +1,19 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { getAuthUser } from "@/lib/auth-helpers";
+import { redirect } from "next/navigation";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getAuthUser();
+
+  if (!user || user.role !== "STAR") {
+    redirect("/");
+  }
+
   return (
     <div className="flex h-screen">
       <Sidebar />

@@ -1,16 +1,7 @@
-// ============================================================
-// 🔒 AUTH BYPASS: 로그인 기능 전체 주석 처리 (2026-02-10)
-// Supabase 인증 없이 DB의 ADMIN 유저를 반환합니다.
-// 복원하려면 아래 주석 블록의 원래 코드로 교체하세요.
-// ============================================================
-
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-
-// --- 원래 import (주석 처리됨) ---
-// import { createClient } from "@/lib/supabase/server";
-// --- 원래 import 끝 ---
+import { createClient } from "@/lib/supabase/server";
 
 const updateUserSchema = z.object({
   name: z.string().min(2, "이름은 2자 이상이어야 합니다.").optional(),
@@ -20,26 +11,20 @@ const updateUserSchema = z.object({
 });
 
 export async function GET() {
-  // AUTH BYPASS: Supabase 인증 없이 DB에서 ADMIN 유저를 조회합니다.
-  // --- 원래 supabase 인증 코드 (주석 처리됨) ---
-  // const supabase = await createClient();
-  // const {
-  //   data: { user: authUser },
-  // } = await supabase.auth.getUser();
-  //
-  // if (!authUser?.id) {
-  //   return NextResponse.json({ message: "인증이 필요합니다." }, { status: 401 });
-  // }
-  //
-  // const user = await prisma.user.findUnique({
-  //   where: { authId: authUser.id },
-  //   ...
-  // });
-  // --- 원래 코드 끝 ---
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
 
-  const user = await prisma.user.findFirst({
-    where: { role: "ADMIN" },
-    orderBy: { createdAt: "asc" },
+  if (!authUser?.id) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
+      { status: 401 }
+    );
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { authId: authUser.id },
     select: {
       id: true,
       authId: true,
@@ -56,33 +41,57 @@ export async function GET() {
 
   if (!user) {
     return NextResponse.json(
-      { message: "사용자 정보를 찾을 수 없습니다." },
+      { error: { code: "NOT_FOUND", message: "사용자 정보를 찾을 수 없습니다." } },
       { status: 404 }
     );
   }
 
-  return NextResponse.json({ user });
+  return NextResponse.json({ data: user });
 }
 
 export async function PATCH(request: Request) {
-  // AUTH BYPASS: Supabase 인증 없이 ADMIN 유저를 업데이트합니다.
-  const adminUser = await prisma.user.findFirst({
-    where: { role: "ADMIN" },
-    orderBy: { createdAt: "asc" },
-  });
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
 
-  if (!adminUser) {
-    return NextResponse.json({ message: "인증이 필요합니다." }, { status: 401 });
+  if (!authUser?.id) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
+      { status: 401 }
+    );
   }
 
-  const body = await request.json();
+  const user = await prisma.user.findUnique({
+    where: { authId: authUser.id },
+  });
+
+  if (!user) {
+    return NextResponse.json(
+      { error: { code: "NOT_FOUND", message: "사용자 정보를 찾을 수 없습니다." } },
+      { status: 404 }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: { code: "BAD_REQUEST", message: "요청 본문이 올바르지 않습니다." } },
+      { status: 400 }
+    );
+  }
+
   const parsed = updateUserSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
       {
-        message: "입력값이 올바르지 않습니다.",
-        errors: parsed.error.flatten(),
+        error: {
+          code: "VALIDATION_ERROR",
+          message: parsed.error.issues[0]?.message ?? "입력값이 올바르지 않습니다.",
+        },
       },
       { status: 400 }
     );
@@ -97,8 +106,8 @@ export async function PATCH(request: Request) {
     updateData.name = updateData.name.trim();
   }
 
-  const user = await prisma.user.update({
-    where: { id: adminUser.id },
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
     data: updateData,
     select: {
       id: true,
@@ -114,5 +123,5 @@ export async function PATCH(request: Request) {
     },
   });
 
-  return NextResponse.json({ user });
+  return NextResponse.json({ data: updatedUser });
 }

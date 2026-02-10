@@ -164,31 +164,6 @@ export function LoginForm() {
         </div>
 
         <div className="w-full max-w-sm animate-fade-in space-y-6">
-          {/* 🔒 AUTH BYPASS: 로그인 없이 바로 대시보드로 이동 */}
-          <div className="rounded-lg border-2 border-dashed border-amber-400/50 bg-amber-50/50 p-4 dark:bg-amber-950/20">
-            <p className="mb-2 text-center text-xs font-medium text-amber-700 dark:text-amber-400">
-              ⚠️ AUTH BYPASS 모드 (개발/테스트용)
-            </p>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 flex-1 border-amber-400 text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-950/40"
-                onClick={() => router.replace("/admin")}
-              >
-                관리자 대시보드
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 flex-1 border-amber-400 text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-950/40"
-                onClick={() => router.replace("/stars/dashboard")}
-              >
-                스타 대시보드
-              </Button>
-            </div>
-          </div>
-
           <div className="space-y-1 text-center lg:text-left">
             <h2 className="text-2xl font-bold">로그인</h2>
             <p className="text-sm text-muted-foreground">
