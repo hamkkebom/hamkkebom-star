@@ -89,6 +89,8 @@ describe("VideoCard", () => {
 });
 
 describe("VideoCard - thumbnail logic", () => {
+  afterEach(cleanup);
+
   it("prefers streamUid over thumbnailUrl", () => {
     render(
       <VideoCard
@@ -106,5 +108,115 @@ describe("VideoCard - thumbnail logic", () => {
     const mainImg = imgs.find((img) => img.getAttribute("alt") === "Test");
     expect(mainImg?.getAttribute("src")).toContain("videodelivery.net/stream123");
     expect(mainImg?.getAttribute("src")).not.toContain("old.example.com");
+  });
+
+  it("uses thumbnailUrl when streamUid is null", () => {
+    render(
+      <VideoCard
+        id="vid2"
+        title="Fallback"
+        thumbnailUrl="https://cdn.example.com/thumb.jpg"
+        streamUid={null}
+        duration={60}
+        ownerName="User"
+        categoryName={null}
+        createdAt="2026-01-01T00:00:00Z"
+      />
+    );
+    const imgs = screen.getAllByRole("img");
+    const mainImg = imgs.find((img) => img.getAttribute("alt") === "Fallback");
+    expect(mainImg?.getAttribute("src")).toBe("https://cdn.example.com/thumb.jpg");
+  });
+});
+
+describe("VideoCard - edge cases", () => {
+  afterEach(cleanup);
+
+  it("hides category badge when categoryName is null", () => {
+    render(
+      <VideoCard
+        id="vid3"
+        title="No Category"
+        thumbnailUrl={null}
+        streamUid={null}
+        duration={null}
+        ownerName="User"
+        categoryName={null}
+        createdAt="2026-01-01T00:00:00Z"
+      />
+    );
+    // No category badge rendered
+    const badges = screen.queryAllByText(/(콕콕상담|브랜딩|숏폼)/);
+    expect(badges).toHaveLength(0);
+  });
+
+  it("does not render duration badge when duration is null", () => {
+    render(
+      <VideoCard
+        id="vid4"
+        title="No Duration"
+        thumbnailUrl={null}
+        streamUid="uid4"
+        duration={null}
+        ownerName="User"
+        categoryName={null}
+        createdAt="2026-01-01T00:00:00Z"
+      />
+    );
+    // Duration text like "0:00" or "X:XX" should not appear
+    const durationText = screen.queryByText(/^\d+:\d{2}$/);
+    expect(durationText).toBeNull();
+  });
+
+  it("formats zero duration correctly", () => {
+    render(
+      <VideoCard
+        id="vid5"
+        title="Zero"
+        thumbnailUrl={null}
+        streamUid="uid5"
+        duration={0}
+        ownerName="User"
+        categoryName={null}
+        createdAt="2026-01-01T00:00:00Z"
+      />
+    );
+    // duration=0 is falsy, formatDuration returns ""
+    const durationText = screen.queryByText(/^\d+:\d{2}$/);
+    expect(durationText).toBeNull();
+  });
+
+  it("shows date in non-compact mode", () => {
+    render(
+      <VideoCard
+        id="vid6"
+        title="With Date"
+        thumbnailUrl={null}
+        streamUid={null}
+        duration={null}
+        ownerName="User"
+        categoryName={null}
+        createdAt="2026-06-15T00:00:00Z"
+      />
+    );
+    // Should show ko-KR formatted date with year 2026
+    expect(screen.getByText(/2026/)).toBeInTheDocument();
+  });
+
+  it("formats long durations correctly", () => {
+    render(
+      <VideoCard
+        id="vid7"
+        title="Long Video"
+        thumbnailUrl={null}
+        streamUid="uid7"
+        duration={3661}
+        ownerName="User"
+        categoryName={null}
+        createdAt="2026-01-01T00:00:00Z"
+      />
+    );
+    // 3661s = 61m 1s → "61:01"
+    expect(screen.getByText("61:01")).toBeInTheDocument();
   });
 });

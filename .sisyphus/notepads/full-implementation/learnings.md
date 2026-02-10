@@ -253,3 +253,80 @@ vi.mock("@/lib/supabase/server", () => ({
 - HTTP status code 기준: 401 → 403 → 400 → 404 → 200/201 → 409/500
 - mock 데이터는 한국어 포함 (실제 사용 시나리오 반영)
 - 트랜잭션 API는 에러 객체 throw 패턴으로 404/409 시뮬레이션
+
+## [2026-02-10T16:40:00+09:00] Task 2A.2: 컴포넌트 테스트 8개 작성
+
+### 결과: 8개 테스트 파일 (7개 신규 + 1개 확장), 66개 컴포넌트 테스트 전체 통과 ✅
+
+### 작성한 테스트 파일
+
+| 파일 | 컴포넌트 | 테스트 수 | 주요 케이스 |
+|------|----------|-----------|-------------|
+| `login-form.test.tsx` | LoginForm | 9 | heading, fields, links, placeholders, branding |
+| `signup-form.test.tsx` | SignupForm | 9 | heading, 6 fields, links, input types |
+| `request-form.test.tsx` | RequestForm | 7 | labels, placeholders, initial values, defaults |
+| `request-card.test.tsx` | RequestCard | 11 | title, status badges(4), categories, budget, assignees |
+| `video-card.test.tsx` | VideoCard (확장) | 16 (+6) | thumbnailUrl fallback, no category, no duration, long duration |
+| `sidebar.test.tsx` | Sidebar | 9 | brand, nav items(3 groups), links, active styles |
+| `feedback-form.test.tsx` | FeedbackForm | 10 | textarea, buttons, timecode capture, disable logic |
+| `filter-bar.test.tsx` | FilterBar | 5 | search input, select default, URL params |
+
+### 컴포넌트 테스트 Mock 패턴
+
+**패턴 1: Next.js Link/Image mock** (Server + Client 컴포넌트 공통)
+```typescript
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
+vi.mock("next/image", () => ({
+  default: ({ src, alt, ...props }) => <img src={src} alt={alt} {...props} />,
+}));
+```
+
+**패턴 2: next/navigation mock** (useRouter, usePathname, useSearchParams)
+```typescript
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => mockPathname,
+  useSearchParams: () => mockSearchParams,
+}));
+```
+
+**패턴 3: sonner mock** (toast)
+```typescript
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
+}));
+```
+
+**패턴 4: Supabase client mock** (auth 폼 전용)
+```typescript
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: vi.fn(() => ({
+    auth: { signInWithPassword: vi.fn().mockResolvedValue({ error: null }) },
+  })),
+}));
+```
+
+**패턴 5: 동적 import** (mock 등록 후 컴포넌트 import)
+```typescript
+const { ComponentName } = await import("@/components/domain/component-name");
+```
+
+### 핵심 주의사항
+
+1. **중복 텍스트 주의**: heading과 button에 같은 텍스트("로그인", "회원가입") → `getByRole("heading", { name })` 사용
+2. **Select 기본값**: shadcn Select는 `placeholder`가 아닌 실제 선택된 값을 렌더링 → value 기준 확인
+3. **disabled 조건**: `content.trim()` 기반 disabled → userEvent.type 후 확인
+4. **usePathname mock**: 변수로 선언 후 테스트별 변경, afterEach에서 리셋
+5. **@testing-library/user-event 설치 필요**: `pnpm add -D @testing-library/user-event`
+6. **afterEach(cleanup)**: 매 테스트 후 cleanup 필수 (React 18 호환)
+7. **compact mode 테스트**: className 포함 여부로 확인 (`toContain("shrink-0")`)
+8. **날짜 포맷 테스트**: ko-KR Intl 포맷은 환경마다 다를 수 있음 → 정규식 `/2026/`으로 느슨하게 확인
+
+### 테스트 전략
+
+- 렌더링 → 필수 요소 존재 → Props 변형 → 인터랙션(해당 시) 순서
+- Server Component(request-card)는 mock 최소화, Client Component는 mock 필수
+- form 컴포넌트: label/placeholder 기반 요소 탐색, input type/value 확인
+- layout 컴포넌트: nav link href 확인, active class 확인
