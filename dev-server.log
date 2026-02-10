@@ -1,0 +1,12 @@
+
+> hamkkebom-star@0.1.0 dev D:\개발코드\함께봄\06-별들에게 물어봐
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.22:3000
+- Environments: .env.local, .env
+
+✓ Starting...
+○ Compiling middleware ...
+ ELIFECYCLE  Command failed with exit code 143.
