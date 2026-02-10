@@ -26,8 +26,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      const data = (await response.json()) as { user: User };
-      set({ user: data.user, isLoading: false });
+      const data = (await response.json()) as { data: User };
+      set({ user: data.data, isLoading: false });
     } catch {
       set({ user: null, isLoading: false });
     }
