@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import type React from "react";
 
 // Mock Next.js modules
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) =>
+  default: ({ href, children, ...props }: { href: string; children: React.ReactNode; [key: string]: unknown }) =>
     <a href={href} {...props}>{children}</a>,
 }));
 
@@ -36,6 +37,12 @@ vi.mock("@/components/layout/theme-toggle", () => ({
 const { PublicHeader } = await import("@/components/layout/public-header");
 
 describe("PublicHeader", () => {
+  beforeEach(() => {
+    mockUser = null;
+    mockIsLoading = false;
+    mockPathname = "/";
+  });
+
   afterEach(() => {
     cleanup();
     mockPathname = "/";
@@ -47,13 +54,13 @@ describe("PublicHeader", () => {
   it("영상 라이브러리 링크가 '/'를 가리킨다", () => {
     render(<PublicHeader />);
     const link = screen.getByText("영상 라이브러리").closest("a");
-    expect(link?.getAttribute("href")).toBe("/");
+    expect(link).toHaveAttribute("href", "/");
   });
 
   it("스타 소개 링크가 '/stars'를 가리킨다", () => {
     render(<PublicHeader />);
     const link = screen.getByText("스타 소개").closest("a");
-    expect(link?.getAttribute("href")).toBe("/stars");
+    expect(link).toHaveAttribute("href", "/stars");
   });
 
   it("설명회 링크가 존재하지 않는다", () => {
@@ -63,23 +70,24 @@ describe("PublicHeader", () => {
 
   it("'/videos' 링크가 존재하지 않는다", () => {
     render(<PublicHeader />);
-    const links = screen.getAllByRole("link");
-    const hrefs = links.map((l) => l.getAttribute("href"));
-    expect(hrefs).not.toContain("/videos");
+    const header = screen.getByRole("banner");
+    const links = header.querySelectorAll("a");
+    const videoLinks = Array.from(links).filter((link) => link.getAttribute("href") === "/videos");
+    expect(videoLinks).toHaveLength(0);
   });
 
   it("pathname '/'에서 영상 라이브러리가 활성 스타일을 가진다", () => {
     mockPathname = "/";
     render(<PublicHeader />);
-    const link = screen.getByText("영상 라이브러리").closest("a");
-    expect(link?.className).toContain("bg-violet-50");
+    const link = screen.getByText("영상 라이브러리");
+    expect(link.className).toContain("bg-violet-50");
   });
 
   it("pathname '/stars'에서 영상 라이브러리가 비활성이다", () => {
     mockPathname = "/stars";
     render(<PublicHeader />);
-    const link = screen.getByText("영상 라이브러리").closest("a");
-    expect(link?.className).not.toContain("bg-violet-50");
+    const link = screen.getByText("영상 라이브러리");
+    expect(link.className).not.toContain("bg-violet-50");
   });
 
   it("isLoading=true일 때 로그인 버튼과 Avatar 모두 미표시", () => {
@@ -87,7 +95,7 @@ describe("PublicHeader", () => {
     mockUser = null;
     render(<PublicHeader />);
     expect(screen.queryByText("로그인")).toBeNull();
-    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
+    expect(screen.queryByText("U")).toBeNull();
   });
 
   it("비로그인 상태에서 로그인 버튼 표시", () => {
@@ -97,8 +105,8 @@ describe("PublicHeader", () => {
     expect(screen.getByText("로그인")).toBeInTheDocument();
   });
 
-  it("로그인 상태에서 Avatar 표시, 로그인 버튼 미표시", () => {
-    mockUser = { id: "1", name: "Test", role: "STAR", email: "test@test.com" };
+  it("로그인 상태에서 Avatar+DropdownMenu 표시, 로그인 버튼 미표시", () => {
+    mockUser = { id: "1", name: "Test User", role: "STAR", email: "test@test.com" };
     mockIsLoading = false;
     render(<PublicHeader />);
     expect(screen.queryByText("로그인")).toBeNull();
