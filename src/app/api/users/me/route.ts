@@ -11,69 +11,78 @@ const updateUserSchema = z.object({
 });
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
 
-  if (!authUser?.id) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
-      { status: 401 }
-    );
-  }
+    if (!authUser?.id) {
+      return NextResponse.json(
+        { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
+        { status: 401 }
+      );
+    }
 
-  const userSelect = {
-    id: true,
-    authId: true,
-    email: true,
-    name: true,
-    phone: true,
-    avatarUrl: true,
-    role: true,
-    isApproved: true,
-    baseRate: true,
-    createdAt: true,
-    updatedAt: true,
-  } as const;
+    const userSelect = {
+      id: true,
+      authId: true,
+      email: true,
+      name: true,
+      phone: true,
+      avatarUrl: true,
+      role: true,
+      isApproved: true,
+      baseRate: true,
+      createdAt: true,
+      updatedAt: true,
+    } as const;
 
-  let user = await prisma.user.findUnique({
-    where: { authId: authUser.id },
-    select: userSelect,
-  });
-
-  // Auto-create Prisma user if Supabase user exists but DB record is missing
-  // (e.g. callback failed during signup, or user was manually created in Supabase)
-  if (!user) {
-    const metadata: Record<string, unknown> =
-      authUser.user_metadata && typeof authUser.user_metadata === "object"
-        ? authUser.user_metadata
-        : {};
-
-    const name =
-      (typeof metadata.name === "string" && metadata.name) ||
-      (typeof metadata.full_name === "string" && metadata.full_name) ||
-      (typeof metadata.nickname === "string" && metadata.nickname) ||
-      authUser.email?.split("@")[0] ||
-      "사용자";
-
-    const phone = typeof metadata.phone === "string" ? metadata.phone : null;
-    const chineseName =
-      typeof metadata.chineseName === "string" ? metadata.chineseName : null;
-
-    user = await prisma.user.create({
-      data: {
-        authId: authUser.id,
-        email: authUser.email ?? "",
-        name,
-        phone,
-        chineseName,
-      },
+    let user = await prisma.user.findUnique({
+      where: { authId: authUser.id },
       select: userSelect,
     });
-  }
 
-  return NextResponse.json({ data: user });
+    // Auto-create Prisma user if Supabase user exists but DB record is missing
+    // (e.g. callback failed during signup, or user was manually created in Supabase)
+    if (!user) {
+      const metadata: Record<string, unknown> =
+        authUser.user_metadata && typeof authUser.user_metadata === "object"
+          ? authUser.user_metadata
+          : {};
+
+      const name =
+        (typeof metadata.name === "string" && metadata.name) ||
+        (typeof metadata.full_name === "string" && metadata.full_name) ||
+        (typeof metadata.nickname === "string" && metadata.nickname) ||
+        authUser.email?.split("@")[0] ||
+        "사용자";
+
+      const phone = typeof metadata.phone === "string" ? metadata.phone : null;
+      const chineseName =
+        typeof metadata.chineseName === "string" ? metadata.chineseName : null;
+
+      user = await prisma.user.create({
+        data: {
+          authId: authUser.id,
+          email: authUser.email ?? "",
+          name,
+          phone,
+          chineseName,
+        },
+        select: userSelect,
+      });
+    }
+
+    return NextResponse.json({ data: user });
+  } catch (error) {
+    console.error("[/api/users/me] GET failed:", error);
+    const message = error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message } },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PATCH(request: Request) {
