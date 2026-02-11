@@ -54,7 +54,8 @@ build-output.txt
 
 # screenshots / images (dev only)
 screenshot-*.png
-supabase-api-keys.png
+supabase-api-*.png
+service-role-*.png
 e2e-*.png
 
 # agent artifacts
@@ -62,3 +63,5 @@ e2e-*.png
 
 # data exports
 users_export.csv
+계정목록.csv
+*.csv
