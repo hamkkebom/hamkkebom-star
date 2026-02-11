@@ -137,7 +137,7 @@ export default function VideoDetailPage() {
         </div>
         <h2 className="text-xl font-semibold">영상을 찾을 수 없습니다</h2>
         <p className="text-sm text-muted-foreground">삭제되었거나 접근 권한이 없는 영상입니다.</p>
-        <Button variant="outline" onClick={() => router.push("/videos")} className="mt-2">
+        <Button variant="outline" onClick={() => router.push("/")} className="mt-2">
           <ArrowLeft className="mr-2 h-4 w-4" /> 영상 목록으로
         </Button>
       </div>
@@ -529,7 +529,7 @@ export default function VideoDetailPage() {
         {/* ── Bottom Nav ── */}
         <div className="mt-16 border-t border-white/[0.06] pb-16 pt-8">
           <Link
-            href="/videos"
+            href="/"
             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/60 transition-all hover:border-violet-500/20 hover:bg-violet-500/10 hover:text-violet-300"
           >
             <ArrowLeft className="h-4 w-4" />

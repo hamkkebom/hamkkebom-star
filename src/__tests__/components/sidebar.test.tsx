@@ -63,7 +63,7 @@ describe("Sidebar", () => {
     expect(hrefs).toContain("/stars/feedback");
     expect(hrefs).toContain("/stars/earnings");
     expect(hrefs).toContain("/stars/portfolio");
-    expect(hrefs).toContain("/videos");
+    expect(hrefs).toContain("/");
     expect(hrefs).toContain("/stars/profile");
     expect(hrefs).toContain("/stars/settings");
   });

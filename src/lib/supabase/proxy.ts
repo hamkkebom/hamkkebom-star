@@ -73,37 +73,12 @@ export async function updateSession(request: NextRequest) {
 
   const authId = getAuthIdFromClaims(claims);
 
-  // Public paths that don't require authentication
-  const publicPaths = ["/videos", "/stars"];
+  // All pages require authentication except /auth/*
   const pathname = request.nextUrl.pathname;
-  const isPublicPath = publicPaths.some(
-    (p) => pathname === p || pathname.startsWith(p + "/")
-  );
 
-  if (!authId && !request.nextUrl.pathname.startsWith("/auth") && !isPublicPath) {
+  if (!authId && !pathname.startsWith("/auth")) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
-  }
-
-  if (authId && request.nextUrl.pathname === "/") {
-    const metadataRole = getRoleFromClaims(claims);
-    let role: UserRole = metadataRole ?? "STAR";
-
-    if (!metadataRole) {
-      const { data: dbUser } = await supabase
-        .from("users")
-        .select("role")
-        .eq("authId", authId)
-        .maybeSingle();
-
-      if (dbUser?.role === "ADMIN" || dbUser?.role === "STAR") {
-        role = dbUser.role;
-      }
-    }
-
-    const url = request.nextUrl.clone();
-    url.pathname = role === "ADMIN" ? "/admin" : "/stars/dashboard";
     return NextResponse.redirect(url);
   }
 

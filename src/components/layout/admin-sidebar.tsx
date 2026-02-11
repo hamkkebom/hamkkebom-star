@@ -26,7 +26,7 @@ const navItems = [
 ];
 
 const externalItems = [
-  { href: "/videos", label: "영상 브라우저", icon: Play },
+  { href: "/", label: "영상 브라우저", icon: Play },
 ];
 
 export function AdminSidebar() {
