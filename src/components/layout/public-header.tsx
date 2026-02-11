@@ -2,18 +2,35 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, GraduationCap, Sparkles, LogIn } from "lucide-react";
+import { Film, Sparkles, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { createClient } from "@/lib/supabase/client";
+import { useAuthStore } from "@/stores/auth-store";
 
 const navLinks = [
-  { href: "/videos", label: "영상 라이브러리", icon: Film },
+  { href: "/", label: "영상 라이브러리", icon: Film, exact: true },
   { href: "/stars", label: "스타 소개", icon: Sparkles },
-  { href: "/education/session", label: "설명회", icon: GraduationCap },
 ];
 
 export function PublicHeader() {
   const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+  const isLoading = useAuthStore((s) => s.isLoading);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/auth/login";
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
@@ -34,7 +51,7 @@ export function PublicHeader() {
         {/* Navigation */}
         <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => {
-            const isActive = pathname.startsWith(link.href);
+            const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
             return (
               <Link
                 key={link.href}
@@ -55,12 +72,36 @@ export function PublicHeader() {
         {/* Actions */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link href="/auth/login">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <LogIn className="h-4 w-4" />
-              <span className="hidden sm:inline">로그인</span>
-            </Button>
-          </Link>
+          {isLoading ? null : user === null ? (
+            <Link href="/auth/login">
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <span className="hidden sm:inline">로그인</span>
+              </Button>
+            </Link>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">U</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => {
+                  window.location.href = user.role === "ADMIN" ? "/admin" : "/stars/dashboard";
+                }}>
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  대시보드
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  로그아웃
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
     </header>
