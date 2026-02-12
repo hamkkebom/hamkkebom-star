@@ -148,6 +148,7 @@ export async function POST(request: Request) {
           versionTitle: parsed.data.versionTitle,
           version,
           streamUid: parsed.data.streamUid,
+          summaryFeedback: parsed.data.description || null,
           starId: user.id,
         },
       });

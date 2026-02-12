@@ -8,6 +8,7 @@ export const createSubmissionSchema = z.object({
     .min(1, "버전 슬롯은 1 이상이어야 합니다.")
     .max(5, "버전 슬롯은 5 이하여야 합니다."),
   versionTitle: z.string().trim().optional(),
+  description: z.string().trim().max(2000, "설명은 2000자 이내로 입력해주세요.").optional(),
   streamUid: z.string().min(1, "Stream UID를 입력해주세요."),
 });
 

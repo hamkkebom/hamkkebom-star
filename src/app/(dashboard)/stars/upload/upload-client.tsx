@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { UploadDropzone } from "@/components/video/upload-dropzone";
 import { SubmissionList } from "@/components/video/submission-list";
 
@@ -13,6 +15,9 @@ type AssignmentItem = {
   requestTitle: string;
   deadline: string;
   status: string;
+  requirements: string | null;
+  referenceUrls: string[];
+  categories: string[];
 };
 
 function formatDeadline(dateStr: string) {
@@ -33,6 +38,7 @@ export function UploadPageClient({
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("");
   const [versionSlot, setVersionSlot] = useState(1);
   const [versionTitle, setVersionTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   const selectedAssignment = assignments.find((a) => a.id === selectedAssignmentId);
 
@@ -74,26 +80,103 @@ export function UploadPageClient({
           </div>
 
           {selectedAssignment && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>버전 슬롯 (1~5)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={5}
-                  value={versionSlot}
-                  onChange={(e) => setVersionSlot(Number(e.target.value))}
-                />
+            <>
+              {/* 프로젝트 요구사항 컨텍스트 표시 */}
+              <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  프로젝트 정보
+                </h4>
+
+                {selectedAssignment.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedAssignment.categories.map((cat) => (
+                      <Badge key={cat} variant="secondary" className="text-xs">
+                        {cat}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {selectedAssignment.requirements && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">요구사항</p>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                      {selectedAssignment.requirements}
+                    </p>
+                  </div>
+                )}
+
+                {selectedAssignment.referenceUrls.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">참고 URL</p>
+                    <ul className="space-y-0.5">
+                      {selectedAssignment.referenceUrls.map((url, idx) => (
+                        <li key={`ref-${idx}`}>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline break-all"
+                          >
+                            {url}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {!selectedAssignment.requirements &&
+                  selectedAssignment.referenceUrls.length === 0 &&
+                  selectedAssignment.categories.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      등록된 프로젝트 상세 정보가 없습니다.
+                    </p>
+                  )}
               </div>
-              <div className="space-y-2">
-                <Label>버전 제목 (선택)</Label>
-                <Input
-                  placeholder="예: 초안, 수정본 등"
-                  value={versionTitle}
-                  onChange={(e) => setVersionTitle(e.target.value)}
-                />
+
+              {/* 버전 + 제목 입력 */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>버전 슬롯 (1~5)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={versionSlot}
+                    onChange={(e) => setVersionSlot(Number(e.target.value))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>버전 제목 (선택)</Label>
+                  <Input
+                    placeholder="예: 초안, 수정본, 경쾌한 톤 등"
+                    value={versionTitle}
+                    onChange={(e) => setVersionTitle(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
+
+              {/* 제작 설명/메모 */}
+              <div className="space-y-2">
+                <Label>제작 설명 / 메모 (선택)</Label>
+                <Textarea
+                  placeholder="제작 의도, 수정 내용, 참고사항 등을 자유롭게 작성하세요."
+                  className="min-h-[100px] resize-y"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  maxLength={2000}
+                />
+                {description.length > 0 && (
+                  <p className="text-xs text-muted-foreground text-right">
+                    {description.length} / 2,000
+                  </p>
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -103,6 +186,7 @@ export function UploadPageClient({
           assignmentId={selectedAssignmentId}
           versionSlot={versionSlot}
           versionTitle={versionTitle || undefined}
+          description={description || undefined}
         />
       )}
 

@@ -17,6 +17,7 @@ interface UploadDropzoneProps {
   assignmentId: string;
   versionSlot: number;
   versionTitle?: string;
+  description?: string;
   onComplete?: () => void;
 }
 
@@ -24,6 +25,7 @@ export function UploadDropzone({
   assignmentId,
   versionSlot,
   versionTitle,
+  description,
   onComplete,
 }: UploadDropzoneProps) {
   const [status, setStatus] = useState<UploadStatus>("idle");
@@ -103,6 +105,7 @@ export function UploadDropzone({
             assignmentId,
             versionSlot,
             versionTitle: versionTitle || file.name.replace(/\.[^.]+$/, ""),
+            description: description || undefined,
             streamUid: urlData.uid,
           }),
         });
@@ -127,7 +130,7 @@ export function UploadDropzone({
         );
       }
     },
-    [assignmentId, versionSlot, versionTitle, onComplete],
+    [assignmentId, versionSlot, versionTitle, description, onComplete],
   );
 
   const handleDrop = useCallback(

@@ -23,6 +23,9 @@ export default async function UploadPage() {
           id: true,
           title: true,
           deadline: true,
+          requirements: true,
+          referenceUrls: true,
+          categories: true,
         },
       },
     },
@@ -34,6 +37,9 @@ export default async function UploadPage() {
     requestTitle: a.request.title,
     deadline: a.request.deadline.toISOString(),
     status: a.status,
+    requirements: a.request.requirements,
+    referenceUrls: a.request.referenceUrls,
+    categories: a.request.categories,
   }));
 
   return <UploadPageClient assignments={items} />;
