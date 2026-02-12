@@ -40,7 +40,7 @@ vi.mock("@/lib/validations/submission", async () => {
     createSubmissionSchema: z.object({
       assignmentId: z.string().min(1, "배정 ID를 입력해주세요."),
       versionSlot: z.number().int().min(1).max(5),
-      versionTitle: z.string().trim().optional(),
+      versionTitle: z.string().trim().min(1).max(100),
       description: z.string().trim().max(2000).optional(),
       streamUid: z.string().min(1, "Stream UID를 입력해주세요."),
     }),

@@ -104,7 +104,7 @@ export function UploadDropzone({
           body: JSON.stringify({
             assignmentId,
             versionSlot,
-            versionTitle: versionTitle || file.name.replace(/\.[^.]+$/, ""),
+            versionTitle: versionTitle,
             description: description || undefined,
             streamUid: urlData.uid,
           }),

@@ -1,0 +1,380 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - link "함께봄스타" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img [ref=e7]
+          - generic [ref=e10]: 함께봄스타
+        - navigation [ref=e11]:
+          - link "영상 라이브러리" [ref=e12] [cursor=pointer]:
+            - /url: /
+            - img [ref=e13]
+            - text: 영상 라이브러리
+          - link "스타 소개" [ref=e15] [cursor=pointer]:
+            - /url: /stars
+            - img [ref=e16]
+            - text: 스타 소개
+        - generic [ref=e19]:
+          - button [ref=e20]:
+            - img
+          - button "U" [ref=e21]:
+            - generic [ref=e23]: U
+    - main [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - img [ref=e32]
+            - text: 영상 라이브러리
+          - heading "별들이 만든 영상을 만나보세요" [level=1] [ref=e34]
+          - paragraph [ref=e35]: AI 영상 크리에이터들의 작품을 탐색하고, 원하는 영상을 찾아보세요.
+          - generic [ref=e36]:
+            - generic [ref=e37]:
+              - img [ref=e38]
+              - textbox "영상 제목이나 설명으로 검색..." [ref=e41]
+            - button "검색" [ref=e42]
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - img [ref=e46]
+              - button "전체" [ref=e47]
+              - button "고민영상(65)" [ref=e48]:
+                - text: 고민영상
+                - generic [ref=e49]: (65)
+              - button "기부상담(5)" [ref=e50]:
+                - text: 기부상담
+                - generic [ref=e51]: (5)
+              - button "기타(모르겠어요)(6)" [ref=e52]:
+                - text: 기타(모르겠어요)
+                - generic [ref=e53]: (6)
+              - button "띠별운세(30)" [ref=e54]:
+                - text: 띠별운세
+                - generic [ref=e55]: (30)
+              - button "별님의 과제제출(6)" [ref=e56]:
+                - text: 별님의 과제제출
+                - generic [ref=e57]: (6)
+              - button "별님의 꿈꿈영상(5)" [ref=e58]:
+                - text: 별님의 꿈꿈영상
+                - generic [ref=e59]: (5)
+              - button "별님의 모집영상(8)" [ref=e60]:
+                - text: 별님의 모집영상
+                - generic [ref=e61]: (8)
+              - button "별님의 소개영상(18)" [ref=e62]:
+                - text: 별님의 소개영상
+                - generic [ref=e63]: (18)
+              - button "별님의 추억영상(7)" [ref=e64]:
+                - text: 별님의 추억영상
+                - generic [ref=e65]: (7)
+              - button "상담사 기도영상(38)" [ref=e66]:
+                - text: 상담사 기도영상
+                - generic [ref=e67]: (38)
+              - button "상담사 소개영상(84)" [ref=e68]:
+                - text: 상담사 소개영상
+                - generic [ref=e69]: (84)
+              - button "선물상담(11)" [ref=e70]:
+                - text: 선물상담
+                - generic [ref=e71]: (11)
+              - button "신년운세(48)" [ref=e72]:
+                - text: 신년운세
+                - generic [ref=e73]: (48)
+              - button "찐상담사 코너소개(8)" [ref=e74]:
+                - text: 찐상담사 코너소개
+                - generic [ref=e75]: (8)
+              - button "콕콕상담(49)" [ref=e76]:
+                - text: 콕콕상담
+                - generic [ref=e77]: (49)
+              - button "타로코너 영상(11)" [ref=e78]:
+                - text: 타로코너 영상
+                - generic [ref=e79]: (11)
+              - button "퍼스널브랜딩(40)" [ref=e80]:
+                - text: 퍼스널브랜딩
+                - generic [ref=e81]: (40)
+              - button "효심말벗(4)" [ref=e82]:
+                - text: 효심말벗
+                - generic [ref=e83]: (4)
+            - generic [ref=e84]:
+              - generic [ref=e85]:
+                - button "스윔레인 보기" [ref=e86]:
+                  - img [ref=e87]
+                - button "그리드 보기" [ref=e89]:
+                  - img [ref=e90]
+              - button "최신순" [ref=e95]:
+                - img
+                - text: 최신순
+          - generic [ref=e3424]:
+            - link "내일의 나에게 내일의 나에게 PE-0009 고민영상 2026년 1월 30일" [ref=e3425] [cursor=pointer]:
+              - /url: /videos/cmlegkqfi00jzsgtx6kumg6am
+              - generic [ref=e3426]:
+                - generic [ref=e3427]:
+                  - img "내일의 나에게" [ref=e3428]
+                  - img [ref=e3431]
+                - generic [ref=e3434]:
+                  - heading "내일의 나에게" [level=3] [ref=e3435]
+                  - generic [ref=e3436]:
+                    - generic [ref=e3437]:
+                      - img [ref=e3438]
+                      - generic [ref=e3441]: PE-0009
+                    - generic [ref=e3442]: 고민영상
+                  - paragraph [ref=e3443]: 2026년 1월 30일
+            - link "그냥 들어줘 그냥 들어줘 김보라 고민영상 2026년 1월 23일" [ref=e3444] [cursor=pointer]:
+              - /url: /videos/cmlegkqkn00kfsgtxpmzgjhj5
+              - generic [ref=e3445]:
+                - generic [ref=e3446]:
+                  - img "그냥 들어줘" [ref=e3447]
+                  - img [ref=e3450]
+                - generic [ref=e3453]:
+                  - heading "그냥 들어줘" [level=3] [ref=e3454]
+                  - generic [ref=e3455]:
+                    - generic [ref=e3456]:
+                      - img [ref=e3457]
+                      - generic [ref=e3460]: 김보라
+                    - generic [ref=e3461]: 고민영상
+                  - paragraph [ref=e3462]: 2026년 1월 23일
+            - link "[취업고민] 자유의 무게 (수정 버전) [취업고민] 자유의 무게 (수정 버전) 김지은 고민영상 2026년 1월 16일" [ref=e3463] [cursor=pointer]:
+              - /url: /videos/cmlegkqd500jssgtxcwmuexl6
+              - generic [ref=e3464]:
+                - generic [ref=e3465]:
+                  - img "[취업고민] 자유의 무게 (수정 버전)" [ref=e3466]
+                  - img [ref=e3469]
+                - generic [ref=e3472]:
+                  - heading "[취업고민] 자유의 무게 (수정 버전)" [level=3] [ref=e3473]
+                  - generic [ref=e3474]:
+                    - generic [ref=e3475]:
+                      - img [ref=e3476]
+                      - generic [ref=e3479]: 김지은
+                    - generic [ref=e3480]: 고민영상
+                  - paragraph [ref=e3481]: 2026년 1월 16일
+            - link "[연애고민] 너와 나의 퍼즐조각 [연애고민] 너와 나의 퍼즐조각 김지민 고민영상 2026년 1월 15일" [ref=e3482] [cursor=pointer]:
+              - /url: /videos/cmlegkqj200kasgtxwnpivt7r
+              - generic [ref=e3483]:
+                - generic [ref=e3484]:
+                  - img "[연애고민] 너와 나의 퍼즐조각" [ref=e3485]
+                  - img [ref=e3488]
+                - generic [ref=e3491]:
+                  - heading "[연애고민] 너와 나의 퍼즐조각" [level=3] [ref=e3492]
+                  - generic [ref=e3493]:
+                    - generic [ref=e3494]:
+                      - img [ref=e3495]
+                      - generic [ref=e3498]: 김지민
+                    - generic [ref=e3499]: 고민영상
+                  - paragraph [ref=e3500]: 2026년 1월 15일
+            - link "[사업고민] 접을까? 버틸까? [사업고민] 접을까? 버틸까? 김지민 고민영상 2026년 1월 15일" [ref=e3501] [cursor=pointer]:
+              - /url: /videos/cmlegkq4600j0sgtxepn713y9
+              - generic [ref=e3502]:
+                - generic [ref=e3503]:
+                  - img "[사업고민] 접을까? 버틸까?" [ref=e3504]
+                  - img [ref=e3507]
+                - generic [ref=e3510]:
+                  - heading "[사업고민] 접을까? 버틸까?" [level=3] [ref=e3511]
+                  - generic [ref=e3512]:
+                    - generic [ref=e3513]:
+                      - img [ref=e3514]
+                      - generic [ref=e3517]: 김지민
+                    - generic [ref=e3518]: 고민영상
+                  - paragraph [ref=e3519]: 2026년 1월 15일
+            - link "[연애고민] 그 사람한테 연락이 올까요? [연애고민] 그 사람한테 연락이 올까요? 김윤석 고민영상 2026년 1월 14일" [ref=e3520] [cursor=pointer]:
+              - /url: /videos/cmlegkppp00hqsgtxcbexvp6u
+              - generic [ref=e3521]:
+                - generic [ref=e3522]:
+                  - img "[연애고민] 그 사람한테 연락이 올까요?" [ref=e3523]
+                  - img [ref=e3526]
+                - generic [ref=e3529]:
+                  - heading "[연애고민] 그 사람한테 연락이 올까요?" [level=3] [ref=e3530]
+                  - generic [ref=e3531]:
+                    - generic [ref=e3532]:
+                      - img [ref=e3533]
+                      - generic [ref=e3536]: 김윤석
+                    - generic [ref=e3537]: 고민영상
+                  - paragraph [ref=e3538]: 2026년 1월 14일
+            - link "[이사고민] 지금 이사해도 될까요 [이사고민] 지금 이사해도 될까요 하윤나 고민영상 2026년 1월 12일" [ref=e3539] [cursor=pointer]:
+              - /url: /videos/cmlegkocv00dksgtx3ugxo1mq
+              - generic [ref=e3540]:
+                - generic [ref=e3541]:
+                  - img "[이사고민] 지금 이사해도 될까요" [ref=e3542]
+                  - img [ref=e3545]
+                - generic [ref=e3548]:
+                  - heading "[이사고민] 지금 이사해도 될까요" [level=3] [ref=e3549]
+                  - generic [ref=e3550]:
+                    - generic [ref=e3551]:
+                      - img [ref=e3552]
+                      - generic [ref=e3555]: 하윤나
+                    - generic [ref=e3556]: 고민영상
+                  - paragraph [ref=e3557]: 2026년 1월 12일
+            - link "[연애고민] 나 좀 도와줘요! [연애고민] 나 좀 도와줘요! 양현진 고민영상 2026년 1월 8일" [ref=e3558] [cursor=pointer]:
+              - /url: /videos/cmlegkqbx00josgtxazxqxak8
+              - generic [ref=e3559]:
+                - generic [ref=e3560]:
+                  - img "[연애고민] 나 좀 도와줘요!" [ref=e3561]
+                  - img [ref=e3564]
+                - generic [ref=e3567]:
+                  - heading "[연애고민] 나 좀 도와줘요!" [level=3] [ref=e3568]
+                  - generic [ref=e3569]:
+                    - generic [ref=e3570]:
+                      - img [ref=e3571]
+                      - generic [ref=e3574]: 양현진
+                    - generic [ref=e3575]: 고민영상
+                  - paragraph [ref=e3576]: 2026년 1월 8일
+            - link "아이가 잠든 시간에 아이가 잠든 시간에 박건우 고민영상 2026년 1월 7일" [ref=e3577] [cursor=pointer]:
+              - /url: /videos/cmlegkp8j00g9sgtxa3maljss
+              - generic [ref=e3578]:
+                - generic [ref=e3579]:
+                  - img "아이가 잠든 시간에" [ref=e3580]
+                  - img [ref=e3583]
+                - generic [ref=e3586]:
+                  - heading "아이가 잠든 시간에" [level=3] [ref=e3587]
+                  - generic [ref=e3588]:
+                    - generic [ref=e3589]:
+                      - img [ref=e3590]
+                      - generic [ref=e3593]: 박건우
+                    - generic [ref=e3594]: 고민영상
+                  - paragraph [ref=e3595]: 2026년 1월 7일
+            - link "[자식 고민]결혼 안하는 딸내미 [자식 고민]결혼 안하는 딸내미 심현석 고민영상 2026년 1월 7일" [ref=e3596] [cursor=pointer]:
+              - /url: /videos/cmlegknp300bjsgtxkwpx63pr
+              - generic [ref=e3597]:
+                - generic [ref=e3598]:
+                  - img "[자식 고민]결혼 안하는 딸내미" [ref=e3599]
+                  - img [ref=e3602]
+                - generic [ref=e3605]:
+                  - heading "[자식 고민]결혼 안하는 딸내미" [level=3] [ref=e3606]
+                  - generic [ref=e3607]:
+                    - generic [ref=e3608]:
+                      - img [ref=e3609]
+                      - generic [ref=e3612]: 심현석
+                    - generic [ref=e3613]: 고민영상
+                  - paragraph [ref=e3614]: 2026년 1월 7일
+            - link "[연애 고민] 난 아직도 그때에 [연애 고민] 난 아직도 그때에 김지은 고민영상 2026년 1월 7일" [ref=e3615] [cursor=pointer]:
+              - /url: /videos/cmlegkq1z00itsgtxdvqyjyft
+              - generic [ref=e3616]:
+                - generic [ref=e3617]:
+                  - img "[연애 고민] 난 아직도 그때에" [ref=e3618]
+                  - img [ref=e3621]
+                - generic [ref=e3624]:
+                  - heading "[연애 고민] 난 아직도 그때에" [level=3] [ref=e3625]
+                  - generic [ref=e3626]:
+                    - generic [ref=e3627]:
+                      - img [ref=e3628]
+                      - generic [ref=e3631]: 김지은
+                    - generic [ref=e3632]: 고민영상
+                  - paragraph [ref=e3633]: 2026년 1월 7일
+            - link "헤어진 그 사람은 날 생각할까 헤어진 그 사람은 날 생각할까 김윤석 고민영상 2026년 1월 6일" [ref=e3634] [cursor=pointer]:
+              - /url: /videos/cmlegkq6500j6sgtxki23k738
+              - generic [ref=e3635]:
+                - generic [ref=e3636]:
+                  - img "헤어진 그 사람은 날 생각할까" [ref=e3637]
+                  - img [ref=e3640]
+                - generic [ref=e3643]:
+                  - heading "헤어진 그 사람은 날 생각할까" [level=3] [ref=e3644]
+                  - generic [ref=e3645]:
+                    - generic [ref=e3646]:
+                      - img [ref=e3647]
+                      - generic [ref=e3650]: 김윤석
+                    - generic [ref=e3651]: 고민영상
+                  - paragraph [ref=e3652]: 2026년 1월 6일
+            - link "때려쳐 말어? 때려쳐 말어? 문상원 고민영상 2026년 1월 6일" [ref=e3653] [cursor=pointer]:
+              - /url: /videos/cmlegkp4l00fxsgtxrluzb2eq
+              - generic [ref=e3654]:
+                - generic [ref=e3655]:
+                  - img "때려쳐 말어?" [ref=e3656]
+                  - img [ref=e3659]
+                - generic [ref=e3662]:
+                  - heading "때려쳐 말어?" [level=3] [ref=e3663]
+                  - generic [ref=e3664]:
+                    - generic [ref=e3665]:
+                      - img [ref=e3666]
+                      - generic [ref=e3669]: 문상원
+                    - generic [ref=e3670]: 고민영상
+                  - paragraph [ref=e3671]: 2026년 1월 6일
+            - link "[자식고민]엄마나 회사 그만 뒀어요 [자식고민]엄마나 회사 그만 뒀어요 심현석 고민영상 2026년 1월 6일" [ref=e3672] [cursor=pointer]:
+              - /url: /videos/cmlegkns300bssgtxkqklm89n
+              - generic [ref=e3673]:
+                - generic [ref=e3674]:
+                  - img "[자식고민]엄마나 회사 그만 뒀어요" [ref=e3675]
+                  - img [ref=e3678]
+                - generic [ref=e3681]:
+                  - heading "[자식고민]엄마나 회사 그만 뒀어요" [level=3] [ref=e3682]
+                  - generic [ref=e3683]:
+                    - generic [ref=e3684]:
+                      - img [ref=e3685]
+                      - generic [ref=e3688]: 심현석
+                    - generic [ref=e3689]: 고민영상
+                  - paragraph [ref=e3690]: 2026년 1월 6일
+            - link "여전히 사랑의 자리 여전히 사랑의 자리 백한수 고민영상 2026년 1월 6일" [ref=e3691] [cursor=pointer]:
+              - /url: /videos/cmlegkoyf00fesgtxgeiok4m9
+              - generic [ref=e3692]:
+                - generic [ref=e3693]:
+                  - img "여전히 사랑의 자리" [ref=e3694]
+                  - img [ref=e3697]
+                - generic [ref=e3700]:
+                  - heading "여전히 사랑의 자리" [level=3] [ref=e3701]
+                  - generic [ref=e3702]:
+                    - generic [ref=e3703]:
+                      - img [ref=e3704]
+                      - generic [ref=e3707]: 백한수
+                    - generic [ref=e3708]: 고민영상
+                  - paragraph [ref=e3709]: 2026년 1월 6일
+            - link "연습만 백번했어 연습만 백번했어 박건우 고민영상 2026년 1월 6일" [ref=e3710] [cursor=pointer]:
+              - /url: /videos/cmlegkqro00l1sgtxy6mqoem5
+              - generic [ref=e3711]:
+                - generic [ref=e3712]:
+                  - img "연습만 백번했어" [ref=e3713]
+                  - img [ref=e3716]
+                - generic [ref=e3719]:
+                  - heading "연습만 백번했어" [level=3] [ref=e3720]
+                  - generic [ref=e3721]:
+                    - generic [ref=e3722]:
+                      - img [ref=e3723]
+                      - generic [ref=e3726]: 박건우
+                    - generic [ref=e3727]: 고민영상
+                  - paragraph [ref=e3728]: 2026년 1월 6일
+            - link "나 진짜 열심히 했는데 나 진짜 열심히 했는데 박건우 고민영상 2026년 1월 6일" [ref=e3729] [cursor=pointer]:
+              - /url: /videos/cmlegkq2y00iwsgtx2ogzxe9w
+              - generic [ref=e3730]:
+                - generic [ref=e3731]:
+                  - img "나 진짜 열심히 했는데" [ref=e3732]
+                  - img [ref=e3735]
+                - generic [ref=e3738]:
+                  - heading "나 진짜 열심히 했는데" [level=3] [ref=e3739]
+                  - generic [ref=e3740]:
+                    - generic [ref=e3741]:
+                      - img [ref=e3742]
+                      - generic [ref=e3745]: 박건우
+                    - generic [ref=e3746]: 고민영상
+                  - paragraph [ref=e3747]: 2026년 1월 6일
+            - link "고민상담 영상 (이사) 고민상담 영상 (이사) 박건우 고민영상 2026년 1월 5일" [ref=e3748] [cursor=pointer]:
+              - /url: /videos/cmlegkpts00i3sgtx63mbv5cd
+              - generic [ref=e3749]:
+                - generic [ref=e3750]:
+                  - img "고민상담 영상 (이사)" [ref=e3751]
+                  - img [ref=e3754]
+                - generic [ref=e3757]:
+                  - heading "고민상담 영상 (이사)" [level=3] [ref=e3758]
+                  - generic [ref=e3759]:
+                    - generic [ref=e3760]:
+                      - img [ref=e3761]
+                      - generic [ref=e3764]: 박건우
+                    - generic [ref=e3765]: 고민영상
+                  - paragraph [ref=e3766]: 2026년 1월 5일
+          - generic [ref=e3767]:
+            - button "이전" [disabled]
+            - generic [ref=e3768]:
+              - button "1" [ref=e3769]
+              - button "2" [ref=e3770]
+              - button "3" [ref=e3771]
+              - button "4" [ref=e3772]
+            - button "다음" [ref=e3773]
+            - generic [ref=e3774]: 총 65개
+    - contentinfo [ref=e223]:
+      - generic [ref=e225]:
+        - generic [ref=e226]:
+          - img [ref=e228]
+          - generic [ref=e231]: 함께봄스타
+        - navigation [ref=e232]:
+          - link "회사소개" [ref=e233] [cursor=pointer]:
+            - /url: /about
+          - link "개인정보처리방침" [ref=e234] [cursor=pointer]:
+            - /url: /privacy
+          - link "이용약관" [ref=e235] [cursor=pointer]:
+            - /url: /terms
+        - paragraph [ref=e236]: © 2026 함께봄. All rights reserved.
+  - region "Notifications alt+T"
+  - alert [ref=e237]

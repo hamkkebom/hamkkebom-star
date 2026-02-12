@@ -1,0 +1,170 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - link "함께봄스타" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img [ref=e7]
+          - generic [ref=e10]: 함께봄스타
+        - navigation [ref=e11]:
+          - link "영상 라이브러리" [ref=e12] [cursor=pointer]:
+            - /url: /
+            - img [ref=e13]
+            - text: 영상 라이브러리
+          - link "스타 소개" [ref=e15] [cursor=pointer]:
+            - /url: /stars
+            - img [ref=e16]
+            - text: 스타 소개
+        - generic [ref=e19]:
+          - button [ref=e20]:
+            - img
+          - button "U" [ref=e21]:
+            - generic [ref=e23]: U
+    - main [ref=e24]:
+      - generic [ref=e55]:
+        - generic [ref=e57]:
+          - button [ref=e59]:
+            - img
+          - iframe [ref=e61]:
+            - generic [ref=f1e6]:
+              - button "Play Video" [ref=f1e12] [cursor=pointer]:
+                - img [ref=f1e13]
+                - generic [ref=f1e15]: Play Video
+              - generic [ref=f1e17]:
+                - button "Play" [ref=f1e18] [cursor=pointer]:
+                  - img [ref=f1e19]
+                  - generic [ref=f1e21]: Play
+                - generic [ref=f1e22]:
+                  - button "Currently unmuted. Volume set to 100 percent. Click to mute." [ref=f1e23] [cursor=pointer]:
+                    - img [ref=f1e24]
+                    - generic [ref=f1e26]: Currently unmuted. Volume set to 100 percent. Click to mute.
+                  - slider "volume" [ref=f1e27] [cursor=pointer]: "1"
+                - button "Settings" [ref=f1e28] [cursor=pointer]:
+                  - generic [ref=f1e29]: Settings
+                  - img [ref=f1e30]
+                - button "Enable Picture in Picture" [ref=f1e32] [cursor=pointer]:
+                  - img [ref=f1e33]
+                  - generic [ref=f1e37]: Enable Picture in Picture
+                - button "Enable Fullscreen" [ref=f1e38] [cursor=pointer]:
+                  - img [ref=f1e39]
+                  - generic [ref=f1e41]: Enable Fullscreen
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - generic [ref=e64]:
+              - generic [ref=e65]:
+                - generic [ref=e66]: 승인됨
+                - link "고민영상" [ref=e67] [cursor=pointer]:
+                  - /url: /videos?category=cmlegkmzu009ssgtxvyv0dbuk
+                  - img [ref=e68]
+                  - text: 고민영상
+                - generic [ref=e71]:
+                  - img [ref=e72]
+                  - text: COUNSELOR
+              - heading "내일의 나에게" [level=1] [ref=e74]
+              - generic [ref=e76]:
+                - img [ref=e77]
+                - text: 2026년 1월 30일
+            - generic [ref=e79]:
+              - button "좋아요" [ref=e80]:
+                - img
+              - button "공유" [ref=e81]:
+                - img
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - generic [ref=e84]:
+                - heading "제작의도 / 설명" [level=2] [ref=e85]:
+                  - img [ref=e87]
+                  - text: 제작의도 / 설명
+                - paragraph [ref=e90]: 취업을 준비하는 남성이 삶에 지쳐있을때 전화상담으로 마음의 위로를 받고 내일의 나를위해 다시 힘을얻는 영상입니다.
+              - generic [ref=e91]:
+                - heading "가사" [level=2] [ref=e92]:
+                  - img [ref=e94]
+                  - text: 가사
+                - generic [ref=e98]:
+                  - generic: ♪
+                  - paragraph [ref=e99]: 짙은 어둠이 발끝에 머물 때 이름 없는 생각들이 안을 채워가 희미한 불빛을 따라 걷다 보면 어디든 나의 궤적이 될 테니까 긴 밤을 지나 조금씩 선명해져 나를 기다리는 내일의 나에게
+            - complementary [ref=e100]:
+              - generic [ref=e104]:
+                - generic [ref=e105]:
+                  - generic [ref=e107]: P
+                  - generic [ref=e108]:
+                    - paragraph [ref=e109]: PE-0009
+                    - paragraph [ref=e110]: 크리에이터
+                - link "프로필 & 다른 작품 보기" [ref=e111] [cursor=pointer]:
+                  - /url: /stars/profile/cmlegkh82000osgtxv2sdnrh1
+                  - img [ref=e112]
+                  - text: 프로필 & 다른 작품 보기
+              - generic [ref=e115]:
+                - paragraph [ref=e116]: 영상 정보
+                - generic [ref=e117]:
+                  - generic [ref=e118]:
+                    - generic [ref=e119]:
+                      - img [ref=e120]
+                      - generic [ref=e122]: 업로드 날짜
+                    - generic [ref=e123]: 2026. 1. 30.
+                  - generic [ref=e124]:
+                    - generic [ref=e125]:
+                      - img [ref=e126]
+                      - generic [ref=e129]: 카테고리
+                    - generic [ref=e130]: 고민영상
+          - generic [ref=e131]:
+            - generic [ref=e132]:
+              - generic [ref=e133]:
+                - paragraph [ref=e134]: 같은 카테고리
+                - heading "관련 영상" [level=2] [ref=e135]
+              - link "더 보기" [ref=e136] [cursor=pointer]:
+                - /url: /videos?category=cmlegkmzu009ssgtxvyv0dbuk
+                - text: 더 보기
+                - img [ref=e137]
+            - generic [ref=e141]:
+              - link "그냥 들어줘 그냥 들어줘 김보라" [ref=e142] [cursor=pointer]:
+                - /url: /videos/cmlegkqkn00kfsgtxpmzgjhj5
+                - generic [ref=e143]:
+                  - img "그냥 들어줘" [ref=e144]
+                  - img [ref=e147]
+                - generic [ref=e149]:
+                  - heading "그냥 들어줘" [level=3] [ref=e150]
+                  - paragraph [ref=e151]: 김보라
+              - link "[취업고민] 자유의 무게 (수정 버전) [취업고민] 자유의 무게 (수정 버전) 김지은" [ref=e152] [cursor=pointer]:
+                - /url: /videos/cmlegkqd500jssgtxcwmuexl6
+                - generic [ref=e153]:
+                  - img "[취업고민] 자유의 무게 (수정 버전)" [ref=e154]
+                  - img [ref=e157]
+                - generic [ref=e159]:
+                  - heading "[취업고민] 자유의 무게 (수정 버전)" [level=3] [ref=e160]
+                  - paragraph [ref=e161]: 김지은
+              - link "[연애고민] 너와 나의 퍼즐조각 [연애고민] 너와 나의 퍼즐조각 김지민" [ref=e162] [cursor=pointer]:
+                - /url: /videos/cmlegkqj200kasgtxwnpivt7r
+                - generic [ref=e163]:
+                  - img "[연애고민] 너와 나의 퍼즐조각" [ref=e164]
+                  - img [ref=e167]
+                - generic [ref=e169]:
+                  - heading "[연애고민] 너와 나의 퍼즐조각" [level=3] [ref=e170]
+                  - paragraph [ref=e171]: 김지민
+              - link "[사업고민] 접을까? 버틸까? [사업고민] 접을까? 버틸까? 김지민" [ref=e172] [cursor=pointer]:
+                - /url: /videos/cmlegkq4600j0sgtxepn713y9
+                - generic [ref=e173]:
+                  - img "[사업고민] 접을까? 버틸까?" [ref=e174]
+                  - img [ref=e177]
+                - generic [ref=e179]:
+                  - heading "[사업고민] 접을까? 버틸까?" [level=3] [ref=e180]
+                  - paragraph [ref=e181]: 김지민
+          - link "영상 목록으로 돌아가기" [ref=e183] [cursor=pointer]:
+            - /url: /
+            - img [ref=e184]
+            - text: 영상 목록으로 돌아가기
+    - contentinfo [ref=e40]:
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - img [ref=e45]
+          - generic [ref=e48]: 함께봄스타
+        - navigation [ref=e49]:
+          - link "회사소개" [ref=e50] [cursor=pointer]:
+            - /url: /about
+          - link "개인정보처리방침" [ref=e51] [cursor=pointer]:
+            - /url: /privacy
+          - link "이용약관" [ref=e52] [cursor=pointer]:
+            - /url: /terms
+        - paragraph [ref=e53]: © 2026 함께봄. All rights reserved.
+  - region "Notifications alt+T"
+  - alert [ref=e54]

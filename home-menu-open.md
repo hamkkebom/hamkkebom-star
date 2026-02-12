@@ -1,0 +1,434 @@
+- generic:
+  - generic:
+    - banner:
+      - generic:
+        - link:
+          - /url: /
+          - generic:
+            - img
+          - generic: 함께봄스타
+        - navigation:
+          - link:
+            - /url: /
+            - img
+            - text: 영상 라이브러리
+          - link:
+            - /url: /stars
+            - img
+            - text: 스타 소개
+        - generic:
+          - button:
+            - img
+          - button [expanded]:
+            - generic:
+              - generic: U
+    - main:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+                - text: 영상 라이브러리
+              - heading [level=1]: 별들이 만든 영상을 만나보세요
+              - paragraph: AI 영상 크리에이터들의 작품을 탐색하고, 원하는 영상을 찾아보세요.
+              - generic:
+                - generic:
+                  - img
+                  - textbox:
+                    - /placeholder: 영상 제목이나 설명으로 검색...
+                - button: 검색
+        - generic:
+          - generic:
+            - generic:
+              - img
+              - button: 전체
+              - button:
+                - text: 고민영상
+                - generic: (65)
+              - button:
+                - text: 기부상담
+                - generic: (5)
+              - button:
+                - text: 기타(모르겠어요)
+                - generic: (6)
+              - button:
+                - text: 띠별운세
+                - generic: (30)
+              - button:
+                - text: 별님의 과제제출
+                - generic: (6)
+              - button:
+                - text: 별님의 꿈꿈영상
+                - generic: (5)
+              - button:
+                - text: 별님의 모집영상
+                - generic: (8)
+              - button:
+                - text: 별님의 소개영상
+                - generic: (18)
+              - button:
+                - text: 별님의 추억영상
+                - generic: (7)
+              - button:
+                - text: 상담사 기도영상
+                - generic: (38)
+              - button:
+                - text: 상담사 소개영상
+                - generic: (84)
+              - button:
+                - text: 선물상담
+                - generic: (11)
+              - button:
+                - text: 신년운세
+                - generic: (48)
+              - button:
+                - text: 찐상담사 코너소개
+                - generic: (8)
+              - button:
+                - text: 콕콕상담
+                - generic: (49)
+              - button:
+                - text: 타로코너 영상
+                - generic: (11)
+              - button:
+                - text: 퍼스널브랜딩
+                - generic: (40)
+              - button:
+                - text: 효심말벗
+                - generic: (4)
+            - generic:
+              - generic:
+                - button:
+                  - img
+                - button:
+                  - img
+              - button:
+                - img
+                - text: 최신순
+          - generic:
+            - link:
+              - /url: /videos/cmlegkqfi00jzsgtx6kumg6am
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: 내일의 나에게
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: PE-0009
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 30일
+            - link:
+              - /url: /videos/cmlegkqkn00kfsgtxpmzgjhj5
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: 그냥 들어줘
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 김보라
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 23일
+            - link:
+              - /url: /videos/cmlegkqd500jssgtxcwmuexl6
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: "[취업고민] 자유의 무게 (수정 버전)"
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 김지은
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 16일
+            - link:
+              - /url: /videos/cmlegkqj200kasgtxwnpivt7r
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: "[연애고민] 너와 나의 퍼즐조각"
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 김지민
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 15일
+            - link:
+              - /url: /videos/cmlegkq4600j0sgtxepn713y9
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: "[사업고민] 접을까? 버틸까?"
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 김지민
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 15일
+            - link:
+              - /url: /videos/cmlegkppp00hqsgtxcbexvp6u
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: "[연애고민] 그 사람한테 연락이 올까요?"
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 김윤석
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 14일
+            - link:
+              - /url: /videos/cmlegkocv00dksgtx3ugxo1mq
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: "[이사고민] 지금 이사해도 될까요"
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 하윤나
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 12일
+            - link:
+              - /url: /videos/cmlegkqbx00josgtxazxqxak8
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: "[연애고민] 나 좀 도와줘요!"
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 양현진
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 8일
+            - link:
+              - /url: /videos/cmlegkp8j00g9sgtxa3maljss
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: 아이가 잠든 시간에
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 박건우
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 7일
+            - link:
+              - /url: /videos/cmlegknp300bjsgtxkwpx63pr
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: "[자식 고민]결혼 안하는 딸내미"
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 심현석
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 7일
+            - link:
+              - /url: /videos/cmlegkq1z00itsgtxdvqyjyft
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: "[연애 고민] 난 아직도 그때에"
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 김지은
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 7일
+            - link:
+              - /url: /videos/cmlegkq6500j6sgtxki23k738
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: 헤어진 그 사람은 날 생각할까
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 김윤석
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 6일
+            - link:
+              - /url: /videos/cmlegkp4l00fxsgtxrluzb2eq
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: 때려쳐 말어?
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 문상원
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 6일
+            - link:
+              - /url: /videos/cmlegkns300bssgtxkqklm89n
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: "[자식고민]엄마나 회사 그만 뒀어요"
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 심현석
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 6일
+            - link:
+              - /url: /videos/cmlegkoyf00fesgtxgeiok4m9
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: 여전히 사랑의 자리
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 백한수
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 6일
+            - link:
+              - /url: /videos/cmlegkqro00l1sgtxy6mqoem5
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: 연습만 백번했어
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 박건우
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 6일
+            - link:
+              - /url: /videos/cmlegkq2y00iwsgtx2ogzxe9w
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: 나 진짜 열심히 했는데
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 박건우
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 6일
+            - link:
+              - /url: /videos/cmlegkpts00i3sgtx63mbv5cd
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - generic:
+                      - img
+                - generic:
+                  - heading [level=3]: 고민상담 영상 (이사)
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: 박건우
+                    - generic: 고민영상
+                  - paragraph: 2026년 1월 5일
+          - generic:
+            - button [disabled]: 이전
+            - generic:
+              - button: "1"
+              - button: "2"
+              - button: "3"
+              - button: "4"
+            - button: 다음
+            - generic: 총 65개
+    - contentinfo:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+            - generic: 함께봄스타
+          - navigation:
+            - link:
+              - /url: /about
+              - text: 회사소개
+            - link:
+              - /url: /privacy
+              - text: 개인정보처리방침
+            - link:
+              - /url: /terms
+              - text: 이용약관
+          - paragraph: © 2026 함께봄. All rights reserved.
+  - region "Notifications alt+T"
+  - alert
+  - menu "U" [active] [ref=e3775]:
+    - menuitem "대시보드" [ref=e3776]:
+      - img
+      - text: 대시보드
+    - separator [ref=e3777]
+    - menuitem "로그아웃" [ref=e3778]:
+      - img
+      - text: 로그아웃

@@ -138,26 +138,30 @@ export function UploadPageClient({
                   )}
               </div>
 
-              {/* 버전 + 제목 입력 */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>버전 슬롯 (1~5)</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={5}
-                    value={versionSlot}
-                    onChange={(e) => setVersionSlot(Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>버전 제목 (선택)</Label>
-                  <Input
-                    placeholder="예: 초안, 수정본, 경쾌한 톤 등"
-                    value={versionTitle}
-                    onChange={(e) => setVersionTitle(e.target.value)}
-                  />
-                </div>
+              {/* 영상 제목 */}
+              <div className="space-y-2">
+                <Label>영상 제목 <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="예: 함께봄 봄맞이 숏폼 광고, 제품 소개 영상 v2 등"
+                  value={versionTitle}
+                  onChange={(e) => setVersionTitle(e.target.value)}
+                  maxLength={100}
+                />
+                {versionTitle.length === 0 && selectedAssignment && (
+                  <p className="text-xs text-destructive">영상 제목은 필수입니다.</p>
+                )}
+              </div>
+
+              {/* 버전 슬롯 */}
+              <div className="space-y-2">
+                <Label>버전 슬롯 (1~5)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={versionSlot}
+                  onChange={(e) => setVersionSlot(Number(e.target.value))}
+                />
               </div>
 
               {/* 제작 설명/메모 */}
@@ -181,13 +185,19 @@ export function UploadPageClient({
         </CardContent>
       </Card>
 
-      {selectedAssignmentId && (
+      {selectedAssignmentId && versionTitle.trim().length > 0 && (
         <UploadDropzone
           assignmentId={selectedAssignmentId}
           versionSlot={versionSlot}
-          versionTitle={versionTitle || undefined}
+          versionTitle={versionTitle}
           description={description || undefined}
         />
+      )}
+
+      {selectedAssignmentId && versionTitle.trim().length === 0 && (
+        <div className="rounded-xl border border-dashed px-4 py-14 text-center">
+          <p className="text-sm text-muted-foreground">영상 제목을 입력하면 업로드 영역이 표시됩니다.</p>
+        </div>
       )}
 
       <div className="space-y-3">
