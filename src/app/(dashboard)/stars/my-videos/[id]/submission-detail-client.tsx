@@ -16,7 +16,7 @@ type SubmissionDetail = {
   versionSlot: number;
   version: string;
   versionTitle: string | null;
-  streamUid: string;
+  streamUid: string | null;
   status: SubmissionStatus;
   summaryFeedback: string | null;
   duration: number | null;
@@ -27,6 +27,11 @@ type SubmissionDetail = {
       title: string;
       deadline: string;
     };
+  } | null;
+  video: {
+    id: string;
+    title: string;
+    streamUid: string | null;
   } | null;
   _count: {
     feedbacks: number;
@@ -71,8 +76,6 @@ async function fetchSubmission(id: string): Promise<SubmissionDetail> {
 export function SubmissionDetailClient({ submissionId }: { submissionId: string }) {
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
 
-  const cfHash = process.env.NEXT_PUBLIC_CF_ACCOUNT_HASH || "";
-
   const { data: submission, isLoading, isError, error } = useQuery({
     queryKey: ["submission-detail", submissionId],
     queryFn: () => fetchSubmission(submissionId),
@@ -98,7 +101,8 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
 
   if (!submission) return null;
 
-  const streamUrl = `https://customer-${cfHash}.cloudflarestream.com/${submission.streamUid}/manifest/video.m3u8`;
+  // streamUid: submission 직접 → video 관계 순서로 fallback
+  const streamUid = submission.streamUid || submission.video?.streamUid;
 
   return (
     <div className="space-y-6">
@@ -137,11 +141,17 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
         </div>
       </div>
 
-      {/* 비디오 플레이어 */}
-      <VideoPlayer
-        src={streamUrl}
-        seekTo={seekTo}
-      />
+      {/* 비디오 플레이어 — Cloudflare Stream iframe embed */}
+      {streamUid ? (
+        <VideoPlayer
+          streamUid={streamUid}
+          seekTo={seekTo}
+        />
+      ) : (
+        <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-muted text-muted-foreground">
+          <p className="text-sm">영상을 불러올 수 없습니다.</p>
+        </div>
+      )}
 
       {/* 상세 정보 */}
       <div className="grid gap-4 sm:grid-cols-3">

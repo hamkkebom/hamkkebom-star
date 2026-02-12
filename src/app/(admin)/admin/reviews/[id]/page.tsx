@@ -39,7 +39,7 @@ type SubmissionDetail = {
   assignment: {
     request: { id: string; title: string; deadline: string };
   } | null;
-  video: { id: string; title: string } | null;
+  video: { id: string; title: string; streamUid: string | null } | null;
   feedbacks: Feedback[];
   _count: { feedbacks: number };
 };
@@ -150,8 +150,8 @@ export default function ReviewDetailPage() {
       {/* Video Player */}
       <Card>
         <CardContent className="p-0 overflow-hidden rounded-lg">
-          {sub.streamUid ? (
-            <VideoPlayer src={`https://customer-${process.env.NEXT_PUBLIC_CF_ACCOUNT_HASH || ""}.cloudflarestream.com/${sub.streamUid}/manifest/video.m3u8`} />
+          {(sub.streamUid || sub.video?.streamUid) ? (
+            <VideoPlayer streamUid={(sub.streamUid || sub.video?.streamUid)!} />
           ) : (
             <div className="flex items-center justify-center h-64 bg-muted">
               <p className="text-muted-foreground">영상이 등록되지 않았습니다.</p>

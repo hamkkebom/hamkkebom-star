@@ -1,13 +1,15 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 interface VideoPlayerProps {
+  /** Cloudflare Stream UID — 아이프레임 임베드 사용 */
+  streamUid?: string;
   /**
-   * HLS 재생 URL 또는 일반 영상 URL.
+   * HLS 재생 URL 또는 일반 영상 URL (streamUid가 없을 때 fallback).
    * Cloudflare Stream의 경우: https://customer-xxx.cloudflarestream.com/{uid}/manifest/video.m3u8
    */
-  src: string;
+  src?: string;
   /** 현재 재생 시간(초)이 변경될 때 호출 */
   onTimeUpdate?: (currentTime: number) => void;
   /** 비디오 총 시간(초) */
@@ -16,7 +18,42 @@ interface VideoPlayerProps {
   seekTo?: number;
 }
 
-export function VideoPlayer({ src, onTimeUpdate, onDurationChange, seekTo }: VideoPlayerProps) {
+export function VideoPlayer({ streamUid, src, onTimeUpdate, onDurationChange, seekTo }: VideoPlayerProps) {
+  const [iframeError, setIframeError] = useState(false);
+
+  // Cloudflare Stream iframe embed 모드
+  if (streamUid && !iframeError) {
+    const iframeSrc = `https://iframe.videodelivery.net/${streamUid}`;
+
+    return (
+      <div className="overflow-hidden rounded-xl bg-black">
+        <iframe
+          src={iframeSrc}
+          className="aspect-video w-full"
+          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          onError={() => setIframeError(true)}
+        />
+      </div>
+    );
+  }
+
+  // HLS/직접 URL 모드 (fallback)
+  return <HlsVideoPlayer src={src || ""} seekTo={seekTo} onTimeUpdate={onTimeUpdate} onDurationChange={onDurationChange} />;
+}
+
+/** HLS.js 기반 비디오 플레이어 (fallback) */
+function HlsVideoPlayer({
+  src,
+  onTimeUpdate,
+  onDurationChange,
+  seekTo,
+}: {
+  src: string;
+  onTimeUpdate?: (currentTime: number) => void;
+  onDurationChange?: (duration: number) => void;
+  seekTo?: number;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // HLS.js 동적 로드 (클라이언트에서만)

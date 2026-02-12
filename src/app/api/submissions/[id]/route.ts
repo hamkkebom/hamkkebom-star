@@ -24,7 +24,7 @@ export async function GET(_request: Request, { params }: Params) {
           request: { select: { id: true, title: true, deadline: true } },
         },
       },
-      video: { select: { id: true, title: true } },
+      video: { select: { id: true, title: true, streamUid: true } },
       feedbacks: {
         include: {
           author: { select: { id: true, name: true, avatarUrl: true } },
