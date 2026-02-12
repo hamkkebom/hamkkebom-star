@@ -15,7 +15,7 @@ export default function StarDashboardPage() {
     queryFn: async () => {
       const res = await fetch("/api/submissions/my?page=1&pageSize=5", { cache: "no-store" });
       if (!res.ok) throw new Error("failed");
-      return (await res.json()) as { data: { id: string; versionTitle: string | null; version: string; status: string; createdAt: string; assignment: { request: { title: string } } }[]; total: number };
+      return (await res.json()) as { data: { id: string; versionTitle: string | null; version: string; status: string; createdAt: string; assignment: { request: { title: string } }; _count?: { feedbacks: number } }[]; total: number };
     },
   });
 
@@ -82,6 +82,34 @@ export default function StarDashboardPage() {
         </Card>
       </div>
 
+      {/* 할 일 */}
+      {!loadingSub && submissions?.data && (() => {
+        const withFeedback = submissions.data.filter((s) => (s._count?.feedbacks ?? 0) > 0 && s.status !== "APPROVED");
+        const pendingReview = submissions.data.filter((s) => s.status === "IN_REVIEW" || s.status === "REVISED");
+        if (withFeedback.length === 0 && pendingReview.length === 0) return null;
+        return (
+          <Card className="border-primary/30">
+            <CardHeader>
+              <CardTitle className="text-base">📝 지금 확인할 사항</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {withFeedback.length > 0 && (
+                <Link href="/stars/feedback" className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm hover:bg-primary/10 transition-colors">
+                  <span>피드백 확인이 필요한 영상</span>
+                  <span className="font-bold text-primary">{withFeedback.length}건</span>
+                </Link>
+              )}
+              {pendingReview.length > 0 && (
+                <Link href="/stars/my-videos" className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-sm hover:bg-amber-500/10 transition-colors">
+                  <span>리뷰 중인 영상</span>
+                  <span className="font-bold text-amber-500">{pendingReview.length}건</span>
+                </Link>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* 최근 제출물 */}
       <Card>
         <CardHeader>
@@ -102,13 +130,13 @@ export default function StarDashboardPage() {
           ) : (
             <div className="space-y-2">
               {submissions.data.map((sub) => (
-                <div key={sub.id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
+                <Link key={sub.id} href={`/stars/my-videos/${sub.id}`} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:border-primary/40 transition-colors">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{sub.versionTitle || `v${sub.version}`}</p>
                     <p className="truncate text-xs text-muted-foreground">{sub?.assignment?.request?.title ?? '제목 없음'}</p>
                   </div>
                   <span className="ml-2 whitespace-nowrap text-xs">{statusLabels[sub.status] ?? sub.status}</span>
-                </div>
+                </Link>
               ))}
             </div>
           )}

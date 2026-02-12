@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,12 +114,7 @@ export default function SettingsPage() {
     }
   }
 
-  const deleteAccountMutation = useMutation({
-    mutationFn: async () => {
-      toast.error("계정 삭제는 관리자에게 문의해주세요.");
-      throw new Error("not-implemented");
-    },
-  });
+
 
   return (
     <div className="space-y-6">
@@ -217,16 +212,12 @@ export default function SettingsPage() {
           <CardTitle className="text-base text-destructive">위험 구역</CardTitle>
           <CardDescription>계정 삭제는 되돌릴 수 없으며, 모든 데이터가 삭제됩니다.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button
-            variant="destructive"
-            onClick={() => {
-              if (window.confirm("정말 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
-                deleteAccountMutation.mutate();
-              }
-            }}
-          >
-            계정 삭제 요청
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            계정 삭제를 원하시면 관리자에게 문의해 주세요.
+          </p>
+          <Button variant="destructive" disabled>
+            계정 삭제 요청 (관리자 문의)
           </Button>
         </CardContent>
       </Card>

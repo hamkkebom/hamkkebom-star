@@ -233,12 +233,11 @@ export default function RequestDetailPage() {
           <CardContent className="space-y-3">
             {req.assignments.map((a) => (
               <div key={a.id} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-medium">
+                <div className="w-8 h-8 rounded-full bg-linear-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-medium">
                   {a.star.name.charAt(0)}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium">{a.star.name}</p>
-                  <p className="text-xs text-muted-foreground">{a.star.email}</p>
                 </div>
                 <Badge variant="outline" className="text-xs">{a.status}</Badge>
               </div>

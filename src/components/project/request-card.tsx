@@ -49,6 +49,16 @@ function formatDeadline(value: string | Date) {
   }).format(date);
 }
 
+function getDday(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const now = new Date();
+  const diff = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return "마감";
+  if (diff === 0) return "D-Day";
+  return `D-${diff}`;
+}
+
 export function RequestCard({ request }: { request: RequestCardItem }) {
   return (
     <Link href={`/stars/request-detail/${request.id}`}>
@@ -58,7 +68,19 @@ export function RequestCard({ request }: { request: RequestCardItem }) {
             <CardTitle className="line-clamp-1 text-lg">{request.title}</CardTitle>
             <Badge variant={statusMap[request.status].variant}>{statusMap[request.status].label}</Badge>
           </div>
-          <CardDescription>마감일 {formatDeadline(request.deadline)}</CardDescription>
+          <CardDescription>
+            마감일 {formatDeadline(request.deadline)}
+            {(() => {
+              const dday = getDday(request.deadline);
+              if (!dday) return null;
+              const isUrgent = dday === "마감" || dday === "D-Day" || (dday.startsWith("D-") && Number(dday.slice(2)) <= 3);
+              return (
+                <span className={`ml-2 font-semibold ${isUrgent ? "text-destructive" : "text-primary"}`}>
+                  {dday}
+                </span>
+              );
+            })()}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">

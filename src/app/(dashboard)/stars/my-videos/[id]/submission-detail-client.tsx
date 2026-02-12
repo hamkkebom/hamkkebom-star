@@ -118,15 +118,23 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">
-            {submission.versionTitle || `슬롯 ${submission.versionSlot} v${submission.version}`}
+            {submission.versionTitle || `v${submission.version}`}
           </h1>
           <p className="text-sm text-muted-foreground">
             {submission.assignment?.request?.title ?? "프로젝트 정보 없음"}
           </p>
         </div>
-        <Badge variant={statusMap[submission.status]?.variant ?? "secondary"} className="self-start text-sm px-3 py-1">
-          {statusMap[submission.status]?.label ?? submission.status}
-        </Badge>
+        <div className="flex items-center gap-2 self-start">
+          <Badge variant={statusMap[submission.status]?.variant ?? "secondary"} className="text-sm px-3 py-1">
+            {statusMap[submission.status]?.label ?? submission.status}
+          </Badge>
+          <Link
+            href={`/stars/upload`}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            수정본 업로드
+          </Link>
+        </div>
       </div>
 
       {/* 비디오 플레이어 */}
@@ -136,23 +144,13 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
       />
 
       {/* 상세 정보 */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground">버전</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-lg font-semibold">v{submission.version}</p>
-            <p className="text-xs text-muted-foreground">슬롯 {submission.versionSlot}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">상태</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg font-semibold">{statusMap[submission.status]?.label ?? submission.status}</p>
           </CardContent>
         </Card>
 

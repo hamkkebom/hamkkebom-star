@@ -23,6 +23,11 @@ type UserData = {
   updatedAt: string;
 };
 
+const roleLabels: Record<string, string> = {
+  STAR: "크리에이터",
+  ADMIN: "관리자",
+};
+
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "long", day: "numeric" }).format(new Date(dateStr));
 }
@@ -166,7 +171,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">역할</p>
-                <Badge variant="outline">{data.role}</Badge>
+                <Badge variant="outline">{roleLabels[data.role] ?? data.role}</Badge>
               </div>
             </div>
           )}
@@ -189,10 +194,7 @@ export default function ProfilePage() {
             <p className="text-sm text-muted-foreground">가입일</p>
             <p className="font-medium">{formatDate(data.createdAt)}</p>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">최근 수정</p>
-            <p className="font-medium">{formatDate(data.updatedAt)}</p>
-          </div>
+
         </CardContent>
       </Card>
     </div>

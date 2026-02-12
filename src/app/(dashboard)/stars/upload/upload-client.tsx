@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { UploadDropzone } from "@/components/video/upload-dropzone";
 import { SubmissionList } from "@/components/video/submission-list";
+import Link from "next/link";
 
 type AssignmentItem = {
   id: string;
@@ -197,12 +198,16 @@ export function UploadPageClient({
       {selectedAssignmentId && versionTitle.trim().length === 0 && (
         <div className="rounded-xl border border-dashed px-4 py-14 text-center">
           <p className="text-sm text-muted-foreground">영상 제목을 입력하면 업로드 영역이 표시됩니다.</p>
+          <p className="mt-2 text-xs text-muted-foreground">지원 형식: MP4, MOV, AVI, WebM · 최대 6GB</p>
         </div>
       )}
 
       <div className="space-y-3">
-        <h2 className="text-xl font-semibold">내 제출물</h2>
-        <SubmissionList />
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">최근 업로드</h2>
+          <Link href="/stars/my-videos" className="text-sm text-primary hover:underline">전체 보기</Link>
+        </div>
+        <SubmissionList limit={3} />
       </div>
     </div>
   );

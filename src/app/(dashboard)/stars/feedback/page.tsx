@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -128,9 +129,11 @@ export default function FeedbackPage() {
             <Card key={sub.id}>
               <CardHeader>
                 <div className="flex items-center justify-between gap-2">
-                  <CardTitle className="text-base">
-                    {sub.versionTitle || `v${sub.version}`}
-                  </CardTitle>
+                  <Link href={`/stars/my-videos/${sub.id}`} className="hover:underline">
+                    <CardTitle className="text-base">
+                      {sub.versionTitle || `v${sub.version}`}
+                    </CardTitle>
+                  </Link>
                   <Badge variant="outline">
                     피드백 {sub._count.feedbacks}개
                   </Badge>
