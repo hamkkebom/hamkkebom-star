@@ -26,7 +26,7 @@ import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { FeedbackList } from "@/components/feedback/feedback-list";
 
-type SubmissionStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "REVISION_REQUESTED";
+type SubmissionStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "REVISED";
 
 type SubmissionRow = {
   id: string;
@@ -46,7 +46,7 @@ type SubmissionRow = {
       id: string;
       title: string;
     };
-  };
+  } | null;
   _count: {
     feedbacks: number;
   };
@@ -65,7 +65,7 @@ const statusLabels: Record<SubmissionStatus, string> = {
   IN_REVIEW: "리뷰중",
   APPROVED: "승인됨",
   REJECTED: "반려됨",
-  REVISION_REQUESTED: "수정요청",
+  REVISED: "수정됨",
 };
 
 const statusVariants: Record<SubmissionStatus, "default" | "secondary" | "destructive" | "outline"> = {
@@ -73,7 +73,7 @@ const statusVariants: Record<SubmissionStatus, "default" | "secondary" | "destru
   IN_REVIEW: "default",
   APPROVED: "outline",
   REJECTED: "destructive",
-  REVISION_REQUESTED: "destructive",
+  REVISED: "secondary",
 };
 
 function formatDate(dateStr: string) {
@@ -195,8 +195,8 @@ export default function AdminReviewsPage() {
                         {row.versionTitle || `v${row.version}`}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={statusVariants[row.status]}>
-                          {statusLabels[row.status]}
+                        <Badge variant={statusVariants[row.status] ?? "secondary"}>
+                          {statusLabels[row.status] ?? row.status}
                         </Badge>
                       </TableCell>
                       <TableCell>{row._count.feedbacks}개</TableCell>

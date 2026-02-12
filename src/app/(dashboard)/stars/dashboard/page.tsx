@@ -33,7 +33,7 @@ export default function StarDashboardPage() {
     IN_REVIEW: "리뷰중",
     APPROVED: "승인됨",
     REJECTED: "반려됨",
-    REVISION_REQUESTED: "수정요청",
+    REVISED: "수정됨",
     PROCESSING: "처리중",
     COMPLETED: "완료",
     CANCELLED: "취소됨",

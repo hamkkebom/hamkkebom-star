@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type SubmissionStatus = "PENDING" | "REVIEWING" | "APPROVED" | "REJECTED" | "REVISION_REQUESTED";
+type SubmissionStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "REVISED";
 
 type SubmissionRow = {
   id: string;
@@ -20,7 +20,7 @@ type SubmissionRow = {
       id: string;
       title: string;
     };
-  };
+  } | null;
   _count: {
     feedbacks: number;
   };
@@ -36,10 +36,10 @@ type MySubmissionsResponse = {
 
 const statusMap: Record<SubmissionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   PENDING: { label: "대기중", variant: "secondary" },
-  REVIEWING: { label: "리뷰중", variant: "default" },
+  IN_REVIEW: { label: "리뷰중", variant: "default" },
   APPROVED: { label: "승인됨", variant: "outline" },
   REJECTED: { label: "반려됨", variant: "destructive" },
-  REVISION_REQUESTED: { label: "수정요청", variant: "destructive" },
+  REVISED: { label: "수정됨", variant: "secondary" },
 };
 
 function formatDate(dateInput: string) {
@@ -122,8 +122,8 @@ export function SubmissionList() {
               <CardTitle className="line-clamp-1 text-base">
                 {submission.versionTitle || `슬롯 ${submission.versionSlot} v${submission.version}`}
               </CardTitle>
-              <Badge variant={statusMap[submission.status].variant}>
-                {statusMap[submission.status].label}
+              <Badge variant={statusMap[submission.status]?.variant ?? "secondary"}>
+                {statusMap[submission.status]?.label ?? submission.status}
               </Badge>
             </div>
             <CardDescription className="line-clamp-1">

@@ -5,7 +5,13 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { UploadProgress } from "@/components/video/upload-progress";
 
-type UploadStatus = "idle" | "requesting" | "uploading" | "submitting" | "done" | "error";
+type UploadStatus =
+  | "idle"
+  | "requesting"
+  | "uploading"
+  | "submitting"
+  | "done"
+  | "error";
 
 interface UploadDropzoneProps {
   assignmentId: string;
@@ -62,8 +68,10 @@ export function UploadDropzone({
 
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-          xhr.open("PUT", urlData.uploadUrl, true);
-          xhr.setRequestHeader("Content-Type", file.type);
+          xhr.open("POST", urlData.uploadUrl, true);
+
+          const formData = new FormData();
+          formData.append("file", file);
 
           xhr.upload.addEventListener("progress", (e) => {
             if (e.lengthComputable) {
@@ -79,8 +87,10 @@ export function UploadDropzone({
             }
           });
 
-          xhr.addEventListener("error", () => reject(new Error("업로드 중 네트워크 오류")));
-          xhr.send(file);
+          xhr.addEventListener("error", () =>
+            reject(new Error("업로드 중 네트워크 오류")),
+          );
+          xhr.send(formData);
         });
 
         // 3. 제출물 등록
@@ -101,7 +111,9 @@ export function UploadDropzone({
           const errData = (await submitResponse.json()) as {
             error?: { message?: string };
           };
-          throw new Error(errData.error?.message ?? "제출물 등록에 실패했습니다.");
+          throw new Error(
+            errData.error?.message ?? "제출물 등록에 실패했습니다.",
+          );
         }
 
         setStatus("done");
@@ -110,10 +122,12 @@ export function UploadDropzone({
         onComplete?.();
       } catch (error) {
         setStatus("error");
-        toast.error(error instanceof Error ? error.message : "업로드에 실패했습니다.");
+        toast.error(
+          error instanceof Error ? error.message : "업로드에 실패했습니다.",
+        );
       }
     },
-    [assignmentId, versionSlot, versionTitle, onComplete]
+    [assignmentId, versionSlot, versionTitle, onComplete],
   );
 
   const handleDrop = useCallback(
@@ -122,7 +136,7 @@ export function UploadDropzone({
       const file = e.dataTransfer.files[0];
       if (file) handleUpload(file);
     },
-    [handleUpload]
+    [handleUpload],
   );
 
   const handleFileChange = useCallback(
@@ -130,16 +144,12 @@ export function UploadDropzone({
       const file = e.target.files?.[0];
       if (file) handleUpload(file);
     },
-    [handleUpload]
+    [handleUpload],
   );
 
   if (status !== "idle" && status !== "error") {
     return (
-      <UploadProgress
-        status={status}
-        progress={progress}
-        fileName={fileName}
-      />
+      <UploadProgress status={status} progress={progress} fileName={fileName} />
     );
   }
 
@@ -168,7 +178,9 @@ export function UploadDropzone({
           </svg>
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium">영상 파일을 드래그하거나 클릭하여 선택하세요</p>
+          <p className="text-sm font-medium">
+            영상 파일을 드래그하거나 클릭하여 선택하세요
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
             MP4, MOV, WebM 등 • 최대 5GB
           </p>

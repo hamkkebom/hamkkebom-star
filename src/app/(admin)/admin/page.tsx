@@ -25,7 +25,7 @@ export default function AdminDashboardPage() {
       const res = await fetch("/api/submissions?page=1&pageSize=5", { cache: "no-store" });
       if (!res.ok) throw new Error("failed");
       return (await res.json()) as {
-        data: { id: string; versionTitle: string | null; version: string; status: string; star: { name: string }; assignment: { request: { title: string } } }[];
+        data: { id: string; versionTitle: string | null; version: string; status: string; star: { name: string }; assignment: { request: { title: string } } | null }[];
         total: number;
       };
     },
@@ -48,6 +48,7 @@ export default function AdminDashboardPage() {
     IN_REVIEW: "리뷰중",
     APPROVED: "승인됨",
     REJECTED: "반려됨",
+    REVISED: "수정됨",
     PROCESSING: "처리중",
     COMPLETED: "완료",
   };
