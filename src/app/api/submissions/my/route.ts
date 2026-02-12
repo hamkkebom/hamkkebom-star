@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { SubmissionStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
 
 const submissionStatuses = new Set(Object.values(SubmissionStatus));
 
@@ -55,6 +56,11 @@ export async function GET(request: Request) {
             },
           },
         },
+        video: {
+          select: {
+            streamUid: true,
+          },
+        },
         _count: {
           select: {
             feedbacks: true,
@@ -68,11 +74,29 @@ export async function GET(request: Request) {
     prisma.submission.count({ where }),
   ]);
 
+  // 각 submission의 streamUid로 서명된 썸네일 URL 생성 (병렬 처리)
+  const rowsWithThumbnails = await Promise.all(
+    rows.map(async (row) => {
+      const uid = row.streamUid || row.video?.streamUid;
+      let signedThumbnailUrl: string | null = null;
+
+      if (uid) {
+        const token = await getSignedPlaybackToken(uid);
+        if (token) {
+          signedThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+        }
+      }
+
+      return { ...row, signedThumbnailUrl };
+    })
+  );
+
   return NextResponse.json({
-    data: rows,
+    data: rowsWithThumbnails,
     total,
     page,
     pageSize,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
   });
 }
+

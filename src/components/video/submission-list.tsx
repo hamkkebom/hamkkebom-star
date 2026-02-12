@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +19,10 @@ type SubmissionRow = {
   streamUid: string;
   status: SubmissionStatus;
   createdAt: string;
+  signedThumbnailUrl: string | null;
+  video: {
+    streamUid: string | null;
+  } | null;
   assignment: {
     request: {
       id: string;
@@ -80,7 +85,8 @@ async function fetchMySubmissions(): Promise<MySubmissionsResponse> {
 
 function SubmissionCardSkeleton() {
   return (
-    <Card>
+    <Card className="overflow-hidden">
+      <Skeleton className="aspect-video w-full" />
       <CardHeader>
         <Skeleton className="h-5 w-2/3" />
         <Skeleton className="h-4 w-1/3" />
@@ -95,7 +101,6 @@ function SubmissionCardSkeleton() {
 export function SubmissionList({ limit }: { limit?: number } = {}) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const cfHash = process.env.NEXT_PUBLIC_CF_ACCOUNT_HASH || "";
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["my-submissions"],
@@ -189,33 +194,35 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
             <Link key={submission.id} href={`/stars/my-videos/${submission.id}`} className="block">
               <Card className="transition-colors hover:border-primary/40 cursor-pointer h-full overflow-hidden">
                 {/* 썸네일 */}
-                {cfHash && submission.streamUid && (
-                  <div className="relative aspect-video w-full bg-muted">
-                    <img
-                      src={`https://customer-${cfHash}.cloudflarestream.com/${submission.streamUid}/thumbnails/thumbnail.jpg?time=1s&width=640`}
-                      alt={submission.versionTitle || "영상 러닝타임"}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
+                <div className="relative aspect-video w-full bg-muted">
+                  {submission.signedThumbnailUrl ? (
+                    <Image
+                      src={submission.signedThumbnailUrl}
+                      alt={submission.versionTitle || "영상 썸네일"}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      unoptimized
                     />
-                    <Badge
-                      variant={statusMap[submission.status]?.variant ?? "secondary"}
-                      className="absolute top-2 right-2"
-                    >
-                      {statusMap[submission.status]?.label ?? submission.status}
-                    </Badge>
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                    </div>
+                  )}
+                  <Badge
+                    variant={statusMap[submission.status]?.variant ?? "secondary"}
+                    className="absolute top-2 right-2"
+                  >
+                    {statusMap[submission.status]?.label ?? submission.status}
+                  </Badge>
+                </div>
                 <CardHeader className="gap-2">
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle className="line-clamp-1 text-base">
                       {submission.versionTitle || `v${submission.version}`}
                     </CardTitle>
-                    {/* 썸네일이 없을 경우만 헤더에 뱃지 표시 */}
-                    {(!cfHash || !submission.streamUid) && (
-                      <Badge variant={statusMap[submission.status]?.variant ?? "secondary"}>
-                        {statusMap[submission.status]?.label ?? submission.status}
-                      </Badge>
-                    )}
                   </div>
                   <CardDescription className="line-clamp-1">
                     {submission?.assignment?.request?.title ?? '제목 없음'}
