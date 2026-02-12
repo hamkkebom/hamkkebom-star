@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -116,27 +117,29 @@ export function SubmissionList() {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {data.data.map((submission) => (
-        <Card key={submission.id} className="transition-colors hover:border-primary/40">
-          <CardHeader className="gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle className="line-clamp-1 text-base">
-                {submission.versionTitle || `슬롯 ${submission.versionSlot} v${submission.version}`}
-              </CardTitle>
-              <Badge variant={statusMap[submission.status]?.variant ?? "secondary"}>
-                {statusMap[submission.status]?.label ?? submission.status}
-              </Badge>
-            </div>
-            <CardDescription className="line-clamp-1">
-              {submission?.assignment?.request?.title ?? '제목 없음'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>v{submission.version} • 슬롯 {submission.versionSlot}</span>
-            <span>
-              피드백 {submission._count.feedbacks}개 • {formatDate(submission.createdAt)}
-            </span>
-          </CardContent>
-        </Card>
+        <Link key={submission.id} href={`/stars/my-videos/${submission.id}`} className="block">
+          <Card className="transition-colors hover:border-primary/40 cursor-pointer h-full">
+            <CardHeader className="gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="line-clamp-1 text-base">
+                  {submission.versionTitle || `슬롯 ${submission.versionSlot} v${submission.version}`}
+                </CardTitle>
+                <Badge variant={statusMap[submission.status]?.variant ?? "secondary"}>
+                  {statusMap[submission.status]?.label ?? submission.status}
+                </Badge>
+              </div>
+              <CardDescription className="line-clamp-1">
+                {submission?.assignment?.request?.title ?? '제목 없음'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>v{submission.version} • 슬롯 {submission.versionSlot}</span>
+              <span>
+                피드백 {submission._count.feedbacks}개 • {formatDate(submission.createdAt)}
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
       ))}
     </div>
   );
