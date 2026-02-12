@@ -3,11 +3,10 @@
 import { useRef, useEffect, useState } from "react";
 
 interface VideoPlayerProps {
-  /** Cloudflare Stream UID — 아이프레임 임베드 사용 */
+  /** Cloudflare Stream UID — 서명된 토큰으로 iframe embed 사용 */
   streamUid?: string;
   /**
    * HLS 재생 URL 또는 일반 영상 URL (streamUid가 없을 때 fallback).
-   * Cloudflare Stream의 경우: https://customer-xxx.cloudflarestream.com/{uid}/manifest/video.m3u8
    */
   src?: string;
   /** 현재 재생 시간(초)이 변경될 때 호출 */
@@ -19,20 +18,71 @@ interface VideoPlayerProps {
 }
 
 export function VideoPlayer({ streamUid, src, onTimeUpdate, onDurationChange, seekTo }: VideoPlayerProps) {
-  const [iframeError, setIframeError] = useState(false);
+  const [state, setState] = useState<{
+    embedUrl: string | null;
+    loading: boolean;
+    error: string | null;
+  }>({ embedUrl: null, loading: !!streamUid, error: null });
+
+  // streamUid가 있으면 서명된 토큰 발급
+  useEffect(() => {
+    if (!streamUid) return;
+
+    let cancelled = false;
+
+    async function fetchToken() {
+      try {
+        const res = await fetch(`/api/videos/stream-token?uid=${encodeURIComponent(streamUid!)}`);
+        if (!res.ok) throw new Error("토큰 발급 실패");
+        const json = (await res.json()) as { data: { embedUrl: string } };
+        if (!cancelled) {
+          setState({ embedUrl: json.data.embedUrl, loading: false, error: null });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setState({ embedUrl: null, loading: false, error: err instanceof Error ? err.message : "영상을 불러올 수 없습니다." });
+        }
+      }
+    }
+
+    fetchToken();
+
+    return () => { cancelled = true; };
+  }, [streamUid]);
+
+  const { embedUrl, loading, error } = state;
 
   // Cloudflare Stream iframe embed 모드
-  if (streamUid && !iframeError) {
-    const iframeSrc = `https://iframe.videodelivery.net/${streamUid}`;
+  if (streamUid) {
+    if (loading) {
+      return (
+        <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-black">
+          <div className="flex items-center gap-2 text-white/60">
+            <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span className="text-sm">영상 로딩중...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (error || !embedUrl) {
+      return (
+        <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-muted text-muted-foreground">
+          <p className="text-sm">{error || "영상을 불러올 수 없습니다."}</p>
+        </div>
+      );
+    }
 
     return (
       <div className="overflow-hidden rounded-xl bg-black">
         <iframe
-          src={iframeSrc}
+          src={embedUrl}
           className="aspect-video w-full"
           allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
           allowFullScreen
-          onError={() => setIframeError(true)}
         />
       </div>
     );
@@ -56,7 +106,6 @@ function HlsVideoPlayer({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // HLS.js 동적 로드 (클라이언트에서만)
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
@@ -67,9 +116,7 @@ function HlsVideoPlayer({
       if (!video) return;
 
       if (src.endsWith(".m3u8") || src.includes("manifest/video")) {
-        // HLS 스트림
         if (video.canPlayType("application/vnd.apple.mpegurl")) {
-          // Safari 네이티브 HLS
           video.src = src;
         } else {
           try {
@@ -83,7 +130,6 @@ function HlsVideoPlayer({
               video.src = src;
             }
           } catch {
-            // hls.js 로드 실패 시 직접 재생 시도
             video.src = src;
           }
         }
@@ -99,7 +145,6 @@ function HlsVideoPlayer({
     };
   }, [src]);
 
-  // seekTo 변경 시 이동
   useEffect(() => {
     const video = videoRef.current;
     if (video && seekTo !== undefined && Number.isFinite(seekTo)) {
