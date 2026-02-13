@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,12 +18,11 @@ type UserData = {
 };
 
 export default function SettingsPage() {
-  const queryClient = useQueryClient();
   const supabase = createClient();
 
-  // Email change
-  const [newEmail, setNewEmail] = useState("");
-  const [changingEmail, setChangingEmail] = useState(false);
+  // Email change — disabled
+  // const [newEmail, setNewEmail] = useState("");
+  // const [changingEmail, setChangingEmail] = useState(false);
 
   // Password change
   const [newPassword, setNewPassword] = useState("");
@@ -40,49 +39,8 @@ export default function SettingsPage() {
     },
   });
 
-  async function handleEmailChange() {
-    const trimmed = newEmail.trim();
-    if (!trimmed) {
-      toast.error("새 이메일을 입력해주세요.");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      toast.error("올바른 이메일 형식이 아닙니다.");
-      return;
-    }
-    if (trimmed === data?.email) {
-      toast.error("현재 이메일과 동일합니다.");
-      return;
-    }
-
-    setChangingEmail(true);
-    try {
-      // 1. Supabase Auth 이메일 변경
-      const { error: authError } = await supabase.auth.updateUser({
-        email: trimmed,
-      });
-      if (authError) throw authError;
-
-      // 2. DB User 레코드 이메일도 업데이트
-      const res = await fetch("/api/users/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmed }),
-      });
-      if (!res.ok) {
-        const err = (await res.json()) as { message?: string };
-        throw new Error(err.message ?? "DB 이메일 업데이트 실패");
-      }
-
-      toast.success("이메일이 변경되었습니다.");
-      setNewEmail("");
-      await queryClient.invalidateQueries({ queryKey: ["user-me"] });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "이메일 변경에 실패했습니다.");
-    } finally {
-      setChangingEmail(false);
-    }
-  }
+  // handleEmailChange — 비활성화됨 (Supabase 이메일 확인 문제)
+  // 이메일 변경이 필요한 경우 Supabase 대시보드에서 직접 변경해야 합니다.
 
   async function handlePasswordChange() {
     if (!newPassword.trim()) {
@@ -150,11 +108,13 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* 이메일 변경 */}
-      <Card>
+      {/* 이메일 변경 — 비활성화 */}
+      <Card className="opacity-60">
         <CardHeader>
           <CardTitle className="text-base">이메일 변경</CardTitle>
-          <CardDescription>로그인에 사용하는 이메일 주소를 변경합니다.</CardDescription>
+          <CardDescription>
+            이메일 변경 기능은 현재 사용할 수 없습니다. 이메일 변경이 필요한 경우 관리자에게 문의해 주세요.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -162,13 +122,12 @@ export default function SettingsPage() {
             <Input
               id="new-email"
               type="email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="새 이메일 주소를 입력하세요"
+              disabled
+              placeholder="관리자 문의 필요"
             />
           </div>
-          <Button onClick={handleEmailChange} disabled={changingEmail}>
-            {changingEmail ? "변경 중..." : "이메일 변경"}
+          <Button disabled>
+            이메일 변경 (비활성화)
           </Button>
         </CardContent>
       </Card>
