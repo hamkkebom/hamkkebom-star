@@ -129,7 +129,7 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
           <SubmissionCardSkeleton key={`submission-skeleton-${i}`} />
         ))}
@@ -189,7 +189,7 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
           <p className="text-sm text-muted-foreground">조건에 맞는 제출물이 없습니다.</p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {filteredData.map((submission) => (
             <Link key={submission.id} href={`/stars/my-videos/${submission.id}`} className="block">
               <Card className="transition-colors hover:border-primary/40 cursor-pointer h-full overflow-hidden">
