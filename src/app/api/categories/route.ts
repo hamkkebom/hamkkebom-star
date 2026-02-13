@@ -9,5 +9,12 @@ export async function GET() {
     orderBy: { name: "asc" },
   });
 
-  return NextResponse.json({ data: categories });
+  return NextResponse.json(
+    { data: categories },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+      },
+    }
+  );
 }

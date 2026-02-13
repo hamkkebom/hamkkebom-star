@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +97,7 @@ export default function AdminReviewsPage() {
   const [currentTime, setCurrentTime] = useState(0);
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
   const [rejectReason, setRejectReason] = useState("");
+  const handleTimeUpdate = useCallback((t: number) => setCurrentTime(t), []);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-submissions"],
@@ -241,8 +242,8 @@ export default function AdminReviewsPage() {
 
               <div className="space-y-4">
                 <VideoPlayer
-                  src={`https://videodelivery.net/${selectedSubmission.streamUid}/manifest/video.m3u8`}
-                  onTimeUpdate={setCurrentTime}
+                  streamUid={selectedSubmission.streamUid}
+                  onTimeUpdate={handleTimeUpdate}
                   seekTo={seekTo}
                 />
 
@@ -270,8 +271,9 @@ export default function AdminReviewsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">반려 사유</label>
+                  <label htmlFor="reject-reason" className="text-sm font-medium">반려 사유</label>
                   <textarea
+                    id="reject-reason"
                     className="w-full rounded-md border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                     rows={2}
                     placeholder="반려 사유를 입력하세요..."

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, Sparkles, LogOut, LayoutDashboard } from "lucide-react";
+import { Film, Sparkles, LogOut, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,8 +16,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/stores/auth-store";
 
-const navLinks = [
-  { href: "/", label: "영상 라이브러리", icon: Film, exact: true },
+const navLinks: { href: string; label: string; icon: typeof Film; exact?: boolean }[] = [
   // { href: "/stars", label: "스타 소개", icon: Sparkles },  // 임시 비활성화
 ];
 
@@ -82,8 +81,8 @@ export function PublicHeader() {
             <>
               <Link href={user.role === "ADMIN" ? "/admin" : "/stars/dashboard"}>
                 <Button variant="outline" size="sm" className="gap-1.5">
-                  <LayoutDashboard className="h-4 w-4" />
-                  <span className="hidden sm:inline">대시보드</span>
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">마이페이지</span>
                 </Button>
               </Link>
               <DropdownMenu>
@@ -96,10 +95,16 @@ export function PublicHeader() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => {
-                    window.location.href = user.role === "ADMIN" ? "/admin" : "/stars/dashboard";
+                    window.location.href = user.role === "ADMIN" ? "/admin" : "/stars/profile";
                   }}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    대시보드
+                    <User className="mr-2 h-4 w-4" />
+                    프로필
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    window.location.href = user.role === "ADMIN" ? "/admin" : "/stars/settings";
+                  }}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    설정
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>

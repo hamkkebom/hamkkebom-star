@@ -84,7 +84,8 @@ export function FeedbackList({ submissionId, onTimecodeClick }: FeedbackListProp
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["feedbacks", submissionId],
     queryFn: () => fetchFeedbacks(submissionId),
-    refetchInterval: 10_000,
+    // 폴링 제거 — 피드백 작성 시 queryClient.invalidateQueries로 갱신
+    refetchInterval: false,
   });
 
   if (isLoading) {

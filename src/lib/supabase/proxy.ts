@@ -73,10 +73,17 @@ export async function updateSession(request: NextRequest) {
 
   const authId = getAuthIdFromClaims(claims);
 
-  // All pages require authentication except /auth/*
   const pathname = request.nextUrl.pathname;
 
-  if (!authId && !pathname.startsWith("/auth")) {
+  // 공개 경로 — 인증 불필요
+  const publicPrefixes = ["/auth", "/videos", "/api/videos", "/api/stars", "/api/categories", "/api/health"];
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname === "/stars" ||
+    pathname.startsWith("/stars/profile/") ||
+    publicPrefixes.some((prefix) => pathname.startsWith(prefix));
+
+  if (!authId && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);

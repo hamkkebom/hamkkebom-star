@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { VideoPlayer } from "@/components/video/video-player";
 import {
   ArrowLeft,
   Calendar,
@@ -184,25 +185,20 @@ export default function VideoDetailPage() {
           {/* Video Player */}
           <div className="aspect-video w-full overflow-hidden">
             {video.streamUid ? (
-              <iframe
-                src={`https://iframe.videodelivery.net/${video.streamUid}`}
-                className="h-full w-full border-0"
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-              />
+              <VideoPlayer streamUid={video.streamUid} />
             ) : video.thumbnailUrl || video.streamUid ? (
               <div className="relative h-full w-full">
                 <Image
-                  src={
-                    video.streamUid
-                      ? `https://videodelivery.net/${video.streamUid}/thumbnails/thumbnail.jpg?width=1280&height=720&fit=crop`
-                      : video.thumbnailUrl!
-                  }
-                  alt={video.title}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
+                   src={
+                     video.streamUid
+                       ? `https://videodelivery.net/${video.streamUid}/thumbnails/thumbnail.jpg?width=1280&height=720&fit=crop`
+                       : video.thumbnailUrl!
+                   }
+                   alt={video.title}
+                   fill
+                   className="object-cover"
+                   sizes="(max-width: 1280px) 100vw, 1280px"
+                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
                     <Play className="ml-1 h-8 w-8 text-white" />
@@ -366,13 +362,13 @@ export default function VideoDetailPage() {
                 <div className="flex items-end gap-4">
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-[#06060e] bg-slate-800 shadow-xl">
                     {video.owner.avatarUrl ? (
-                      <Image
-                        src={video.owner.avatarUrl}
-                        alt={video.owner.chineseName || video.owner.name}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
+                     <Image
+                       src={video.owner.avatarUrl}
+                       alt={video.owner.chineseName || video.owner.name}
+                       fill
+                       className="object-cover"
+                       sizes="64px"
+                     />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-indigo-600 text-lg font-black text-white">
                         {(video.owner.chineseName || video.owner.name).charAt(0)}
@@ -486,12 +482,12 @@ export default function VideoDetailPage() {
                     <div className="relative aspect-video overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/[0.06] transition-all duration-300 group-hover:ring-violet-500/20 group-hover:shadow-lg group-hover:shadow-violet-500/5">
                       {thumb ? (
                         <Image
-                          src={thumb}
-                          alt={rv.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          unoptimized
-                        />
+                           src={thumb}
+                           alt={rv.title}
+                           fill
+                           className="object-cover transition-transform duration-500 group-hover:scale-105"
+                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <Tv className="h-8 w-8 text-white/10" />

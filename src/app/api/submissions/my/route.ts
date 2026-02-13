@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SubmissionStatus } from "@/generated/prisma/client";
+import { Prisma, SubmissionStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
@@ -28,6 +28,7 @@ export async function GET(request: Request) {
   const pageSize = Math.min(50, Math.max(1, Number(searchParams.get("pageSize") ?? "20") || 20));
   const assignmentId = searchParams.get("assignmentId")?.trim();
   const status = searchParams.get("status");
+  const hasFeedback = searchParams.get("hasFeedback");
 
   if (status && status !== "ALL" && !submissionStatuses.has(status as SubmissionStatus)) {
     return NextResponse.json(
@@ -36,11 +37,15 @@ export async function GET(request: Request) {
     );
   }
 
-  const where = {
+  const where: Prisma.SubmissionWhereInput = {
     starId: user.id,
     ...(assignmentId ? { assignmentId } : {}),
     ...(status && status !== "ALL" ? { status: status as SubmissionStatus } : {}),
   };
+
+  if (hasFeedback === "true") {
+    where.feedbacks = { some: {} };
+  }
 
   const [rows, total] = await Promise.all([
     prisma.submission.findMany({
@@ -81,9 +86,13 @@ export async function GET(request: Request) {
       let signedThumbnailUrl: string | null = null;
 
       if (uid) {
-        const token = await getSignedPlaybackToken(uid);
-        if (token) {
-          signedThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+        try {
+          const token = await getSignedPlaybackToken(uid);
+          if (token) {
+            signedThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+          }
+        } catch {
+          signedThumbnailUrl = null;
         }
       }
 
@@ -99,4 +108,3 @@ export async function GET(request: Request) {
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
   });
 }
-

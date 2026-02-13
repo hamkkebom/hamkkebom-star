@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -10,47 +10,57 @@ function formatAmount(amount: number) {
 }
 
 export default function AdminDashboardPage() {
-  const { data: videos, isLoading: loadingVid } = useQuery({
-    queryKey: ["admin-dash-videos"],
-    queryFn: async () => {
-      const res = await fetch("/api/videos?page=1&pageSize=1", { cache: "no-store" });
-      if (!res.ok) throw new Error("failed");
-      return (await res.json()) as { total: number };
-    },
+  const [videosQuery, pendingQuery, submissionsQuery, settlementsQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ["admin-dash-videos"],
+        queryFn: async () => {
+          const res = await fetch("/api/videos?page=1&pageSize=1", { cache: "no-store" });
+          if (!res.ok) throw new Error("failed");
+          return (await res.json()) as { total: number };
+        },
+      },
+      {
+        queryKey: ["admin-dash-pending"],
+        queryFn: async () => {
+          const res = await fetch("/api/submissions?page=1&pageSize=1&status=PENDING", { cache: "no-store" });
+          if (!res.ok) throw new Error("failed");
+          return (await res.json()) as { total: number };
+        },
+      },
+      {
+        queryKey: ["admin-dash-submissions"],
+        queryFn: async () => {
+          const res = await fetch("/api/submissions?page=1&pageSize=5", { cache: "no-store" });
+          if (!res.ok) throw new Error("failed");
+          return (await res.json()) as {
+            data: { id: string; versionTitle: string | null; version: string; status: string; star: { name: string; chineseName: string | null }; assignment: { request: { title: string } } | null }[];
+            total: number;
+          };
+        },
+      },
+      {
+        queryKey: ["admin-dash-settlements"],
+        queryFn: async () => {
+          const res = await fetch("/api/settlements?page=1&pageSize=5", { cache: "no-store" });
+          if (!res.ok) throw new Error("failed");
+          return (await res.json()) as {
+            data: { id: string; year: number; month: number; totalAmount: number; status: string; star: { name: string; chineseName: string | null } }[];
+            total: number;
+          };
+        },
+      },
+    ],
   });
 
-  const { data: pendingCount, isLoading: loadingPending } = useQuery({
-    queryKey: ["admin-dash-pending"],
-    queryFn: async () => {
-      const res = await fetch("/api/submissions?page=1&pageSize=1&status=PENDING", { cache: "no-store" });
-      if (!res.ok) throw new Error("failed");
-      return (await res.json()) as { total: number };
-    },
-  });
-
-  const { data: submissions, isLoading: loadingSub } = useQuery({
-    queryKey: ["admin-dash-submissions"],
-    queryFn: async () => {
-      const res = await fetch("/api/submissions?page=1&pageSize=5", { cache: "no-store" });
-      if (!res.ok) throw new Error("failed");
-      return (await res.json()) as {
-        data: { id: string; versionTitle: string | null; version: string; status: string; star: { name: string; chineseName: string | null }; assignment: { request: { title: string } } | null }[];
-        total: number;
-      };
-    },
-  });
-
-  const { data: settlements, isLoading: loadingSet } = useQuery({
-    queryKey: ["admin-dash-settlements"],
-    queryFn: async () => {
-      const res = await fetch("/api/settlements?page=1&pageSize=5", { cache: "no-store" });
-      if (!res.ok) throw new Error("failed");
-      return (await res.json()) as {
-        data: { id: string; year: number; month: number; totalAmount: number; status: string; star: { name: string; chineseName: string | null } }[];
-        total: number;
-      };
-    },
-  });
+  const videos = videosQuery.data;
+  const pendingCount = pendingQuery.data;
+  const submissions = submissionsQuery.data;
+  const settlements = settlementsQuery.data;
+  const loadingVid = videosQuery.isLoading;
+  const loadingPending = pendingQuery.isLoading;
+  const loadingSub = submissionsQuery.isLoading;
+  const loadingSet = settlementsQuery.isLoading;
 
   const statusLabels: Record<string, string> = {
     PENDING: "대기중",

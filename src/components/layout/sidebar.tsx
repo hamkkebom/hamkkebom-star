@@ -63,7 +63,7 @@ export function Sidebar() {
     <aside className="flex h-full w-64 flex-col border-r bg-sidebar">
       {/* Brand */}
       <div className="flex h-14 items-center px-6">
-        <Link href="/stars/dashboard" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
             봄
           </span>

@@ -54,19 +54,26 @@ export async function GET(request: Request) {
     prisma.user.count({ where }),
   ]);
 
-  return NextResponse.json({
-    data: rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      avatarUrl: row.avatarUrl,
-      bio: row.portfolio?.bio ?? null,
-      showreel: row.portfolio?.showreel ?? null,
-      videoCount: row._count.videos,
-      createdAt: row.createdAt,
-    })),
-    total,
-    page,
-    pageSize,
-    totalPages: Math.max(1, Math.ceil(total / pageSize)),
-  });
+  return NextResponse.json(
+    {
+      data: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        avatarUrl: row.avatarUrl,
+        bio: row.portfolio?.bio ?? null,
+        showreel: row.portfolio?.showreel ?? null,
+        videoCount: row._count.videos,
+        createdAt: row.createdAt,
+      })),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200",
+      },
+    }
+  );
 }

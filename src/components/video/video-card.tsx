@@ -76,25 +76,23 @@ export function VideoCard({
           {thumb ? (
             <>
               {/* Static thumbnail (always rendered) */}
-              <Image
-                src={thumb}
-                alt={title}
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                className={`object-cover transition-all duration-500 ${showAnimated ? "opacity-0" : "opacity-100 group-hover:scale-105"}`}
-                unoptimized
-              />
-              {/* Animated GIF (shown on hover) */}
-              {showAnimated && streamUid && (
-                <Image
-                  src={getAnimatedThumb(streamUid)}
-                  alt={`${title} 미리보기`}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover"
-                  unoptimized
-                />
-              )}
+               <Image
+                 src={thumb}
+                 alt={title}
+                 fill
+                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                 className={`object-cover transition-all duration-500 ${showAnimated ? "opacity-0" : "opacity-100 group-hover:scale-105"}`}
+               />
+               {/* Animated GIF (shown on hover) */}
+               {showAnimated && streamUid && (
+                 <Image
+                   src={getAnimatedThumb(streamUid)}
+                   alt={`${title} 미리보기`}
+                   fill
+                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                   className="object-cover"
+                 />
+               )}
             </>
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-violet-100 to-indigo-100 dark:from-violet-900/20 dark:to-indigo-900/20">

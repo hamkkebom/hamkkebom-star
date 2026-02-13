@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -10,23 +10,31 @@ function formatAmount(amount: number) {
 }
 
 export default function StarDashboardPage() {
-  const { data: submissions, isLoading: loadingSub } = useQuery({
-    queryKey: ["dashboard-submissions"],
-    queryFn: async () => {
-      const res = await fetch("/api/submissions/my?page=1&pageSize=5", { cache: "no-store" });
-      if (!res.ok) throw new Error("failed");
-      return (await res.json()) as { data: { id: string; versionTitle: string | null; version: string; status: string; createdAt: string; assignment: { request: { title: string } }; _count?: { feedbacks: number } }[]; total: number };
-    },
+  const [submissionsQuery, settlementsQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ["dashboard-submissions"],
+        queryFn: async () => {
+          const res = await fetch("/api/submissions/my?page=1&pageSize=5", { cache: "no-store" });
+          if (!res.ok) throw new Error("failed");
+          return (await res.json()) as { data: { id: string; versionTitle: string | null; version: string; status: string; createdAt: string; assignment: { request: { title: string } }; _count?: { feedbacks: number } }[]; total: number };
+        },
+      },
+      {
+        queryKey: ["dashboard-settlements"],
+        queryFn: async () => {
+          const res = await fetch("/api/settlements?page=1&pageSize=5", { cache: "no-store" });
+          if (!res.ok) throw new Error("failed");
+          return (await res.json()) as { data: { id: string; year: number; month: number; totalAmount: number; status: string }[]; total: number };
+        },
+      },
+    ],
   });
 
-  const { data: settlements, isLoading: loadingSet } = useQuery({
-    queryKey: ["dashboard-settlements"],
-    queryFn: async () => {
-      const res = await fetch("/api/settlements?page=1&pageSize=5", { cache: "no-store" });
-      if (!res.ok) throw new Error("failed");
-      return (await res.json()) as { data: { id: string; year: number; month: number; totalAmount: number; status: string }[]; total: number };
-    },
-  });
+  const submissions = submissionsQuery.data;
+  const settlements = settlementsQuery.data;
+  const loadingSub = submissionsQuery.isLoading;
+  const loadingSet = settlementsQuery.isLoading;
 
   const statusLabels: Record<string, string> = {
     PENDING: "대기중",

@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { UploadDropzone } from "@/components/video/upload-dropzone";
 import { SubmissionList } from "@/components/video/submission-list";
+import { ClipboardList, FolderOpen } from "lucide-react";
 import Link from "next/link";
 
 type AssignmentItem = {
@@ -61,9 +63,23 @@ export function UploadPageClient({
           <div className="space-y-2">
             <Label>프로젝트 배정</Label>
             {assignments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                수락한 프로젝트가 없습니다. 프로젝트 게시판에서 요청을 수락해 주세요.
-              </p>
+              <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-10 px-6 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                  <FolderOpen className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">수락한 프로젝트가 없습니다</p>
+                  <p className="text-sm text-muted-foreground">
+                    영상을 업로드하려면 먼저 제작요청 게시판에서 프로젝트를 수락해야 합니다.
+                  </p>
+                </div>
+                <Button asChild>
+                  <Link href="/stars/project-board" className="gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    제작요청 게시판으로 이동
+                  </Link>
+                </Button>
+              </div>
             ) : (
               <Select value={selectedAssignmentId} onValueChange={setSelectedAssignmentId}>
                 <SelectTrigger>

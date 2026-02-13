@@ -117,15 +117,23 @@ export async function POST(request: Request) {
         return acc;
       }, {});
 
+      const starIds = Object.keys(groupedByStar);
+      const stars = await tx.user.findMany({
+        where: {
+          id: {
+            in: starIds,
+          },
+        },
+        select: {
+          id: true,
+          baseRate: true,
+        },
+      });
+      const starById = new Map(stars.map((star) => [star.id, star]));
+
       const settlements = await Promise.all(
         Object.entries(groupedByStar).map(async ([starId, submissionIds]) => {
-          const star = await tx.user.findUnique({
-            where: { id: starId },
-            select: {
-              id: true,
-              baseRate: true,
-            },
-          });
+          const star = starById.get(starId);
 
           if (!star) {
             throw {

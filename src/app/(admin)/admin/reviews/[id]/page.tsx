@@ -12,7 +12,7 @@ import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { FeedbackList } from "@/components/feedback/feedback-list";
 import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 type Feedback = {
   id: string;
@@ -68,6 +68,7 @@ export default function ReviewDetailPage() {
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
+  const handleTimeUpdate = useCallback((t: number) => setCurrentTime(t), []);
 
   const { data, isLoading, error } = useQuery<{ data: SubmissionDetail }>({
     queryKey: ["submission-detail", id],
@@ -155,7 +156,7 @@ export default function ReviewDetailPage() {
           {(sub.streamUid || sub.video?.streamUid) ? (
             <VideoPlayer
               streamUid={(sub.streamUid || sub.video?.streamUid)!}
-              onTimeUpdate={setCurrentTime}
+              onTimeUpdate={handleTimeUpdate}
               seekTo={seekTo}
             />
           ) : (
