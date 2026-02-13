@@ -32,7 +32,7 @@ type SettlementRow = {
   month: number;
   totalAmount: number;
   status: string;
-  star: { id: string; name: string; email: string };
+  star: { id: string; name: string; chineseName: string | null; email: string };
   _count: { items: number };
 };
 
@@ -178,7 +178,7 @@ export default function AdminSettlementsPage() {
                   rows.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell className="font-medium">{row.year}년 {String(row.month).padStart(2, "0")}월</TableCell>
-                      <TableCell>{row.star.name}</TableCell>
+                      <TableCell>{row.star.chineseName || row.star.name}</TableCell>
                       <TableCell>{row._count.items}건</TableCell>
                       <TableCell className="tabular-nums">{formatAmount(Number(row.totalAmount))}</TableCell>
                       <TableCell>

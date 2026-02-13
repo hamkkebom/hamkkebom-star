@@ -26,7 +26,7 @@ const navItems = [
 ];
 
 const externalItems = [
-  { href: "/", label: "영상 브라우저", icon: Play },
+  { href: "/", label: "영상 브라우저", icon: Play, exact: true },
 ];
 
 export function AdminSidebar() {
@@ -63,7 +63,7 @@ export function AdminSidebar() {
         })}
         <Separator className="my-3" />
         {externalItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}

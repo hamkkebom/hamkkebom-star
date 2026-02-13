@@ -17,6 +17,7 @@ import Link from "next/link";
 type StarRow = {
   id: string;
   name: string;
+  chineseName: string | null;
   email: string;
   role: string;
   specialty: string | null;
@@ -84,7 +85,7 @@ export default function AdminStarsPage() {
                 ) : (
                   rows.map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell className="font-medium">{row.chineseName || row.name}</TableCell>
                       <TableCell>{row.email}</TableCell>
                       <TableCell>{row.specialty ?? "-"}</TableCell>
                       <TableCell className="tabular-nums">

@@ -121,13 +121,13 @@ export default function AdminStarDetailPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-lg font-bold">
-          {star.name.charAt(0)}
+          {(star.chineseName || star.name).charAt(0)}
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">
-            {star.name}
-            {star.chineseName && (
-              <span className="text-muted-foreground text-base ml-2">({star.chineseName})</span>
+            {star.chineseName || star.name}
+            {star.chineseName && star.name && (
+              <span className="text-muted-foreground text-base ml-2">({star.name})</span>
             )}
           </h1>
           <p className="text-sm text-muted-foreground">

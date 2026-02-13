@@ -177,8 +177,8 @@ export default function AdminUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>이름</TableHead>
-                  <TableHead>한글이름</TableHead>
+                  <TableHead>한문이름</TableHead>
+                  <TableHead>이름(한글)</TableHead>
                   <TableHead>이메일</TableHead>
                   <TableHead>역할</TableHead>
                   <TableHead>상태</TableHead>
@@ -212,7 +212,7 @@ export default function AdminUsersPage() {
                             row.role === "ADMIN" ? "default" : "secondary"
                           }
                         >
-                          {row.role}
+                          {row.role === "ADMIN" ? "관리자" : row.role === "STAR" ? "STAR" : row.role}
                         </Badge>
                       </TableCell>
                       <TableCell>

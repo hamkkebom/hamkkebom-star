@@ -43,6 +43,7 @@ export async function GET(request: Request) {
         id: true,
         email: true,
         name: true,
+        chineseName: true,
         phone: true,
         avatarUrl: true,
         baseRate: true,

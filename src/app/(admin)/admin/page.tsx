@@ -19,13 +19,22 @@ export default function AdminDashboardPage() {
     },
   });
 
+  const { data: pendingCount, isLoading: loadingPending } = useQuery({
+    queryKey: ["admin-dash-pending"],
+    queryFn: async () => {
+      const res = await fetch("/api/submissions?page=1&pageSize=1&status=PENDING", { cache: "no-store" });
+      if (!res.ok) throw new Error("failed");
+      return (await res.json()) as { total: number };
+    },
+  });
+
   const { data: submissions, isLoading: loadingSub } = useQuery({
     queryKey: ["admin-dash-submissions"],
     queryFn: async () => {
       const res = await fetch("/api/submissions?page=1&pageSize=5", { cache: "no-store" });
       if (!res.ok) throw new Error("failed");
       return (await res.json()) as {
-        data: { id: string; versionTitle: string | null; version: string; status: string; star: { name: string }; assignment: { request: { title: string } } | null }[];
+        data: { id: string; versionTitle: string | null; version: string; status: string; star: { name: string; chineseName: string | null }; assignment: { request: { title: string } } | null }[];
         total: number;
       };
     },
@@ -37,7 +46,7 @@ export default function AdminDashboardPage() {
       const res = await fetch("/api/settlements?page=1&pageSize=5", { cache: "no-store" });
       if (!res.ok) throw new Error("failed");
       return (await res.json()) as {
-        data: { id: string; year: number; month: number; totalAmount: number; status: string; star: { name: string } }[];
+        data: { id: string; year: number; month: number; totalAmount: number; status: string; star: { name: string; chineseName: string | null } }[];
         total: number;
       };
     },
@@ -82,11 +91,7 @@ export default function AdminDashboardPage() {
           <CardHeader className="pb-2">
             <CardDescription>대기 중 제출물</CardDescription>
             <CardTitle className="text-2xl">
-              {loadingSub ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                `${submissions?.data.filter((s) => s.status === "PENDING").length ?? 0}개`
-              )}
+              {loadingPending ? <Skeleton className="h-8 w-16" /> : `${pendingCount?.total ?? 0}개`}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -122,7 +127,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted/50">
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{sub?.assignment?.request?.title ?? '제목 없음'}</p>
-                      <p className="text-xs text-muted-foreground">{sub.star.name} • {sub.versionTitle || `v${sub.version}`}</p>
+                      <p className="text-xs text-muted-foreground">{sub.star.chineseName || sub.star.name} • {sub.versionTitle || `v${sub.version}`}</p>
                     </div>
                     <span className="ml-2 whitespace-nowrap text-xs">{statusLabels[sub.status] ?? sub.status}</span>
                   </div>
@@ -154,7 +159,7 @@ export default function AdminDashboardPage() {
                 <div key={set.id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
                   <div>
                     <span className="font-medium">{set.year}년 {String(set.month).padStart(2, "0")}월</span>
-                    <span className="ml-2 text-xs text-muted-foreground">{set.star.name}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">{set.star.chineseName || set.star.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="tabular-nums">{formatAmount(Number(set.totalAmount))}</span>

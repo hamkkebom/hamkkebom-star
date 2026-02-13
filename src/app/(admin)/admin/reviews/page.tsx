@@ -39,6 +39,7 @@ type SubmissionRow = {
   star: {
     id: string;
     name: string;
+    chineseName: string | null;
     email: string;
   };
   assignment: {
@@ -95,6 +96,7 @@ export default function AdminReviewsPage() {
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionRow | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
+  const [rejectReason, setRejectReason] = useState("");
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-submissions"],
@@ -120,11 +122,11 @@ export default function AdminReviewsPage() {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
       const res = await fetch(`/api/submissions/${id}/reject`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: "관리자 반려" }),
+        body: JSON.stringify({ reason: reason || "관리자 반려" }),
       });
       if (!res.ok) {
         const err = (await res.json()) as { error?: { message?: string } };
@@ -134,6 +136,7 @@ export default function AdminReviewsPage() {
     onSuccess: async () => {
       toast.success("제출물이 반려되었습니다.");
       setSelectedSubmission(null);
+      setRejectReason("");
       await queryClient.invalidateQueries({ queryKey: ["admin-submissions"] });
     },
     onError: (err) => {
@@ -190,7 +193,7 @@ export default function AdminReviewsPage() {
                       <TableCell className="max-w-[200px] truncate font-medium">
                         {row?.assignment?.request?.title ?? '제목 없음'}
                       </TableCell>
-                      <TableCell>{row.star.name}</TableCell>
+                      <TableCell>{row.star.chineseName || row.star.name}</TableCell>
                       <TableCell>
                         {row.versionTitle || `v${row.version}`}
                       </TableCell>
@@ -232,7 +235,7 @@ export default function AdminReviewsPage() {
                   {selectedSubmission?.assignment?.request?.title ?? '제목 없음'} — {selectedSubmission.versionTitle || `v${selectedSubmission.version}`}
                 </DialogTitle>
                 <DialogDescription>
-                  {selectedSubmission.star.name} ({selectedSubmission.star.email})
+                  {selectedSubmission.star.chineseName || selectedSubmission.star.name} ({selectedSubmission.star.email})
                 </DialogDescription>
               </DialogHeader>
 
@@ -255,14 +258,26 @@ export default function AdminReviewsPage() {
                   </Button>
                   <Button
                     variant="destructive"
-                    onClick={() => rejectMutation.mutate(selectedSubmission.id)}
+                    onClick={() => rejectMutation.mutate({ id: selectedSubmission.id, reason: rejectReason })}
                     disabled={
                       rejectMutation.isPending ||
-                      selectedSubmission.status === "REJECTED"
+                      selectedSubmission.status === "REJECTED" ||
+                      !rejectReason.trim()
                     }
                   >
                     {rejectMutation.isPending ? "반려 중..." : "반려"}
                   </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">반려 사유</label>
+                  <textarea
+                    className="w-full rounded-md border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                    rows={2}
+                    placeholder="반려 사유를 입력하세요..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                  />
                 </div>
 
                 <Card>
