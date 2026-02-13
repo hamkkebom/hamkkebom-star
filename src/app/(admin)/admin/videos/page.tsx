@@ -20,7 +20,7 @@ type VideoRow = {
   streamUid: string;
   thumbnailUrl: string | null;
   createdAt: string;
-  owner: { id: string; name: string; email: string };
+  owner: { id: string; name: string; chineseName?: string | null; email: string };
   category: { id: string; name: string; slug: string } | null;
 };
 
@@ -91,7 +91,7 @@ export default function AdminVideosPage() {
                   rows.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell className="max-w-[250px] truncate font-medium">{row.title}</TableCell>
-                      <TableCell>{row.owner.name}</TableCell>
+                      <TableCell>{row.owner.chineseName || row.owner.name}</TableCell>
                       <TableCell>{row.category?.name ?? "-"}</TableCell>
                       <TableCell>
                         <Badge variant={statusMap[row.status]?.variant ?? "secondary"}>

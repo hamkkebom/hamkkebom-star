@@ -22,7 +22,7 @@ type VideoRow = {
   thumbnailUrl: string | null;
   streamUid: string;
   createdAt: string;
-  owner: { id: string; name: string; email: string };
+  owner: { id: string; name: string; chineseName: string | null; email: string };
   category: { id: string; name: string; slug: string } | null;
   technicalSpec: { duration: number | null } | null;
   _count: { eventLogs: number };
@@ -222,7 +222,7 @@ export function VideosBrowser() {
                 thumbnailUrl={video.thumbnailUrl}
                 streamUid={video.streamUid}
                 duration={video.technicalSpec?.duration ?? null}
-                ownerName={video.owner.name}
+                ownerName={video.owner.chineseName || video.owner.name}
                 categoryName={video.category?.name ?? null}
                 createdAt={video.createdAt}
               />

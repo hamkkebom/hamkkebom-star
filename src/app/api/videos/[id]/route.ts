@@ -12,7 +12,7 @@ export async function GET(_request: Request, { params }: Params) {
   const video = await prisma.video.findUnique({
     where: { id },
     include: {
-      owner: { select: { id: true, name: true, email: true, avatarUrl: true } },
+      owner: { select: { id: true, name: true, chineseName: true, email: true, avatarUrl: true } },
       category: { select: { id: true, name: true, slug: true } },
       counselor: { select: { id: true, displayName: true } },
       technicalSpec: true,
@@ -88,7 +88,7 @@ export async function PATCH(request: Request, { params }: Params) {
     where: { id },
     data,
     include: {
-      owner: { select: { id: true, name: true, email: true } },
+      owner: { select: { id: true, name: true, chineseName: true, email: true } },
       category: { select: { id: true, name: true, slug: true } },
     },
   });

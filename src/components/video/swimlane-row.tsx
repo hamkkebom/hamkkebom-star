@@ -10,7 +10,7 @@ type VideoItem = {
   thumbnailUrl: string | null;
   streamUid: string;
   createdAt: string;
-  owner: { name: string };
+  owner: { name: string; chineseName?: string | null };
   category: { name: string } | null;
   technicalSpec: { duration: number | null } | null;
 };
@@ -108,7 +108,7 @@ export function SwimlaneRow({ title, videos, icon }: SwimlaneRowProps) {
               thumbnailUrl={v.thumbnailUrl}
               streamUid={v.streamUid}
               duration={v.technicalSpec?.duration ?? null}
-              ownerName={v.owner.name}
+              ownerName={v.owner.chineseName || v.owner.name}
               categoryName={v.category?.name ?? null}
               createdAt={v.createdAt}
               compact

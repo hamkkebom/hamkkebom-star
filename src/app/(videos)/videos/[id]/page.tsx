@@ -49,7 +49,7 @@ type VideoDetail = {
   streamUid: string | null;
   thumbnailUrl: string | null;
   createdAt: string;
-  owner: { id: string; name: string; email: string; avatarUrl: string | null };
+  owner: { id: string; name: string; chineseName: string | null; email: string; avatarUrl: string | null };
   category: { id: string; name: string; slug: string } | null;
   counselor: { id: string; displayName: string } | null;
   technicalSpec: TechnicalSpec | null;
@@ -61,7 +61,7 @@ type RelatedVideo = {
   streamUid: string | null;
   thumbnailUrl: string | null;
   createdAt: string;
-  owner: { name: string };
+  owner: { name: string; chineseName?: string | null };
   technicalSpec: { duration: number | null } | null;
 };
 
@@ -368,20 +368,20 @@ export default function VideoDetailPage() {
                     {video.owner.avatarUrl ? (
                       <Image
                         src={video.owner.avatarUrl}
-                        alt={video.owner.name}
+                        alt={video.owner.chineseName || video.owner.name}
                         fill
                         className="object-cover"
                         unoptimized
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-indigo-600 text-lg font-black text-white">
-                        {video.owner.name.charAt(0)}
+                        {(video.owner.chineseName || video.owner.name).charAt(0)}
                       </div>
                     )}
                   </div>
                   <div className="min-w-0 pb-0.5">
                     <p className="truncate text-base font-bold text-white">
-                      {video.owner.name}
+                      {video.owner.chineseName || video.owner.name}
                     </p>
                     <p className="text-xs text-white/40">크리에이터</p>
                   </div>
@@ -517,7 +517,7 @@ export default function VideoDetailPage() {
                       <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-white/80 transition-colors group-hover:text-violet-300">
                         {rv.title}
                       </h3>
-                      <p className="mt-1 text-xs text-white/30">{rv.owner.name}</p>
+                      <p className="mt-1 text-xs text-white/30">{rv.owner.chineseName || rv.owner.name}</p>
                     </div>
                   </Link>
                 );
