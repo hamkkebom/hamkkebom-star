@@ -18,7 +18,7 @@ import { useAuthStore } from "@/stores/auth-store";
 
 const navLinks = [
   { href: "/", label: "영상 라이브러리", icon: Film, exact: true },
-  { href: "/stars", label: "스타 소개", icon: Sparkles },
+  // { href: "/stars", label: "스타 소개", icon: Sparkles },  // 임시 비활성화
 ];
 
 export function PublicHeader() {
