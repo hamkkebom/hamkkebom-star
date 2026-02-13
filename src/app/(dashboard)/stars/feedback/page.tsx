@@ -11,6 +11,7 @@ type MySubmission = {
   id: string;
   versionTitle: string | null;
   version: string;
+  duration: number | null;
   signedThumbnailUrl: string | null;
   assignment: {
     request: {
@@ -22,11 +23,26 @@ type MySubmission = {
   };
 };
 
+/** versionTitle이 해시/파일명처럼 보이면 null 반환 */
+function cleanVersionTitle(title: string | null): string | null {
+  if (!title) return null;
+  if (/^[a-f0-9-]{20,}$/i.test(title) || /^hf_\d+/.test(title)) return null;
+  return title;
+}
+
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  if (mins > 0) return `${mins}분 ${secs}초`;
+  return `${secs}초`;
+}
+
 async function fetchMySubmissionsWithFeedback(): Promise<MySubmission[]> {
   const res = await fetch("/api/submissions/my?page=1&pageSize=50", { cache: "no-store" });
   if (!res.ok) throw new Error("데이터를 불러오지 못했습니다.");
   const json = (await res.json()) as { data: MySubmission[] };
-  return json.data;
+  // 피드백이 있는 제출물만 필터링
+  return json.data.filter((s) => s._count.feedbacks > 0);
 }
 
 export default function FeedbackPage() {
@@ -40,7 +56,7 @@ export default function FeedbackPage() {
       <div>
         <h1 className="text-2xl font-bold">피드백 확인</h1>
         <p className="text-sm text-muted-foreground">
-          제출한 영상에 대한 피드백을 확인하세요.
+          제출한 영상에 대한 피드백을 확인하세요. 카드를 클릭하면 상세 피드백을 볼 수 있습니다.
         </p>
       </div>
 
@@ -62,9 +78,9 @@ export default function FeedbackPage() {
         </div>
       ) : !submissions?.length ? (
         <div className="rounded-xl border border-dashed px-4 py-14 text-center">
-          <h3 className="mb-1 text-lg font-semibold">제출물이 없습니다</h3>
+          <h3 className="mb-1 text-lg font-semibold">아직 피드백이 없습니다</h3>
           <p className="text-sm text-muted-foreground">
-            먼저 영상을 업로드하여 제출물을 등록해 주세요.
+            영상을 제출하면 담당자가 검토 후 피드백을 남겨드립니다.
           </p>
         </div>
       ) : (
@@ -90,18 +106,22 @@ export default function FeedbackPage() {
                       </svg>
                     </div>
                   )}
-                  {sub._count.feedbacks > 0 && (
-                    <Badge variant="default" className="absolute top-2 right-2">
-                      피드백 {sub._count.feedbacks}개
-                    </Badge>
-                  )}
+                  <Badge variant="default" className="absolute top-2 right-2">
+                    피드백 {sub._count.feedbacks}건
+                  </Badge>
                 </div>
-                <CardHeader className="gap-2">
-                  <CardTitle className="line-clamp-1 text-base">
-                    {sub.versionTitle || `v${sub.version}`}
+                <CardHeader className="gap-1 p-3">
+                  <CardTitle className="line-clamp-1 text-sm">
+                    {sub?.assignment?.request?.title ?? '프로젝트 미지정'}
                   </CardTitle>
-                  <CardDescription className="line-clamp-1">
-                    {sub?.assignment?.request?.title ?? '제목 없음'}
+                  <CardDescription className="line-clamp-1 text-xs">
+                    {(() => {
+                      const clean = cleanVersionTitle(sub.versionTitle);
+                      const parts: string[] = [`버전 ${sub.version}`];
+                      if (clean) parts.push(clean);
+                      if (sub.duration) parts.push(formatDuration(sub.duration));
+                      return parts.join(' · ');
+                    })()}
                   </CardDescription>
                 </CardHeader>
               </Card>

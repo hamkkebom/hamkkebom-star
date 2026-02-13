@@ -19,6 +19,8 @@ type SubmissionRow = {
   streamUid: string;
   status: SubmissionStatus;
   createdAt: string;
+  submittedAt: string | null;
+  duration: number | null;
   signedThumbnailUrl: string | null;
   video: {
     streamUid: string | null;
@@ -66,9 +68,22 @@ function formatDate(dateInput: string) {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
   }).format(date);
+}
+
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  if (mins > 0) return `${mins}분 ${secs}초`;
+  return `${secs}초`;
+}
+
+/** versionTitle이 해시/파일명처럼 보이면 null 반환 */
+function cleanVersionTitle(title: string | null): string | null {
+  if (!title) return null;
+  // 해시 패턴 (hf_20260130_..., uuid 등) 감지
+  if (/^[a-f0-9-]{20,}$/i.test(title) || /^hf_\d+/.test(title)) return null;
+  return title;
 }
 
 async function fetchMySubmissions(): Promise<MySubmissionsResponse> {
@@ -218,20 +233,24 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
                     {statusMap[submission.status]?.label ?? submission.status}
                   </Badge>
                 </div>
-                <CardHeader className="gap-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="line-clamp-1 text-base">
-                      {submission.versionTitle || `v${submission.version}`}
-                    </CardTitle>
-                  </div>
-                  <CardDescription className="line-clamp-1">
-                    {submission?.assignment?.request?.title ?? '제목 없음'}
+                <CardHeader className="gap-1 p-3">
+                  <CardTitle className="line-clamp-1 text-sm">
+                    {submission?.assignment?.request?.title ?? '프로젝트 미지정'}
+                  </CardTitle>
+                  <CardDescription className="line-clamp-1 text-xs">
+                    {(() => {
+                      const clean = cleanVersionTitle(submission.versionTitle);
+                      const parts: string[] = [`버전 ${submission.version}`];
+                      if (clean) parts.push(clean);
+                      if (submission.duration) parts.push(formatDuration(submission.duration));
+                      return parts.join(' · ');
+                    })()}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>{formatDate(submission.createdAt)}</span>
+                <CardContent className="flex items-center justify-between px-3 pb-3 pt-0 text-xs text-muted-foreground">
+                  <span>제출 {formatDate(submission.submittedAt || submission.createdAt)}</span>
                   {submission._count.feedbacks > 0 && (
-                    <span>피드백 {submission._count.feedbacks}개</span>
+                    <span className="font-medium text-primary">피드백 {submission._count.feedbacks}건</span>
                   )}
                 </CardContent>
               </Card>
