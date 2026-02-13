@@ -232,7 +232,11 @@ export default function PortfolioPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <p className="text-sm text-muted-foreground">소개</p>
-                <p className="whitespace-pre-line text-sm leading-7">{data.bio || "미설정"}</p>
+                {data.bio ? (
+                  <p className="whitespace-pre-line text-sm leading-7">{data.bio}</p>
+                ) : (
+                  <p className="text-sm italic text-muted-foreground/60">아직 작성되지 않았습니다</p>
+                )}
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">쇼릴</p>
@@ -241,7 +245,7 @@ export default function PortfolioPage() {
                     {data.showreel}
                   </a>
                 ) : (
-                  <p className="text-sm">미설정</p>
+                  <p className="text-sm italic text-muted-foreground/60">—</p>
                 )}
               </div>
               <div>
@@ -251,9 +255,15 @@ export default function PortfolioPage() {
                     {data.website}
                   </a>
                 ) : (
-                  <p className="text-sm">미설정</p>
+                  <p className="text-sm italic text-muted-foreground/60">—</p>
                 )}
               </div>
+              {!data.bio && !data.showreel && !data.website && (
+                <div className="sm:col-span-2 mt-2 rounded-lg bg-muted/50 px-4 py-3 text-center">
+                  <p className="text-sm text-muted-foreground">💡 프로필을 완성하면 더 많은 제작 기회를 받을 수 있습니다.</p>
+                  <Button variant="link" className="mt-1 h-auto p-0 text-sm" onClick={startEditingInfo}>지금 작성하기 →</Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -268,7 +278,11 @@ export default function PortfolioPage() {
         <CardContent>
           {data.items.length === 0 ? (
             <div className="rounded-lg border border-dashed px-4 py-10 text-center">
-              <p className="text-sm text-muted-foreground">아직 작품이 없습니다. &quot;작품 추가&quot; 버튼으로 시작하세요.</p>
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <span className="text-2xl">🎬</span>
+              </div>
+              <p className="text-sm text-muted-foreground">아직 작품이 없습니다.</p>
+              <p className="mt-1 text-xs text-muted-foreground/60">&quot;작품 추가&quot; 버튼으로 포트폴리오를 시작하세요.</p>
             </div>
           ) : (
             <div className="space-y-3">

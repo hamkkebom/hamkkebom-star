@@ -93,8 +93,13 @@ export default function EarningsPage() {
         </div>
       ) : !data?.data.length ? (
         <div className="rounded-xl border border-dashed px-4 py-14 text-center">
-          <h3 className="mb-1 text-lg font-semibold">정산 내역이 없습니다</h3>
-          <p className="text-sm text-muted-foreground">승인된 제출물이 있으면 정산이 생성됩니다.</p>
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-muted-foreground/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+            </svg>
+          </div>
+          <h3 className="mb-1 text-lg font-semibold">아직 정산 내역이 없습니다</h3>
+          <p className="text-sm text-muted-foreground">영상이 승인되면 정산이 자동으로 생성됩니다.<br/>승인된 영상이 있으면 다음 정산 주기에 반영됩니다.</p>
         </div>
       ) : (
         <div className="space-y-3">

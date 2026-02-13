@@ -90,7 +90,9 @@ export function RequestCard({ request }: { request: RequestCardItem }) {
               </Badge>
             ))}
           </div>
-          <div className="text-sm text-muted-foreground">예산 {formatBudget(request.estimatedBudget)}</div>
+          {request.estimatedBudget !== null && request.estimatedBudget !== undefined && request.estimatedBudget !== "" && (
+            <div className="text-sm text-muted-foreground">예산 {formatBudget(request.estimatedBudget)}</div>
+          )}
         </CardContent>
         <CardFooter>
           <p className="text-sm text-muted-foreground">

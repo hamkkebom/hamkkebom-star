@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -96,6 +95,31 @@ async function fetchMySubmissions(): Promise<MySubmissionsResponse> {
   }
 
   return (await response.json()) as MySubmissionsResponse;
+}
+
+/** 썸네일 이미지 with onError fallback */
+function ThumbnailImage({ src, alt }: { src: string | null; alt: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-violet-100 to-indigo-100 dark:from-violet-900/20 dark:to-indigo-900/20">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      className="absolute inset-0 h-full w-full object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 function SubmissionCardSkeleton() {
@@ -210,22 +234,10 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
               <Card className="transition-colors hover:border-primary/40 cursor-pointer h-full overflow-hidden">
                 {/* 썸네일 */}
                 <div className="relative aspect-video w-full bg-muted">
-                  {submission.signedThumbnailUrl ? (
-                    <Image
-                      src={submission.signedThumbnailUrl}
-                      alt={submission.versionTitle || "영상 썸네일"}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-                      </svg>
-                    </div>
-                  )}
+                  <ThumbnailImage
+                    src={submission.signedThumbnailUrl}
+                    alt={submission.versionTitle || "영상 썸네일"}
+                  />
                   <Badge
                     variant={statusMap[submission.status]?.variant ?? "secondary"}
                     className="absolute top-2 right-2"
@@ -235,13 +247,13 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
                 </div>
                 <CardHeader className="gap-1 p-3">
                   <CardTitle className="line-clamp-1 text-sm">
-                    {submission?.assignment?.request?.title ?? '프로젝트 미지정'}
+                    {submission?.assignment?.request?.title
+                      ?? cleanVersionTitle(submission.versionTitle)
+                      ?? `제출물 ${submission.version}`}
                   </CardTitle>
                   <CardDescription className="line-clamp-1 text-xs">
                     {(() => {
-                      const clean = cleanVersionTitle(submission.versionTitle);
                       const parts: string[] = [`버전 ${submission.version}`];
-                      if (clean) parts.push(clean);
                       if (submission.duration) parts.push(formatDuration(submission.duration));
                       return parts.join(' · ');
                     })()}
