@@ -2,12 +2,11 @@
 
 import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, SlidersHorizontal, Film, ArrowUpDown, LayoutGrid, Rows3 } from "lucide-react";
+import { Search, SlidersHorizontal, Film, ArrowUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoCard } from "@/components/video/video-card";
-import { SwimlaneRow } from "@/components/video/swimlane-row";
 
 type CategoryRow = {
   id: string;
@@ -37,15 +36,12 @@ type VideosResponse = {
   totalPages: number;
 };
 
-type ViewMode = "swimlane" | "grid";
-
 export function VideosBrowser() {
   const [search, setSearch] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
   const [page, setPage] = useState(1);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [sort, setSort] = useState<"latest" | "oldest">("latest");
-  const [viewMode, setViewMode] = useState<ViewMode>("swimlane");
 
   // 카테고리 목록
   const { data: categoriesData } = useQuery<{ data: CategoryRow[] }>({
@@ -54,7 +50,7 @@ export function VideosBrowser() {
     staleTime: 60_000,
   });
 
-  // 영상 목록 (grid mode or search active)
+  // 영상 목록 — 항상 최신순 그리드
   const buildEndpoint = useCallback(() => {
     const params = new URLSearchParams();
     params.set("page", String(page));
@@ -69,8 +65,6 @@ export function VideosBrowser() {
     return `/api/videos?${params.toString()}`;
   }, [page, sort, categoryId, activeSearch]);
 
-  const showGrid = viewMode === "grid" || !!activeSearch || !!categoryId;
-
   const { data, isLoading } = useQuery<VideosResponse>({
     queryKey: ["videos-browse", activeSearch, page, categoryId, sort],
     queryFn: async () => {
@@ -78,10 +72,8 @@ export function VideosBrowser() {
       if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
       return (await res.json()) as VideosResponse;
     },
-    enabled: showGrid,
   });
 
-  // 스윔레인용: 카테고리별 영상 (각 카테고리에 대해 개별 fetch)
   const categories = categoriesData?.data ?? [];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -138,7 +130,7 @@ export function VideosBrowser() {
 
       {/* Content Area */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        {/* Controls bar */}
+        {/* 카테고리 필터 + 정렬 */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
@@ -168,46 +160,18 @@ export function VideosBrowser() {
             ))}
           </div>
 
-          <div className="flex shrink-0 items-center gap-1">
-            {/* View toggle */}
-            <div className="mr-2 flex items-center rounded-lg border bg-muted/50 p-0.5">
-              <button
-                onClick={() => { setViewMode("swimlane"); setCategoryId(null); setActiveSearch(""); setSearch(""); }}
-                className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
-                  viewMode === "swimlane" && !activeSearch && !categoryId
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                title="스윔레인 보기"
-              >
-                <Rows3 className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
-                  viewMode === "grid" || !!activeSearch || !!categoryId
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                title="그리드 보기"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 gap-1.5 text-xs"
-              onClick={() => {
-                setSort(sort === "latest" ? "oldest" : "latest");
-                setPage(1);
-              }}
-            >
-              <ArrowUpDown className="h-3.5 w-3.5" />
-              {sort === "latest" ? "최신순" : "오래된순"}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0 gap-1.5 text-xs"
+            onClick={() => {
+              setSort(sort === "latest" ? "oldest" : "latest");
+              setPage(1);
+            }}
+          >
+            <ArrowUpDown className="h-3.5 w-3.5" />
+            {sort === "latest" ? "최신순" : "오래된순"}
+          </Button>
         </div>
 
         {/* Active search indicator */}
@@ -223,169 +187,105 @@ export function VideosBrowser() {
           </div>
         )}
 
-        {/* ─── Swimlane View ─── */}
-        {!showGrid && (
-          <div className="space-y-10">
-            {categories.map((cat) => (
-              <CategorySwimlane key={cat.id} category={cat} sort={sort} />
+        {/* ─── 영상 그리드 (최신순 기본) ─── */}
+        {isLoading ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={`skel-${i}`} className="space-y-3">
+                <Skeleton className="aspect-video w-full rounded-xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : !data?.data.length ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-100 text-3xl dark:bg-violet-500/10">
+              🎬
+            </div>
+            <h3 className="mb-1 text-lg font-semibold">
+              {activeSearch ? "검색 결과가 없습니다" : "영상이 없습니다"}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {activeSearch
+                ? "다른 키워드로 검색해 보세요."
+                : "아직 공개된 영상이 없습니다. 곧 추가될 예정이에요!"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {data.data.map((video) => (
+              <VideoCard
+                key={video.id}
+                id={video.id}
+                title={video.title}
+                thumbnailUrl={video.thumbnailUrl}
+                streamUid={video.streamUid}
+                duration={video.technicalSpec?.duration ?? null}
+                ownerName={video.owner.name}
+                categoryName={video.category?.name ?? null}
+                createdAt={video.createdAt}
+              />
             ))}
           </div>
         )}
 
-        {/* ─── Grid View ─── */}
-        {showGrid && (
-          <>
-            {isLoading ? (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={`skel-${i}`} className="space-y-3">
-                    <Skeleton className="aspect-video w-full rounded-xl" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
-                ))}
-              </div>
-            ) : !data?.data.length ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-100 text-3xl dark:bg-violet-500/10">
-                  🎬
-                </div>
-                <h3 className="mb-1 text-lg font-semibold">
-                  {activeSearch ? "검색 결과가 없습니다" : "영상이 없습니다"}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {activeSearch
-                    ? "다른 키워드로 검색해 보세요."
-                    : "아직 공개된 영상이 없습니다. 곧 추가될 예정이에요!"}
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {data.data.map((video) => (
-                  <VideoCard
-                    key={video.id}
-                    id={video.id}
-                    title={video.title}
-                    thumbnailUrl={video.thumbnailUrl}
-                    streamUid={video.streamUid}
-                    duration={video.technicalSpec?.duration ?? null}
-                    ownerName={video.owner.name}
-                    categoryName={video.category?.name ?? null}
-                    createdAt={video.createdAt}
-                  />
-                ))}
-              </div>
-            )}
+        {/* Pagination */}
+        {data && data.totalPages > 1 && (
+          <div className="mt-8 flex items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              이전
+            </Button>
 
-            {/* Pagination */}
-            {data && data.totalPages > 1 && (
-              <div className="mt-8 flex items-center justify-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
-                >
-                  이전
-                </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(data.totalPages, 7) }).map((_, i) => {
+                let pageNum: number;
+                if (data.totalPages <= 7) {
+                  pageNum = i + 1;
+                } else if (page <= 4) {
+                  pageNum = i + 1;
+                } else if (page >= data.totalPages - 3) {
+                  pageNum = data.totalPages - 6 + i;
+                } else {
+                  pageNum = page - 3 + i;
+                }
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setPage(pageNum)}
+                    className={`h-8 min-w-8 rounded-md px-2 text-sm font-medium transition-colors
+                      ${pageNum === page
+                        ? "bg-violet-600 text-white"
+                        : "text-muted-foreground hover:bg-accent"
+                      }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
 
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(data.totalPages, 7) }).map((_, i) => {
-                    let pageNum: number;
-                    if (data.totalPages <= 7) {
-                      pageNum = i + 1;
-                    } else if (page <= 4) {
-                      pageNum = i + 1;
-                    } else if (page >= data.totalPages - 3) {
-                      pageNum = data.totalPages - 6 + i;
-                    } else {
-                      pageNum = page - 3 + i;
-                    }
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setPage(pageNum)}
-                        className={`h-8 min-w-8 rounded-md px-2 text-sm font-medium transition-colors
-                          ${pageNum === page
-                            ? "bg-violet-600 text-white"
-                            : "text-muted-foreground hover:bg-accent"
-                          }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= data.totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              다음
+            </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= data.totalPages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  다음
-                </Button>
-
-                <span className="ml-2 text-xs text-muted-foreground">
-                  총 {data.total}개
-                </span>
-              </div>
-            )}
-          </>
+            <span className="ml-2 text-xs text-muted-foreground">
+              총 {data.total}개
+            </span>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-/* ─── Category swimlane (fetches its own data) ─── */
-function CategorySwimlane({
-  category,
-  sort,
-}: {
-  category: CategoryRow;
-  sort: "latest" | "oldest";
-}) {
-  const { data, isLoading } = useQuery<VideosResponse>({
-    queryKey: ["videos-swimlane", category.id, sort],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        categoryId: category.id,
-        page: "1",
-        pageSize: "12",
-        sort,
-      });
-      const res = await fetch(`/api/videos?${params.toString()}`, { cache: "no-store" });
-      if (!res.ok) throw new Error("failed");
-      return (await res.json()) as VideosResponse;
-    },
-    staleTime: 30_000,
-  });
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-6 w-40" />
-        <div className="flex gap-4 overflow-hidden">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={`swim-sk-${i}`} className="aspect-video w-[320px] shrink-0 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (!data?.data.length) return null;
-
-  return (
-    <SwimlaneRow
-      title={category.name}
-      videos={data.data}
-      icon={
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-sm dark:bg-violet-500/10">
-          🎬
-        </div>
-      }
-    />
-  );
-}
