@@ -79,28 +79,36 @@ export function PublicHeader() {
               </Button>
             </Link>
           ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">U</AvatarFallback>
-                  </Avatar>
+            <>
+              <Link href={user.role === "ADMIN" ? "/admin" : "/stars/dashboard"}>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span className="hidden sm:inline">대시보드</span>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => {
-                  window.location.href = user.role === "ADMIN" ? "/admin" : "/stars/dashboard";
-                }}>
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  대시보드
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  로그아웃
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">U</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => {
+                    window.location.href = user.role === "ADMIN" ? "/admin" : "/stars/dashboard";
+                  }}>
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    대시보드
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    로그아웃
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           )}
         </div>
       </div>
