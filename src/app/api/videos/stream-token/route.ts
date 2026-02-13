@@ -37,6 +37,8 @@ export async function GET(request: NextRequest) {
       token,
       // iframe embed URL with signed token
       embedUrl: `https://iframe.videodelivery.net/${token}`,
+      // HLS manifest URL with signed token (for native video player with timestamp support)
+      hlsUrl: `https://videodelivery.net/${token}/manifest/video.m3u8`,
     },
   });
 }

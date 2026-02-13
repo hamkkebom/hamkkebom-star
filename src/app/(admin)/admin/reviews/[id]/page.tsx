@@ -66,6 +66,8 @@ export default function ReviewDetailPage() {
   const queryClient = useQueryClient();
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
 
   const { data, isLoading, error } = useQuery<{ data: SubmissionDetail }>({
     queryKey: ["submission-detail", id],
@@ -151,7 +153,11 @@ export default function ReviewDetailPage() {
       <Card>
         <CardContent className="p-0 overflow-hidden rounded-lg">
           {(sub.streamUid || sub.video?.streamUid) ? (
-            <VideoPlayer streamUid={(sub.streamUid || sub.video?.streamUid)!} />
+            <VideoPlayer
+              streamUid={(sub.streamUid || sub.video?.streamUid)!}
+              onTimeUpdate={setCurrentTime}
+              seekTo={seekTo}
+            />
           ) : (
             <div className="flex items-center justify-center h-64 bg-muted">
               <p className="text-muted-foreground">영상이 등록되지 않았습니다.</p>
@@ -227,8 +233,17 @@ export default function ReviewDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FeedbackForm submissionId={sub.id} />
-          <FeedbackList submissionId={sub.id} />
+          <FeedbackForm
+            submissionId={sub.id}
+            currentTime={currentTime}
+            onSubmitted={() => {
+              queryClient.invalidateQueries({ queryKey: ["feedbacks", sub.id] });
+            }}
+          />
+          <FeedbackList
+            submissionId={sub.id}
+            onTimecodeClick={setSeekTo}
+          />
         </CardContent>
       </Card>
     </div>

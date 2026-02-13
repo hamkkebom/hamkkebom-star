@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 
 interface VideoPlayerProps {
-  /** Cloudflare Stream UID — 서명된 토큰으로 iframe embed 사용 */
+  /** Cloudflare Stream UID — 서명된 토큰으로 HLS 재생 */
   streamUid?: string;
   /**
    * HLS 재생 URL 또는 일반 영상 URL (streamUid가 없을 때 fallback).
@@ -19,12 +19,12 @@ interface VideoPlayerProps {
 
 export function VideoPlayer({ streamUid, src, onTimeUpdate, onDurationChange, seekTo }: VideoPlayerProps) {
   const [state, setState] = useState<{
-    embedUrl: string | null;
+    hlsUrl: string | null;
     loading: boolean;
     error: string | null;
-  }>({ embedUrl: null, loading: !!streamUid, error: null });
+  }>({ hlsUrl: null, loading: !!streamUid, error: null });
 
-  // streamUid가 있으면 서명된 토큰 발급
+  // streamUid가 있으면 서명된 토큰 + HLS URL 발급
   useEffect(() => {
     if (!streamUid) return;
 
@@ -34,13 +34,13 @@ export function VideoPlayer({ streamUid, src, onTimeUpdate, onDurationChange, se
       try {
         const res = await fetch(`/api/videos/stream-token?uid=${encodeURIComponent(streamUid!)}`);
         if (!res.ok) throw new Error("토큰 발급 실패");
-        const json = (await res.json()) as { data: { embedUrl: string } };
+        const json = (await res.json()) as { data: { hlsUrl: string; embedUrl: string } };
         if (!cancelled) {
-          setState({ embedUrl: json.data.embedUrl, loading: false, error: null });
+          setState({ hlsUrl: json.data.hlsUrl, loading: false, error: null });
         }
       } catch (err) {
         if (!cancelled) {
-          setState({ embedUrl: null, loading: false, error: err instanceof Error ? err.message : "영상을 불러올 수 없습니다." });
+          setState({ hlsUrl: null, loading: false, error: err instanceof Error ? err.message : "영상을 불러올 수 없습니다." });
         }
       }
     }
@@ -50,9 +50,9 @@ export function VideoPlayer({ streamUid, src, onTimeUpdate, onDurationChange, se
     return () => { cancelled = true; };
   }, [streamUid]);
 
-  const { embedUrl, loading, error } = state;
+  const { hlsUrl, loading, error } = state;
 
-  // Cloudflare Stream iframe embed 모드
+  // Cloudflare Stream → HLS 재생 모드 (타임스탬프 지원)
   if (streamUid) {
     if (loading) {
       return (
@@ -68,7 +68,7 @@ export function VideoPlayer({ streamUid, src, onTimeUpdate, onDurationChange, se
       );
     }
 
-    if (error || !embedUrl) {
+    if (error || !hlsUrl) {
       return (
         <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-muted text-muted-foreground">
           <p className="text-sm">{error || "영상을 불러올 수 없습니다."}</p>
@@ -76,23 +76,15 @@ export function VideoPlayer({ streamUid, src, onTimeUpdate, onDurationChange, se
       );
     }
 
-    return (
-      <div className="overflow-hidden rounded-xl bg-black">
-        <iframe
-          src={embedUrl}
-          className="aspect-video w-full"
-          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-          allowFullScreen
-        />
-      </div>
-    );
+    // 서명된 HLS URL로 네이티브 비디오 플레이어 사용 → onTimeUpdate/seekTo 동작
+    return <HlsVideoPlayer src={hlsUrl} seekTo={seekTo} onTimeUpdate={onTimeUpdate} onDurationChange={onDurationChange} />;
   }
 
   // HLS/직접 URL 모드 (fallback)
   return <HlsVideoPlayer src={src || ""} seekTo={seekTo} onTimeUpdate={onTimeUpdate} onDurationChange={onDurationChange} />;
 }
 
-/** HLS.js 기반 비디오 플레이어 (fallback) */
+/** HLS.js 기반 비디오 플레이어 */
 function HlsVideoPlayer({
   src,
   onTimeUpdate,
