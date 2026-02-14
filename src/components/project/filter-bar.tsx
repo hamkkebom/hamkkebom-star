@@ -48,12 +48,15 @@ export function FilterBar() {
   );
 
   useEffect(() => {
+    // 현재 URL 파라미터와 동일하면 router.replace를 skip하여 RSC 무한 루프 방지
+    if (searchInput === searchFromUrl) return;
+
     const timeoutId = window.setTimeout(() => {
       updateParams(status, searchInput);
     }, 350);
 
     return () => window.clearTimeout(timeoutId);
-  }, [searchInput, status, updateParams]);
+  }, [searchInput, status, searchFromUrl, updateParams]);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 md:flex-row md:items-center">

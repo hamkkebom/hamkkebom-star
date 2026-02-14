@@ -109,7 +109,7 @@ export const VideoPlayer = memo(function VideoPlayer({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl bg-black">
+    <div className="mx-auto w-full max-h-[80vh] overflow-hidden rounded-xl bg-black [&>stream]:!max-h-[80vh] [&_iframe]:!max-h-[80vh]">
       <Stream
         src={playbackSrc}
         streamRef={streamRef}

@@ -4,11 +4,6 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Search,
-  Grid3x3,
-  Sparkles,
-  Globe,
-  Clock,
-  Filter,
   ChevronDown,
   X,
   Film,
@@ -249,11 +244,10 @@ export function VideosBrowser() {
 
   return (
     <div className="min-h-screen">
-      {/* ═══ Filter Bar ═══ */}
+      {/* ═══ Search Bar (필터 숨김, 검색만) ═══ */}
       <div className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-[1920px] flex flex-col md:flex-row items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          {/* Search */}
-          <form onSubmit={handleSearch} className="relative w-full md:w-80 shrink-0">
+        <div className="mx-auto max-w-[1920px] flex items-center justify-center gap-4 px-4 py-3 sm:px-6">
+          <form onSubmit={handleSearch} className="relative w-full max-w-lg">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="search"
@@ -275,132 +269,6 @@ export function VideosBrowser() {
               </button>
             )}
           </form>
-
-          {/* Filter Buttons */}
-          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {/* 카테고리 */}
-            <FilterDropdown
-              label={catLabel}
-              icon={Grid3x3}
-              isActive={!!categoryId}
-              onClear={categoryId ? () => { setCategoryId(null); setPage(1); } : undefined}
-            >
-              <DropdownItem
-                active={!categoryId}
-                onClick={() => { setCategoryId(null); setPage(1); }}
-              >
-                전체
-              </DropdownItem>
-              {categories.map((cat) => (
-                <DropdownItem
-                  key={cat.id}
-                  active={categoryId === cat.id}
-                  onClick={() => { setCategoryId(cat.id); setPage(1); }}
-                >
-                  {cat.name}
-                  <span className="ml-auto text-xs opacity-50">{cat._count.videos}</span>
-                </DropdownItem>
-              ))}
-            </FilterDropdown>
-
-            {/* 상담사 */}
-            <FilterDropdown
-              label={counselorLabel}
-              icon={Sparkles}
-              isActive={!!counselorId}
-              onClear={counselorId ? () => { setCounselorId(null); setPage(1); } : undefined}
-            >
-              <DropdownItem
-                active={!counselorId}
-                onClick={() => { setCounselorId(null); setPage(1); }}
-              >
-                전체
-              </DropdownItem>
-              {counselors.map((c) => (
-                <DropdownItem
-                  key={c.id}
-                  active={counselorId === c.id}
-                  onClick={() => { setCounselorId(c.id); setPage(1); }}
-                >
-                  {c.displayName}
-                  <span className="ml-auto text-xs opacity-50">{c.videoCount}</span>
-                </DropdownItem>
-              ))}
-            </FilterDropdown>
-
-            {/* 제작자 */}
-            <FilterDropdown
-              label={ownerLabel}
-              icon={Globe}
-              isActive={!!ownerId}
-              onClear={ownerId ? () => { setOwnerId(null); setPage(1); } : undefined}
-            >
-              <DropdownItem
-                active={!ownerId}
-                onClick={() => { setOwnerId(null); setPage(1); }}
-              >
-                전체
-              </DropdownItem>
-              {owners.map((o) => (
-                <DropdownItem
-                  key={o.id}
-                  active={ownerId === o.id}
-                  onClick={() => { setOwnerId(o.id); setPage(1); }}
-                >
-                  {o.chineseName || o.name}
-                  <span className="ml-auto text-xs opacity-50">{o.videoCount}</span>
-                </DropdownItem>
-              ))}
-            </FilterDropdown>
-
-            {/* 재생시간 */}
-            <FilterDropdown
-              label={durationLabel}
-              icon={Clock}
-              isActive={durationRange !== "all"}
-              onClear={durationRange !== "all" ? () => { setDurationRange("all"); setPage(1); } : undefined}
-            >
-              {(Object.entries(DURATION_RANGES) as [DurationRange, { label: string }][]).map(
-                ([key, val]) => (
-                  <DropdownItem
-                    key={key}
-                    active={durationRange === key}
-                    onClick={() => { setDurationRange(key); setPage(1); }}
-                  >
-                    {val.label}
-                  </DropdownItem>
-                )
-              )}
-            </FilterDropdown>
-          </div>
-
-          {/* Right: total + sort */}
-          <div className="flex items-center gap-4 ml-auto min-w-max">
-            {hasActiveFilter && (
-              <button
-                onClick={resetFilters}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                필터 초기화
-              </button>
-            )}
-
-            <span className="text-sm text-muted-foreground font-mono hidden sm:block">
-              Total{" "}
-              <span className="text-foreground font-bold">{data?.data.length ?? 0}</span>
-              {" / "}
-              {data?.total ?? "…"}
-            </span>
-
-            <button
-              onClick={() => { setSort(sort === "latest" ? "oldest" : "latest"); setPage(1); }}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Filter className="w-4 h-4" />
-              <span>{sort === "latest" ? "최신순" : "오래된순"}</span>
-              <ChevronDown className="w-3 h-3" />
-            </button>
-          </div>
         </div>
       </div>
 

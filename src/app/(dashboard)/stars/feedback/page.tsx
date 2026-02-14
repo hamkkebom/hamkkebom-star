@@ -116,7 +116,7 @@ export default function FeedbackPage() {
                   <CardDescription className="line-clamp-1 text-xs">
                     {(() => {
                       const clean = cleanVersionTitle(sub.versionTitle);
-                      const parts: string[] = [`버전 ${sub.version}`];
+                      const parts: string[] = [`버전 ${sub.version.startsWith("v") ? sub.version : `v${sub.version}`}`];
                       if (clean) parts.push(clean);
                       if (sub.duration) parts.push(formatDuration(sub.duration));
                       return parts.join(' · ');

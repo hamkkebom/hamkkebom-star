@@ -122,7 +122,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">
-            {submission.versionTitle || `v${submission.version}`}
+            {submission.versionTitle || (submission.version.startsWith("v") ? submission.version : `v${submission.version}`)}
           </h1>
           <p className="text-sm text-muted-foreground">
             {submission.assignment?.request?.title ?? "프로젝트 정보 없음"}
@@ -160,7 +160,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
             <CardTitle className="text-xs font-medium text-muted-foreground">버전</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-semibold">v{submission.version}</p>
+            <p className="text-lg font-semibold">{submission.version.startsWith("v") ? submission.version : `v${submission.version}`}</p>
           </CardContent>
         </Card>
 

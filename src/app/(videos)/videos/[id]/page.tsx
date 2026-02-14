@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   Calendar,
   Clock,
-  ExternalLink,
   Film,
   HardDrive,
   Heart,
@@ -20,10 +19,8 @@ import {
   Music,
   Play,
   Share2,
-  Sparkles,
   Tag,
   Tv,
-  User,
   Video,
 } from "lucide-react";
 
@@ -117,14 +114,7 @@ export default function VideoDetailPage() {
     enabled: !!id,
   });
 
-  /* Related videos (same category) */
-  const categoryId = data?.data?.category?.id;
-  const { data: relatedData } = useQuery<{ data: RelatedVideo[] }>({
-    queryKey: ["related-videos", categoryId],
-    queryFn: () =>
-      fetch(`/api/videos?categoryId=${categoryId}&limit=6`).then((r) => r.json()),
-    enabled: !!categoryId,
-  });
+
 
   /* ─── Loading ─── */
   if (isLoading) return <LoadingSkeleton />;
@@ -149,7 +139,7 @@ export default function VideoDetailPage() {
   const spec = video.technicalSpec;
   const status = statusConfig[video.status] || { label: video.status, className: "" };
 
-  const relatedVideos = (relatedData?.data ?? []).filter((v) => v.id !== video.id).slice(0, 4);
+
 
   return (
     <div className="relative min-h-screen bg-[#06060e] text-white">
@@ -183,7 +173,7 @@ export default function VideoDetailPage() {
           </div>
 
           {/* Video Player */}
-          <div className="aspect-video w-full overflow-hidden">
+          <div className="w-full max-h-[80vh] overflow-hidden flex items-center justify-center">
             {video.streamUid ? (
               <VideoPlayer streamUid={video.streamUid} />
             ) : video.thumbnailUrl || video.streamUid ? (
@@ -351,65 +341,8 @@ export default function VideoDetailPage() {
             )}
           </div>
 
-          {/* Right Column — Sidebar */}
+          {/* Right Column — Sidebar (프로필&다른작품보기, 상담사 숨김) */}
           <aside className="space-y-6 lg:sticky lg:top-8 lg:self-start">
-            {/* Creator Card */}
-            <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm">
-              <div className="relative h-20 bg-gradient-to-br from-violet-600/20 to-indigo-600/20">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-              </div>
-              <div className="-mt-8 px-5 pb-5">
-                <div className="flex items-end gap-4">
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-[#06060e] bg-slate-800 shadow-xl">
-                    {video.owner.avatarUrl ? (
-                     <Image
-                       src={video.owner.avatarUrl}
-                       alt={video.owner.chineseName || video.owner.name}
-                       fill
-                       className="object-cover"
-                       sizes="64px"
-                     />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-indigo-600 text-lg font-black text-white">
-                        {(video.owner.chineseName || video.owner.name).charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 pb-0.5">
-                    <p className="truncate text-base font-bold text-white">
-                      {video.owner.chineseName || video.owner.name}
-                    </p>
-                    <p className="text-xs text-white/40">크리에이터</p>
-                  </div>
-                </div>
-
-                <Link
-                  href={`/stars/profile/${video.owner.id}`}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/80 transition-all hover:border-violet-500/30 hover:bg-violet-500/10 hover:text-violet-300"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  프로필 & 다른 작품 보기
-                </Link>
-              </div>
-            </div>
-
-            {/* Counselor info */}
-            {video.counselor && (
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 backdrop-blur-sm">
-                <p className="mb-1 text-xs font-medium uppercase tracking-wider text-white/30">
-                  담당 상담사
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400">
-                    <User className="h-4 w-4" />
-                  </div>
-                  <span className="text-sm font-semibold text-white/80">
-                    {video.counselor.displayName}
-                  </span>
-                </div>
-              </div>
-            )}
-
             {/* Quick info card */}
             <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 backdrop-blur-sm">
               <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/30">
@@ -447,80 +380,7 @@ export default function VideoDetailPage() {
           </aside>
         </div>
 
-        {/* ═══════════════ Related Videos ═══════════════ */}
-        {relatedVideos.length > 0 && (
-          <section className="mt-20 border-t border-white/[0.06] pt-12">
-            <div className="mb-8 flex items-end justify-between">
-              <div>
-                <p className="mb-1 text-xs font-medium uppercase tracking-wider text-violet-400">
-                  같은 카테고리
-                </p>
-                <h2 className="text-2xl font-bold tracking-tight">관련 영상</h2>
-              </div>
-              {video.category && (
-                <Link
-                  href={`/videos?category=${video.category.id}`}
-                  className="flex items-center gap-1 text-sm text-white/40 transition-colors hover:text-violet-400"
-                >
-                  더 보기 <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
-              )}
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {relatedVideos.map((rv) => {
-                const thumb = rv.streamUid
-                  ? `https://videodelivery.net/${rv.streamUid}/thumbnails/thumbnail.jpg?width=640`
-                  : rv.thumbnailUrl;
-
-                return (
-                  <Link
-                    key={rv.id}
-                    href={`/videos/${rv.id}`}
-                    className="group block space-y-3"
-                  >
-                    <div className="relative aspect-video overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/[0.06] transition-all duration-300 group-hover:ring-violet-500/20 group-hover:shadow-lg group-hover:shadow-violet-500/5">
-                      {thumb ? (
-                        <Image
-                           src={thumb}
-                           alt={rv.title}
-                           fill
-                           className="object-cover transition-transform duration-500 group-hover:scale-105"
-                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                         />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Tv className="h-8 w-8 text-white/10" />
-                        </div>
-                      )}
-
-                      {/* Play overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                          <Play className="ml-0.5 h-4 w-4 text-white" />
-                        </div>
-                      </div>
-
-                      {/* Duration badge */}
-                      {rv.technicalSpec?.duration && (
-                        <div className="absolute bottom-2 right-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white/80 backdrop-blur-sm">
-                          {formatDurationShort(rv.technicalSpec.duration)}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-white/80 transition-colors group-hover:text-violet-300">
-                        {rv.title}
-                      </h3>
-                      <p className="mt-1 text-xs text-white/30">{rv.owner.chineseName || rv.owner.name}</p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
+        {/* 관련 영상 — 숨김 처리 */}
 
         {/* ── Bottom Nav ── */}
         <div className="mt-16 border-t border-white/[0.06] pb-16 pt-8">

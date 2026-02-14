@@ -3,12 +3,22 @@
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { UploadProgress } from "@/components/video/upload-progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type UploadStatus =
   | "idle"
   | "requesting"
   | "uploading"
+  | "uploaded"
   | "submitting"
   | "done"
   | "error";
@@ -31,8 +41,11 @@ export function UploadDropzone({
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [fileName, setFileName] = useState("");
+  const [streamUid, setStreamUid] = useState<string | null>(null);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  /** 파일 업로드만 수행 (제출은 별도) */
   const handleUpload = useCallback(
     async (file: File) => {
       if (!file.type.startsWith("video/")) {
@@ -48,6 +61,7 @@ export function UploadDropzone({
       setFileName(file.name);
       setStatus("requesting");
       setProgress(0);
+      setStreamUid(null);
 
       try {
         // 1. 업로드 URL 발급
@@ -95,34 +109,10 @@ export function UploadDropzone({
           xhr.send(formData);
         });
 
-        // 3. 제출물 등록
-        setStatus("submitting");
-
-        const submitResponse = await fetch("/api/submissions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            assignmentId,
-            versionSlot,
-            versionTitle: versionTitle,
-            description: description || undefined,
-            streamUid: urlData.uid,
-          }),
-        });
-
-        if (!submitResponse.ok) {
-          const errData = (await submitResponse.json()) as {
-            error?: { message?: string };
-          };
-          throw new Error(
-            errData.error?.message ?? "제출물 등록에 실패했습니다.",
-          );
-        }
-
-        setStatus("done");
+        // 업로드 완료 — 제출 대기 상태로 전환
+        setStreamUid(urlData.uid);
+        setStatus("uploaded");
         setProgress(100);
-        toast.success("영상이 성공적으로 제출되었습니다!");
-        onComplete?.();
       } catch (error) {
         setStatus("error");
         toast.error(
@@ -130,8 +120,56 @@ export function UploadDropzone({
         );
       }
     },
-    [assignmentId, versionSlot, versionTitle, description, onComplete],
+    [],
   );
+
+  /** 제출 버튼 클릭 시 — 제출물 등록 API 호출 */
+  const handleSubmit = useCallback(async () => {
+    if (!streamUid) return;
+
+    setStatus("submitting");
+
+    try {
+      const submitResponse = await fetch("/api/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assignmentId,
+          versionSlot,
+          versionTitle: versionTitle,
+          description: description || undefined,
+          streamUid,
+        }),
+      });
+
+      if (!submitResponse.ok) {
+        const errData = (await submitResponse.json()) as {
+          error?: { message?: string };
+        };
+        throw new Error(
+          errData.error?.message ?? "제출물 등록에 실패했습니다.",
+        );
+      }
+
+      setStatus("done");
+      setShowCompleteDialog(true);
+    } catch (error) {
+      setStatus("error");
+      toast.error(
+        error instanceof Error ? error.message : "제출에 실패했습니다.",
+      );
+    }
+  }, [assignmentId, versionSlot, versionTitle, description, streamUid]);
+
+  /** 팝업 확인 → 폼 초기화 */
+  const handleDialogConfirm = useCallback(() => {
+    setShowCompleteDialog(false);
+    setStatus("idle");
+    setProgress(0);
+    setFileName("");
+    setStreamUid(null);
+    onComplete?.();
+  }, [onComplete]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -150,9 +188,51 @@ export function UploadDropzone({
     [handleUpload],
   );
 
-  if (status !== "idle" && status !== "error") {
+  // 업로드 진행 중 상태
+  if (status === "requesting" || status === "uploading" || status === "submitting") {
     return (
       <UploadProgress status={status} progress={progress} fileName={fileName} />
+    );
+  }
+
+  // 업로드 완료 → 제출 대기 상태
+  if (status === "uploaded" || status === "done") {
+    return (
+      <>
+        <Card>
+          <CardContent className="space-y-4 py-6">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{fileName}</p>
+                <p className="text-xs text-green-600">업로드 완료</p>
+              </div>
+              <span className="text-sm font-semibold text-green-600">✓</span>
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleSubmit}
+              disabled={status === "done"}
+            >
+              {status === "done" ? "제출 완료" : "제출하기"}
+            </Button>
+          </CardContent>
+        </Card>
+        <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>업로드 완료</DialogTitle>
+              <DialogDescription>
+                영상이 업로드 되었습니다.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={handleDialogConfirm}>
+                확인
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
@@ -166,6 +246,7 @@ export function UploadDropzone({
       <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
         <div className="rounded-full bg-muted p-4">
           <svg
+            aria-hidden="true"
             xmlns="http://www.w3.org/2000/svg"
             className="h-8 w-8 text-muted-foreground"
             fill="none"

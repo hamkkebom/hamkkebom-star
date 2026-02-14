@@ -50,6 +50,7 @@ export function VideoCard({
 }: VideoCardProps) {
   const thumb = getStaticThumb(streamUid, thumbnailUrl);
   const [isHovered, setIsHovered] = useState(false);
+  const [thumbFailed, setThumbFailed] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleMouseEnter = useCallback(() => {
@@ -73,7 +74,7 @@ export function VideoCard({
       <div className="overflow-hidden rounded-xl border bg-card transition-all duration-300 hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/10 dark:hover:shadow-violet-500/5">
         {/* Thumbnail */}
         <div className="relative aspect-video overflow-hidden bg-muted">
-          {thumb ? (
+          {thumb && !thumbFailed ? (
             <>
               {/* Static thumbnail (always rendered) */}
                <Image
@@ -82,6 +83,7 @@ export function VideoCard({
                  fill
                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                  className={`object-cover transition-all duration-500 ${showAnimated ? "opacity-0" : "opacity-100 group-hover:scale-105"}`}
+                 onError={() => setThumbFailed(true)}
                />
                {/* Animated GIF (shown on hover) */}
                {showAnimated && streamUid && (

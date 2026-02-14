@@ -151,7 +151,13 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
 
   const filteredData = useMemo(() => {
     if (!data?.data) return [];
-    let items = data.data;
+    let items = [...data.data];
+    // 최근 제출일 순 정렬
+    items.sort((a, b) => {
+      const dateA = new Date(a.submittedAt || a.createdAt).getTime();
+      const dateB = new Date(b.submittedAt || b.createdAt).getTime();
+      return dateB - dateA;
+    });
     if (statusFilter !== "ALL") {
       items = items.filter((s) => s.status === statusFilter);
     }
@@ -250,13 +256,15 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
                 </div>
                 <CardHeader className="gap-1 p-3">
                   <CardTitle className="line-clamp-1 text-sm">
-                    {submission?.assignment?.request?.title
-                      ?? cleanVersionTitle(submission.versionTitle)
+                    {cleanVersionTitle(submission.versionTitle)
+                      ?? submission?.assignment?.request?.title
                       ?? `제출물 ${submission.version}`}
                   </CardTitle>
                   <CardDescription className="line-clamp-1 text-xs">
                     {(() => {
-                      const parts: string[] = [`버전 ${submission.version}`];
+                      const parts: string[] = [];
+                      if (submission?.assignment?.request?.title) parts.push(submission.assignment.request.title);
+                      parts.push(`버전 ${submission.version.startsWith("v") ? submission.version : `v${submission.version}`}`);
                       if (submission.duration) parts.push(formatDuration(submission.duration));
                       return parts.join(' · ');
                     })()}

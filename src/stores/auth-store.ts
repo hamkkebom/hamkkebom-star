@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/types/database";
 
 interface AuthState {
@@ -19,6 +20,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   fetchUser: async () => {
     try {
+      // Supabase 세션이 있을 때만 API 호출하여 비인증 시 401 콘솔 에러 방지
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        set({ user: null, isLoading: false });
+        return;
+      }
+
       const response = await fetch("/api/users/me", { cache: "no-store" });
 
       if (!response.ok) {

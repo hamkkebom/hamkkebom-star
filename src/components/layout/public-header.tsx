@@ -2,21 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, Sparkles, LogOut, User, Settings } from "lucide-react";
+import { Sparkles, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/stores/auth-store";
 
-const navLinks: { href: string; label: string; icon: typeof Film; exact?: boolean }[] = [
+const navLinks: { href: string; label: string; icon: typeof Sparkles; exact?: boolean }[] = [
   // { href: "/stars", label: "스타 소개", icon: Sparkles },  // 임시 비활성화
 ];
 
@@ -25,11 +16,7 @@ export function PublicHeader() {
   const user = useAuthStore((s) => s.user);
   const isLoading = useAuthStore((s) => s.isLoading);
 
-  const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = "/auth/login";
-  };
+
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
@@ -78,42 +65,12 @@ export function PublicHeader() {
               </Button>
             </Link>
           ) : (
-            <>
-              <Link href={user.role === "ADMIN" ? "/admin" : "/stars/dashboard"}>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">마이페이지</span>
-                </Button>
-              </Link>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">U</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => {
-                    window.location.href = user.role === "ADMIN" ? "/admin" : "/stars/profile";
-                  }}>
-                    <User className="mr-2 h-4 w-4" />
-                    프로필
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    window.location.href = user.role === "ADMIN" ? "/admin" : "/stars/settings";
-                  }}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    설정
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    로그아웃
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
+            <Link href={user.role === "ADMIN" ? "/admin" : "/stars/dashboard"}>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">마이페이지</span>
+              </Button>
+            </Link>
           )}
         </div>
       </div>
