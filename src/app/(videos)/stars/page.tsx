@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
@@ -27,7 +28,7 @@ type StarsResponse = {
   totalPages: number;
 };
 
-export default function StarsPage() {
+function StarsContent() {
   const [search, setSearch] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
   const [page, setPageState] = useState(1);
@@ -237,5 +238,13 @@ function PremiumStarCard({ star }: { star: StarItem }) {
         </p>
       </div>
     </Link>
+  );
+}
+
+export default function StarsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background pt-20 text-center">Loading stars...</div>}>
+      <StarsContent />
+    </Suspense>
   );
 }
