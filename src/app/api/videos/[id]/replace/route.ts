@@ -1,8 +1,37 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { getVideoStatus } from "@/lib/cloudflare/stream";
 
 type Params = { params: Promise<{ id: string }> };
+
+/**
+ * streamUid로 Cloudflare Stream에서 duration을 가져와 DB에 저장합니다.
+ * 비동기로 실행하여 요청 응답에 영향을 주지 않습니다.
+ */
+async function syncDuration(videoId: string, streamUid: string) {
+  try {
+    const info = await getVideoStatus(streamUid);
+    if (!info || info.status.state !== "ready" || !info.duration) return;
+
+    await prisma.videoTechnicalSpec.upsert({
+      where: { videoId },
+      update: {
+        duration: info.duration,
+        width: info.input?.width || null,
+        height: info.input?.height || null,
+      },
+      create: {
+        videoId,
+        duration: info.duration,
+        width: info.input?.width || null,
+        height: info.input?.height || null,
+      },
+    });
+  } catch (err) {
+    console.error(`[syncDuration] videoId=${videoId} 실패:`, err);
+  }
+}
 
 /**
  * 영상 파일 교체 — 새 streamUid로 교체
@@ -64,6 +93,9 @@ export async function POST(request: Request, { params }: Params) {
       owner: { select: { id: true, name: true } },
     },
   });
+
+  // 비동기로 Cloudflare에서 duration 가져와 저장 (응답 차단 안 함)
+  syncDuration(id, body.streamUid).catch(() => { });
 
   return NextResponse.json({ data: updated });
 }

@@ -106,9 +106,11 @@ export function LoginForm() {
 
         {/* Content Layer — 그라데이션 "별들에게 물어봐" 중앙 표시 */}
         <div className="relative z-10 flex h-full items-center justify-center">
-          <h1 className="text-5xl font-black tracking-tight bg-gradient-to-r from-violet-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            별들에게 물어봐
-          </h1>
+          <Link href="/" className="hover:opacity-80 transition-opacity">
+            <h1 className="text-5xl font-black tracking-tight bg-gradient-to-r from-violet-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
+              별들에게 물어봐
+            </h1>
+          </Link>
         </div>
 
       </div>
@@ -116,12 +118,12 @@ export function LoginForm() {
       {/* Right: Login form */}
       <div className="flex w-full flex-col items-center justify-center px-6 lg:w-1/2">
         {/* Mobile brand */}
-        <div className="mb-8 flex items-center gap-2 lg:hidden">
+        <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden hover:opacity-80 transition-opacity">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Star className="h-5 w-5" />
           </div>
           <span className="text-xl font-bold">별들에게 물어봐</span>
-        </div>
+        </Link>
 
         <div className="w-full max-w-sm animate-fade-in space-y-6">
           <div className="space-y-1 text-center lg:text-left">

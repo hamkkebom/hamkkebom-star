@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   Search,
@@ -59,12 +60,13 @@ type VideosResponse = {
 type DurationRange = "all" | "short" | "medium" | "long";
 
 const DURATION_RANGES: Record<DurationRange, { label: string; min?: number; max?: number }> = {
-  all:    { label: "전체" },
-  short:  { label: "~1분", max: 60 },
-  medium: { label: "1~5분", min: 60, max: 300 },
-  long:   { label: "5분+", min: 300 },
+  all: { label: "전체" },
+  short: { label: "~20초", max: 20 },
+  medium: { label: "~40초", min: 20, max: 40 },
+  long: { label: "~1분", min: 40, max: 60 },
 };
 
+/* ───── Dropdown Component ───── */
 /* ───── Dropdown Component ───── */
 function FilterDropdown({
   label,
@@ -72,12 +74,14 @@ function FilterDropdown({
   isActive,
   children,
   onClear,
+  align = "right", // align prop added for better positioning
 }: {
   label: string;
   icon: React.ElementType;
   isActive: boolean;
   children: React.ReactNode;
   onClear?: () => void;
+  align?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -87,36 +91,56 @@ function FilterDropdown({
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    // Add scroll listener to close on outside scroll
+    function handleScroll(e: Event) {
+      // If the scroll happened inside the dropdown, don't close it
+      if (ref.current && ref.current.contains(e.target as Node)) return;
+      setOpen(false);
+    }
+    window.addEventListener("scroll", handleScroll, { capture: true });
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("scroll", handleScroll, { capture: true });
+    }
   }, []);
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm whitespace-nowrap transition-all duration-200
+        className={`group flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium whitespace-nowrap transition-all duration-300
           ${isActive
-            ? "border-violet-500/50 bg-violet-500/10 text-violet-300"
-            : "border-transparent bg-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+            ? "border-black bg-black text-white hover:bg-zinc-800 dark:border-white dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            : "border-border bg-background text-foreground hover:border-foreground/50 hover:bg-accent/50"
           }`}
       >
-        <span className="opacity-70"><Icon className="w-4 h-4" /></span>
-        <span className="font-medium">{label}</span>
+        <span className={isActive ? "opacity-100" : "opacity-50 group-hover:opacity-100 transition-opacity"}>
+          <Icon className="w-4 h-4" />
+        </span>
+        <span>{label}</span>
         {isActive && onClear ? (
           <span
             role="button"
             onClick={(e) => { e.stopPropagation(); onClear(); }}
-            className="ml-0.5 rounded-full hover:bg-violet-500/20 p-0.5"
+            className="ml-1 rounded-full p-0.5 hover:bg-white/20 transition-colors"
           >
             <X className="w-3 h-3" />
           </span>
         ) : (
-          <ChevronDown className={`w-3 h-3 opacity-50 transition-transform ${open ? "rotate-180" : ""}`} />
+          <ChevronDown className={`w-3 h-3 opacity-50 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
         )}
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-2 min-w-[200px] max-h-[320px] overflow-y-auto rounded-xl border border-border bg-popover p-1.5 shadow-xl animate-in fade-in-0 zoom-in-95">
+        <div className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} z-50 mt-2 min-w-[320px] max-h-[400px] overflow-y-auto rounded-2xl border border-black/5 bg-background/95 backdrop-blur-xl p-3 shadow-2xl animate-in fade-in-0 zoom-in-95 slide-in-from-top-2
+          [&::-webkit-scrollbar]:w-1.5
+          [&::-webkit-scrollbar-track]:bg-transparent
+          [&::-webkit-scrollbar-thumb]:bg-black/10
+          [&::-webkit-scrollbar-thumb]:rounded-full
+          dark:[&::-webkit-scrollbar-thumb]:bg-white/10
+          hover:[&::-webkit-scrollbar-thumb]:bg-black/20
+          dark:hover:[&::-webkit-scrollbar-thumb]:bg-white/20`}
+        >
           {children}
         </div>
       )}
@@ -128,30 +152,58 @@ function DropdownItem({
   active,
   onClick,
   children,
+  count,
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
+  count?: number;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-left transition-colors
+      className={`group w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-left transition-all duration-200
         ${active
-          ? "bg-violet-500/15 text-violet-300 font-medium"
-          : "text-foreground/80 hover:bg-accent"
+          ? "bg-black/5 text-black dark:bg-white/10 dark:text-white font-semibold"
+          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
         }`}
     >
-      {children}
+      <div className="flex items-center gap-2">
+        {active && <div className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />}
+        <span className={active ? "" : "pl-3.5"}>{children}</span>
+      </div>
+      {count !== undefined && (
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${active ? "bg-black/10 text-black dark:bg-white/20 dark:text-white" : "bg-muted text-muted-foreground group-hover:bg-black/5 group-hover:text-foreground"}`}>
+          {count}
+        </span>
+      )}
     </button>
   );
 }
+
 
 /* ───── Main Component ───── */
 export function VideosBrowser() {
   const [search, setSearch] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [page, setPageState] = useState(1);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // URL ?page= 파라미터에서 초기 페이지 읽기
+  useEffect(() => {
+    const urlPage = Number(searchParams.get("page")) || 1;
+    if (urlPage !== page) setPageState(urlPage);
+  }, [searchParams]);
+
+  const setPage = useCallback((newPage: number) => {
+    setPageState(newPage);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(newPage));
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [searchParams, router, pathname]);
+
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [ownerId, setOwnerId] = useState<string | null>(null);
   const [counselorId, setCounselorId] = useState<string | null>(null);
@@ -244,154 +296,282 @@ export function VideosBrowser() {
 
   return (
     <div className="min-h-screen">
-      {/* ═══ Search Bar (필터 숨김, 검색만) ═══ */}
-      <div className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-[1920px] flex items-center justify-center gap-4 px-4 py-3 sm:px-6">
-          <form onSubmit={handleSearch} className="relative w-full max-w-lg">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="search"
-              inputMode="search"
-              enterKeyHint="search"
-              autoComplete="off"
-              placeholder="영상 검색 (제목, 카테고리, 상담사...)"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-muted/50 border border-border rounded-full pl-11 pr-10 py-2.5 text-sm focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all placeholder:text-muted-foreground"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => { setSearch(""); setActiveSearch(""); setPage(1); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </form>
+      {/* ═══ Premium Search & Filter Header ═══ */}
+      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="mx-auto max-w-[1920px] px-4 py-4 sm:px-6 space-y-4">
+
+          {/* 1. Floating Search Bar */}
+          <div className="flex justify-center">
+            <form onSubmit={handleSearch} className="relative w-full max-w-2xl group">
+              <div className={`absolute inset-0 bg-black/5 rounded-full blur-xl transition-opacity duration-500 ${search ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
+              <div className="relative flex items-center bg-background rounded-full shadow-lg border border-black/5 transaction-all duration-300 focus-within:ring-2 focus-within:ring-black/10 focus-within:border-black/20 dark:bg-zinc-900 dark:border-white/10 dark:focus-within:ring-white/20">
+                <Search className="ml-5 w-5 h-5 text-muted-foreground" />
+                <input
+                  type="search"
+                  inputMode="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  placeholder="무엇을 찾고 계신가요?"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full bg-transparent border-none rounded-full px-4 py-3.5 text-base focus:outline-none placeholder:text-muted-foreground/70"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearch(""); setActiveSearch(""); setPage(1); }}
+                    className="mr-2 p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* 2. Filter Controls (Segmented & Dropdowns) */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+
+            {/* Left: Quick Filters (Segmented) */}
+            <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto">
+              <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
+                {(Object.entries(DURATION_RANGES) as [DurationRange, { label: string }][]).map(([key, val]) => (
+                  <button
+                    key={key}
+                    onClick={() => { setDurationRange(key); setPage(1); }}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                      ${durationRange === key
+                        ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
+                        : "text-muted-foreground hover:text-foreground"
+                      }`}
+                  >
+                    {val.label}
+                  </button>
+                ))}
+              </div>
+              <div className="h-4 w-px bg-border mx-2 hidden sm:block" />
+              <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
+                <button
+                  onClick={() => { setSort("latest"); setPage(1); }}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                      ${sort === "latest"
+                      ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                    }`}
+                >
+                  최신순
+                </button>
+                <button
+                  onClick={() => { setSort("oldest"); setPage(1); }}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                      ${sort === "oldest"
+                      ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                    }`}
+                >
+                  오래된순
+                </button>
+              </div>
+            </div>
+
+            {/* Right: Detailed Filters (Dropdowns) */}
+            <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto justify-end">
+
+              {/* Category Dropdown (Grid) */}
+              <FilterDropdown label={catLabel} icon={Film} isActive={!!categoryId} onClear={() => { setCategoryId(null); setPage(1); }} align="right">
+                <div className="w-[320px] p-1">
+                  <div className="mb-2 px-1">
+                    <DropdownItem active={!categoryId} onClick={() => { setCategoryId(null); setPage(1); }}>
+                      전체 카테고리
+                    </DropdownItem>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {categories.map((c) => (
+                      <DropdownItem key={c.id} active={categoryId === c.id} onClick={() => { setCategoryId(c.id); setPage(1); }} count={c._count.videos}>
+                        {c.name}
+                      </DropdownItem>
+                    ))}
+                  </div>
+                </div>
+              </FilterDropdown>
+
+              {/* Owner Dropdown (Grid) */}
+              <FilterDropdown label={ownerLabel} icon={Film} isActive={!!ownerId} onClear={() => { setOwnerId(null); setPage(1); }} align="right">
+                <div className="w-[320px] p-1">
+                  <div className="mb-2 px-1">
+                    <DropdownItem active={!ownerId} onClick={() => { setOwnerId(null); setPage(1); }}>
+                      전체 제작자
+                    </DropdownItem>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {owners.map((o) => (
+                      <DropdownItem key={o.id} active={ownerId === o.id} onClick={() => { setOwnerId(o.id); setPage(1); }} count={o.videoCount}>
+                        {o.chineseName || o.name}
+                      </DropdownItem>
+                    ))}
+                  </div>
+                </div>
+              </FilterDropdown>
+
+              {/* Counselor Dropdown (List - usually fewer items, but keeping consistent) */}
+              <FilterDropdown label={counselorLabel} icon={Film} isActive={!!counselorId} onClear={() => { setCounselorId(null); setPage(1); }} align="right">
+                <div className="w-[280px] p-1">
+                  <div className="mb-2 px-1">
+                    <DropdownItem active={!counselorId} onClick={() => { setCounselorId(null); setPage(1); }}>
+                      전체 상담사
+                    </DropdownItem>
+                  </div>
+                  <div className="space-y-1">
+                    {counselors.map((c) => (
+                      <DropdownItem key={c.id} active={counselorId === c.id} onClick={() => { setCounselorId(c.id); setPage(1); }} count={c.videoCount}>
+                        {c.displayName}
+                      </DropdownItem>
+                    ))}
+                  </div>
+                </div>
+              </FilterDropdown>
+
+              {/* 필터 초기화 */}
+              {hasActiveFilter && (
+                <button
+                  onClick={resetFilters}
+                  className="flex items-center justify-center p-2 rounded-full border border-transparent hover:bg-destructive/10 text-destructive transition-colors"
+                  title="필터 초기화"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* ═══ Content ═══ */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         {/* Active search indicator */}
-        {activeSearch && (
-          <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <span>&quot;{activeSearch}&quot; 검색 결과</span>
-            <button
-              onClick={() => { setActiveSearch(""); setSearch(""); setPage(1); }}
-              className="rounded-md bg-muted px-2 py-0.5 text-xs hover:bg-accent"
-            >
-              초기화
-            </button>
-          </div>
-        )}
+        {
+          activeSearch && (
+            <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <span>&quot;{activeSearch}&quot; 검색 결과</span>
+              <button
+                onClick={() => { setActiveSearch(""); setSearch(""); setPage(1); }}
+                className="rounded-md bg-muted px-2 py-0.5 text-xs hover:bg-accent"
+              >
+                초기화
+              </button>
+            </div>
+          )
+        }
 
         {/* Video Grid */}
-        {isLoading ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={`skel-${i}`} className="space-y-3">
-                <Skeleton className="aspect-video w-full rounded-xl" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            ))}
-          </div>
-        ) : !data?.data.length ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-100 text-3xl dark:bg-violet-500/10">
-              <Film className="h-8 w-8 text-violet-500" />
+        {
+          isLoading ? (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={`skel-${i}`} className="space-y-3">
+                  <Skeleton className="aspect-video w-full rounded-xl" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              ))}
             </div>
-            <h3 className="mb-1 text-lg font-semibold">
-              {activeSearch || hasActiveFilter ? "조건에 맞는 영상이 없습니다" : "영상이 없습니다"}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {activeSearch || hasActiveFilter
-                ? "다른 검색어나 필터 조합으로 시도해 보세요."
-                : "아직 공개된 영상이 없습니다. 곧 추가될 예정이에요!"}
-            </p>
-            {hasActiveFilter && (
-              <button
-                onClick={resetFilters}
-                className="mt-4 rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors"
-              >
-                필터 초기화
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {data.data.map((video) => (
-              <VideoCard
-                key={video.id}
-                id={video.id}
-                title={video.title}
-                thumbnailUrl={video.thumbnailUrl}
-                streamUid={video.streamUid}
-                duration={video.technicalSpec?.duration ?? null}
-                ownerName={video.owner.chineseName || video.owner.name}
-                categoryName={video.category?.name ?? null}
-                createdAt={video.createdAt}
-              />
-            ))}
-          </div>
-        )}
+          ) : !data?.data.length ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-3xl dark:bg-zinc-800">
+                <Film className="h-8 w-8 text-black dark:text-white" />
+              </div>
+              <h3 className="mb-1 text-lg font-semibold">
+                {activeSearch || hasActiveFilter ? "조건에 맞는 영상이 없습니다" : "영상이 없습니다"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {activeSearch || hasActiveFilter
+                  ? "다른 검색어나 필터 조합으로 시도해 보세요."
+                  : "아직 공개된 영상이 없습니다. 곧 추가될 예정이에요!"}
+              </p>
+              {hasActiveFilter && (
+                <button
+                  onClick={resetFilters}
+                  className="mt-4 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 transition-colors dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                >
+                  필터 초기화
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {data.data.map((video) => (
+                <VideoCard
+                  key={video.id}
+                  id={video.id}
+                  title={video.title}
+                  thumbnailUrl={video.thumbnailUrl}
+                  streamUid={video.streamUid}
+                  duration={video.technicalSpec?.duration ?? null}
+                  ownerName={video.owner.chineseName || video.owner.name}
+                  categoryName={video.category?.name ?? null}
+                  createdAt={video.createdAt}
+                />
+              ))}
+            </div>
+          )
+        }
 
         {/* Pagination */}
-        {data && data.totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-            >
-              이전
-            </Button>
+        {
+          data && data.totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                이전
+              </Button>
 
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(data.totalPages, 7) }).map((_, i) => {
-                let pageNum: number;
-                if (data.totalPages <= 7) {
-                  pageNum = i + 1;
-                } else if (page <= 4) {
-                  pageNum = i + 1;
-                } else if (page >= data.totalPages - 3) {
-                  pageNum = data.totalPages - 6 + i;
-                } else {
-                  pageNum = page - 3 + i;
-                }
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setPage(pageNum)}
-                    className={`h-8 min-w-8 rounded-md px-2 text-sm font-medium transition-colors
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(data.totalPages, 7) }).map((_, i) => {
+                  let pageNum: number;
+                  if (data.totalPages <= 7) {
+                    pageNum = i + 1;
+                  } else if (page <= 4) {
+                    pageNum = i + 1;
+                  } else if (page >= data.totalPages - 3) {
+                    pageNum = data.totalPages - 6 + i;
+                  } else {
+                    pageNum = page - 3 + i;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`h-8 min-w-8 rounded-md px-2 text-sm font-medium transition-colors
                       ${pageNum === page
-                        ? "bg-violet-600 text-white"
-                        : "text-muted-foreground hover:bg-accent"
-                      }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
+                          ? "bg-black text-white dark:bg-white dark:text-black"
+                          : "text-muted-foreground hover:bg-accent"
+                        }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= data.totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                다음
+              </Button>
+
+              <span className="ml-2 text-xs text-muted-foreground">
+                총 {data.total}개
+              </span>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= data.totalPages}
-              onClick={() => setPage(page + 1)}
-            >
-              다음
-            </Button>
-
-            <span className="ml-2 text-xs text-muted-foreground">
-              총 {data.total}개
-            </span>
-          </div>
-        )}
+          )
+        }
       </div>
     </div>
   );

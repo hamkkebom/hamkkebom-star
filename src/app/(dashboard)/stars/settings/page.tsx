@@ -9,6 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type UserData = {
   id: string;
@@ -19,10 +30,14 @@ type UserData = {
 
 export default function SettingsPage() {
   const supabase = createClient();
+  const router = useRouter();
 
-  // Email change — disabled
-  // const [newEmail, setNewEmail] = useState("");
-  // const [changingEmail, setChangingEmail] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Email change
+  const [newEmail, setNewEmail] = useState("");
+  const [changingEmail, setChangingEmail] = useState(false);
+  const [isEmailInputReadOnly, setIsEmailInputReadOnly] = useState(true);
 
   // Password change
   const [newPassword, setNewPassword] = useState("");
@@ -39,8 +54,52 @@ export default function SettingsPage() {
     },
   });
 
-  // handleEmailChange — 비활성화됨 (Supabase 이메일 확인 문제)
-  // 이메일 변경이 필요한 경우 Supabase 대시보드에서 직접 변경해야 합니다.
+  async function handleEmailChangeRequest() {
+    const trimmed = newEmail.trim();
+    if (!trimmed) {
+      toast.error("새 이메일을 입력해주세요.");
+      return;
+    }
+    // 간단한 이메일 형식 검증
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("올바른 이메일 형식을 입력해주세요.");
+      return;
+    }
+    if (trimmed === data?.email) {
+      toast.error("현재 사용 중인 이메일과 동일합니다.");
+      return;
+    }
+    setShowConfirmDialog(true);
+  }
+
+  async function handleEmailChangeConfirm() {
+    setChangingEmail(true);
+    try {
+      const res = await fetch("/api/users/email-change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newEmail.trim() }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || "이메일 변경 실패");
+      }
+
+      toast.success("이메일이 변경되었습니다. 다시 로그인해주세요.", {
+        duration: 5000,
+      });
+      await supabase.auth.signOut();
+      router.push("/auth/login");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "이메일 변경 요청에 실패했습니다."
+      );
+    } finally {
+      setChangingEmail(false);
+      setShowConfirmDialog(false);
+    }
+  }
 
   async function handlePasswordChange() {
     if (!newPassword.trim()) {
@@ -108,29 +167,59 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* 이메일 변경 — 비활성화 */}
-      <Card className="opacity-60">
+      {/* 이메일 변경 */}
+      <Card>
         <CardHeader>
           <CardTitle className="text-base">이메일 변경</CardTitle>
           <CardDescription>
-            이메일 변경 기능은 현재 사용할 수 없습니다. 이메일 변경이 필요한 경우 관리자에게 문의해 주세요.
+            새 이메일 주소를 입력하고 변경하면 <strong>즉시 변경</strong>됩니다. (자동으로 로그아웃됨)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="new-email">새 이메일</Label>
+            <Label htmlFor="change-email-input">새 이메일</Label>
             <Input
-              id="new-email"
+              id="change-email-input"
+              name="change-email-input"
               type="email"
-              disabled
-              placeholder="관리자 문의 필요"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="name@example.com"
+              autoComplete="new-password"
+              disabled={changingEmail}
+              readOnly={isEmailInputReadOnly}
+              onFocus={() => setIsEmailInputReadOnly(false)}
             />
           </div>
-          <Button disabled>
-            이메일 변경 (비활성화)
+          <Button
+            onClick={handleEmailChangeRequest}
+            disabled={changingEmail || !newEmail.trim()}
+          >
+            {changingEmail ? "요청 중..." : "이메일 변경"}
           </Button>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이메일 주소를 변경하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              이메일을 <span className="font-bold text-foreground">{newEmail}</span>
+              (으)로 변경합니다.
+              <br />
+              변경 후에는 <strong>자동으로 로그아웃</strong>되며, 새 이메일로 다시
+              로그인해야 합니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleEmailChangeConfirm}>
+              변경하기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* 비밀번호 변경 */}
       <Card>

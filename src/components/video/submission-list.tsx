@@ -1,13 +1,32 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
+import { toast } from "sonner";
+import { MoreVertical, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type SubmissionStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "REVISED";
 
@@ -141,8 +160,30 @@ function SubmissionCardSkeleton() {
 }
 
 export function SubmissionList({ limit }: { limit?: number } = {}) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/submissions/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error?.message || "삭제에 실패했습니다.");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("영상이 성공적으로 삭제되었습니다.");
+      queryClient.invalidateQueries({ queryKey: ["my-submissions"] });
+      setDeleteId(null);
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["my-submissions"],
@@ -219,11 +260,10 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
                 key={f.value}
                 type="button"
                 onClick={() => setStatusFilter(f.value)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  statusFilter === f.value
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${statusFilter === f.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
               >
                 {f.label}
               </button>
@@ -239,8 +279,12 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {filteredData.map((submission) => (
-            <Link key={submission.id} href={`/stars/my-videos/${submission.id}`} className="block">
-              <Card className="transition-colors hover:border-primary/40 cursor-pointer h-full overflow-hidden">
+            <div
+              key={submission.id}
+              onClick={() => router.push(`/stars/my-videos/${submission.id}`)}
+              className="group block h-full cursor-pointer"
+            >
+              <Card className="h-full overflow-hidden transition-all duration-300 hover:border-primary/40 hover:shadow-md">
                 {/* 썸네일 */}
                 <div className="relative aspect-video w-full bg-muted">
                   <ThumbnailImage
@@ -249,38 +293,125 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
                   />
                   <Badge
                     variant={statusMap[submission.status]?.variant ?? "secondary"}
-                    className="absolute top-2 right-2"
+                    className="absolute top-2 right-2 shadow-sm"
                   >
                     {statusMap[submission.status]?.label ?? submission.status}
                   </Badge>
                 </div>
                 <CardHeader className="gap-1 p-3">
-                  <CardTitle className="line-clamp-1 text-sm">
-                    {cleanVersionTitle(submission.versionTitle)
-                      ?? submission?.assignment?.request?.title
-                      ?? `제출물 ${submission.version}`}
-                  </CardTitle>
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="line-clamp-1 text-sm">
+                      {cleanVersionTitle(submission.versionTitle) ??
+                        submission?.assignment?.request?.title ??
+                        `제출물 ${submission.version}`}
+                    </CardTitle>
+                    {/* 대기중일 때만 삭제 메뉴 표시 */}
+                    {submission.status === "PENDING" && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-3.5 w-3.5" />
+                            <span className="sr-only">메뉴 열기</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteId(submission.id);
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>삭제하기</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
                   <CardDescription className="line-clamp-1 text-xs">
                     {(() => {
                       const parts: string[] = [];
-                      if (submission?.assignment?.request?.title) parts.push(submission.assignment.request.title);
-                      parts.push(`버전 ${submission.version.startsWith("v") ? submission.version : `v${submission.version}`}`);
-                      if (submission.duration) parts.push(formatDuration(submission.duration));
-                      return parts.join(' · ');
+                      if (submission?.assignment?.request?.title)
+                        parts.push(submission.assignment.request.title);
+                      parts.push(
+                        `버전 ${submission.version.startsWith("v")
+                          ? submission.version
+                          : `v${submission.version}`
+                        }`
+                      );
+                      if (submission.duration)
+                        parts.push(formatDuration(submission.duration));
+                      return parts.join(" · ");
                     })()}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between px-3 pb-3 pt-0 text-xs text-muted-foreground">
-                  <span>제출 {formatDate(submission.submittedAt || submission.createdAt)}</span>
+                  <span>
+                    제출 {formatDate(submission.submittedAt || submission.createdAt)}
+                  </span>
                   {submission._count.feedbacks > 0 && (
-                    <span className="font-medium text-primary">피드백 {submission._count.feedbacks}건</span>
+                    <span className="font-medium text-primary">
+                      피드백 {submission._count.feedbacks}건
+                    </span>
                   )}
                 </CardContent>
               </Card>
-            </Link>
+            </div>
           ))}
         </div>
       )}
+
+      {/* 삭제 확인 모달 */}
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              영상을 삭제하시겠습니까?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              이 작업은 되돌릴 수 없으며, 영상 데이터와 관련된 모든 기록이 영구적으로
+              삭제됩니다.
+              <br />
+              <br />
+              <span className="font-medium text-foreground">
+                정말 삭제하시겠습니까?
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteId) deleteMutation.mutate(deleteId);
+              }}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  삭제 중...
+                </>
+              ) : (
+                "삭제하기"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

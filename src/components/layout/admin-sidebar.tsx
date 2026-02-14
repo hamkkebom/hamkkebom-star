@@ -44,7 +44,7 @@ export function AdminSidebar() {
   return (
     <aside className="flex h-full w-64 flex-col border-r bg-sidebar">
       <div className="flex h-14 items-center px-6">
-        <Link href="/admin" className="text-lg font-bold text-sidebar-foreground">
+        <Link href="/" className="text-lg font-bold text-sidebar-foreground">
           별들에게 물어봐 <span className="text-xs font-normal text-muted-foreground">관리자</span>
         </Link>
       </div>

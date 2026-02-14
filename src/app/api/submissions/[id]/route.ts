@@ -109,3 +109,56 @@ export async function PATCH(request: Request, { params }: Params) {
 
   return NextResponse.json({ data: updated });
 }
+
+export async function DELETE(request: Request, { params }: Params) {
+  const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
+      { status: 401 }
+    );
+  }
+
+  const { id } = await params;
+
+  const existing = await prisma.submission.findUnique({
+    where: { id },
+    select: { starId: true, status: true },
+  });
+
+  if (!existing) {
+    return NextResponse.json(
+      { error: { code: "NOT_FOUND", message: "제출물을 찾을 수 없습니다." } },
+      { status: 404 }
+    );
+  }
+
+  // 권한 확인: 본인 소유여야 함
+  // (ADMIN은 삭제 가능하도록 할 수도 있지만, 요구사항은 STAR의 관리 기능이므로 본인 확인)
+  if (user.role === "STAR" && existing.starId !== user.id) {
+    return NextResponse.json(
+      { error: { code: "FORBIDDEN", message: "본인 제출물만 삭제할 수 있습니다." } },
+      { status: 403 }
+    );
+  }
+
+  // 상태 확인: PENDING 상태만 삭제 가능
+  if (existing.status !== "PENDING") {
+    return NextResponse.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "대기중(Pending) 상태인 영상만 삭제할 수 있습니다.",
+        },
+      },
+      { status: 400 }
+    );
+  }
+
+  // 삭제 실행
+  await prisma.submission.delete({
+    where: { id },
+  });
+
+  return NextResponse.json({ success: true });
+}

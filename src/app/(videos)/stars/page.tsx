@@ -7,7 +7,8 @@ import { Search, Sparkles, MoveRight, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 type StarItem = {
   id: string;
@@ -29,7 +30,23 @@ type StarsResponse = {
 export default function StarsPage() {
   const [search, setSearch] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [page, setPageState] = useState(1);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // URL ?page= 파라미터에서 초기 페이지 읽기
+  useEffect(() => {
+    const urlPage = Number(searchParams.get("page")) || 1;
+    if (urlPage !== page) setPageState(urlPage);
+  }, [searchParams]);
+
+  const setPage = useCallback((newPage: number) => {
+    setPageState(newPage);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(newPage));
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [searchParams, router, pathname]);
 
   const { data, isLoading } = useQuery<StarsResponse>({
     queryKey: ["stars-public", activeSearch, page],
@@ -93,8 +110,8 @@ export default function StarsPage() {
                   onChange={(e) => setSearch(e.target.value)}
                   className="h-14 border-none bg-transparent px-4 text-lg placeholder:text-muted-foreground/50 focus-visible:ring-0"
                 />
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   size="lg"
                   className="m-1 h-12 rounded-xl bg-foreground text-background hover:bg-foreground/90"
                 >
@@ -145,8 +162,8 @@ export default function StarsPage() {
         ) : (
           <div className="grid gap-x-8 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {stars.map((star, idx) => (
-              <div 
-                key={star.id} 
+              <div
+                key={star.id}
                 className="animate-fade-in"
                 style={{ animationDelay: `${idx * 100}ms` }}
               >
@@ -193,10 +210,10 @@ function PremiumStarCard({ star }: { star: StarItem }) {
             {star.name.charAt(0)}
           </div>
         )}
-        
+
         {/* Hover Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        
+
         <div className="absolute bottom-0 left-0 p-6 opacity-0 transition-all duration-300 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0">
           <p className="line-clamp-3 text-sm font-medium leading-relaxed text-white/90">
             {star.bio || "No bio available."}

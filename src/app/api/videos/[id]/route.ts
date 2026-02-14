@@ -1,6 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { getVideoStatus } from "@/lib/cloudflare/stream";
+
+/**
+ * duration이 없는 영상을 Cloudflare에서 자동으로 가져와 저장 (lazy sync)
+ */
+async function lazySyncDuration(videoId: string, streamUid: string | null, hasDuration: boolean) {
+  if (!streamUid || hasDuration) return;
+  try {
+    const info = await getVideoStatus(streamUid);
+    if (!info || info.status.state !== "ready" || !info.duration) return;
+    await prisma.videoTechnicalSpec.upsert({
+      where: { videoId },
+      update: { duration: info.duration, width: info.input?.width || null, height: info.input?.height || null },
+      create: { videoId, duration: info.duration, width: info.input?.width || null, height: info.input?.height || null },
+    });
+  } catch { /* 실패해도 무시 — 다음 조회 시 재시도 */ }
+}
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -34,6 +51,9 @@ export async function GET(_request: Request, { params }: Params) {
       { status: 401 }
     );
   }
+
+  // duration이 없으면 백그라운드에서 Cloudflare 동기화
+  lazySyncDuration(video.id, video.streamUid, !!video.technicalSpec?.duration).catch(() => { });
 
   return NextResponse.json({ data: video });
 }

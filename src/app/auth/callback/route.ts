@@ -50,6 +50,14 @@ export async function GET(request: Request) {
     where: { authId: authUser.id },
   });
 
+  // 이메일 변경 확인 후 Prisma DB 동기화
+  if (existingUser && existingUser.email !== authUser.email) {
+    existingUser = await prisma.user.update({
+      where: { id: existingUser.id },
+      data: { email: authUser.email },
+    });
+  }
+
   if (!existingUser) {
     const metadata: Record<string, unknown> =
       authUser.user_metadata && typeof authUser.user_metadata === "object"
@@ -77,6 +85,14 @@ export async function GET(request: Request) {
     await supabase.auth.signOut();
     return NextResponse.redirect(
       new URL("/auth/pending-approval", requestUrl.origin)
+    );
+  }
+
+  // 이메일 변경 콜백인 경우 설정 페이지로 리다이렉트
+  const type = requestUrl.searchParams.get("type");
+  if (type === "email_change") {
+    return NextResponse.redirect(
+      new URL("/stars/settings", requestUrl.origin)
     );
   }
 
