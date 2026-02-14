@@ -208,6 +208,11 @@ export function UploadPageClient({
           versionSlot={versionSlot}
           versionTitle={versionTitle}
           description={description || undefined}
+          onComplete={() => {
+            setVersionTitle("");
+            setDescription("");
+            setVersionSlot(1);
+          }}
         />
       )}
 

@@ -20,7 +20,7 @@ export const createRequestSchema = z.object({
     .number()
     .int("담당자 수는 정수여야 합니다.")
     .min(1, "담당자 수는 1명 이상이어야 합니다.")
-    .max(10, "담당자 수는 10명 이하여야 합니다."),
+    .max(1000, "담당자 수는 1000명 이하여야 합니다."),
   estimatedBudget: z.number().nonnegative("예산은 0 이상이어야 합니다.").optional(),
   requirements: z.string().trim().optional(),
   referenceUrls: z.array(referenceUrlSchema).optional(),

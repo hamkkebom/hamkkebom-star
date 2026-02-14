@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -11,9 +11,11 @@ import {
   UserCheck,
   DollarSign,
   Play,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/admin", label: "대시보드", icon: LayoutDashboard, exact: true },
@@ -31,6 +33,13 @@ const externalItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/auth/login");
+  }
 
   return (
     <aside className="flex h-full w-64 flex-col border-r bg-sidebar">
@@ -81,6 +90,17 @@ export function AdminSidebar() {
           );
         })}
       </nav>
+
+      <div className="p-3 border-t">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+          로그아웃
+        </button>
+      </div>
     </aside>
   );
 }

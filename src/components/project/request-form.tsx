@@ -28,7 +28,7 @@ const requestFormSchema = z.object({
     .number()
     .int("담당자 수는 정수여야 합니다.")
     .min(1, "담당자 수는 1명 이상이어야 합니다.")
-    .max(10, "담당자 수는 10명 이하여야 합니다."),
+    .max(1000, "담당자 수는 1000명 이하여야 합니다."),
   estimatedBudgetText: z.string().optional(),
   requirements: z.string().optional(),
   referenceUrlsText: z.string().optional(),
@@ -203,7 +203,7 @@ export function RequestForm({
                   <Input
                     type="number"
                     min={1}
-                    max={10}
+                    max={1000}
                     disabled={isSubmitting}
                     value={field.value}
                     onChange={(event) => field.onChange(Number(event.target.value))}
