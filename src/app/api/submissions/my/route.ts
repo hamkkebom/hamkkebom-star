@@ -3,6 +3,7 @@ import { Prisma, SubmissionStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
+import { extractR2Key, getPresignedGetUrl } from "@/lib/cloudflare/r2-upload";
 
 const submissionStatuses = new Set(Object.values(SubmissionStatus));
 
@@ -63,7 +64,9 @@ export async function GET(request: Request) {
         },
         video: {
           select: {
+            title: true,
             streamUid: true,
+            thumbnailUrl: true,
           },
         },
         _count: {
@@ -79,24 +82,52 @@ export async function GET(request: Request) {
     prisma.submission.count({ where }),
   ]);
 
-  // 각 submission의 streamUid로 서명된 썸네일 URL 생성 (병렬 처리)
+  // 각 submission의 썸네일 URL 생성 (우선순위: R2 presigned → Stream signed)
   const rowsWithThumbnails = await Promise.all(
     rows.map(async (row) => {
-      const uid = row.streamUid || row.video?.streamUid;
-      let signedThumbnailUrl: string | null = null;
+      let finalThumbnailUrl: string | null = null;
 
-      if (uid) {
-        try {
-          const token = await getSignedPlaybackToken(uid);
-          if (token) {
-            signedThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+      // 1순위: Video.thumbnailUrl이 R2 URL이면 → presigned GET URL
+      const videoThumbUrl = row.video?.thumbnailUrl;
+      if (videoThumbUrl) {
+        const r2Key = extractR2Key(videoThumbUrl);
+        if (r2Key) {
+          try {
+            finalThumbnailUrl = await getPresignedGetUrl(r2Key);
+          } catch {
+            // R2 실패 시 fallback
           }
-        } catch {
-          signedThumbnailUrl = null;
         }
       }
 
-      return { ...row, signedThumbnailUrl };
+      // 2순위: Submission.thumbnailUrl이 R2 URL이면 → presigned GET URL
+      if (!finalThumbnailUrl && row.thumbnailUrl) {
+        const r2Key = extractR2Key(row.thumbnailUrl);
+        if (r2Key) {
+          try {
+            finalThumbnailUrl = await getPresignedGetUrl(r2Key);
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      // 3순위: Cloudflare Stream 서명 썸네일
+      if (!finalThumbnailUrl) {
+        const uid = row.streamUid || row.video?.streamUid;
+        if (uid) {
+          try {
+            const token = await getSignedPlaybackToken(uid);
+            if (token) {
+              finalThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      return { ...row, signedThumbnailUrl: finalThumbnailUrl };
     })
   );
 
@@ -108,3 +139,4 @@ export async function GET(request: Request) {
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
   });
 }
+

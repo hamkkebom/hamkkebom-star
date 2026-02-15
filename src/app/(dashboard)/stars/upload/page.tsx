@@ -25,8 +25,8 @@ export default async function UploadPage() {
           referenceUrls: true,
           categories: true,
           maxAssignees: true,
-          status: true, // Request 자체의 상태도 필요
-          estimatedBudget: true, // 예산 정보도 있으면 좋음
+          status: true,
+          estimatedBudget: true,
           _count: {
             select: {
               assignments: true,
@@ -34,6 +34,12 @@ export default async function UploadPage() {
           }
         },
       },
+      // 최신 제출물 1개 가져오기 (썸네일용)
+      submissions: {
+        take: 1,
+        orderBy: { createdAt: "desc" },
+        select: { thumbnailUrl: true }
+      }
     },
     orderBy: [{ createdAt: "desc" }],
   });
@@ -59,6 +65,7 @@ export default async function UploadPage() {
     requirements: a.request.requirements,
     referenceUrls: a.request.referenceUrls,
     categories: a.request.categories,
+    thumbnailUrl: a.submissions[0]?.thumbnailUrl || null,
   }));
 
   const requestItems = allRequests.map((r) => {

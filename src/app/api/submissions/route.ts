@@ -149,6 +149,7 @@ export async function POST(request: Request) {
           version,
           streamUid: parsed.data.streamUid,
           summaryFeedback: parsed.data.description || null,
+          thumbnailUrl: parsed.data.thumbnailUrl,
           starId: user.id,
         },
       });
@@ -225,10 +226,10 @@ export async function GET(request: Request) {
     ...(status && status !== "ALL" ? { status: status as SubmissionStatus } : {}),
     ...(requestId
       ? {
-          assignment: {
-            requestId,
-          },
-        }
+        assignment: {
+          requestId,
+        },
+      }
       : {}),
   };
 

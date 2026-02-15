@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { getSignedPlaybackToken, deleteVideo } from "@/lib/cloudflare/stream";
+import { extractR2Key, getPresignedGetUrl, deleteR2Object } from "@/lib/cloudflare/r2-upload";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -24,7 +26,15 @@ export async function GET(_request: Request, { params }: Params) {
           request: { select: { id: true, title: true, deadline: true } },
         },
       },
-      video: { select: { id: true, title: true, streamUid: true } },
+      video: {
+        select: {
+          id: true,
+          title: true,
+          streamUid: true,
+          thumbnailUrl: true,
+          technicalSpec: { select: { duration: true } },
+        },
+      },
       feedbacks: {
         include: {
           author: { select: { id: true, name: true, avatarUrl: true } },
@@ -50,7 +60,50 @@ export async function GET(_request: Request, { params }: Params) {
     );
   }
 
-  return NextResponse.json({ data: submission });
+  // 썸네일 URL 생성 (우선순위: R2 presigned → Cloudflare Stream signed)
+  let signedThumbnailUrl: string | null = null;
+
+  // 1) Video.thumbnailUrl이 R2 URL이면 → presigned GET URL 생성
+  const videoThumbUrl = submission.video?.thumbnailUrl;
+  if (videoThumbUrl) {
+    const r2Key = extractR2Key(videoThumbUrl);
+    if (r2Key) {
+      try {
+        signedThumbnailUrl = await getPresignedGetUrl(r2Key);
+      } catch {
+        // R2 실패 시 fallback
+      }
+    }
+  }
+
+  // 1-2) Submission.thumbnailUrl이 R2 URL이면 → presigned GET URL
+  if (!signedThumbnailUrl && submission.thumbnailUrl) {
+    const r2Key = extractR2Key(submission.thumbnailUrl);
+    if (r2Key) {
+      try {
+        signedThumbnailUrl = await getPresignedGetUrl(r2Key);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  // 2) R2 실패 시 → Cloudflare Stream signed thumbnail
+  if (!signedThumbnailUrl) {
+    const uid = submission.streamUid || submission.video?.streamUid;
+    if (uid) {
+      try {
+        const token = await getSignedPlaybackToken(uid);
+        if (token) {
+          signedThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  return NextResponse.json({ data: { ...submission, signedThumbnailUrl } });
 }
 
 export async function PATCH(request: Request, { params }: Params) {
@@ -121,9 +174,21 @@ export async function DELETE(request: Request, { params }: Params) {
 
   const { id } = await params;
 
+  // 삭제 대상의 전체 정보 조회 (외부 리소스 정리에 필요)
   const existing = await prisma.submission.findUnique({
     where: { id },
-    select: { starId: true, status: true },
+    select: {
+      starId: true,
+      status: true,
+      streamUid: true,
+      thumbnailUrl: true,
+      video: {
+        select: {
+          streamUid: true,
+          thumbnailUrl: true,
+        },
+      },
+    },
   });
 
   if (!existing) {
@@ -133,8 +198,6 @@ export async function DELETE(request: Request, { params }: Params) {
     );
   }
 
-  // 권한 확인: 본인 소유여야 함
-  // (ADMIN은 삭제 가능하도록 할 수도 있지만, 요구사항은 STAR의 관리 기능이므로 본인 확인)
   if (user.role === "STAR" && existing.starId !== user.id) {
     return NextResponse.json(
       { error: { code: "FORBIDDEN", message: "본인 제출물만 삭제할 수 있습니다." } },
@@ -142,7 +205,6 @@ export async function DELETE(request: Request, { params }: Params) {
     );
   }
 
-  // 상태 확인: PENDING 상태만 삭제 가능
   if (existing.status !== "PENDING") {
     return NextResponse.json(
       {
@@ -155,7 +217,54 @@ export async function DELETE(request: Request, { params }: Params) {
     );
   }
 
-  // 삭제 실행
+  // ── 외부 리소스 정리 (best-effort: 실패해도 DB 삭제는 진행) ──
+
+  const cleanupResults: string[] = [];
+
+  // 1) Cloudflare Stream 영상 삭제
+  const streamUid = existing.streamUid || existing.video?.streamUid;
+  if (streamUid) {
+    try {
+      const deleted = await deleteVideo(streamUid);
+      cleanupResults.push(`Stream(${streamUid}): ${deleted ? "✓" : "✗"}`);
+    } catch (e) {
+      console.error("Stream 영상 삭제 실패:", e);
+      cleanupResults.push(`Stream(${streamUid}): error`);
+    }
+  }
+
+  // 2) R2 썸네일 삭제 (Video.thumbnailUrl)
+  const videoThumbUrl = existing.video?.thumbnailUrl;
+  if (videoThumbUrl) {
+    const r2Key = extractR2Key(videoThumbUrl);
+    if (r2Key) {
+      try {
+        const deleted = await deleteR2Object(r2Key);
+        cleanupResults.push(`R2-video(${r2Key}): ${deleted ? "✓" : "✗"}`);
+      } catch (e) {
+        console.error("R2 Video 썸네일 삭제 실패:", e);
+      }
+    }
+  }
+
+  // 3) R2 썸네일 삭제 (Submission.thumbnailUrl — 직접 업로드)
+  if (existing.thumbnailUrl && existing.thumbnailUrl !== videoThumbUrl) {
+    const r2Key = extractR2Key(existing.thumbnailUrl);
+    if (r2Key) {
+      try {
+        const deleted = await deleteR2Object(r2Key);
+        cleanupResults.push(`R2-sub(${r2Key}): ${deleted ? "✓" : "✗"}`);
+      } catch (e) {
+        console.error("R2 Submission 썸네일 삭제 실패:", e);
+      }
+    }
+  }
+
+  if (cleanupResults.length > 0) {
+    console.log(`[DELETE /submissions/${id}] cleanup:`, cleanupResults.join(", "));
+  }
+
+  // 4) DB 레코드 삭제
   await prisma.submission.delete({
     where: { id },
   });

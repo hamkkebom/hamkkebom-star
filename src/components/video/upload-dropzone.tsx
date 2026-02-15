@@ -28,6 +28,7 @@ interface UploadDropzoneProps {
   versionSlot: number;
   versionTitle?: string;
   description?: string;
+  thumbnailFile?: File | null;
   onComplete?: () => void;
 }
 
@@ -36,6 +37,7 @@ export function UploadDropzone({
   versionSlot,
   versionTitle,
   description,
+  thumbnailFile,
   onComplete,
 }: UploadDropzoneProps) {
   const [status, setStatus] = useState<UploadStatus>("idle");
@@ -123,13 +125,32 @@ export function UploadDropzone({
     [],
   );
 
-  /** 제출 버튼 클릭 시 — 제출물 등록 API 호출 */
+  /** 제출 버튼 클릭 시 — 썸네일 업로드 + 제출물 등록 API 호출 */
   const handleSubmit = useCallback(async () => {
     if (!streamUid) return;
 
     setStatus("submitting");
 
     try {
+      // 썸네일 파일이 있으면 제출 시점에 R2로 업로드
+      let thumbnailUrl: string | undefined;
+      if (thumbnailFile) {
+        const formData = new FormData();
+        formData.append("file", thumbnailFile);
+
+        const uploadRes = await fetch("/api/upload/image", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const { data } = await uploadRes.json();
+          thumbnailUrl = data.publicUrl;
+        } else {
+          console.warn("썸네일 업로드 실패, 썸네일 없이 제출합니다.");
+        }
+      }
+
       const submitResponse = await fetch("/api/submissions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,6 +159,7 @@ export function UploadDropzone({
           versionSlot,
           versionTitle: versionTitle,
           description: description || undefined,
+          thumbnailUrl,
           streamUid,
         }),
       });
@@ -159,7 +181,7 @@ export function UploadDropzone({
         error instanceof Error ? error.message : "제출에 실패했습니다.",
       );
     }
-  }, [assignmentId, versionSlot, versionTitle, description, streamUid]);
+  }, [assignmentId, versionSlot, versionTitle, description, thumbnailFile, streamUid]);
 
   /** 팝업 확인 → 폼 초기화 */
   const handleDialogConfirm = useCallback(() => {

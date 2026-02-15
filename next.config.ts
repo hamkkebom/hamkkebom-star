@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.cloudflarestream.com" },
       { protocol: "https", hostname: "imagedelivery.net" },
       { protocol: "https", hostname: "videodelivery.net" },
+      { protocol: "https", hostname: "pub-r2.hamkkebom.com" },
+      { protocol: "https", hostname: "*.supabase.co" },
     ],
   },
 };

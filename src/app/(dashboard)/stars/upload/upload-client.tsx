@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { UploadDropzone } from "@/components/video/upload-dropzone";
 import { SubmissionList } from "@/components/video/submission-list";
+import { NanoFileUpload } from "@/components/ui/nano-file-upload";
 import {
   ClipboardList,
   FolderOpen,
@@ -78,6 +79,8 @@ export function UploadPageClient({
   const [filterTab, setFilterTab] = useState<"active" | "all">("active");
   const [searchTerm, setSearchTerm] = useState("");
   const [showOpenOnly, setShowOpenOnly] = useState(false); // 모집중인 프로젝트만 보기 필터
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [resetKey, setResetKey] = useState(0); // 썸네일 업로더 초기화 키
 
   const selectedAssignment = assignments.find((a) => a.id === selectedAssignmentId);
 
@@ -458,6 +461,16 @@ export function UploadPageClient({
                     </div>
 
                     <div className="md:col-span-4 space-y-4">
+                      {/* 썸네일 업로드 영역 */}
+                      <div className="space-y-2">
+                        <Label>썸네일 이미지</Label>
+                        <NanoFileUpload
+                          key={resetKey}
+                          onFileSelect={setThumbnailFile}
+                          accept={{ "image/*": [".png", ".jpg", ".jpeg", ".webp"] }}
+                          label="썸네일 찾기"
+                        />
+                      </div>
                       <div className="space-y-2">
                         <Label>버전 정보</Label>
                         <div className="rounded-lg border bg-card p-4 text-center">
@@ -498,9 +511,12 @@ export function UploadPageClient({
                           versionSlot={versionSlot}
                           versionTitle={versionTitle}
                           description={description || undefined}
+                          thumbnailFile={thumbnailFile}
                           onComplete={() => {
                             setVersionTitle("");
                             setDescription("");
+                            setThumbnailFile(null);
+                            setResetKey(prev => prev + 1); // 썸네일 프리뷰 초기화
                             setVersionSlot(prev => Math.min(5, prev + 1));
                           }}
                         />
