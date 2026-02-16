@@ -93,6 +93,7 @@ model Submission {
   videoId         String?
   feedbacks       Feedback[]
   settlementItem  SettlementItem?
+  aiAnalysis      AiAnalysis?
   assignment      ProjectAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
   star            User               @relation(fields: [starId], references: [id])
   video           Video?             @relation(fields: [videoId], references: [id])
@@ -101,6 +102,24 @@ model Submission {
   children        Submission[]       @relation("SubmissionHistory")
 
   @@map("submissions")
+}
+
+model AiAnalysis {
+  id            String   @id @default(cuid())
+  submissionId  String   @unique
+  summary       String   @default("")
+  scores        Json     @default("{}")
+  todoItems     Json     @default("[]")
+  insights      Json     @default("[]")
+  model         String   @default("gemini-2.0-flash")
+  status        String   @default("PENDING")
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  submission    Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("ai_analyses")
 }
 
 model Feedback {

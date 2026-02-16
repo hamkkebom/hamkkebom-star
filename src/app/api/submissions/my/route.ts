@@ -74,6 +74,13 @@ export async function GET(request: Request) {
             feedbacks: true,
           },
         },
+        aiAnalysis: {
+          select: {
+            summary: true,
+            status: true,
+            scores: true,
+          },
+        },
       },
       orderBy: [{ createdAt: "desc" }],
       skip: (page - 1) * pageSize,

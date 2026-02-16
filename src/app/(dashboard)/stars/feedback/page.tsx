@@ -35,7 +35,12 @@ type MySubmission = {
   _count: {
     feedbacks: number;
   };
-  createdAt: string; // Added for date display
+  aiAnalysis: {
+    summary: string;
+    status: string;
+    scores: Record<string, number>;
+  } | null;
+  createdAt: string;
 };
 
 // --- Utilities ---
@@ -121,9 +126,10 @@ function FeedbackPulseCard({ sub, index }: { sub: MySubmission; index: number })
               <span className="text-xs font-bold text-primary">AI 피드백 요약</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              {/* Typewriter simulation with CSS or just static for now */}
               <span className="group-hover:text-foreground transition-colors">
-                "자막 크기를 120%로 키우고, 배경음악 볼륨을 조금만 더 줄여주세요. 전체적인 톤앤매너는 좋습니다..."
+                {sub.aiAnalysis?.status === "DONE" && sub.aiAnalysis.summary
+                  ? sub.aiAnalysis.summary
+                  : "AI 분석을 시작하면 자동으로 요약이 생성됩니다."}
               </span>
             </p>
           </div>

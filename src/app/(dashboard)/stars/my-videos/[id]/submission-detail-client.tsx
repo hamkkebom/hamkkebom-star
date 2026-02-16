@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackList } from "@/components/feedback/feedback-list";
 import { AiTodoList } from "@/components/feedback/ai-todo-list";
+import { AiInsightsPanel } from "@/components/feedback/ai-insights-panel";
 import {
   ArrowLeft,
   Calendar,
@@ -329,27 +330,8 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
             </div>
           </div>
 
-          {/* [Phase 5] Smart Doctor (AI Tip) */}
-          <div className="rounded-2xl bg-indigo-500/5 border border-indigo-500/20 p-5 flex gap-4 items-start relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl" />
-            <div className="p-2.5 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 shrink-0">
-              <Moon className="w-5 h-5" />
-            </div>
-            <div className="space-y-1 relative z-10">
-              <h4 className="font-bold text-sm text-indigo-700 dark:text-indigo-300 flex items-center gap-2 tracking-tight">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500 font-extrabold">달빛 AI 공략집</span>
-                <Badge variant="outline" className="text-[10px] h-4 px-1 border-indigo-500/30 text-indigo-500">HIT</Badge>
-              </h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                "잠깐! <strong>AI가 분석한 이 영상 공략법</strong> 알려드릴게요! 🌙 <strong className="text-indigo-600 dark:text-indigo-400">오디오 딱 -14 LUFS</strong>로 맞추면 몰입감 200% 상승! 🎧 바로 적용해볼까요?"
-              </p>
-              <div className="pt-2">
-                <button className="text-[10px] font-bold text-indigo-500 underline decoration-indigo-500/30 underline-offset-2 hover:text-indigo-600 transition-colors">
-                  오디오 노멀라이즈 가이드 보기 →
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* [Phase 5] AI Insights Panel */}
+          <AiInsightsPanel submissionId={submission.id} />
 
           {/* 제작 설명 (Memo) */}
           {submission.summaryFeedback && (
@@ -388,7 +370,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
         <div className="lg:col-span-4 space-y-6 sticky top-6">
 
           {/* [Phase 2] AI To-Do List */}
-          <AiTodoList feedbackCount={submission._count.feedbacks} />
+          <AiTodoList submissionId={submission.id} />
 
           {/* Thumbnail Preview Card */}
           <div className="group relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-black/20 hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer">

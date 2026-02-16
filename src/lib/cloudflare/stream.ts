@@ -175,6 +175,47 @@ export async function getSignedPlaybackUrl(uid: string): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
+// 영상 다운로드 URL (AI 분석용)
+// ---------------------------------------------------------------------------
+
+/**
+ * Cloudflare Stream 영상의 mp4 다운로드 URL을 획득합니다.
+ * 다운로드가 활성화되어 있지 않으면 자동으로 활성화합니다.
+ */
+export async function getDownloadUrl(uid: string): Promise<string | null> {
+  if (!isConfigured()) {
+    // Mock mode — 개발용 placeholder
+    return `https://videodelivery.net/${uid}/downloads/default.mp4`;
+  }
+
+  // 1) 기존 다운로드 URL 확인
+  const checkRes = await fetch(`${BASE_URL}/${uid}/downloads`, {
+    headers: { Authorization: `Bearer ${API_TOKEN}` },
+  });
+
+  if (checkRes.ok) {
+    const checkJson = (await checkRes.json()) as { result: { default?: { url: string; status: string } } };
+    if (checkJson.result.default?.url && checkJson.result.default.status === "ready") {
+      return checkJson.result.default.url;
+    }
+  }
+
+  // 2) 다운로드 활성화
+  const enableRes = await fetch(`${BASE_URL}/${uid}/downloads`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${API_TOKEN}` },
+  });
+
+  if (!enableRes.ok) {
+    console.error(`[CF Stream] 다운로드 활성화 실패: ${enableRes.status}`);
+    return null;
+  }
+
+  const enableJson = (await enableRes.json()) as { result: { default?: { url: string } } };
+  return enableJson.result.default?.url ?? null;
+}
+
+// ---------------------------------------------------------------------------
 // 영상 삭제
 // ---------------------------------------------------------------------------
 
