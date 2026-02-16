@@ -24,6 +24,7 @@ import {
   Loader2,
   MoreVertical,
   Maximize2,
+  LayoutGrid,
   Sparkles,
   Zap,
   Moon
@@ -224,11 +225,11 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <Link
-            href="/stars/my-videos"
+            href="/stars/feedback"
             className="group inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-2"
           >
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-            목록으로 돌아가기
+            피드백 목록으로
           </Link>
           <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">
             {submission.versionTitle || submission.assignment?.request?.title || submission.video?.title || (submission.version.startsWith("v") ? submission.version : `v${submission.version}`)}
@@ -249,7 +250,16 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
             {statusInfo.label}
           </div>
 
-          {/* Edit Button */}
+          {/* Go to Manager Button */}
+          <Link
+            href={`/stars/my-videos/${submission.id}`}
+            className="inline-flex items-center gap-2 rounded-full bg-secondary/80 border border-secondary px-4 py-1.5 text-xs font-bold hover:bg-secondary hover:scale-105 transition-all"
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            영상 관리
+          </Link>
+
+          {/* Edit/Upload Button */}
           <Link
             href={`/stars/upload`}
             className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 hover:scale-105 transition-all"
