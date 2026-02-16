@@ -103,7 +103,40 @@ export async function GET(_request: Request, { params }: Params) {
     }
   }
 
-  return NextResponse.json({ data: { ...submission, signedThumbnailUrl } });
+  // siblings 요청 시 추가 조회
+  const url = new URL(_request.url);
+  const includeSiblings = url.searchParams.get("includeSiblings") === "true";
+  let siblings: any[] = [];
+
+  if (includeSiblings && submission.assignmentId) {
+    siblings = await prisma.submission.findMany({
+      where: {
+        assignmentId: submission.assignmentId, // 같은 프로젝트
+        starId: submission.starId,             // 같은 작성자
+        id: { not: id }, // 본인 제외
+      },
+      select: {
+        id: true,
+        version: true,
+        status: true,
+        createdAt: true,
+        thumbnailUrl: true,
+        versionTitle: true,
+        video: {
+          select: {
+            thumbnailUrl: true,
+            technicalSpec: { select: { duration: true } }
+          }
+        }
+      },
+      orderBy: { versionSlot: "desc" },
+    });
+  }
+
+  // siblings도 버전에 본인 포함해서 정렬된 리스트로 내려주는 게 편함
+  // 하지만 여기서는 요청된 포맷(siblings 배열)에 맞춤
+
+  return NextResponse.json({ data: { ...submission, signedThumbnailUrl, siblings } });
 }
 
 export async function PATCH(request: Request, { params }: Params) {

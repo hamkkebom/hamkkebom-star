@@ -30,6 +30,8 @@ interface UploadDropzoneProps {
   description?: string;
   thumbnailFile?: File | null;
   onComplete?: () => void;
+  mode?: "submission" | "upload-only";
+  onUploadSuccess?: (streamUid: string) => void;
 }
 
 export function UploadDropzone({
@@ -39,6 +41,8 @@ export function UploadDropzone({
   description,
   thumbnailFile,
   onComplete,
+  mode = "submission",
+  onUploadSuccess,
 }: UploadDropzoneProps) {
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [progress, setProgress] = useState(0);
@@ -129,6 +133,12 @@ export function UploadDropzone({
   const handleSubmit = useCallback(async () => {
     if (!streamUid) return;
 
+    // upload-only 모드면 부모에게 streamUid만 넘기고 종료
+    if (mode === "upload-only" && onUploadSuccess) {
+      onUploadSuccess(streamUid);
+      return;
+    }
+
     setStatus("submitting");
 
     try {
@@ -181,7 +191,7 @@ export function UploadDropzone({
         error instanceof Error ? error.message : "제출에 실패했습니다.",
       );
     }
-  }, [assignmentId, versionSlot, versionTitle, description, thumbnailFile, streamUid]);
+  }, [assignmentId, versionSlot, versionTitle, description, thumbnailFile, streamUid, mode, onUploadSuccess]);
 
   /** 팝업 확인 → 폼 초기화 */
   const handleDialogConfirm = useCallback(() => {
