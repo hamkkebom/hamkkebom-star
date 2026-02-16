@@ -504,27 +504,8 @@ export function UploadPageClient({
                         <Label>버전 정보</Label>
                         <div className="rounded-lg border bg-card p-4 text-center">
                           <p className="text-xs text-muted-foreground mb-2">이번 업로드 버전</p>
-                          <div className="flex items-center justify-center gap-4">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => setVersionSlot(Math.max(1, versionSlot - 1))}
-                              disabled={versionSlot <= 1}
-                            >
-                              -
-                            </Button>
-                            <span className="text-2xl font-bold text-primary">v{versionSlot}</span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => setVersionSlot(Math.min(5, versionSlot + 1))}
-                              disabled={versionSlot >= 5}
-                            >
-                              +
-                            </Button>
-                          </div>
+                          <span className="text-2xl font-bold text-primary">v1.0</span>
+                          <p className="text-xs text-muted-foreground mt-2">버전 업은 상세 페이지에서 가능해요!</p>
                         </div>
                       </div>
                     </div>
@@ -537,7 +518,7 @@ export function UploadPageClient({
                         <Label className="mb-3 block text-base">파일 업로드</Label>
                         <UploadDropzone
                           assignmentId={selectedAssignment.id}
-                          versionSlot={versionSlot}
+                          versionSlot={0}
                           versionTitle={versionTitle}
                           description={description || undefined}
                           thumbnailFile={thumbnailFile}
@@ -546,7 +527,7 @@ export function UploadPageClient({
                             setDescription("");
                             setThumbnailFile(null);
                             setResetKey(prev => prev + 1); // 썸네일 프리뷰 초기화
-                            setVersionSlot(prev => Math.min(5, prev + 1));
+                            // versionSlot 고정 (v0.1)
                           }}
                         />
                       </div>

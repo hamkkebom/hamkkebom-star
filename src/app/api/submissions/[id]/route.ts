@@ -109,33 +109,45 @@ export async function GET(_request: Request, { params }: Params) {
   let siblings: any[] = [];
 
   if (includeSiblings) {
-    // parentId 기반 버전 체인 조회 (bump로 명시적으로 생성된 것만)
-    const rootId = submission.parentId || submission.id; // 루트 ID 결정
+    try {
+      // parentId를 별도로 안전하게 조회
+      const parentInfo = await prisma.submission.findUnique({
+        where: { id },
+        select: { parentId: true },
+      });
+      const rootId = parentInfo?.parentId || id;
 
-    siblings = await prisma.submission.findMany({
-      where: {
-        OR: [
-          { id: rootId },           // 루트 자체
-          { parentId: rootId },     // 루트의 모든 자식
-        ],
-        id: { not: id }, // 본인 제외
-      },
-      select: {
-        id: true,
-        version: true,
-        status: true,
-        createdAt: true,
-        thumbnailUrl: true,
-        versionTitle: true,
-        video: {
-          select: {
-            thumbnailUrl: true,
-            technicalSpec: { select: { duration: true } }
+      siblings = await prisma.submission.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { id: rootId },
+                { parentId: rootId },
+              ],
+            },
+            { id: { not: id } },
+          ],
+        },
+        select: {
+          id: true,
+          version: true,
+          status: true,
+          createdAt: true,
+          thumbnailUrl: true,
+          versionTitle: true,
+          video: {
+            select: {
+              thumbnailUrl: true,
+              technicalSpec: { select: { duration: true } }
+            }
           }
-        }
-      },
-      orderBy: { versionSlot: "desc" },
-    });
+        },
+        orderBy: { versionSlot: "desc" },
+      });
+    } catch (err) {
+      console.error("[siblings] ERROR:", err);
+    }
   }
 
   // siblings도 버전에 본인 포함해서 정렬된 리스트로 내려주는 게 편함

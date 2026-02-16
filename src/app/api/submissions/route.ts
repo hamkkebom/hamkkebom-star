@@ -24,24 +24,8 @@ function toErrorResponse(error: ApiError) {
   );
 }
 
-function getNextVersion(existingVersions: string[]) {
-  const maxMinor = existingVersions.reduce((max, version) => {
-    const matched = /^1\.(\d+)$/.exec(version.trim());
 
-    if (!matched) {
-      return max;
-    }
 
-    const minor = Number(matched[1]);
-    return Number.isFinite(minor) ? Math.max(max, minor) : max;
-  }, -1);
-
-  if (maxMinor < 0) {
-    return "1.0";
-  }
-
-  return `1.${maxMinor + 1}`;
-}
 
 export async function POST(request: Request) {
   const user = await getAuthUser();
@@ -112,41 +96,13 @@ export async function POST(request: Request) {
         } satisfies ApiError;
       }
 
-      const slotRows = await tx.submission.findMany({
-        where: {
-          assignmentId: parsed.data.assignmentId,
-          versionSlot: parsed.data.versionSlot,
-        },
-        select: {
-          version: true,
-        },
-      });
-
-      const version = getNextVersion(slotRows.map((row) => row.version));
-
-      const duplicated = await tx.submission.findFirst({
-        where: {
-          assignmentId: parsed.data.assignmentId,
-          versionSlot: parsed.data.versionSlot,
-          version,
-        },
-        select: { id: true },
-      });
-
-      if (duplicated) {
-        throw {
-          code: "SLOT_OCCUPIED",
-          message: "이미 사용 중인 버전 슬롯입니다.",
-          status: 409,
-        } satisfies ApiError;
-      }
-
+      // 항상 v0.1로 생성 (버전 업은 bump API로만)
       const submission = await tx.submission.create({
         data: {
           assignmentId: parsed.data.assignmentId,
-          versionSlot: parsed.data.versionSlot,
+          versionSlot: parsed.data.versionSlot ?? 0,
           versionTitle: parsed.data.versionTitle,
-          version,
+          version: "1.0",
           streamUid: parsed.data.streamUid,
           summaryFeedback: parsed.data.description || null,
           thumbnailUrl: parsed.data.thumbnailUrl,
