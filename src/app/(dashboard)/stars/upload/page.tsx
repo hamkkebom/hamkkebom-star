@@ -50,7 +50,11 @@ export default async function UploadPage() {
     include: {
       assignments: {
         where: { starId: user.id },
-        select: { status: true }
+        select: { status: true },
+        take: 1
+      },
+      _count: {
+        select: { assignments: true }
       }
     },
     orderBy: [{ createdAt: "desc" }],
@@ -83,6 +87,7 @@ export default async function UploadPage() {
       maxAssignees: r.maxAssignees,
       status: r.status, // 프로젝트 모집 상태 (OPEN, FULL, CLOSED)
       myAssignmentStatus, // 나의 참여 상태 (null이면 미참여)
+      currentCount: r._count.assignments,
     };
   });
 

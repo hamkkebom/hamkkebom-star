@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackList } from "@/components/feedback/feedback-list";
+import { AiTodoList } from "@/components/feedback/ai-todo-list";
 import {
   ArrowLeft,
   Calendar,
@@ -22,7 +23,10 @@ import {
   AlertCircle,
   Loader2,
   MoreVertical,
-  Maximize2
+  Maximize2,
+  Sparkles,
+  Zap,
+  Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -150,7 +154,7 @@ function DetailThumbnail({ src, alt }: { src: string | null | undefined; alt: st
             </span>
           </div>
           <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold text-white/90 uppercase tracking-wider">
-            Thumbnail
+            썸네일
           </div>
         </button>
       </DialogTrigger>
@@ -215,7 +219,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
   const StatusIcon = statusInfo.icon;
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       {/* Header Navigation */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
@@ -256,35 +260,90 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
         </div>
       </div>
 
-      {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      {/* [Phase 4] Evolution Timeline (Mock) */}
+      <div className="relative pt-6 pb-2 px-2">
+        <div className="absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-primary/50 via-muted to-muted -z-10 rounded-full" />
+        <div className="flex justify-between relative z-0">
+          {['v0.5 초안', 'v0.9 프리믹싱', 'v1.0 최종'].map((step, i) => {
+            const isActive = i === 2; // Mock active state
+            return (
+              <div key={step} className="flex flex-col items-center gap-2">
+                <div className={cn(
+                  "w-4 h-4 rounded-full border-2 transition-all duration-500",
+                  isActive ? "bg-primary border-primary scale-125 shadow-[0_0_15px_rgba(124,58,237,0.5)]" : "bg-background border-muted-foreground/30"
+                )} />
+                <span className={cn(
+                  "text-xs font-medium transition-colors",
+                  isActive ? "text-primary font-bold" : "text-muted-foreground"
+                )}>{step}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
 
-        {/* Left Column: Video Player */}
-        <div className="lg:col-span-2 space-y-6">
-          <div
-            className="relative rounded-3xl overflow-hidden bg-black/40 ring-1 ring-white/10 transition-all duration-500 group"
-            style={{
-              boxShadow: `0 0 40px -10px ${statusInfo.glowColor}`
-            }}
-          >
-            {streamUid ? (
-              <div className="aspect-video w-full">
-                <VideoPlayer
-                  streamUid={streamUid}
-                  seekTo={seekTo}
-                />
+      {/* Main Grid Layout - Cinema Focus View */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+        {/* Left Column: Cinema Player & Feedback (8 cols) */}
+        <div className="lg:col-span-8 space-y-8">
+
+          {/* Cinema Player Container */}
+          <div className="relative group">
+            {/* Glow Effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
+
+            <div
+              className="relative rounded-[1.8rem] overflow-hidden bg-black ring-1 ring-white/10 shadow-2xl transition-all duration-500"
+            >
+              {/* Cinema Mode Header (Overlay) */}
+              <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/80 to-transparent z-10 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <Badge variant="secondary" className="bg-black/50 backdrop-blur text-white border-white/10">
+                  Cinema Mode
+                </Badge>
               </div>
-            ) : (
-              <div className="aspect-video w-full flex flex-col items-center justify-center bg-muted/30 text-muted-foreground gap-3">
-                <AlertCircle className="w-10 h-10 opacity-20" />
-                <p className="text-sm font-medium">영상을 불러올 수 없습니다.</p>
+
+              {streamUid ? (
+                <div className="aspect-video w-full">
+                  <VideoPlayer
+                    streamUid={streamUid}
+                    seekTo={seekTo}
+                  />
+                </div>
+              ) : (
+                <div className="aspect-video w-full flex flex-col items-center justify-center bg-gray-900 text-gray-500 gap-3">
+                  <AlertCircle className="w-10 h-10 opacity-20" />
+                  <p className="text-sm font-medium">영상을 불러올 수 없습니다.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* [Phase 5] Smart Doctor (AI Tip) */}
+          <div className="rounded-2xl bg-indigo-500/5 border border-indigo-500/20 p-5 flex gap-4 items-start relative overflow-hidden">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl" />
+            <div className="p-2.5 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 shrink-0">
+              <Moon className="w-5 h-5" />
+            </div>
+            <div className="space-y-1 relative z-10">
+              <h4 className="font-bold text-sm text-indigo-700 dark:text-indigo-300 flex items-center gap-2 tracking-tight">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500 font-extrabold">달빛 AI 공략집</span>
+                <Badge variant="outline" className="text-[10px] h-4 px-1 border-indigo-500/30 text-indigo-500">HIT</Badge>
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                "잠깐! <strong>AI가 분석한 이 영상 공략법</strong> 알려드릴게요! 🌙 <strong className="text-indigo-600 dark:text-indigo-400">오디오 딱 -14 LUFS</strong>로 맞추면 몰입감 200% 상승! 🎧 바로 적용해볼까요?"
+              </p>
+              <div className="pt-2">
+                <button className="text-[10px] font-bold text-indigo-500 underline decoration-indigo-500/30 underline-offset-2 hover:text-indigo-600 transition-colors">
+                  오디오 노멀라이즈 가이드 보기 →
+                </button>
               </div>
-            )}
+            </div>
           </div>
 
           {/* 제작 설명 (Memo) */}
           {submission.summaryFeedback && (
-            <Card className="border-0 bg-secondary/5 backdrop-blur-sm ring-1 ring-white/5 shadow-sm">
+            <Card className="border-0 bg-secondary/30 backdrop-blur-sm ring-1 ring-border/50 shadow-sm">
               <CardHeader className="pb-2 flex flex-row items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 <CardTitle className="text-sm font-bold">제작 설명 / 메모</CardTitle>
@@ -315,8 +374,12 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
           </div>
         </div>
 
-        {/* Right Column: Metadata & Assets */}
-        <div className="space-y-6 sticky top-6">
+        {/* Right Column: AI To-Do & Metadata (4 cols) */}
+        <div className="lg:col-span-4 space-y-6 sticky top-6">
+
+          {/* [Phase 2] AI To-Do List */}
+          <AiTodoList feedbackCount={submission._count.feedbacks} />
+
           {/* Thumbnail Preview Card */}
           <div className="group relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-black/20 hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer">
             <DetailThumbnail
@@ -333,7 +396,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
                   <Clock className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Duration</p>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">재생 시간</p>
                   <p className="text-sm font-bold">{(submission.duration || submission.video?.technicalSpec?.duration) ? formatDuration(submission.duration || submission.video?.technicalSpec?.duration || 0) : "-"}</p>
                 </div>
               </CardContent>
@@ -343,7 +406,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
               <CardContent className="p-4 flex flex-col gap-1">
                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  Submitted
+                  제출일
                 </p>
                 <p className="text-xs font-medium truncate">{formatDate(submission.createdAt)}</p>
               </CardContent>
@@ -353,7 +416,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
               <CardContent className="p-4 flex flex-col gap-1">
                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" />
-                  Version
+                  버전
                 </p>
                 <p className="text-xs font-medium">{submission.version}</p>
               </CardContent>

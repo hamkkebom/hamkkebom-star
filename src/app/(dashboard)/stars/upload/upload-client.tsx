@@ -15,9 +15,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { UploadDropzone } from "@/components/video/upload-dropzone";
 import { SubmissionList } from "@/components/video/submission-list";
 import { NanoFileUpload } from "@/components/ui/nano-file-upload";
+import { SpecialProjectCard } from "@/components/video/special-project-card";
 import {
   ClipboardList,
   FolderOpen,
@@ -51,9 +53,12 @@ type OpenRequestItem = {
   requirements: string | null;
   referenceUrls: string[];
   maxAssignees: number;
+  currentCount: number;
   status: string; // OPEN, FULL, CLOSED
   myAssignmentStatus: string | null; // ACCEPTED, IN_PROGRESS, COMPLETED... or null
 };
+
+const SPECIAL_PROJECT_TITLE = "🐴 2026년 신년 운세 (연애/재회/결혼)";
 
 const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" | "ghost", className?: string }> = {
   ACCEPTED: { label: "작업중", variant: "default", className: "bg-indigo-500 hover:bg-indigo-600 text-white" },
@@ -143,6 +148,9 @@ export function UploadPageClient({
   const filteredOpenRequests = useMemo(() => {
     let filtered = openRequests;
 
+    // 특별 프로젝트는 일반 목록에서 숨기기
+    filtered = filtered.filter(r => r.title !== SPECIAL_PROJECT_TITLE);
+
     // 만약 "모집중만 보기"가 켜져 있으면
     if (showOpenOnly) {
       filtered = filtered.filter(r => r.status === "OPEN");
@@ -153,16 +161,37 @@ export function UploadPageClient({
       filtered = filtered.filter(r => r.title.toLowerCase().includes(lower));
     }
 
+    // 마감일 임박순 정렬 (deadline ASC)
+    filtered.sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+
     return filtered;
   }, [openRequests, searchTerm, mainTab, showOpenOnly]);
+
+  // 특별 프로젝트 찾기
+  const specialProject = openRequests.find(r => r.title === SPECIAL_PROJECT_TITLE);
+  const specialAssignment = assignments.find(a => a.requestTitle === SPECIAL_PROJECT_TITLE);
+
+  const handleSpecialProjectClick = () => {
+    if (!specialProject) {
+      toast.error("진행 중인 특별 이벤트가 없습니다.");
+      return;
+    }
+
+    if (specialAssignment) {
+      handleGoToMyProject(specialProject.id);
+    } else {
+      // 바로 신청 후 이동
+      applyMutation.mutate(specialProject.id);
+    }
+  };
 
   return (
     <div className="space-y-8 pb-20">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">영상 업로드</h1>
+          <h1 className="text-3xl font-bold tracking-tight">프로젝트 찾기 & 제출</h1>
           <p className="text-muted-foreground mt-1">
-            작업 중인 프로젝트를 관리하고 새로운 기회를 찾아보세요.
+            원하는 프로젝트를 찾아보고 작업한 영상을 제출하세요.
           </p>
         </div>
       </div>
@@ -247,8 +276,8 @@ export function UploadPageClient({
           <TabsList className="h-10 w-full sm:w-auto grid grid-cols-2 sm:flex">
             <TabsTrigger value="my-projects" className="gap-2 px-6">
               <FolderOpen className="h-4 w-4" />
-              내 프로젝트
-              <Badge variant="secondary" className="ml-1 px-1.5 h-5 min-w-[1.25rem]">{assignments.length}</Badge>
+              프로젝트 제출
+              <Badge className="ml-1 px-1.5 h-5 min-w-[1.25rem]">{assignments.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="explore" className="gap-2 px-6">
               <Sparkles className="h-4 w-4" />
@@ -539,7 +568,7 @@ export function UploadPageClient({
         {/* ─── 프로젝트 찾기 탭 ─── */}
         <TabsContent value="explore" className="space-y-6 mt-0">
           {filteredOpenRequests.length === 0 ? (
-            <div className="rounded-2xl border border-dashed py-20 text-center">
+            <div className="rounded-2xl border border-dashed py-20 text-center animate-fade-in">
               <div className="flex justify-center mb-4">
                 <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
                   <Sparkles className="h-8 w-8 text-muted-foreground/40" />
@@ -549,77 +578,133 @@ export function UploadPageClient({
               <p className="text-muted-foreground mt-2">새로운 프로젝트가 올라올 때까지 조금만 기다려주세요!</p>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filteredOpenRequests.map((req) => {
-                const dDay = Math.ceil((new Date(req.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                const now = new Date();
+                const deadlineDate = new Date(req.deadline);
+                const diffTime = deadlineDate.getTime() - now.getTime();
+                const dDay = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
                 const isUrgent = dDay >= 0 && dDay <= 3;
-                const isClosed = req.status === "CLOSED" || req.status === "FULL";
+                const isVeryUrgent = dDay >= 0 && dDay <= 1;
+                const isClosed = req.status === "CLOSED" || req.status === "FULL" || dDay < 0;
                 const isMyProject = !!req.myAssignmentStatus;
-                const isCompleted = req.myAssignmentStatus === "COMPLETED";
+
+                // 모집율 계산
+                const progress = Math.min(100, Math.round((req.currentCount / req.maxAssignees) * 100));
+                const isFull = req.currentCount >= req.maxAssignees;
 
                 return (
                   <div
                     key={req.id}
                     className={cn(
-                      "group flex flex-col rounded-xl border bg-card p-5 transition-all duration-300",
-                      isClosed ? "opacity-60 bg-muted/30" : "hover:shadow-lg hover:-translate-y-1",
-                      isMyProject && "border-primary/50 bg-primary/5"
+                      "group relative flex flex-col rounded-2xl border bg-card transition-all duration-300 overflow-hidden",
+                      isClosed
+                        ? "opacity-60 bg-muted/20 border-border/50 grayscale-[0.5]"
+                        : "hover:shadow-xl hover:-translate-y-1 hover:border-primary/50",
+                      isUrgent && !isClosed && "ring-1 ring-destructive/20 border-destructive/20",
+                      isMyProject && "ring-2 ring-primary border-primary bg-primary/5"
                     )}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      {isMyProject ? (
-                        <Badge className={cn("bg-primary hover:bg-primary", isCompleted ? "bg-green-600" : "")}>
-                          {isCompleted ? "완료함" : "참여중"}
-                        </Badge>
-                      ) : (
-                        <Badge variant={isClosed ? "secondary" : "outline"} className={cn(isClosed && "text-muted-foreground")}>
-                          {req.status === "FULL" ? "정원마감" : req.status === "CLOSED" ? "종료됨" : "모집중"}
-                        </Badge>
-                      )}
+                    {/* 상단 뱃지 영역 */}
+                    <div className="p-5 pb-3 flex justify-between items-start z-10">
+                      <div className="flex gap-2">
+                        {isMyProject ? (
+                          <Badge className="bg-primary hover:bg-primary font-bold shadow-sm">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            참여중
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant={isClosed ? "secondary" : isUrgent ? "destructive" : "outline"}
+                            className={cn(
+                              "font-medium shadow-sm",
+                              !isClosed && !isUrgent && "text-primary border-primary/30 bg-primary/5",
+                              isUrgent && "animate-pulse"
+                            )}
+                          >
+                            {isClosed ? "마감됨" : isUrgent ? "마감임박" : "모집중"}
+                          </Badge>
+                        )}
+                      </div>
 
-                      <span className={cn("text-xs font-bold", isUrgent && !isClosed ? "text-destructive" : "text-muted-foreground")}>
-                        {dDay < 0 ? "마감됨" : dDay === 0 ? "오늘 마감" : `D-${dDay}`}
-                      </span>
+                      <div className={cn(
+                        "text-xs font-bold px-2 py-1 rounded-md",
+                        dDay < 0
+                          ? "bg-muted text-muted-foreground"
+                          : isUrgent
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-primary/10 text-primary"
+                      )}>
+                        {dDay < 0 ? "종료" : dDay === 0 ? "오늘마감" : `D-${dDay}`}
+                      </div>
                     </div>
 
-                    <h3 className={cn("font-bold text-lg leading-tight mb-2 line-clamp-2 transition-colors", !isClosed && "group-hover:text-primary")}>
-                      {req.title}
-                    </h3>
+                    {/* 컨텐츠 영역 */}
+                    <div className="px-5 space-y-3 mb-4">
+                      <h3 className={cn(
+                        "font-bold text-lg leading-snug line-clamp-2 transition-colors",
+                        !isClosed && "group-hover:text-primary"
+                      )}>
+                        {req.title}
+                      </h3>
 
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      {req.categories.slice(0, 3).map(cat => (
-                        <Badge key={cat} variant="secondary" className="text-[10px] px-2 py-0.5">
-                          {cat}
-                        </Badge>
-                      ))}
+                      <div className="flex flex-wrap gap-1.5">
+                        {req.categories.slice(0, 3).map(cat => (
+                          <span key={cat} className="text-[10px] px-2 py-0.5 rounded-full bg-muted/80 text-muted-foreground font-medium border border-border/50">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* 모집 현황 프로그레스 */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span className={cn(isFull && "text-destructive font-bold")}>
+                            {isFull ? "정원 마감" : `${req.currentCount}명 참여`}
+                          </span>
+                          <span className="font-medium">
+                            <span className="text-foreground">{req.currentCount}</span>
+                            <span className="opacity-50">/{req.maxAssignees}</span>
+                          </span>
+                        </div>
+                        <Progress value={progress} className="h-1.5" />
+                      </div>
                     </div>
 
-                    <div className="mt-auto pt-4 border-t flex items-center justify-between">
-                      <div className="text-xs text-muted-foreground">
-                        마감: {format(new Date(req.deadline), "yyyy.MM.dd", { locale: ko })}
+                    {/* 하단 액션 영역 */}
+                    <div className="mt-auto p-4 border-t bg-muted/20 flex items-center justify-between gap-3 group-hover:bg-muted/40 transition-colors">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground">마감일</span>
+                        <span className="text-xs font-medium">
+                          {format(new Date(req.deadline), "yyyy.MM.dd")}
+                        </span>
                       </div>
 
                       {isMyProject ? (
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="gap-1.5 rounded-full border-primary/20 text-primary hover:text-primary hover:bg-primary/10"
+                          className="rounded-full px-5 font-bold shadow-sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleGoToMyProject(req.id);
                           }}
                         >
-                          작업하러 가기
-                          <ArrowRight className="h-3.5 w-3.5 ml-0.5" />
+                          작업하기
+                          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                         </Button>
                       ) : isClosed ? (
-                        <Button size="sm" variant="ghost" disabled className="gap-1.5 rounded-full text-muted-foreground cursor-not-allowed">
-                          모집 마감
+                        <Button size="sm" variant="outline" disabled className="rounded-full opacity-50">
+                          신청불가
                         </Button>
                       ) : (
                         <Button
                           size="sm"
-                          className="gap-1.5 rounded-full"
+                          variant="default"
+                          className={cn(
+                            "rounded-full px-5 font-bold shadow-sm transition-all",
+                            isUrgent ? "bg-destructive hover:bg-destructive/90 text-white" : ""
+                          )}
                           disabled={applyMutation.isPending}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -627,13 +712,26 @@ export function UploadPageClient({
                           }}
                         >
                           {applyMutation.isPending ? "신청중..." : "지원하기"}
-                          {!applyMutation.isPending && <ArrowRight className="h-3.5 w-3.5 ml-0.5" />}
+                          {!applyMutation.isPending && <ArrowRight className="h-3.5 w-3.5 ml-1.5" />}
                         </Button>
                       )}
                     </div>
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* 지난 의뢰 (프로젝트 찾기 탭에서만 보이게) */}
+          {specialProject && (
+            <div className="mt-8">
+              <SpecialProjectCard
+                projectTitle={specialProject.title}
+                categories={specialProject.categories}
+                isAssigned={!!specialAssignment}
+                isLoading={applyMutation.isPending}
+                onClick={handleSpecialProjectClick}
+              />
             </div>
           )}
         </TabsContent>
