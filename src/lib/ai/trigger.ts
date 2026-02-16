@@ -13,10 +13,12 @@ export async function triggerAiAnalysis(submissionId: string): Promise<void> {
         // 1. Submission 조회
         const submission = await prisma.submission.findUnique({
             where: { id: submissionId },
-            select: { streamUid: true, starId: true, versionTitle: true },
+            select: { streamUid: true, starId: true, versionTitle: true, video: { select: { streamUid: true } } },
         });
 
-        if (!submission?.streamUid) {
+        const effectiveStreamUid = submission?.streamUid || submission?.video?.streamUid;
+
+        if (!effectiveStreamUid) {
             console.log(`[AI Auto] streamUid 없음 — 분석 스킵 (${submissionId})`);
             return;
         }
@@ -40,7 +42,7 @@ export async function triggerAiAnalysis(submissionId: string): Promise<void> {
         });
 
         // 4. 다운로드 URL 획득
-        const videoUrl = await getDownloadUrl(submission.streamUid);
+        const videoUrl = await getDownloadUrl(effectiveStreamUid);
         if (!videoUrl) {
             await prisma.aiAnalysis.update({
                 where: { id: analysis.id },

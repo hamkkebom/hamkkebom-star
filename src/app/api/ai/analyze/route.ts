@@ -5,7 +5,11 @@ import { getDownloadUrl } from "@/lib/cloudflare/stream";
 import { analyzeVideo, isGeminiConfigured } from "@/lib/ai/gemini";
 
 export async function POST(request: Request) {
+    console.log("[AI Analyze] === POST /api/ai/analyze START ===");
+
     const user = await getAuthUser();
+    console.log("[AI Analyze] Step 1: user =", user?.id, user?.role);
+
     if (!user) {
         return NextResponse.json(
             { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
@@ -16,6 +20,7 @@ export async function POST(request: Request) {
     let body: { submissionId?: string };
     try {
         body = await request.json();
+        console.log("[AI Analyze] Step 2: body =", JSON.stringify(body));
     } catch {
         return NextResponse.json(
             { error: { code: "BAD_REQUEST", message: "잘못된 요청입니다." } },
@@ -33,6 +38,7 @@ export async function POST(request: Request) {
 
     try {
         // 1. Submission 조회
+        console.log("[AI Analyze] Step 3: finding submission", submissionId);
         const submission = await prisma.submission.findUnique({
             where: { id: submissionId },
             select: {
@@ -40,9 +46,12 @@ export async function POST(request: Request) {
                 starId: true,
                 streamUid: true,
                 versionTitle: true,
+                video: { select: { streamUid: true } },
                 aiAnalysis: { select: { id: true, status: true } },
             },
         });
+        const effectiveStreamUid = submission?.streamUid || submission?.video?.streamUid;
+        console.log("[AI Analyze] Step 3 result: submission =", submission?.id, "streamUid =", submission?.streamUid, "video.streamUid =", submission?.video?.streamUid, "effective =", effectiveStreamUid, "aiStatus =", submission?.aiAnalysis?.status);
 
         if (!submission) {
             return NextResponse.json(
@@ -76,6 +85,7 @@ export async function POST(request: Request) {
         }
 
         // 3. PROCESSING 상태로 레코드 생성/갱신
+        console.log("[AI Analyze] Step 4: upsert PROCESSING");
         const analysis = await prisma.aiAnalysis.upsert({
             where: { submissionId },
             create: {
@@ -87,12 +97,15 @@ export async function POST(request: Request) {
                 errorMessage: null,
             },
         });
+        console.log("[AI Analyze] Step 4 result: analysis.id =", analysis.id);
 
         // 4. 영상 다운로드 URL 획득
+        console.log("[AI Analyze] Step 5: getDownloadUrl for", effectiveStreamUid);
         let videoUrl: string | null = null;
-        if (submission.streamUid) {
-            videoUrl = await getDownloadUrl(submission.streamUid);
+        if (effectiveStreamUid) {
+            videoUrl = await getDownloadUrl(effectiveStreamUid);
         }
+        console.log("[AI Analyze] Step 5 result: videoUrl =", videoUrl);
 
         if (!videoUrl) {
             await prisma.aiAnalysis.update({
@@ -106,9 +119,12 @@ export async function POST(request: Request) {
         }
 
         // 5. Gemini AI 분석 실행
+        console.log("[AI Analyze] Step 6: analyzeVideo START");
         const result = await analyzeVideo(videoUrl);
+        console.log("[AI Analyze] Step 6 result: summary =", result.summary?.substring(0, 50));
 
         // 6. 결과 저장
+        console.log("[AI Analyze] Step 7: saving results");
         const updated = await prisma.aiAnalysis.update({
             where: { id: analysis.id },
             data: {
@@ -121,10 +137,12 @@ export async function POST(request: Request) {
             },
         });
 
+        console.log("[AI Analyze] === DONE ===");
         return NextResponse.json({ success: true, data: updated });
 
     } catch (e: any) {
         console.error("[AI Analyze] ERROR:", e?.message);
+        console.error("[AI Analyze] STACK:", e?.stack);
 
         // 에러 시 상태 업데이트
         try {
