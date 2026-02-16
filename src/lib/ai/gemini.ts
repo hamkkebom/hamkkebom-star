@@ -100,23 +100,49 @@ function getMockResult(): AiAnalysisResult {
 
 // --- Core Function ---
 
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 10_000; // 10초 (무료 Tier 15 RPM 제한 대응)
+
 /**
  * 영상 URL을 기반으로 Gemini AI 분석을 실행합니다.
+ * 429 Rate Limit 에러 시 자동으로 대기 후 재시도합니다.
  * @param videoUrl 분석할 영상의 공개 URL (mp4)
  * @returns 구조화된 AI 분석 결과
  */
 export async function analyzeVideo(videoUrl: string): Promise<AiAnalysisResult> {
     if (!isGeminiConfigured()) {
         console.log("[Gemini] API 키 미설정 — mock 데이터 반환");
-        // mock delay
         await new Promise(r => setTimeout(r, 2000));
         return getMockResult();
     }
 
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            return await _callGemini(videoUrl);
+        } catch (err: any) {
+            lastError = err;
+            const is429 = err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("RESOURCE_EXHAUSTED");
+
+            if (is429 && attempt < MAX_RETRIES) {
+                const delay = BASE_DELAY_MS * Math.pow(2, attempt); // 10s, 20s, 40s
+                console.log(`[Gemini] Rate limit (429) — ${delay / 1000}초 대기 후 재시도 (${attempt + 1}/${MAX_RETRIES})`);
+                await new Promise(r => setTimeout(r, delay));
+                continue;
+            }
+
+            throw err;
+        }
+    }
+
+    throw lastError || new Error("AI 분석 실패");
+}
+
+async function _callGemini(videoUrl: string): Promise<AiAnalysisResult> {
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    // Gemini 2.0 Flash는 비디오 URL을 fileData로 전달
     const result = await model.generateContent([
         {
             fileData: {
@@ -129,7 +155,6 @@ export async function analyzeVideo(videoUrl: string): Promise<AiAnalysisResult> 
 
     const responseText = result.response.text();
 
-    // JSON 파싱 — 마크다운 코드블럭 제거
     const cleaned = responseText
         .replace(/```json\s*/gi, "")
         .replace(/```\s*/gi, "")
@@ -138,7 +163,6 @@ export async function analyzeVideo(videoUrl: string): Promise<AiAnalysisResult> 
     try {
         const parsed = JSON.parse(cleaned) as AiAnalysisResult;
 
-        // 기본 유효성 검증
         if (!parsed.summary || !parsed.scores || !parsed.todoItems || !parsed.insights) {
             console.error("[Gemini] 응답 구조 불일치:", parsed);
             throw new Error("AI 응답 구조가 올바르지 않습니다");

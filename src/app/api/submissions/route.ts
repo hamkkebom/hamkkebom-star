@@ -3,6 +3,7 @@ import { AssignmentStatus, Prisma, SubmissionStatus } from "@/generated/prisma/c
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { createSubmissionSchema } from "@/lib/validations/submission";
+import { triggerAiAnalysis } from "@/lib/ai/trigger";
 
 type ApiError = {
   code: string;
@@ -119,6 +120,9 @@ export async function POST(request: Request) {
 
       return submission;
     });
+
+    // 업로드 완료 후 AI 분석 자동 트리거 (fire-and-forget)
+    triggerAiAnalysis(created.id).catch(() => { });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

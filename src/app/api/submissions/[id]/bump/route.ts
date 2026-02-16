@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { triggerAiAnalysis } from "@/lib/ai/trigger";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -119,6 +120,9 @@ export async function POST(request: Request, { params }: Params) {
                 thumbnailUrl: thumbnailUrl || source.thumbnailUrl
             }
         });
+
+        // 범프 완료 후 AI 분석 자동 트리거 (fire-and-forget)
+        triggerAiAnalysis(newSubmission.id).catch(() => { });
 
         return NextResponse.json({
             success: true,
