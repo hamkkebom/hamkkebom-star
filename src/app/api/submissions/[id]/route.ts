@@ -108,11 +108,16 @@ export async function GET(_request: Request, { params }: Params) {
   const includeSiblings = url.searchParams.get("includeSiblings") === "true";
   let siblings: any[] = [];
 
-  if (includeSiblings && submission.assignmentId) {
+  if (includeSiblings) {
+    // parentId 기반 버전 체인 조회 (bump로 명시적으로 생성된 것만)
+    const rootId = submission.parentId || submission.id; // 루트 ID 결정
+
     siblings = await prisma.submission.findMany({
       where: {
-        assignmentId: submission.assignmentId, // 같은 프로젝트
-        starId: submission.starId,             // 같은 작성자
+        OR: [
+          { id: rootId },           // 루트 자체
+          { parentId: rootId },     // 루트의 모든 자식
+        ],
         id: { not: id }, // 본인 제외
       },
       select: {

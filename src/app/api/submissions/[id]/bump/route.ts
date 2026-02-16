@@ -18,8 +18,18 @@ export async function POST(request: Request, { params }: Params) {
     // 1. 원본 Submission 조회
     const source = await prisma.submission.findUnique({
         where: { id },
-        include: {
-            video: true // 비디오 메타데이터 확인용 (실제 링크는 안 검)
+        select: {
+            id: true,
+            parentId: true,
+            assignmentId: true,
+            starId: true,
+            version: true,
+            versionSlot: true,
+            versionTitle: true,
+            summaryFeedback: true,
+            thumbnailUrl: true,
+            streamUid: true,
+            video: true,
         }
     });
 
@@ -92,6 +102,7 @@ export async function POST(request: Request, { params }: Params) {
                 data: {
                     assignmentId: source.assignmentId, // 같은 프로젝트(과제)
                     starId: source.starId,             // 같은 작성자
+                    parent: { connect: { id: source.parentId || source.id } }, // 버전 체인: 루트 연결
 
                     version: nextVersion,
                     versionSlot: (source.versionSlot || 0) + 1, // 슬롯 증가
