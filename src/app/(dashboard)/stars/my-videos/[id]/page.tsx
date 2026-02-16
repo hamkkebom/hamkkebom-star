@@ -1,4 +1,4 @@
-import { SubmissionDetailClient } from "./submission-detail-client";
+import { VideoManagerClient } from "@/components/video/video-manager/video-manager-client";
 
 export default async function SubmissionDetailPage({
   params,
@@ -8,8 +8,8 @@ export default async function SubmissionDetailPage({
   const { id } = await params;
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <SubmissionDetailClient submissionId={id} />
+    <div>
+      <VideoManagerClient submissionId={id} />
     </div>
   );
 }
