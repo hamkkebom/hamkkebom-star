@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Moon, Lightbulb, AlertTriangle, Trophy } from "lucide-react";
+import { Moon, Lightbulb, AlertTriangle, Trophy, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -40,15 +40,15 @@ export function AiInsightsPanel({ submissionId }: { submissionId: string }) {
             <div className="rounded-2xl bg-indigo-500/5 border border-indigo-500/20 p-5 flex gap-4 items-start relative overflow-hidden">
                 <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl" />
                 <div className="p-2.5 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 shrink-0">
-                    <Moon className="w-5 h-5" />
+                    <Zap className="w-5 h-5" />
                 </div>
                 <div className="space-y-1 relative z-10">
                     <h4 className="font-bold text-sm flex items-center gap-2 tracking-tight">
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500 font-extrabold">달빛 AI 공략집</span>
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500 font-extrabold">AI 정밀 분석 리포트</span>
                     </h4>
                     <p className="text-xs text-muted-foreground leading-relaxed">
                         우측 &quot;AI 분석 시작&quot; 버튼을 눌러<br />
-                        AI가 분석한 영상 공략법을 확인하세요! 🌙
+                        상세한 분석 결과를 확인하세요.
                     </p>
                 </div>
             </div>
@@ -63,12 +63,12 @@ export function AiInsightsPanel({ submissionId }: { submissionId: string }) {
             <div className="rounded-2xl bg-indigo-500/5 border border-indigo-500/20 p-5 flex gap-4 items-start relative overflow-hidden">
                 <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl" />
                 <div className="p-2.5 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 shrink-0">
-                    <Moon className="w-5 h-5" />
+                    <Zap className="w-5 h-5" />
                 </div>
                 <div className="space-y-1 relative z-10">
                     <h4 className="font-bold text-sm flex items-center gap-2 tracking-tight">
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500 font-extrabold">달빛 AI 공략집</span>
-                        <Badge variant="outline" className="text-[10px] h-4 px-1 border-indigo-500/30 text-indigo-500">AI</Badge>
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500 font-extrabold">AI 정밀 분석 리포트</span>
+                        <Badge variant="outline" className="text-[10px] h-4 px-1 border-indigo-500/30 text-indigo-500">PRO</Badge>
                     </h4>
                     <p className="text-xs text-muted-foreground leading-relaxed">
                         {analysis.summary}

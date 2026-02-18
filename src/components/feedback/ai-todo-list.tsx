@@ -152,8 +152,8 @@ export function AiTodoList({ submissionId }: { submissionId: string }) {
         return (
             <div className="rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm p-5 space-y-4 shadow-inner">
                 <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-yellow-400" />
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500 font-extrabold text-sm">달토끼 AI 퀘스트</span>
+                    <Sparkles className="w-4 h-4 text-violet-400" />
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-fuchsia-500 font-extrabold text-sm">AI 개선 제안</span>
                 </div>
 
                 {analysis?.status === "ERROR" && (
@@ -163,11 +163,11 @@ export function AiTodoList({ submissionId }: { submissionId: string }) {
                 )}
 
                 <div className="text-center py-4 space-y-3">
-                    <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center">
-                        <Moon className="w-7 h-7 text-violet-400" />
+                    <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-violet-500/10 to-blue-500/10 flex items-center justify-center border border-white/5">
+                        <Sparkles className="w-7 h-7 text-violet-400" />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        AI가 영상을 분석하여<br />맞춤형 개선 퀘스트를 생성합니다.
+                        AI가 영상을 분석하여<br />최적화된 개선 제안을 도출합니다.
                     </p>
                     <Button
                         size="sm"
@@ -193,14 +193,14 @@ export function AiTodoList({ submissionId }: { submissionId: string }) {
         return (
             <div className="rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm p-5 space-y-4 shadow-inner">
                 <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-yellow-400 animate-spin" />
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500 font-extrabold text-sm">달토끼 AI 퀘스트</span>
+                    <Sparkles className="w-4 h-4 text-violet-400 animate-spin" />
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-fuchsia-500 font-extrabold text-sm">AI 개선 제안</span>
                 </div>
                 <div className="text-center py-6 space-y-3">
                     <Loader2 className="w-8 h-8 mx-auto text-violet-400 animate-spin" />
                     <p className="text-xs text-muted-foreground animate-pulse">
-                        🌙 달토끼가 영상을 분석하고 있어요...<br />
-                        잠시만 기다려 주세요!
+                        AI가 영상을 정밀 분석하고 있습니다...<br />
+                        잠시만 기다려 주세요.
                     </p>
                 </div>
             </div>
@@ -213,8 +213,8 @@ export function AiTodoList({ submissionId }: { submissionId: string }) {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <h3 className="font-bold flex items-center gap-2 text-sm">
-                    <Sparkles className="w-4 h-4 text-yellow-400" />
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500 font-extrabold">달토끼 AI 퀘스트</span>
+                    <Sparkles className="w-4 h-4 text-violet-400" />
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-fuchsia-500 font-extrabold">AI 개선 제안</span>
                 </h3>
                 <Badge variant="secondary" className="text-[10px] font-mono h-5 bg-white/10 text-white hover:bg-white/20">
                     {completedCount}/{todos.length}
@@ -271,8 +271,8 @@ export function AiTodoList({ submissionId }: { submissionId: string }) {
                             </p>
                             <div className="flex items-center gap-2">
                                 {todo.ai && (
-                                    <span className="inline-flex items-center gap-1 text-[9px] text-fuchsia-400 font-bold uppercase tracking-wider">
-                                        <Moon className="w-2.5 h-2.5" /> AI 퀘스트
+                                    <span className="inline-flex items-center gap-1 text-[9px] text-violet-400 font-bold uppercase tracking-wider">
+                                        <Sparkles className="w-2.5 h-2.5" /> AI 제안
                                     </span>
                                 )}
                                 <span className={cn("text-[9px] font-medium", priorityColors[todo.priority])}>

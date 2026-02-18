@@ -44,10 +44,11 @@ export interface AiAnalysisResult {
 
 // --- Prompt ---
 
-const ANALYSIS_PROMPT = `당신은 영상 전문 AI 분석가입니다. 이 영상을 분석하여 아래 JSON 형식으로 **정확히** 응답하세요. JSON 외 다른 텍스트는 포함하지 마세요.
+const ANALYSIS_PROMPT = `당신은 영상 전문 수석 분석가입니다. 이 영상을 정밀 분석하여 아래 JSON 형식으로 **정확히** 응답하세요.
+어조는 **전문적이고, 객관적이며, 데이터를 기반으로 한 기술적인 문체**를 사용하세요. (예: "~해요" 대신 "~함", "~입니다" 사용, 추상적 표현 지양)
 
 {
-  "summary": "전체 영상에 대한 1~2줄 한국어 요약 (강점과 개선점 포함)",
+  "summary": "영상에 대한 전문적인 요약 (강점과 기술적 보완점 포함)",
   "scores": {
     "overall": 75,
     "audio": 80,
@@ -56,18 +57,18 @@ const ANALYSIS_PROMPT = `당신은 영상 전문 AI 분석가입니다. 이 영�
     "storytelling": 85
   },
   "todoItems": [
-    { "text": "구체적이고 실행 가능한 개선사항 (한국어)", "category": "audio", "priority": "high", "ai": true }
+    { "text": "구체적이고 실행 가능한 기술적 개선 사항", "category": "audio", "priority": "high", "ai": true }
   ],
   "insights": [
-    { "title": "인사이트 제목 (한국어)", "content": "구체적 설명과 근거 (한국어)", "type": "tip" }
+    { "title": "전문적인 인사이트 제목", "content": "상세 분석 내용 (기술적 근거 포함)", "type": "tip" }
   ]
 }
 
 분석 기준:
-- audio (오디오): 음량 균형, 배경음악, 음질, 노이즈
-- visual (비주얼): 화면 구성, 색감, 자막 가독성, 썸네일 품질
-- editing (편집): 컷 전환, 호흡, 불필요한 장면, 템포
-- storytelling (스토리텔링): 도입부 흡인력, 전달력, 결론, 시청 유지력
+- audio (오디오): LUFS 표준, EQ 밸런스, 노이즈 플로어, 다이내믹 레인지
+- visual (비주얼): 컬러 그레이딩, 구도(Rule of Thirds), 타이포그래피 가독성, 시각적 일관성
+- editing (편집): 컷팅 리듬(Pacing), 트랜지션 적합성, 내러티브 호흡, L-cut/J-cut 활용
+- storytelling (스토리텔링): 훅(Hook) 구조, 내러티브 아크, CTA 효율성, 시청 지속성
 
 todoItems는 3~5개, insights는 2~3개를 생성하세요.
 각 점수는 0~100 사이입니다.`;

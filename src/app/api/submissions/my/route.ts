@@ -31,6 +31,8 @@ export async function GET(request: Request) {
   const status = searchParams.get("status");
   const hasFeedback = searchParams.get("hasFeedback");
 
+  const filter = searchParams.get("filter"); // 'AI_DONE' | 'HAS_FEEDBACK' | undefined
+
   if (status && status !== "ALL" && !submissionStatuses.has(status as SubmissionStatus)) {
     return NextResponse.json(
       { error: { code: "BAD_REQUEST", message: "유효하지 않은 상태값입니다." } },
@@ -44,7 +46,15 @@ export async function GET(request: Request) {
     ...(status && status !== "ALL" ? { status: status as SubmissionStatus } : {}),
   };
 
+  // 기존 hasFeedback 파라미터 호환성 유지 (optional)
   if (hasFeedback === "true") {
+    where.feedbacks = { some: {} };
+  }
+
+  // 새로운 filter 파라미터 처리
+  if (filter === "AI_DONE") {
+    where.aiAnalysis = { status: "DONE" };
+  } else if (filter === "HAS_FEEDBACK") {
     where.feedbacks = { some: {} };
   }
 
