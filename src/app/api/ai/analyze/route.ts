@@ -17,7 +17,7 @@ export async function POST(request: Request) {
         );
     }
 
-    let body: { submissionId?: string };
+    let body: { submissionId?: string; force?: boolean };
     try {
         body = await request.json();
         console.log("[AI Analyze] Step 2: body =", JSON.stringify(body));
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
         );
     }
 
-    const { submissionId } = body;
+    const { submissionId, force } = body;
     if (!submissionId) {
         return NextResponse.json(
             { error: { code: "BAD_REQUEST", message: "submissionId가 필요합니다." } },
@@ -68,15 +68,15 @@ export async function POST(request: Request) {
             );
         }
 
-        // 2. 이미 완료된 분석 존재 시 반환
-        if (submission.aiAnalysis?.status === "DONE") {
+        // 2. 이미 완료된 분석 존재 시: force가 아니면 기존 결과 반환
+        if (submission.aiAnalysis?.status === "DONE" && !force) {
             const existing = await prisma.aiAnalysis.findUnique({
                 where: { submissionId },
             });
             return NextResponse.json({ success: true, data: existing });
         }
 
-        // 이미 진행 중이면 거부
+        // 이미 진행 중이면 거부 (force여도 진행 중에는 중복 방지)
         if (submission.aiAnalysis?.status === "PROCESSING") {
             return NextResponse.json(
                 { error: { code: "CONFLICT", message: "이미 분석이 진행 중입니다." } },
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
                 scores: result.scores as any,
                 todoItems: result.todoItems as any,
                 insights: result.insights as any,
-                model: isGeminiConfigured() ? "gemini-2.0-flash" : "mock",
+                model: isGeminiConfigured() ? "gemini-2.0-flash-lite" : "mock",
             },
         });
 

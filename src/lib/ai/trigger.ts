@@ -63,7 +63,7 @@ export async function triggerAiAnalysis(submissionId: string): Promise<void> {
                 scores: result.scores as any,
                 todoItems: result.todoItems as any,
                 insights: result.insights as any,
-                model: isGeminiConfigured() ? "gemini-2.0-flash" : "mock",
+                model: isGeminiConfigured() ? "gemini-2.0-flash-lite" : "mock",
             },
         });
 

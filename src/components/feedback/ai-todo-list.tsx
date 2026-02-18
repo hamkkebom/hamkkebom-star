@@ -51,11 +51,11 @@ async function fetchAiAnalysis(submissionId: string): Promise<AiAnalysis | null>
     return json.data ?? null;
 }
 
-async function triggerAiAnalysis(submissionId: string): Promise<AiAnalysis> {
+async function triggerAiAnalysis(submissionId: string, force = false): Promise<AiAnalysis> {
     const res = await fetch(`/api/ai/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ submissionId }),
+        body: JSON.stringify({ submissionId, force }),
     });
     if (!res.ok) {
         const err = await res.json();
@@ -117,7 +117,7 @@ export function AiTodoList({ submissionId }: { submissionId: string }) {
     });
 
     const mutation = useMutation({
-        mutationFn: () => triggerAiAnalysis(submissionId),
+        mutationFn: ({ force = false }: { force?: boolean } = {}) => triggerAiAnalysis(submissionId, force),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["ai-analysis", submissionId] });
         },
@@ -171,7 +171,7 @@ export function AiTodoList({ submissionId }: { submissionId: string }) {
                     </p>
                     <Button
                         size="sm"
-                        onClick={() => mutation.mutate()}
+                        onClick={() => mutation.mutate({ force: false })}
                         disabled={mutation.isPending}
                         className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white shadow-lg"
                     >
@@ -284,11 +284,24 @@ export function AiTodoList({ submissionId }: { submissionId: string }) {
                 ))}
             </div>
 
-            {/* Model Info */}
-            <div className="flex items-center justify-center pt-1 border-t border-white/5">
+            {/* Model Info + 재분석 */}
+            <div className="flex items-center justify-between pt-2 border-t border-white/5">
                 <span className="text-[9px] text-muted-foreground/50">
                     Powered by {analysis.model === "mock" ? "Mock AI" : "Gemini 2.0 Flash"}
                 </span>
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => mutation.mutate({ force: true })}
+                    disabled={mutation.isPending}
+                    className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                    {mutation.isPending ? (
+                        <><Loader2 className="w-3 h-3 animate-spin mr-1" /> 재분석 중...</>
+                    ) : (
+                        <><RotateCcw className="w-3 h-3 mr-1" /> 재분석</>
+                    )}
+                </Button>
             </div>
         </div>
     );

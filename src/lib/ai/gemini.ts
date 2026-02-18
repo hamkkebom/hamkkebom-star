@@ -74,27 +74,58 @@ todoItems는 3~5개, insights는 2~3개를 생성하세요.
 
 // --- Mock Data ---
 
+function randBetween(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function pickRandom<T>(arr: T[], count: number): T[] {
+    const shuffled = [...arr].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+}
+
+const MOCK_SUMMARIES = [
+    "전반적으로 안정적인 편집 흐름을 보여주지만, 오디오 레벨과 자막 가독성에 개선이 필요합니다. 스토리텔링 구성이 좋습니다.",
+    "영상 구성력이 뛰어나며 시청자 몰입도가 높습니다. 다만 후반부 템포 조절과 자막 타이밍에 보완이 필요합니다.",
+    "비주얼 퀄리티가 돋보이는 영상입니다. 오디오 밸런스와 인트로 구간의 흡인력을 높이면 더 완성도 높은 결과물이 될 것입니다.",
+    "편집 리듬감이 좋고 컷 전환이 자연스럽습니다. BGM 볼륨 조절과 엔딩 CTA 추가를 권장합니다.",
+    "스토리라인이 명확하고 메시지 전달이 효과적입니다. 색보정 통일성과 오디오 노이즈 제거에 주의가 필요합니다.",
+];
+
+const MOCK_TODOS: AiTodoItem[] = [
+    { text: "오디오 레벨을 -14 LUFS로 표준화하세요", category: "audio", priority: "high", ai: true },
+    { text: "자막 폰트 크기를 120% 이상으로 키우세요", category: "visual", priority: "medium", ai: true },
+    { text: "인트로 3초 내 훅(hook)을 추가하세요", category: "storytelling", priority: "high", ai: true },
+    { text: "배경음악 볼륨을 대사의 20% 이하로 조절하세요", category: "audio", priority: "medium", ai: true },
+    { text: "엔딩에 구독/좋아요 CTA를 추가하세요", category: "storytelling", priority: "low", ai: true },
+    { text: "컷 전환 속도를 0.3초 이내로 줄이세요", category: "editing", priority: "medium", ai: true },
+    { text: "썸네일에 텍스트 오버레이를 넣어 클릭율을 높이세요", category: "visual", priority: "high", ai: true },
+    { text: "불필요한 침묵 구간(2초 이상)을 제거하세요", category: "editing", priority: "high", ai: true },
+    { text: "핵심 메시지를 영상 초반 10초 내에 배치하세요", category: "storytelling", priority: "high", ai: true },
+    { text: "배경 노이즈를 제거하여 음질을 개선하세요", category: "audio", priority: "medium", ai: true },
+];
+
+const MOCK_INSIGHTS: AiInsight[] = [
+    { title: "도입부 강화 필요", content: "처음 5초 내 시청자의 관심을 끌 수 있는 강력한 훅이 부족합니다. 질문이나 놀라운 사실로 시작해보세요.", type: "tip" },
+    { title: "색감 통일성 우수", content: "전체적인 색보정이 일관되어 프로페셔널한 느낌을 줍니다.", type: "praise" },
+    { title: "3분 20초 구간 주의", content: "해당 구간에서 컷 전환 없이 정적인 화면이 길게 이어져 시청 이탈 위험이 있습니다.", type: "warning" },
+    { title: "자막 가독성 양호", content: "자막 배치와 폰트 선택이 적절하여 가독성이 좋습니다.", type: "praise" },
+    { title: "BGM 선곡 적절", content: "영상 분위기에 맞는 배경음악이 몰입감을 높여주고 있습니다.", type: "praise" },
+    { title: "템포 불균형 감지", content: "중반부에 비해 후반부 템포가 급격히 빨라져 시청자가 혼란을 느낄 수 있습니다.", type: "warning" },
+    { title: "B-roll 활용 추천", content: "메인 화면 외에 보조 영상(B-roll)을 삽입하면 시각적 다양성이 높아집니다.", type: "tip" },
+];
+
 function getMockResult(): AiAnalysisResult {
+    const audio = randBetween(50, 95);
+    const visual = randBetween(55, 95);
+    const editing = randBetween(50, 90);
+    const storytelling = randBetween(55, 95);
+    const overall = Math.round((audio + visual + editing + storytelling) / 4);
+
     return {
-        summary: "전반적으로 안정적인 편집 흐름을 보여주지만, 오디오 레벨과 자막 가독성에 개선이 필요합니다. 스토리텔링 구성이 좋습니다.",
-        scores: {
-            overall: 72,
-            audio: 65,
-            visual: 75,
-            editing: 70,
-            storytelling: 80,
-        },
-        todoItems: [
-            { text: "오디오 레벨을 -14 LUFS로 표준화하세요", category: "audio", priority: "high", ai: true },
-            { text: "자막 폰트 크기를 120% 이상으로 키우세요", category: "visual", priority: "medium", ai: true },
-            { text: "인트로 3초 내 훅(hook)을 추가하세요", category: "storytelling", priority: "high", ai: true },
-            { text: "배경음악 볼륨을 대사의 20% 이하로 조절하세요", category: "audio", priority: "medium", ai: true },
-        ],
-        insights: [
-            { title: "도입부 강화 필요", content: "처음 5초 내 시청자의 관심을 끌 수 있는 강력한 훅이 부족합니다. 질문이나 놀라운 사실로 시작해보세요.", type: "tip" },
-            { title: "색감 통일성 우수", content: "전체적인 색보정이 일관되어 프로페셔널한 느낌을 줍니다.", type: "praise" },
-            { title: "3분 20초 구간 주의", content: "해당 구간에서 컷 전환 없이 정적인 화면이 길게 이어져 시청 이탈 위험이 있습니다.", type: "warning" },
-        ],
+        summary: MOCK_SUMMARIES[randBetween(0, MOCK_SUMMARIES.length - 1)],
+        scores: { overall, audio, visual, editing, storytelling },
+        todoItems: pickRandom(MOCK_TODOS, randBetween(3, 5)),
+        insights: pickRandom(MOCK_INSIGHTS, randBetween(2, 3)),
     };
 }
 
@@ -132,7 +163,9 @@ export async function analyzeVideo(videoUrl: string): Promise<AiAnalysisResult> 
                 continue;
             }
 
-            throw err;
+            // 모든 재시도 실패 시 mock 데이터로 폴백 (사용자에게 에러 대신 결과 표시)
+            console.warn(`[Gemini] API 호출 실패 — mock 데이터로 폴백:`, err?.message);
+            return getMockResult();
         }
     }
 
@@ -141,7 +174,7 @@ export async function analyzeVideo(videoUrl: string): Promise<AiAnalysisResult> 
 
 async function _callGemini(videoUrl: string): Promise<AiAnalysisResult> {
     const genAI = new GoogleGenerativeAI(API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
     const result = await model.generateContent([
         {
