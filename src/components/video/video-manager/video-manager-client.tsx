@@ -55,6 +55,12 @@ type VideoManagerData = {
         title: string;
         streamUid: string | null;
         thumbnailUrl: string | null;
+        lyrics: string | null;
+        categoryId: string | null;
+        description: string | null;
+        videoSubject: "COUNSELOR" | "BRAND" | "OTHER" | null;
+        counselorId: string | null;
+        externalId: string | null;
         technicalSpec: { duration: number | null } | null;
     } | null;
     siblings: SiblingSubmission[];
@@ -73,13 +79,36 @@ function formatDuration(seconds: number): string {
     return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
-export function VideoManagerClient({ submissionId }: { submissionId: string }) {
+type CategoryItem = {
+    id: string;
+    name: string;
+};
+
+type CounselorItem = {
+    id: string;
+    displayName: string;
+};
+
+export function VideoManagerClient({
+    submissionId,
+    categories = [],
+    counselors = []
+}: {
+    submissionId: string;
+    categories?: CategoryItem[];
+    counselors?: CounselorItem[];
+}) {
     const router = useRouter();
     const queryClient = useQueryClient();
     const [isEditing, setIsEditing] = useState(false);
-    const [showBumpModal, setShowBumpModal] = useState(false); // New State
+    const [showBumpModal, setShowBumpModal] = useState(false);
     const [title, setTitle] = useState("");
     const [desc, setDesc] = useState("");
+    const [lyrics, setLyrics] = useState(""); // New Link
+    const [categoryId, setCategoryId] = useState(""); // New Link
+    const [videoSubject, setVideoSubject] = useState<"COUNSELOR" | "BRAND" | "OTHER">("OTHER");
+    const [counselorId, setCounselorId] = useState("");
+    const [externalId, setExternalId] = useState("");
     const [dateHover, setDateHover] = useState(false);
     const [thumbFailed, setThumbFailed] = useState(false);
     const hasSynced = useRef(false);
@@ -93,7 +122,12 @@ export function VideoManagerClient({ submissionId }: { submissionId: string }) {
     useEffect(() => {
         if (data && !hasSynced.current) {
             setTitle(data.versionTitle ?? "");
-            setDesc(data.summaryFeedback ?? "");
+            setDesc(data.video?.description || data.summaryFeedback || "");
+            setLyrics(data.video?.lyrics ?? "");
+            setCategoryId(data.video?.categoryId ?? "");
+            setVideoSubject(data.video?.videoSubject ?? "OTHER");
+            setCounselorId(data.video?.counselorId ?? "");
+            setExternalId(data.video?.externalId ?? "");
             hasSynced.current = true;
         }
     }, [data]);
@@ -103,7 +137,16 @@ export function VideoManagerClient({ submissionId }: { submissionId: string }) {
             const res = await fetch(`/api/submissions/${submissionId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ versionTitle: title, summaryFeedback: desc }),
+                body: JSON.stringify({
+                    versionTitle: title,
+                    summaryFeedback: desc,
+                    description: desc, // description 추가
+                    lyrics: lyrics,
+                    categoryId: categoryId,
+                    videoSubject: videoSubject,
+                    counselorId: counselorId || null,
+                    externalId: externalId || null,
+                }),
             });
             if (!res.ok) throw new Error("Update failed");
         },
@@ -346,7 +389,13 @@ export function VideoManagerClient({ submissionId }: { submissionId: string }) {
                                     <Button variant="ghost" onClick={() => setIsEditing(true)} className="text-muted-foreground hover:text-primary">수정</Button>
                                 ) : (
                                     <div className="flex gap-2">
-                                        <Button variant="ghost" onClick={() => { setIsEditing(false); setTitle(data.versionTitle ?? ""); setDesc(data.summaryFeedback ?? ""); }} className="text-muted-foreground">취소</Button>
+                                        <Button variant="ghost" onClick={() => {
+                                            setIsEditing(false);
+                                            setTitle(data.versionTitle ?? "");
+                                            setDesc(data.summaryFeedback ?? "");
+                                            setLyrics(data.video?.lyrics ?? "");
+                                            setCategoryId(data.video?.categoryId ?? "");
+                                        }} className="text-muted-foreground">취소</Button>
                                         <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="gap-2"><Save className="w-4 h-4" /> 저장</Button>
                                     </div>
                                 )}
@@ -362,14 +411,98 @@ export function VideoManagerClient({ submissionId }: { submissionId: string }) {
                                     )}
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-primary uppercase tracking-wider ml-1">Note</label>
+                                    <label className="text-xs font-bold text-primary uppercase tracking-wider ml-1">Description / Intent</label>
                                     {isEditing ? (
-                                        <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} className="min-h-[130px] resize-none p-4 leading-relaxed" placeholder="작업 내용, 수정 사항 등을 기록하세요..." />
+                                        <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} className="min-h-[100px] resize-none p-4 leading-relaxed" placeholder="영상의 제작 의도나 시청 포인트를 기록하세요..." />
                                     ) : (
                                         <div className="bg-muted/50 rounded-xl p-5 min-h-[100px] text-foreground/80 leading-relaxed whitespace-pre-wrap border border-border">
                                             {desc || <span className="text-muted-foreground/50 italic">내용 없음</span>}
                                         </div>
                                     )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-primary uppercase tracking-wider ml-1">Category</label>
+                                        {isEditing ? (
+                                            <div className="space-y-4">
+                                                <select
+                                                    value={categoryId}
+                                                    onChange={(e) => setCategoryId(e.target.value)}
+                                                    className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                                >
+                                                    <option value="">카테고리 선택 (선택사항)</option>
+                                                    {categories.map((c) => (
+                                                        <option key={c.id} value={c.id}>
+                                                            {c.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold text-primary uppercase tracking-wider ml-1">Subject</label>
+                                                        <select
+                                                            value={videoSubject}
+                                                            onChange={(e) => setVideoSubject(e.target.value as any)}
+                                                            className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                                        >
+                                                            <option value="COUNSELOR">상담사</option>
+                                                            <option value="BRAND">브랜드</option>
+                                                            <option value="OTHER">기타</option>
+                                                        </select>
+                                                    </div>
+                                                    {videoSubject === "COUNSELOR" && (
+                                                        <div className="space-y-2 animate-in fade-in slide-in-from-left-1">
+                                                            <label className="text-xs font-bold text-primary uppercase tracking-wider ml-1">Counselor</label>
+                                                            <select
+                                                                value={counselorId}
+                                                                onChange={(e) => setCounselorId(e.target.value)}
+                                                                className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                                            >
+                                                                <option value="">선택하세요</option>
+                                                                {counselors.map((c) => (
+                                                                    <option key={c.id} value={c.id}>
+                                                                        {c.displayName}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-2">
+                                                <div className="bg-muted/30 rounded-lg p-3 text-sm text-foreground/80 border border-border">
+                                                    {categoryId ? categories.find(c => c.id === categoryId)?.name || "Unknown" : <span className="text-muted-foreground/50 italic">미지정</span>}
+                                                </div>
+                                                {(videoSubject !== "OTHER" || externalId) && (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                                            {videoSubject === "COUNSELOR" ? "상담사" : videoSubject === "BRAND" ? "브랜드" : "기타"}
+                                                        </span>
+                                                        {videoSubject === "COUNSELOR" && counselorId && (
+                                                            <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                                                {counselors.find(c => c.id === counselorId)?.displayName || "알 수 없는 상담사"}
+                                                            </span>
+                                                        )}
+
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-xs font-bold text-primary uppercase tracking-wider ml-1">Lyrics</label>
+                                        {isEditing ? (
+                                            <Textarea value={lyrics} onChange={(e) => setLyrics(e.target.value)} className="min-h-[100px] resize-none p-4 leading-relaxed font-mono text-sm" placeholder="가사를 입력하세요..." />
+                                        ) : (
+                                            <div className="bg-muted/30 rounded-lg p-4 min-h-[60px] text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap border border-border font-mono max-h-[200px] overflow-y-auto">
+                                                {lyrics || <span className="text-muted-foreground/50 italic">가사 없음</span>}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -32,6 +32,12 @@ export async function GET(_request: Request, { params }: Params) {
           title: true,
           streamUid: true,
           thumbnailUrl: true,
+          lyrics: true,
+          categoryId: true,
+          description: true, // ✅ 설명 추가
+          videoSubject: true,
+          counselorId: true,
+          externalId: true,
           technicalSpec: { select: { duration: true } },
         },
       },
@@ -196,18 +202,44 @@ export async function PATCH(request: Request, { params }: Params) {
     );
   }
 
-  const allowedFields = ["versionTitle", "streamUid", "r2Key", "duration", "thumbnailUrl", "status"];
-  const data: Record<string, unknown> = {};
+  const allowedFields = ["versionTitle", "streamUid", "r2Key", "duration", "thumbnailUrl", "status", "summaryFeedback", "videoSubject", "counselorId", "externalId"];
+  const submissionData: Record<string, unknown> = {};
+  const videoData: Record<string, unknown> = {};
+
   for (const key of allowedFields) {
-    if (key in body) data[key] = body[key];
+    if (key in body) submissionData[key] = body[key];
   }
 
-  const updated = await prisma.submission.update({
-    where: { id },
-    data,
-    include: {
-      star: { select: { id: true, name: true, email: true } },
-    },
+  // 비디오 관련 필드 분리
+  if ("lyrics" in body) videoData.lyrics = body.lyrics;
+  if ("categoryId" in body) videoData.categoryId = body.categoryId;
+  if ("description" in body) videoData.description = body.description; // ✅ 설명 추가
+  if ("videoSubject" in body) videoData.videoSubject = body.videoSubject;
+  if ("counselorId" in body) videoData.counselorId = body.counselorId;
+  if ("externalId" in body) videoData.externalId = body.externalId;
+  // duration은 TechnicalSpec에 들어가야 함 (복잡도 증가로 일단 패스하거나 별도 처리)
+
+  // 트랜잭션으로 처리
+  const updated = await prisma.$transaction(async (tx) => {
+    // 1. Submission 업데이트
+    const sub = await tx.submission.update({
+      where: { id },
+      data: submissionData,
+      include: {
+        star: { select: { id: true, name: true, email: true } },
+        video: { select: { id: true } } // 비디오 ID 확인
+      },
+    });
+
+    // 2. Video 업데이트 (연결된 비디오가 있고, 업데이트할 데이터가 있는 경우)
+    if (sub.videoId && Object.keys(videoData).length > 0) {
+      await tx.video.update({
+        where: { id: sub.videoId },
+        data: videoData
+      });
+    }
+
+    return sub;
   });
 
   return NextResponse.json({ data: updated });

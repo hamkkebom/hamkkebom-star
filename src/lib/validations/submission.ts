@@ -13,10 +13,21 @@ export const createSubmissionSchema = z.object({
   description: z.string().trim().max(2000, "설명은 2000자 이내로 입력해주세요.").optional(),
   streamUid: z.string().min(1, "Stream UID를 입력해주세요."),
   thumbnailUrl: z.string().url("올바른 URL 형식이 아닙니다.").optional(),
+  lyrics: z.string().optional(),
+  categoryId: z.string().optional(),
+  videoSubject: z.enum(["COUNSELOR", "BRAND", "OTHER"]).optional(),
+  counselorId: z.string().optional(),
+  externalId: z.string().optional(),
 });
 
 export const updateSubmissionSchema = z.object({
   versionTitle: z.string().trim().optional(),
+  summaryFeedback: z.string().trim().optional(),
+  lyrics: z.string().optional(),
+  categoryId: z.string().optional(),
+  videoSubject: z.enum(["COUNSELOR", "BRAND", "OTHER"]).optional(),
+  counselorId: z.string().optional(),
+  externalId: z.string().optional(),
 });
 
 export const uploadUrlSchema = z.object({

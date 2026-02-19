@@ -97,7 +97,42 @@ export async function POST(request: Request) {
         } satisfies ApiError;
       }
 
-      // 항상 v0.1로 생성 (버전 업은 bump API로만)
+      // 0. 카테고리 유효성 검사 (입력된 경우)
+      if (parsed.data.categoryId) {
+        const categoryExists = await tx.category.findUnique({ where: { id: parsed.data.categoryId } });
+        if (!categoryExists) {
+          throw {
+            code: "BAD_REQUEST",
+            message: "존재하지 않는 카테고리입니다.",
+            status: 400,
+          } satisfies ApiError;
+        }
+      }
+
+      // 1. 비디오 레코드 생성 (최초 버전)
+      const newVideo = await tx.video.create({
+        data: {
+          title: parsed.data.versionTitle || "Untitled Video",
+          streamUid: parsed.data.streamUid,
+          thumbnailUrl: parsed.data.thumbnailUrl,
+          ownerId: user.id,
+          status: "DRAFT", // 초기 상태
+          lyrics: parsed.data.lyrics,
+          categoryId: parsed.data.categoryId,
+          description: parsed.data.description, // ✅ Video 설명 (제작의도)
+          videoSubject: parsed.data.videoSubject || "OTHER",
+          counselorId: parsed.data.counselorId || null,
+          externalId: parsed.data.externalId || null,
+          technicalSpec: {
+            create: {
+              // duration은 클라이언트에서 보내주거나, 추후 업데이트
+              duration: 0
+            }
+          }
+        }
+      });
+
+      // 2. 제출물 생성 (Video 연결)
       const submission = await tx.submission.create({
         data: {
           assignmentId: parsed.data.assignmentId,
@@ -105,9 +140,10 @@ export async function POST(request: Request) {
           versionTitle: parsed.data.versionTitle,
           version: "1.0",
           streamUid: parsed.data.streamUid,
-          summaryFeedback: parsed.data.description || null,
+          summaryFeedback: parsed.data.description || null, // Submission에도 백업
           thumbnailUrl: parsed.data.thumbnailUrl,
           starId: user.id,
+          videoId: newVideo.id, // Video 연결
         },
       });
 
@@ -142,6 +178,8 @@ export async function POST(request: Request) {
         { status: 409 }
       );
     }
+
+    console.error(error); // 디버깅용 로그
 
     return NextResponse.json(
       { error: { code: "INTERNAL_ERROR", message: "제출물 등록 중 오류가 발생했습니다." } },

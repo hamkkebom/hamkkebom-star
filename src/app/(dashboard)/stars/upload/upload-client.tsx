@@ -68,18 +68,38 @@ const statusMap: Record<string, { label: string; variant: "default" | "secondary
   EXPIRED: { label: "마감됨", variant: "outline", className: "text-muted-foreground" },
 };
 
+type CategoryItem = {
+  id: string;
+  name: string;
+};
+
+type CounselorItem = {
+  id: string;
+  displayName: string;
+};
+
 export function UploadPageClient({
   assignments,
   openRequests = [],
+  categories = [],
+  counselors = [],
 }: {
   assignments: AssignmentItem[];
   openRequests?: OpenRequestItem[];
+  categories?: CategoryItem[];
+  counselors?: CounselorItem[];
 }) {
   const router = useRouter();
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   const [versionSlot, setVersionSlot] = useState(1);
   const [versionTitle, setVersionTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [lyrics, setLyrics] = useState(""); // New Link: Lyrics
+  const [categoryId, setCategoryId] = useState(""); // New Link: Category
+  const [videoSubject, setVideoSubject] = useState<"COUNSELOR" | "BRAND" | "OTHER">("OTHER");
+  const [counselorId, setCounselorId] = useState("");
+  const [externalId, setExternalId] = useState("");
+
   const [mainTab, setMainTab] = useState<"my-projects" | "explore">("my-projects");
   const [filterTab, setFilterTab] = useState<"active" | "all">("active");
   const [searchTerm, setSearchTerm] = useState("");
@@ -88,6 +108,20 @@ export function UploadPageClient({
   const [resetKey, setResetKey] = useState(0); // 썸네일 업로더 초기화 키
 
   const selectedAssignment = assignments.find((a) => a.id === selectedAssignmentId);
+
+  // 초기 카테고리 설정 (프로젝트 요청에 카테고리가 있다면 매칭 시도)
+  /* 
+  useEffect(() => {
+    if (selectedAssignment && selectedAssignment.categories.length > 0) {
+       // logic to match name to ID if needed?
+       // But request.categories are strings (names). API needs CategoryID.
+       // We can match by name.
+       const match = categories.find(c => selectedAssignment.categories.includes(c.name));
+       if (match) setCategoryId(match.id);
+    }
+  }, [selectedAssignment, categories]); 
+  */
+  // 위 로직은 자동 선택 편의성을 위해 추가 가능하지만, 일단 유저가 직접 선택하게 둠.
 
   // 프로젝트 신청 Mutation
   const applyMutation = useMutation({
@@ -477,15 +511,79 @@ export function UploadPageClient({
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label>제작 노트 (선택)</Label>
+
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label>카테고리</Label>
+                          <select
+                            className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            value={categoryId}
+                            onChange={(e) => setCategoryId(e.target.value)}
+                          >
+                            <option value="">카테고리 선택 (선택사항)</option>
+                            {categories?.map(c => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>제작의도 / 설명</Label>
+                          <Textarea
+                            placeholder="이 영상의 제작 의도나 시청 포인트를 적어주세요."
+                            className="h-12 min-h-[48px] resize-none py-3"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            maxLength={2000}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mt-4">
+                        <Label>가사 (Lyrics)</Label>
                         <Textarea
-                          placeholder="작업 중 특이사항이나 강조하고 싶은 부분을 남겨주세요."
-                          className="min-h-[120px] resize-none"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          maxLength={2000}
+                          placeholder="노래 가사가 있다면 입력해주세요."
+                          value={lyrics}
+                          onChange={(e) => setLyrics(e.target.value)}
+                          className="min-h-[200px] bg-muted/20 font-mono text-sm leading-relaxed"
                         />
+                      </div>
+
+                      {/* 추가 메타데이터 (VideoSubject, Counselor, ExternalId) */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/20 p-4 rounded-xl border border-border/50 mt-4">
+                        <div className="space-y-2">
+                          <Label>영상 주제</Label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            value={videoSubject}
+                            onChange={(e) => setVideoSubject(e.target.value as any)}
+                          >
+                            <option value="COUNSELOR">상담사 (Counselor)</option>
+                            <option value="BRAND">브랜드 (Brand)</option>
+                            <option value="OTHER">기타 (Other)</option>
+                          </select>
+                        </div>
+
+                        {videoSubject === "COUNSELOR" && (
+                          <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                            <Label>관련 상담사</Label>
+                            <select
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              value={counselorId}
+                              onChange={(e) => setCounselorId(e.target.value)}
+                            >
+                              <option value="">상담사 선택</option>
+                              {counselors?.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.displayName}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+
                       </div>
                     </div>
 
@@ -521,6 +619,11 @@ export function UploadPageClient({
                           versionSlot={0}
                           versionTitle={versionTitle}
                           description={description || undefined}
+                          lyrics={lyrics || undefined}
+                          categoryId={categoryId || undefined}
+                          videoSubject={videoSubject}
+                          counselorId={counselorId || undefined}
+                          externalId={externalId || undefined}
                           thumbnailFile={thumbnailFile}
                           onComplete={() => {
                             setVersionTitle("");
@@ -528,6 +631,9 @@ export function UploadPageClient({
                             setThumbnailFile(null);
                             setResetKey(prev => prev + 1); // 썸네일 프리뷰 초기화
                             // versionSlot 고정 (v0.1)
+                            setVideoSubject("OTHER");
+                            setCounselorId("");
+                            setExternalId("");
                           }}
                         />
                       </div>
@@ -728,6 +834,6 @@ export function UploadPageClient({
         </div>
         <SubmissionList limit={3} />
       </div>
-    </div>
+    </div >
   );
 }

@@ -31,6 +31,7 @@ export async function POST(request: Request, { params }: Params) {
                 summaryFeedback: true,
                 thumbnailUrl: true,
                 streamUid: true,
+                videoId: true,
             }
         });
 
@@ -87,12 +88,18 @@ export async function POST(request: Request, { params }: Params) {
         const nextVersion = `1.${maxMinor + 1}`;
 
         // 4-1. 새 비디오 레코드 생성
+        // 원본 비디오 정보 조회 (가사, 카테고리 계승을 위해)
+        const sourceVideo = source.videoId ? await prisma.video.findUnique({ where: { id: source.videoId } }) : null;
+
         const newVideo = await prisma.video.create({
             data: {
                 title: videoTitle || source.versionTitle || `v${nextVersion} Update`,
                 streamUid: streamUid,
                 thumbnailUrl: thumbnailUrl || source.thumbnailUrl,
                 ownerId: source.starId,
+                status: "DRAFT", // 버전 생성 직후는 DRAFT
+                lyrics: sourceVideo?.lyrics, // 가사 계승
+                categoryId: sourceVideo?.categoryId, // 카테고리 계승
                 technicalSpec: {
                     create: {
                         duration: duration || 0,

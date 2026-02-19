@@ -28,6 +28,11 @@ interface UploadDropzoneProps {
   versionSlot: number;
   versionTitle?: string;
   description?: string;
+  lyrics?: string;
+  categoryId?: string;
+  videoSubject?: "COUNSELOR" | "BRAND" | "OTHER";
+  counselorId?: string;
+  externalId?: string;
   thumbnailFile?: File | null;
   onComplete?: () => void;
   mode?: "submission" | "upload-only";
@@ -39,6 +44,11 @@ export function UploadDropzone({
   versionSlot,
   versionTitle,
   description,
+  lyrics,
+  categoryId,
+  videoSubject,
+  counselorId,
+  externalId,
   thumbnailFile,
   onComplete,
   mode = "submission",
@@ -169,6 +179,11 @@ export function UploadDropzone({
           versionSlot,
           versionTitle: versionTitle,
           description: description || undefined,
+          lyrics: lyrics || undefined,
+          categoryId: categoryId || undefined,
+          videoSubject,
+          counselorId: counselorId || undefined,
+          externalId: externalId || undefined,
           thumbnailUrl,
           streamUid,
         }),
@@ -191,7 +206,7 @@ export function UploadDropzone({
         error instanceof Error ? error.message : "제출에 실패했습니다.",
       );
     }
-  }, [assignmentId, versionSlot, versionTitle, description, thumbnailFile, streamUid, mode, onUploadSuccess]);
+  }, [assignmentId, versionSlot, versionTitle, description, lyrics, categoryId, videoSubject, counselorId, externalId, thumbnailFile, streamUid, mode, onUploadSuccess]);
 
   /** 팝업 확인 → 폼 초기화 */
   const handleDialogConfirm = useCallback(() => {

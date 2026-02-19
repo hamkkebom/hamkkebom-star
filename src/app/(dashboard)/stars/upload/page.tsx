@@ -60,36 +60,61 @@ export default async function UploadPage() {
     orderBy: [{ createdAt: "desc" }],
   });
 
-  const assignmentItems = assignments.map((a) => ({
+  // 3. 모든 카테고리 (카테고리 선택용)
+  const categories = await prisma.category.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
+  // 4. 모든 상담사 (상담사 선택용)
+  const counselors = await prisma.counselor.findMany({
+    where: { status: "ACTIVE" },
+    select: { id: true, displayName: true },
+    orderBy: { displayName: "asc" },
+  });
+
+  // 5. Transform assignments data with safety check
+  const formattedAssignments = assignments.map((a) => ({
     id: a.id,
-    requestId: a.request.id,
-    requestTitle: a.request.title,
-    deadline: a.request.deadline.toISOString(),
+    requestId: a.request?.id,
+    requestTitle: a.request?.title || "삭제된 의뢰",
+    deadline: a.request?.deadline?.toISOString() || "",
     status: a.status,
-    requirements: a.request.requirements,
-    referenceUrls: a.request.referenceUrls,
-    categories: a.request.categories,
+    requirements: a.request?.requirements || null,
+    referenceUrls: a.request?.referenceUrls || [],
+    categories: a.request?.categories || [],
     thumbnailUrl: a.submissions[0]?.thumbnailUrl || null,
   }));
 
-  const requestItems = allRequests.map((r) => {
-    // 내 참여 상태 확인 (배열에 값이 있으면 참여중인 것)
-    const myAssignment = r.assignments[0];
-    const myAssignmentStatus = myAssignment ? myAssignment.status : null;
+  // 6. Transform open requests
+  const formattedOpenRequests = allRequests.map((req) => {
+    // Check if the current user has an assignment for this request
+    // This is an in-memory check to avoid complex query if meaningful
+    const myAssignment = assignments.find((a) => a.requestId === req.id);
+    const myStatus = myAssignment ? myAssignment.status : null;
 
     return {
-      id: r.id,
-      title: r.title,
-      deadline: r.deadline.toISOString(),
-      categories: r.categories,
-      requirements: r.requirements,
-      referenceUrls: r.referenceUrls,
-      maxAssignees: r.maxAssignees,
-      status: r.status, // 프로젝트 모집 상태 (OPEN, FULL, CLOSED)
-      myAssignmentStatus, // 나의 참여 상태 (null이면 미참여)
-      currentCount: r._count.assignments,
+      id: req.id,
+      title: req.title,
+      deadline: req.deadline.toISOString(),
+      categories: req.categories,
+      requirements: req.requirements,
+      referenceUrls: req.referenceUrls,
+      maxAssignees: req.maxAssignees,
+      currentCount: req._count?.assignments || 0,
+      status: req.status,
+      myAssignmentStatus: myStatus,
     };
   });
 
-  return <UploadPageClient assignments={assignmentItems} openRequests={requestItems} />;
+  return (
+    <div className="container py-8 max-w-6xl">
+      <UploadPageClient
+        assignments={formattedAssignments}
+        openRequests={formattedOpenRequests}
+        categories={categories}
+        counselors={counselors}
+      />
+    </div>
+  );
 }
