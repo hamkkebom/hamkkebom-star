@@ -132,7 +132,7 @@ export function Sidebar() {
         <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
         {userData && (
-          <div className="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-sidebar-accent/30 border border-sidebar-border hover:bg-sidebar-accent/50 transition-colors group cursor-default">
+          <Link href="/stars/settings" className="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-sidebar-accent/30 border border-sidebar-border hover:bg-sidebar-accent/50 transition-colors group cursor-pointer">
             <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-400 to-purple-400 p-[1px]">
               <div className="h-full w-full rounded-full bg-background flex items-center justify-center overflow-hidden">
                 <User className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -142,7 +142,7 @@ export function Sidebar() {
               <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{userData.name}</p>
               <p className="text-[10px] text-muted-foreground truncate font-medium">{userData.email}</p>
             </div>
-          </div>
+          </Link>
         )}
 
         <div className="grid grid-cols-2 gap-2">

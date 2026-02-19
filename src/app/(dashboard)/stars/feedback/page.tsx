@@ -37,6 +37,11 @@ type MySubmission = {
   _count: {
     feedbacks: number;
   } | null;
+  video: {
+    title: string | null;
+    streamUid: string | null;
+    thumbnailUrl: string | null;
+  } | null;
   aiAnalysis: {
     summary: string;
     status: string;
@@ -145,7 +150,7 @@ function ProjectCard({ sub, index }: { sub: MySubmission; index: number }) {
                 {sub.duration ? formatDuration(sub.duration) : "-"}
               </div>
               <h3 className="text-lg font-bold text-white leading-tight line-clamp-2 drop-shadow-md group-hover:text-violet-200 transition-colors">
-                {sub.assignment?.request?.title || "제목 없는 프로젝트"}
+                {sub.versionTitle || sub.video?.title || sub.assignment?.request?.title || "제목 없는 프로젝트"}
               </h3>
             </div>
           </div>

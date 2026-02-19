@@ -35,6 +35,11 @@ type MySubmission = {
   _count: {
     feedbacks: number;
   } | null;
+  video: {
+    title: string | null;
+    streamUid: string | null;
+    thumbnailUrl: string | null;
+  } | null;
   aiAnalysis: {
     padding?: boolean;
     status: string;
@@ -148,7 +153,7 @@ function DraggableCard({ sub, index }: { sub: MySubmission; index: number }) {
           {/* Card Info */}
           <div className="p-4 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm relative">
             <h3 className="font-bold text-sm text-foreground dark:text-zinc-100 leading-tight line-clamp-1 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors mb-1">
-              {sub.assignment?.request?.title || "제목 없는 프로젝트"}
+              {sub.versionTitle || sub.video?.title || sub.assignment?.request?.title || "제목 없는 프로젝트"}
             </h3>
             <div className="flex items-center justify-between text-[10px] text-muted-foreground dark:text-zinc-500 font-medium">
               <span className="flex items-center gap-1">
