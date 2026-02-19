@@ -1,90 +1,249 @@
 "use client";
 
-import { useQueries } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  MessageCircleHeart,
+  Search,
+  Sparkles,
+  Clock,
+  Zap,
+  Play,
+  Layers,
+  LayoutGrid
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
-export default function StarDashboardPage() {
-  const [submissionsQuery] = useQueries({
-    queries: [
-      {
-        queryKey: ["dashboard-submissions"],
-        queryFn: async () => {
-          const res = await fetch("/api/submissions/my?page=1&pageSize=5", { cache: "no-store" });
-          if (!res.ok) throw new Error("failed");
-          return (await res.json()) as { data: { id: string; versionTitle: string | null; version: string; status: string; createdAt: string; assignment: { request: { title: string } }; _count?: { feedbacks: number } }[]; total: number };
-        },
-      },
-    ],
+// --- Types ---
+type MySubmission = {
+  id: string;
+  versionTitle: string | null;
+  version: string;
+  duration: number | null;
+  signedThumbnailUrl: string | null;
+  assignment: {
+    request: {
+      title: string;
+    } | null;
+  } | null;
+  _count: {
+    feedbacks: number;
+  } | null;
+  aiAnalysis: {
+    padding?: boolean;
+    status: string;
+    summary: string;
+  } | null;
+  createdAt: string;
+};
+
+// --- Utilities ---
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  if (mins > 0) return `${mins}분 ${secs}초`;
+  return `${secs}초`;
+}
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("ko-KR", {
+    month: "long",
+    day: "numeric",
   });
+}
 
-  const submissions = submissionsQuery.data;
-  const loadingSub = submissionsQuery.isLoading;
+// Seeded random for consistent hydration
+function pseudoRandom(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    const char = seed.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  const x = Math.sin(hash) * 10000;
+  return x - Math.floor(x);
+}
 
-  const statusLabels: Record<string, string> = {
-    PENDING: "대기중",
-    IN_REVIEW: "리뷰중",
-    APPROVED: "승인됨",
-    REJECTED: "반려됨",
-    REVISED: "수정됨",
-    PROCESSING: "처리중",
-    COMPLETED: "완료",
-    CANCELLED: "취소됨",
-  };
+// Fetch submissions (increased limit for 'pile' effect)
+function fetchSubmissions(): Promise<{ data: MySubmission[], total: number }> {
+  return fetch(`/api/submissions/my?page=1&pageSize=50`, { cache: "no-store" })
+    .then((res) => {
+      if (!res.ok) throw new Error("데이터를 불러오지 못했습니다.");
+      return res.json();
+    });
+}
+
+// --- Components ---
+
+function DraggableCard({ sub, index }: { sub: MySubmission; index: number }) {
+  const hasAi = sub.aiAnalysis?.status === "DONE";
+  const feedbackCount = sub._count?.feedbacks ?? 0;
+
+  // Generate stable random values
+  const rand = useMemo(() => pseudoRandom(sub.id), [sub.id]);
+  const rotate = (rand * 12) - 6; // -6 ~ +6 deg
+  const xOffset = (pseudoRandom(sub.id + "x") * 60) - 30; // -30 ~ +30 px
+  const yOffset = (pseudoRandom(sub.id + "y") * 60) - 30; // -30 ~ +30 px
+  const zIndexBase = Math.floor(rand * 10);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">대시보드</h1>
-        <p className="text-sm text-muted-foreground">진행 중인 작업과 최근 활동을 확인하세요.</p>
-      </div>
+    <motion.div
+      drag
+      dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }}
+      dragElastic={0.2}
+      whileHover={{ scale: 1.1, rotate: 0, zIndex: 50, cursor: "grab" }}
+      whileTap={{ scale: 0.95, cursor: "grabbing" }}
+      initial={{ opacity: 0, y: 500, rotate: rotate * 3 }}
+      animate={{ opacity: 1, y: yOffset, x: xOffset, rotate: rotate }}
+      transition={{
+        type: "spring",
+        stiffness: 200,
+        damping: 20,
+        delay: index * 0.03
+      }}
+      style={{ zIndex: zIndexBase }}
+      className="relative shrink-0 w-[280px] sm:w-[340px]"
+    >
+      <Link href={`/stars/my-videos/${sub.id}`} className="block h-full perspective-1000">
+        <div className="relative overflow-hidden rounded-[20px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] dark:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] transition-all duration-300 group hover:shadow-[0_20px_50px_-10px_rgba(124,58,237,0.3)] dark:hover:shadow-[0_20px_50px_-10px_rgba(124,58,237,0.4)] hover:border-violet-500/50">
 
-      {/* 요약 */}
-      <div className="grid gap-4 md:grid-cols-1">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>총 제출물</CardDescription>
-            <CardTitle className="text-2xl">
-              {loadingSub ? <Skeleton className="h-8 w-16" /> : `${submissions?.total ?? 0}개`}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+          {/* Tape Effect */}
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-6 bg-zinc-200/50 dark:bg-white/10 backdrop-blur-sm -rotate-1 z-20 border-l border-r border-white/20 dark:border-white/5 opacity-60" />
 
-      {/* 최근 제출물 */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">최근 제출물</CardTitle>
-            <Link href="/stars/my-videos" className="text-sm text-primary hover:underline">
-              전체 보기
-            </Link>
+          {/* Thumbnail Image */}
+          <div className="relative aspect-video bg-zinc-100 dark:bg-black overflow-hidden">
+            {sub.signedThumbnailUrl ? (
+              <Image
+                src={sub.signedThumbnailUrl}
+                alt={sub.versionTitle || "Project"}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-110 grayscale-[20%] group-hover:grayscale-0"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-900">
+                <LayoutGrid className="w-10 h-10 text-zinc-300 dark:text-zinc-800" />
+              </div>
+            )}
+
+            {/* Version Badge */}
+            <div className="absolute top-3 left-3 -rotate-3 group-hover:rotate-0 transition-transform">
+              <Badge className="bg-white/80 dark:bg-black/60 hover:bg-white dark:hover:bg-black/80 text-foreground dark:text-white border-zinc-200 dark:border-white/10 backdrop-blur font-mono text-[10px] px-1.5 h-5 shadow-sm">
+                {sub.version.startsWith("v") ? sub.version : `v${sub.version}`}
+              </Badge>
+            </div>
+
+            {/* Corner Indicators */}
+            <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
+              {hasAi && <Zap className="w-4 h-4 text-violet-500 dark:text-violet-400 fill-violet-500 dark:fill-violet-400 drop-shadow-lg" />}
+              {feedbackCount > 0 && <MessageCircleHeart className="w-4 h-4 text-blue-500 dark:text-blue-400 drop-shadow-lg" />}
+            </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          {loadingSub ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => <Skeleton key={`dsub-${i}`} className="h-10 w-full" />)}
-            </div>
-          ) : !submissions?.data.length ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">아직 제출물이 없습니다.</p>
-          ) : (
-            <div className="space-y-2">
-              {submissions.data.map((sub) => (
-                <Link key={sub.id} href={`/stars/my-videos/${sub.id}`} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:border-primary/40 transition-colors">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{sub.versionTitle || (sub.version.startsWith("v") ? sub.version : `v${sub.version}`)}</p>
-                    <p className="truncate text-xs text-muted-foreground">{sub?.assignment?.request?.title ?? '제목 없음'}</p>
-                  </div>
-                  <span className="ml-2 whitespace-nowrap text-xs">{statusLabels[sub.status] ?? sub.status}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
+          {/* Card Info */}
+          <div className="p-4 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm relative">
+            <h3 className="font-bold text-sm text-foreground dark:text-zinc-100 leading-tight line-clamp-1 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors mb-1">
+              {sub.assignment?.request?.title || "제목 없는 프로젝트"}
+            </h3>
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground dark:text-zinc-500 font-medium">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatDate(sub.createdAt)}
+              </span>
+              <span>{sub.duration ? formatDuration(sub.duration) : "-"}</span>
+            </div>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+export default function StarDashboardPage() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard-submissions-creative"],
+    queryFn: fetchSubmissions,
+  });
+
+  const submissions = data?.data;
+  const totalCount = data?.total ?? 0;
+
+  return (
+    <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-hidden bg-background text-foreground dark:bg-black dark:text-white selection:bg-violet-500/30 -m-6 p-6 transition-colors duration-500">
+
+      {/* 1. Background Typography (The "Mega Counter") */}
+      <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.5, ease: "circOut" }}
+          className="relative text-center leading-none flex flex-col items-center justify-center"
+        >
+          <h1 className="text-[25vw] md:text-[35vw] font-black text-zinc-100 dark:text-zinc-900 tracking-tighter mix-blend-difference opacity-40 dark:opacity-20 transition-colors duration-500">
+            {totalCount}
+          </h1>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-[10vw] text-[2vw] font-bold text-zinc-300 dark:text-zinc-800 tracking-[1em] uppercase blur-[0.5px] transition-colors duration-500">
+            전체 제작물
+          </div>
+        </motion.div>
+
+        {/* Dynamic Gradients */}
+        <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-violet-500/5 dark:bg-violet-900/10 rounded-full blur-[100px] animate-pulse-slow transition-colors duration-500" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-indigo-500/5 dark:bg-indigo-900/10 rounded-full blur-[100px] animate-pulse-slow delay-1000 transition-colors duration-500" />
+      </div>
+
+      {/* 2. Header Layer */}
+      <div className="relative z-10 flex flex-col gap-2 mb-10 pointer-events-none">
+        <motion.div
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          className="flex items-center gap-2 text-violet-500 font-bold uppercase tracking-widest text-xs"
+        >
+          <Layers className="w-4 h-4" />
+          <span>크리에이티브 대시보드</span>
+        </motion.div>
+        <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground dark:text-white drop-shadow-2xl">
+          마이 스튜디오<span className="text-violet-600">.</span>
+        </h1>
+        <p className="text-muted-foreground text-sm max-w-md backdrop-blur-sm">
+          작품을 드래그하여 당신만의 아카이브를 자유롭게 탐색해보세요.
+        </p>
+      </div>
+
+      {/* 3. The "Scattered Archive" Area */}
+      <div className="relative z-10 w-full min-h-[60vh] flex items-center justify-center">
+        {isLoading ? (
+          <div className="flex flex-wrap justify-center gap-4 animate-pulse">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-64 h-48 bg-zinc-100 dark:bg-zinc-900/50 rounded-2xl border border-border dark:border-white/5" />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-wrap justify-center items-center content-center w-full max-w-[1600px] mx-auto gap-4 p-10">
+            {/* 
+                    Using Flex Wrap + negative margins + transforms creates the "Pile" effect
+                    while keeping it somewhat responsive and manageable.
+                 */}
+            {submissions?.map((sub, idx) => (
+              <div key={sub.id} className="-m-8 md:-m-12 hover:z-50 transition-all duration-300">
+                <DraggableCard sub={sub} index={idx} />
+              </div>
+            ))}
+
+            {submissions?.length === 0 && (
+              <div className="text-center py-20">
+                <p className="text-muted-foreground text-lg">아직 제작된 작품이 없습니다.</p>
+                <Button variant="outline" className="mt-4">새 프로젝트 시작하기</Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
     </div>
   );
