@@ -21,6 +21,9 @@ import {
   LogOut,
   User,
   ChevronDown,
+  UserCog,
+  PenTool,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -56,7 +59,8 @@ const navGroups: NavGroup[] = [
     icon: Clapperboard,
     color: "cyan",
     children: [
-      { href: "/admin/reviews", label: "피드백 작성", icon: Eye },
+      { href: "/admin/reviews/my", label: "담당 피드백 작성", icon: PenTool },
+      { href: "/admin/reviews", label: "전체 피드백 관리", icon: MessageSquare },
       { href: "/admin/videos", label: "영상 관리", icon: Film },
     ],
   },
@@ -66,7 +70,8 @@ const navGroups: NavGroup[] = [
     icon: UsersRound,
     color: "emerald",
     children: [
-      { href: "/admin/users", label: "가입자 관리", icon: UserCheck },
+      { href: "/admin/users", label: "모든 계정 관리", icon: UserCheck },
+      { href: "/admin/admins", label: "관리자 계정 관리", icon: UserCog },
       { href: "/admin/users/assign", label: "담당 STAR 배정", icon: Users },
       { href: "/admin/stars", label: "STAR 관리", icon: Users },
     ],

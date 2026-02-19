@@ -102,7 +102,7 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">가입자 관리</h1>
+        <h1 className="text-2xl font-bold">모든 계정 관리</h1>
         <p className="text-sm text-muted-foreground">
           가입한 사용자를 확인하고 승인 또는 반려하세요. (총{" "}
           {data?.total ?? 0}명)

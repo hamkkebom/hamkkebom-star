@@ -1,0 +1,74 @@
+
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
+
+// POST /api/admin/reviews/action
+// body: { submissionId, action: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES', feedback?: string }
+export async function POST(req: NextRequest) {
+    try {
+        const supabase = await createClient();
+        const { data: { user }, error } = await supabase.auth.getUser();
+
+        if (error || !user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const requester = await prisma.user.findUnique({
+            where: { authId: user.id },
+            select: { id: true, role: true },
+        });
+
+        if (!requester || requester.role !== "ADMIN") {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const { submissionId, action, feedback } = await req.json();
+
+        if (!submissionId || !action) {
+            return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+        }
+
+        // 트랜잭션 처리
+        const result = await prisma.$transaction(async (tx) => {
+            let newStatus = "PENDING";
+
+            if (action === "APPROVE") newStatus = "APPROVED";
+            else if (action === "REJECT") newStatus = "REJECTED";
+            else if (action === "REQUEST_CHANGES") newStatus = "REVISED"; // or 'REJECTED' with feedback
+
+            // 1. 상태 업데이트
+            const updatedSubmission = await tx.submission.update({
+                where: { id: submissionId },
+                data: {
+                    status: newStatus as any,
+                    reviewedAt: new Date(),
+                    reviewerId: requester.id,
+                    // 반려/수정요청 시 요약 피드백 저장
+                    summaryFeedback: feedback || undefined
+                }
+            });
+
+            // 2. 피드백 코멘트가 있다면 개별 Feedback 레코드로도 저장 (선택)
+            if (feedback) {
+                await tx.feedback.create({
+                    data: {
+                        content: feedback,
+                        type: "GENERAL",
+                        authorId: requester.id,
+                        submissionId: submissionId,
+                        status: "PENDING"
+                    }
+                });
+            }
+
+            return updatedSubmission;
+        });
+
+        return NextResponse.json({ data: result });
+
+    } catch (err) {
+        console.error("Review Action Error:", err);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
