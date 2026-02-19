@@ -17,7 +17,8 @@ import {
 } from "@dnd-kit/core";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { type LucideIcon,
+import {
+    type LucideIcon,
     UserX,
     Lock,
     Search,
@@ -47,6 +48,7 @@ type StarUser = User & {
         name: string;
         avatarUrl: string | null;
     } | null;
+    pendingSubmissionCount?: number;
 };
 
 type AssignmentData = {
@@ -83,14 +85,16 @@ function DraggableStar({ star, isOverlay = false }: { star: StarUser; isOverlay?
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: star.id,
         data: { star },
-        disabled: !!star.managerId && star.managerId !== "CURRENT_USER_ID_PLACEHOLDER" // Dynamically handled later
+        disabled: !!star.managerId && star.managerId !== "CURRENT_USER_ID_PLACEHOLDER"
     });
 
     const style = transform ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     } : undefined;
 
-    // Render differently based on state
+    const pendingCount = star.pendingSubmissionCount || 0;
+    const hasPending = pendingCount > 0;
+
     return (
         <div
             ref={setNodeRef}
@@ -99,53 +103,79 @@ function DraggableStar({ star, isOverlay = false }: { star: StarUser; isOverlay?
             {...attributes}
             className={cn(
                 "relative group touch-none",
-                isDragging && "opacity-0", // Hide original when dragging
+                isDragging && "opacity-0",
             )}
         >
             <motion.div
                 layoutId={isOverlay ? undefined : `star-${star.id}`}
                 initial={false}
-                animate={isOverlay ? { scale: 1.05, rotate: 2, boxShadow: "0 20px 40px -10px rgba(0,0,0,0.2)" } : { scale: 1, rotate: 0 }}
+                animate={isOverlay ? { scale: 1.05, rotate: 2, boxShadow: "0 20px 40px -10px rgba(0,0,0,0.4)" } : { scale: 1, rotate: 0 }}
                 className={cn(
-                    "flex items-center gap-3 p-3 rounded-xl border transition-all duration-200",
+                    "relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all duration-300",
                     isOverlay
-                        ? "bg-background/95 backdrop-blur-xl border-primary/50 cursor-grabbing ring-2 ring-primary/20"
-                        : "bg-card/50 hover:bg-card/80 border-border/50 hover:border-border cursor-grab active:cursor-grabbing",
-                    // Locked state (assigned to others)
-                    !!star.managerId && "opacity-60 cursor-not-allowed bg-muted/20 border-transparent hover:bg-muted/20"
+                        ? "bg-background/95 backdrop-blur-xl border-primary/50 cursor-grabbing ring-2 ring-primary/30 shadow-2xl"
+                        : "bg-card/60 hover:bg-card/90 border-border/40 hover:border-primary/30 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-lg hover:-translate-y-0.5",
+                    !!star.managerId && "opacity-60 cursor-not-allowed bg-muted/20 border-transparent hover:bg-muted/20 hover:translate-y-0 shadow-none"
                 )}
             >
-                {/* Grip Handle (only for draggable) */}
+                {/* ★ Pending Badge with Pulse Animation */}
+                {hasPending && (
+                    <div className="absolute -top-2 -right-2 z-10 flex h-6 min-w-6 items-center justify-center">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-30" />
+                        <span className="relative flex h-6 min-w-6 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-500/30 ring-2 ring-background">
+                            <span className="text-[10px] font-black text-white px-1.5 tabular-nums">{pendingCount}</span>
+                        </span>
+                    </div>
+                )}
+
+                {/* Grip Handle */}
                 {!star.managerId && !isOverlay && (
-                    <div className="text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors">
+                    <div className="text-muted-foreground/15 group-hover:text-muted-foreground/40 transition-colors">
                         <GripVertical className="w-4 h-4" />
                     </div>
                 )}
 
-                <Avatar className="h-10 w-10 border border-border/10 shadow-sm">
-                    <AvatarImage src={star.avatarUrl || undefined} />
-                    <AvatarFallback className="text-[10px] font-bold bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
-                        {star.name.substring(0, 2)}
-                    </AvatarFallback>
-                </Avatar>
+                {/* Avatar with Gradient Ring */}
+                <div className="relative">
+                    <div className={cn(
+                        "rounded-full p-[2px] transition-all duration-300",
+                        hasPending
+                            ? "bg-gradient-to-br from-rose-500 via-orange-500 to-amber-500 shadow-lg shadow-rose-500/20"
+                            : "bg-gradient-to-br from-indigo-500 to-violet-500"
+                    )}>
+                        <Avatar className="h-10 w-10 border-2 border-background">
+                            <AvatarImage src={star.avatarUrl || undefined} />
+                            <AvatarFallback className="text-[10px] font-bold bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                                {star.name.substring(0, 2)}
+                            </AvatarFallback>
+                        </Avatar>
+                    </div>
+                    {/* Online-style dot */}
+                    {!star.managerId && !hasPending && (
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-background" />
+                    )}
+                </div>
 
+                {/* Info */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                         <span className="font-bold text-sm truncate">{star.name}</span>
                         {star.managerId && (
-                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted text-[9px] font-medium text-muted-foreground">
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted/80 text-[9px] font-semibold text-muted-foreground border border-border/50">
                                 <Lock className="w-2.5 h-2.5" />
-                                <span>{star.manager?.name} 담당</span>
+                                <span>{star.manager?.name}</span>
                             </div>
                         )}
                     </div>
-                    <div className="text-xs text-muted-foreground truncate font-medium">{star.email}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-muted-foreground truncate font-medium">{star.email}</span>
+                        {hasPending && !star.managerId && (
+                            <span className="text-[10px] font-bold text-rose-500 shrink-0">
+                                대기 {pendingCount}건
+                            </span>
+                        )}
+                    </div>
                 </div>
-
-                {/* Status Indicator (Optional) */}
-                {!star.managerId && (
-                    <div className="w-2 h-2 rounded-full bg-green-500/50" />
-                )}
             </motion.div>
         </div>
     );

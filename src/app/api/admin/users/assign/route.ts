@@ -42,7 +42,7 @@ export async function GET(_req: NextRequest) {
             );
         }
 
-        // Fetch all users with role STAR
+        // Fetch all users with role STAR, including pending submission count
         const keyUsers = await prisma.user.findMany({
             where: { role: "STAR" },
             select: {
@@ -58,8 +58,19 @@ export async function GET(_req: NextRequest) {
                         avatarUrl: true,
                     },
                 },
+                submissions: {
+                    where: { status: "PENDING" },
+                    select: { id: true },
+                },
             },
         });
+
+        // Transform data to include count
+        const starsWithCount = keyUsers.map((user) => ({
+            ...user,
+            pendingSubmissionCount: user.submissions.length,
+            submissions: undefined, // Remove raw array
+        }));
 
         // Fetch all active admins (potential managers)
         const admins = await prisma.user.findMany({
@@ -75,7 +86,7 @@ export async function GET(_req: NextRequest) {
         return NextResponse.json({
             data: {
                 currentUser: requester,
-                stars: keyUsers,
+                stars: starsWithCount,
                 admins: admins,
             },
         });

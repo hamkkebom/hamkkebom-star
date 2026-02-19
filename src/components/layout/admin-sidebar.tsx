@@ -67,7 +67,7 @@ const navGroups: NavGroup[] = [
     color: "emerald",
     children: [
       { href: "/admin/users", label: "가입자 관리", icon: UserCheck },
-      { href: "/admin/users/assign", label: "담당 관리", icon: Users },
+      { href: "/admin/users/assign", label: "담당 STAR 배정", icon: Users },
       { href: "/admin/stars", label: "STAR 관리", icon: Users },
     ],
   },

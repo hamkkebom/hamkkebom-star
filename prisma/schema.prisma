@@ -30,6 +30,11 @@ model User {
   submissions     Submission[]
   videos          Video[]
 
+  // Manager Relation (Self-relation)
+  managerId       String?
+  manager         User?               @relation("ManagerToStar", fields: [managerId], references: [id])
+  managedStars    User[]              @relation("ManagerToStar")
+
   @@map("users")
 }
 
