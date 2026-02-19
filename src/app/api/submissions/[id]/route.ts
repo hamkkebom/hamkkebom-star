@@ -112,7 +112,8 @@ export async function GET(_request: Request, { params }: Params) {
   // siblings 요청 시 추가 조회
   const url = new URL(_request.url);
   const includeSiblings = url.searchParams.get("includeSiblings") === "true";
-  let siblings: any[] = [];
+  type SiblingType = { id: string; version: string; versionTitle: string | null; status: string; createdAt: Date; thumbnailUrl: string | null; video: { thumbnailUrl: string | null; technicalSpec: { duration: number | null } | null } | null };
+  let siblings: SiblingType[] = [];
 
   if (includeSiblings) {
     try {

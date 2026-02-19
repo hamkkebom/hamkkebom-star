@@ -137,14 +137,17 @@ export async function POST(request: Request, { params }: Params) {
             message: `새로운 버전(v${nextVersion})이 생성되었습니다.`
         });
 
-    } catch (e: any) {
-        console.error("[bump] ERROR:", e?.message, e?.code, e?.meta);
+    } catch (e: unknown) {
+        const errMsg = e instanceof Error ? e.message : String(e);
+        const errCode = (e as Record<string, unknown>)?.code as string | undefined;
+        const errMeta = (e as Record<string, unknown>)?.meta;
+        console.error("[bump] ERROR:", errMsg, errCode, errMeta);
         return NextResponse.json({
             error: {
                 code: "INTERNAL_ERROR",
-                message: e?.message || "버전 생성 중 오류가 발생했습니다.",
-                prismaCode: e?.code,
-                meta: e?.meta
+                message: errMsg || "버전 생성 중 오류가 발생했습니다.",
+                prismaCode: errCode,
+                meta: errMeta
             }
         }, { status: 500 });
     }

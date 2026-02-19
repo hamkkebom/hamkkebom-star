@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { toast } from "sonner";
-import { MoreVertical, Trash2, AlertTriangle, Loader2, PlayCircle, CheckCircle2, Image as ImageIcon, ArrowRight, Film } from "lucide-react";
+import { type LucideIcon, MoreVertical, Trash2, AlertTriangle, Loader2, PlayCircle, CheckCircle2, Film, Image as ImageIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ type MySubmissionsResponse = {
   totalPages: number;
 };
 
-const statusMap: Record<SubmissionStatus, { label: string; className: string; icon: any }> = {
+const statusMap: Record<SubmissionStatus, { label: string; className: string; icon: LucideIcon }> = {
   PENDING: {
     label: "대기중",
     className: "bg-slate-500/90 text-white border-slate-400/20 ring-1 ring-slate-500/50 shadow-[0_0_10px_rgba(100,116,139,0.3)]",
@@ -140,32 +140,6 @@ async function fetchMySubmissions(): Promise<MySubmissionsResponse> {
   return (await response.json()) as MySubmissionsResponse;
 }
 
-/** 썸네일 이미지 with onError fallback */
-function ThumbnailImage({ src, alt }: { src: string | null; alt: string }) {
-  const [failed, setFailed] = useState(false);
-
-  if (!src || failed) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-violet-100 to-indigo-100 dark:from-violet-900/20 dark:to-indigo-900/20">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <title>영상 없음</title>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-        </svg>
-      </div>
-    );
-  }
-
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      fill
-      className="object-cover"
-      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-      onError={() => setFailed(true)}
-    />
-  );
-}
 
 function SubmissionCardSkeleton() {
   return (

@@ -7,19 +7,16 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircleHeart,
-  Search,
   Filter,
-  Sparkles,
   Clock,
-  CheckCircle2,
   AlertCircle,
   Zap,
-  Play
+  Play,
+  Sparkles,
+  Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // --- Types ---

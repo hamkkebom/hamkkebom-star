@@ -4,7 +4,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, GitCommit, CheckCircle2, Circle } from "lucide-react";
+import { Clock, GitCommit } from "lucide-react";
 
 type Version = {
     id: string;
@@ -36,7 +36,7 @@ export function VersionTimeline({ versions, currentVersionId }: VersionTimelineP
                     {/* Timeline Line */}
                     <div className="absolute left-[19px] top-2 bottom-2 w-px bg-border/50 z-0" />
 
-                    {versions.map((ver, idx) => {
+                    {versions.map((ver) => {
                         const isActive = ver.id === currentVersionId;
                         return (
                             <Link

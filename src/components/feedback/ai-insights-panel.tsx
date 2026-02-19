@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Moon, Lightbulb, AlertTriangle, Trophy, Zap } from "lucide-react";
+import { Lightbulb, AlertTriangle, Trophy, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 

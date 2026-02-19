@@ -4,7 +4,7 @@ import { getAuthUser } from "@/lib/auth-helpers";
 import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
 import { extractR2Key, getPresignedGetUrl } from "@/lib/cloudflare/r2-upload";
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
     const user = await getAuthUser();
 
     if (!user) {

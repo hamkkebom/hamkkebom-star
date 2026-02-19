@@ -86,7 +86,6 @@ export async function generatePresignedUrl(
 export function getPublicUrl(key: string): string {
     // Use the existing helper from r2.ts if available, or reimplement
     // importing from r2.ts to avoid circular dependency if possible, but r2.ts is simple
-    const config = getR2Config();
     // Using a public domain if configured, otherwise R2 dev URL
     // Ideally this should be a custom domain or worker
     // For now, let's use the endpoint or a placeholder if not set

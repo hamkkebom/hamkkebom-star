@@ -7,6 +7,7 @@
 import { prisma } from "@/lib/prisma";
 import { getDownloadUrl } from "@/lib/cloudflare/stream";
 import { analyzeVideo, isGeminiConfigured } from "@/lib/ai/gemini";
+import type { Prisma } from "@/generated/prisma/client";
 
 export async function triggerAiAnalysis(submissionId: string): Promise<void> {
     try {
@@ -60,22 +61,23 @@ export async function triggerAiAnalysis(submissionId: string): Promise<void> {
             data: {
                 status: "DONE",
                 summary: result.summary,
-                scores: result.scores as any,
-                todoItems: result.todoItems as any,
-                insights: result.insights as any,
+                scores: result.scores as unknown as Prisma.InputJsonValue,
+                todoItems: result.todoItems as unknown as Prisma.InputJsonValue,
+                insights: result.insights as unknown as Prisma.InputJsonValue,
                 model: isGeminiConfigured() ? "gemini-2.0-flash-lite" : "mock",
             },
         });
 
         console.log(`[AI Auto] 분석 완료 (${submissionId})`);
-    } catch (err: any) {
-        console.error(`[AI Auto] 분석 실패 (${submissionId}):`, err?.message);
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[AI Auto] 분석 실패 (${submissionId}):`, message);
 
         try {
             await prisma.aiAnalysis.upsert({
                 where: { submissionId },
-                create: { submissionId, status: "ERROR", errorMessage: err?.message },
-                update: { status: "ERROR", errorMessage: err?.message },
+                create: { submissionId, status: "ERROR", errorMessage: message },
+                update: { status: "ERROR", errorMessage: message },
             });
         } catch {
             // ignore

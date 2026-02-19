@@ -186,19 +186,14 @@ function DropdownItem({
 export function VideosBrowser() {
   const [search, setSearch] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
-  const [page, setPageState] = useState(1);
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  // URL ?page= 파라미터에서 초기 페이지 읽기
-  useEffect(() => {
-    const urlPage = Number(searchParams.get("page")) || 1;
-    if (urlPage !== page) setPageState(urlPage);
-  }, [searchParams]);
+  // URL ?page= 파라미터에서 페이지 직접 파생 (state 불필요)
+  const page = Number(searchParams.get("page")) || 1;
 
   const setPage = useCallback((newPage: number) => {
-    setPageState(newPage);
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(newPage));
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
@@ -292,7 +287,6 @@ export function VideosBrowser() {
   const counselorLabel = counselorId
     ? counselors.find((c) => c.id === counselorId)?.displayName ?? "상담사"
     : "상담사";
-  const durationLabel = durationRange !== "all" ? DURATION_RANGES[durationRange].label : "재생시간";
 
   return (
     <div className="min-h-screen">
@@ -499,7 +493,7 @@ export function VideosBrowser() {
             </div>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {data.data.map((video) => (
+              {data.data.map((video, index) => (
                 <VideoCard
                   key={video.id}
                   id={video.id}
@@ -510,6 +504,7 @@ export function VideosBrowser() {
                   ownerName={video.owner.chineseName || video.owner.name}
                   categoryName={video.category?.name ?? null}
                   createdAt={video.createdAt}
+                  priority={page === 1 && index < 3}
                 />
               ))}
             </div>

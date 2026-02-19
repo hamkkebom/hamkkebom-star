@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import {
+import { type LucideIcon,
   LayoutDashboard,
   Clapperboard, // More vibrant than Film
   Rocket,
@@ -17,7 +17,14 @@ import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  isSpecial?: boolean;
+}
+
+const navItems: NavItem[] = [
   { href: "/stars/dashboard", label: "대시보드", icon: LayoutDashboard },
   { href: "/stars/my-videos", label: "내 영상 관리", icon: Clapperboard }, // Updated Icon
   {
@@ -68,7 +75,6 @@ export function Sidebar() {
       {/* Main nav */}
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navItems.map((item) => {
-          // @ts-ignore - isSpecial might not exist on all items type definition inferred
           const isSpecial = item.isSpecial;
           const isActive = pathname.startsWith(item.href);
 

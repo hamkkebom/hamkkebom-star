@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    CheckCircle2,
     Sparkles,
     MessageSquare,
     Image as ImageIcon,
@@ -253,7 +252,7 @@ export function UnifiedFeedbackList({ submissionId }: { submissionId: string }) 
 
                 {/* Tab Filters */}
                 <div className="bg-black/20 p-1 rounded-xl border border-white/5">
-                    <Tabs value={filterSource} onValueChange={(v) => setFilterSource(v as any)} className="w-full">
+                    <Tabs value={filterSource} onValueChange={(v) => setFilterSource(v as "ALL" | "AI" | "HUMAN")} className="w-full">
                         <TabsList className="w-full grid grid-cols-3 h-8 bg-transparent p-0 gap-1">
                             <TabsTrigger
                                 value="ALL"

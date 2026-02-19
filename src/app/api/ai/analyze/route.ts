@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { getDownloadUrl } from "@/lib/cloudflare/stream";
@@ -130,9 +131,9 @@ export async function POST(request: Request) {
             data: {
                 status: "DONE",
                 summary: result.summary,
-                scores: result.scores as any,
-                todoItems: result.todoItems as any,
-                insights: result.insights as any,
+                scores: result.scores as unknown as Prisma.InputJsonValue,
+                todoItems: result.todoItems as unknown as Prisma.InputJsonValue,
+                insights: result.insights as unknown as Prisma.InputJsonValue,
                 model: isGeminiConfigured() ? "gemini-2.0-flash-lite" : "mock",
             },
         });
@@ -140,15 +141,17 @@ export async function POST(request: Request) {
         console.log("[AI Analyze] === DONE ===");
         return NextResponse.json({ success: true, data: updated });
 
-    } catch (e: any) {
-        console.error("[AI Analyze] ERROR:", e?.message);
-        console.error("[AI Analyze] STACK:", e?.stack);
+    } catch (e: unknown) {
+        const errMsg = e instanceof Error ? e.message : String(e);
+        const errStack = e instanceof Error ? e.stack : undefined;
+        console.error("[AI Analyze] ERROR:", errMsg);
+        console.error("[AI Analyze] STACK:", errStack);
 
         // 에러 시 상태 업데이트
         try {
             await prisma.aiAnalysis.update({
                 where: { submissionId },
-                data: { status: "ERROR", errorMessage: e?.message || "알 수 없는 오류" },
+                data: { status: "ERROR", errorMessage: errMsg || "알 수 없는 오류" },
             });
         } catch {
             // upsert로 이미 없을 수 있음
@@ -157,7 +160,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             error: {
                 code: "INTERNAL_ERROR",
-                message: e?.message || "AI 분석 중 오류가 발생했습니다.",
+                message: errMsg || "AI 분석 중 오류가 발생했습니다.",
             }
         }, { status: 500 });
     }

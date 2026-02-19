@@ -53,16 +53,6 @@ type VideoDetail = {
   technicalSpec: TechnicalSpec | null;
 };
 
-type RelatedVideo = {
-  id: string;
-  title: string;
-  streamUid: string | null;
-  thumbnailUrl: string | null;
-  createdAt: string;
-  owner: { name: string; chineseName?: string | null };
-  technicalSpec: { duration: number | null } | null;
-};
-
 /* ─── Config ─── */
 const statusConfig: Record<string, { label: string; className: string }> = {
   DRAFT: { label: "임시저장", className: "bg-slate-500/20 text-slate-300 border-slate-500/30" },

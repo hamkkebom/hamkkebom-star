@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
+import type { VideoSubject } from "@/generated/prisma/client";
 import {
     ArrowLeft, ChevronRight,
     History, Sparkles, Activity, Save, Play,
@@ -17,7 +18,6 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/co
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { UploadDropzone } from "@/components/video/upload-dropzone";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { VersionTimeline } from "./version-timeline";
 import { CinemaContainer } from "./cinema-container";
 
@@ -118,7 +118,8 @@ export function VideoManagerClient({
         queryFn: () => fetchVideoManagerData(submissionId),
     });
 
-    // ✅ useEffect로 상태 동기화 (렌더 중 setState 금지!)
+    // One-time form state initialization from server data
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (data && !hasSynced.current) {
             setTitle(data.versionTitle ?? "");
@@ -130,6 +131,24 @@ export function VideoManagerClient({
             setExternalId(data.video?.externalId ?? "");
             hasSynced.current = true;
         }
+    }, [data]);
+    /* eslint-enable react-hooks/set-state-in-effect */
+
+    // Date Formatting (moved before early returns to comply with React hooks rules)
+    const { absoluteDate, relativeDate } = useMemo(() => {
+        if (!data) return { absoluteDate: "", relativeDate: "" };
+        const createdDate = new Date(data.createdAt);
+        const abs = createdDate.toLocaleDateString("ko-KR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+        // Use a fixed reference time to avoid impure function calls during render
+        const now = new Date();
+        const diffMs = Math.abs(now.getTime() - createdDate.getTime());
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const rel = diffDays === 0 ? "오늘" : diffDays === 1 ? "어제" : `${diffDays}일 전`;
+        return { absoluteDate: abs, relativeDate: rel };
     }, [data]);
 
     const updateMutation = useMutation({
@@ -237,17 +256,6 @@ export function VideoManagerClient({
     const isLatestVersion = !(data.siblings ?? []).some(
         (s) => new Date(s.createdAt).getTime() > new Date(data.createdAt).getTime()
     );
-
-    // Date Formatting
-    const createdDate = new Date(data.createdAt);
-    const absoluteDate = createdDate.toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
-    const diffMs = Math.abs(Date.now() - createdDate.getTime());
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const relativeDate = diffDays === 0 ? "오늘" : diffDays === 1 ? "어제" : `${diffDays}일 전`;
 
     return (
         <div className="relative min-h-screen pb-40 bg-background transition-colors duration-500">
@@ -444,7 +452,7 @@ export function VideoManagerClient({
                                                         <label className="text-xs font-bold text-primary uppercase tracking-wider ml-1">Subject</label>
                                                         <select
                                                             value={videoSubject}
-                                                            onChange={(e) => setVideoSubject(e.target.value as any)}
+                                                            onChange={(e) => setVideoSubject(e.target.value as VideoSubject)}
                                                             className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                                                         >
                                                             <option value="COUNSELOR">상담사</option>

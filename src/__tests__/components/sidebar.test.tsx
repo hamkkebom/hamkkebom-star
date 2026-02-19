@@ -10,6 +10,20 @@ vi.mock("next/link", () => ({
 let mockPathname = "/stars/dashboard";
 vi.mock("next/navigation", () => ({
   usePathname: () => mockPathname,
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+}));
+
+// Mock Supabase client
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: { signOut: vi.fn().mockResolvedValue({}) },
+  }),
+}));
+
+// Mock TanStack Query
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: () => ({ data: null, isLoading: false }),
+  useQueryClient: () => ({}),
 }));
 
 const { Sidebar } = await import("@/components/layout/sidebar");
@@ -33,23 +47,15 @@ describe("Sidebar", () => {
   it("renders all main navigation items", () => {
     render(<Sidebar />);
     expect(screen.getByText("대시보드")).toBeInTheDocument();
-    expect(screen.getByText("제작요청 게시판")).toBeInTheDocument();
     expect(screen.getByText("내 영상 관리")).toBeInTheDocument();
-    expect(screen.getByText("영상 업로드")).toBeInTheDocument();
+    expect(screen.getByText("프로젝트 찾기 & 제출")).toBeInTheDocument();
     expect(screen.getByText("피드백 확인")).toBeInTheDocument();
-    expect(screen.getByText("정산 내역")).toBeInTheDocument();
-    expect(screen.getByText("포트폴리오")).toBeInTheDocument();
-  });
-
-  it("renders external navigation items", () => {
-    render(<Sidebar />);
-    expect(screen.getByText("영상 브라우저")).toBeInTheDocument();
   });
 
   it("renders bottom navigation items", () => {
     render(<Sidebar />);
-    expect(screen.getByText("프로필")).toBeInTheDocument();
     expect(screen.getByText("설정")).toBeInTheDocument();
+    expect(screen.getByText("로그아웃")).toBeInTheDocument();
   });
 
   it("renders correct nav links", () => {
@@ -57,29 +63,25 @@ describe("Sidebar", () => {
     const links = screen.getAllByRole("link");
     const hrefs = links.map((l) => l.getAttribute("href"));
     expect(hrefs).toContain("/stars/dashboard");
-    expect(hrefs).toContain("/stars/project-board");
     expect(hrefs).toContain("/stars/my-videos");
     expect(hrefs).toContain("/stars/upload");
     expect(hrefs).toContain("/stars/feedback");
-    expect(hrefs).toContain("/stars/earnings");
-    expect(hrefs).toContain("/stars/portfolio");
     expect(hrefs).toContain("/");
-    expect(hrefs).toContain("/stars/profile");
     expect(hrefs).toContain("/stars/settings");
   });
 
   it("applies active styles for current path", () => {
-    mockPathname = "/stars/project-board";
+    mockPathname = "/stars/my-videos";
     const { container } = render(<Sidebar />);
-    const projectLink = screen.getByText("제작요청 게시판").closest("a");
-    expect(projectLink?.className).toContain("bg-primary/10");
+    const myVideosLink = screen.getByText("내 영상 관리").closest("a");
+    expect(myVideosLink?.className).toContain("bg-sidebar-accent/60");
   });
 
   it("does not apply active styles to non-matching paths", () => {
     mockPathname = "/stars/dashboard";
     render(<Sidebar />);
-    const projectLink = screen.getByText("제작요청 게시판").closest("a");
-    expect(projectLink?.className).not.toContain("bg-primary/10");
+    const myVideosLink = screen.getByText("내 영상 관리").closest("a");
+    expect(myVideosLink?.className).not.toContain("bg-sidebar-accent/60");
   });
 
   it("renders aside element with correct width class", () => {

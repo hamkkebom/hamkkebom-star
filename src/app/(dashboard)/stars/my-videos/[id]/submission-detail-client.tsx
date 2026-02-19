@@ -12,7 +12,7 @@ import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackList } from "@/components/feedback/feedback-list";
 import { AiTodoList } from "@/components/feedback/ai-todo-list";
 import { AiInsightsPanel } from "@/components/feedback/ai-insights-panel";
-import {
+import { type LucideIcon,
   ArrowLeft,
   Calendar,
   Clock,
@@ -25,10 +25,7 @@ import {
   Loader2,
   MoreVertical,
   Maximize2,
-  LayoutGrid,
-  Sparkles,
-  Zap,
-  Moon
+  LayoutGrid
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -65,7 +62,7 @@ type SubmissionDetail = {
   };
 };
 
-const statusMap: Record<SubmissionStatus, { label: string; className: string; icon: any; glowColor: string }> = {
+const statusMap: Record<SubmissionStatus, { label: string; className: string; icon: LucideIcon; glowColor: string }> = {
   PENDING: {
     label: "대기중",
     className: "bg-slate-500/90 text-white border-slate-400/20 shadow-[0_0_10px_rgba(100,116,139,0.3)]",

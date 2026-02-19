@@ -8,7 +8,7 @@ import { Search, Sparkles, MoveRight, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 type StarItem = {
@@ -31,19 +31,14 @@ type StarsResponse = {
 function StarsContent() {
   const [search, setSearch] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
-  const [page, setPageState] = useState(1);
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  // URL ?page= 파라미터에서 초기 페이지 읽기
-  useEffect(() => {
-    const urlPage = Number(searchParams.get("page")) || 1;
-    if (urlPage !== page) setPageState(urlPage);
-  }, [searchParams]);
+  // URL ?page= 파라미터에서 페이지 직접 파생 (state 불필요)
+  const page = Number(searchParams.get("page")) || 1;
 
   const setPage = useCallback((newPage: number) => {
-    setPageState(newPage);
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(newPage));
     router.push(`${pathname}?${params.toString()}`, { scroll: false });

@@ -4,14 +4,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
     FileVideo, HardDrive, Hash, Type,
-    Database, Calendar, Lock, Unlock,
-    Save, X
+    Database, Lock, Save, X
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface PropertyInspectorProps {
     data: {

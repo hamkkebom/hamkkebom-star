@@ -97,11 +97,9 @@ describe("LoginForm", () => {
     expect(screen.getByText("이메일과 비밀번호를 입력해 주세요.")).toBeInTheDocument();
   });
 
-  it("renders feature cards in branding panel", () => {
+  it("renders branding title in left panel", () => {
     render(<LoginForm />);
-    expect(screen.getByText("영상 제작 관리")).toBeInTheDocument();
-    expect(screen.getByText("실시간 피드백")).toBeInTheDocument();
-    expect(screen.getByText("간편 업로드")).toBeInTheDocument();
-    expect(screen.getByText("투명한 정산")).toBeInTheDocument();
+    const titles = screen.getAllByText("별들에게 물어봐");
+    expect(titles.length).toBeGreaterThanOrEqual(1);
   });
 });

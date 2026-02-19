@@ -51,16 +51,10 @@ describe("PublicHeader", () => {
     vi.clearAllMocks();
   });
 
-  it("영상 라이브러리 링크가 '/'를 가리킨다", () => {
+  it("로고가 '/'를 가리킨다", () => {
     render(<PublicHeader />);
-    const link = screen.getByText("영상 라이브러리").closest("a");
-    expect(link).toHaveAttribute("href", "/");
-  });
-
-  it("스타 소개 링크가 '/stars'를 가리킨다", () => {
-    render(<PublicHeader />);
-    const link = screen.getByText("스타 소개").closest("a");
-    expect(link).toHaveAttribute("href", "/stars");
+    const logoLink = screen.getByText("함께봄").closest("a");
+    expect(logoLink).toHaveAttribute("href", "/");
   });
 
   it("설명회 링크가 존재하지 않는다", () => {
@@ -74,20 +68,6 @@ describe("PublicHeader", () => {
     const links = header.querySelectorAll("a");
     const videoLinks = Array.from(links).filter((link) => link.getAttribute("href") === "/videos");
     expect(videoLinks).toHaveLength(0);
-  });
-
-  it("pathname '/'에서 영상 라이브러리가 활성 스타일을 가진다", () => {
-    mockPathname = "/";
-    render(<PublicHeader />);
-    const link = screen.getByText("영상 라이브러리");
-    expect(link.className).toContain("bg-violet-50");
-  });
-
-  it("pathname '/stars'에서 영상 라이브러리가 비활성이다", () => {
-    mockPathname = "/stars";
-    render(<PublicHeader />);
-    const link = screen.getByText("영상 라이브러리");
-    expect(link.className).not.toContain("bg-violet-50");
   });
 
   it("isLoading=true일 때 로그인 버튼과 Avatar 모두 미표시", () => {
@@ -105,11 +85,27 @@ describe("PublicHeader", () => {
     expect(screen.getByText("로그인")).toBeInTheDocument();
   });
 
-  it("로그인 상태에서 Avatar+DropdownMenu 표시, 로그인 버튼 미표시", () => {
+  it("로그인 상태에서 마이페이지 버튼 표시, 로그인 버튼 미표시", () => {
     mockUser = { id: "1", name: "Test User", role: "STAR", email: "test@test.com" };
     mockIsLoading = false;
     render(<PublicHeader />);
     expect(screen.queryByText("로그인")).toBeNull();
-    expect(screen.getByText("U")).toBeInTheDocument();
+    expect(screen.getByText("마이페이지")).toBeInTheDocument();
+  });
+
+  it("STAR 사용자는 마이페이지에서 /stars/dashboard로 이동", () => {
+    mockUser = { id: "1", name: "Test User", role: "STAR", email: "test@test.com" };
+    mockIsLoading = false;
+    render(<PublicHeader />);
+    const myPageLink = screen.getByText("마이페이지").closest("a");
+    expect(myPageLink).toHaveAttribute("href", "/stars/dashboard");
+  });
+
+  it("ADMIN 사용자는 마이페이지에서 /admin으로 이동", () => {
+    mockUser = { id: "1", name: "Test User", role: "ADMIN", email: "test@test.com" };
+    mockIsLoading = false;
+    render(<PublicHeader />);
+    const myPageLink = screen.getByText("마이페이지").closest("a");
+    expect(myPageLink).toHaveAttribute("href", "/admin");
   });
 });

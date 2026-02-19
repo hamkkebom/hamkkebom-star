@@ -66,9 +66,9 @@ describe("RequestCard", () => {
     expect(screen.getByText("예산 500,000원")).toBeInTheDocument();
   });
 
-  it("renders 미정 when budget is null", () => {
+  it("does not render budget when budget is null", () => {
     render(<RequestCard request={{ ...defaultRequest, estimatedBudget: null }} />);
-    expect(screen.getByText("예산 미정")).toBeInTheDocument();
+    expect(screen.queryByText(/예산/)).toBeNull();
   });
 
   it("renders assignee count", () => {

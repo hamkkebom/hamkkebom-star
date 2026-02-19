@@ -67,6 +67,7 @@ const navGroups: NavGroup[] = [
     color: "emerald",
     children: [
       { href: "/admin/users", label: "가입자 관리", icon: UserCheck },
+      { href: "/admin/users/assign", label: "담당 관리", icon: Users },
       { href: "/admin/stars", label: "STAR 관리", icon: Users },
     ],
   },
@@ -130,7 +131,11 @@ function SidebarGroup({
   pathname: string;
 }) {
   const colors = colorMap[group.color];
-  const hasActiveChild = group.children.some((c) => pathname.startsWith(c.href));
+  const hasActiveChild = group.children.some((c) => pathname === c.href || pathname.startsWith(c.href + "/"));
+  // 가장 구체적인(긴) 매칭 href 찾기 — 부모/자식 경로 중복 활성화 방지
+  const activeHref = group.children
+    .filter(c => pathname === c.href || pathname.startsWith(c.href + "/"))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
     <div className="relative">
@@ -219,7 +224,7 @@ function SidebarGroup({
 
               <div className="space-y-0.5">
                 {group.children.map((child, childIdx) => {
-                  const isActive = pathname.startsWith(child.href);
+                  const isActive = child.href === activeHref;
                   return (
                     <motion.div
                       key={child.href}

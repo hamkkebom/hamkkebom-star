@@ -1,34 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-type UserRole = "ADMIN" | "STAR";
-
-function getRoleFromClaims(claims: unknown): UserRole | null {
-  if (!claims || typeof claims !== "object") {
-    return null;
-  }
-
-  const claimsRecord = claims as Record<string, unknown>;
-  const appMetadata =
-    claimsRecord.app_metadata && typeof claimsRecord.app_metadata === "object"
-      ? (claimsRecord.app_metadata as Record<string, unknown>)
-      : null;
-  const userMetadata =
-    claimsRecord.user_metadata && typeof claimsRecord.user_metadata === "object"
-      ? (claimsRecord.user_metadata as Record<string, unknown>)
-      : null;
-
-  const roleCandidates = [appMetadata?.role, userMetadata?.role];
-
-  for (const candidate of roleCandidates) {
-    if (candidate === "ADMIN" || candidate === "STAR") {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
 function getAuthIdFromClaims(claims: unknown): string | null {
   if (!claims || typeof claims !== "object") {
     return null;

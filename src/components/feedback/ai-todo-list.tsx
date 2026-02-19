@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Sparkles, Zap, Moon, Loader2, Play, RotateCcw } from "lucide-react";
+import { CheckCircle2, Sparkles, Loader2, Play, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
 import { Badge } from "@/components/ui/badge";
@@ -106,7 +106,7 @@ export function AiTodoList({ submissionId }: { submissionId: string }) {
     const queryClient = useQueryClient();
     const [checked, setChecked] = useState<Set<number>>(new Set());
 
-    const { data: analysis, isLoading } = useQuery({
+    const { data: analysis } = useQuery({
         queryKey: ["ai-analysis", submissionId],
         queryFn: () => fetchAiAnalysis(submissionId),
         refetchInterval: (query) => {

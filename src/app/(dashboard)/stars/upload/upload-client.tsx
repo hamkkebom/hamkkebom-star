@@ -6,6 +6,7 @@ import { ko } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { VideoSubject } from "@/generated/prisma/client";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle
 } from "@/components/ui/card";
@@ -21,7 +22,6 @@ import { SubmissionList } from "@/components/video/submission-list";
 import { NanoFileUpload } from "@/components/ui/nano-file-upload";
 import { SpecialProjectCard } from "@/components/video/special-project-card";
 import {
-  ClipboardList,
   FolderOpen,
   CheckCircle2,
   Clock,
@@ -91,7 +91,6 @@ export function UploadPageClient({
 }) {
   const router = useRouter();
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
-  const [versionSlot, setVersionSlot] = useState(1);
   const [versionTitle, setVersionTitle] = useState("");
   const [description, setDescription] = useState("");
   const [lyrics, setLyrics] = useState(""); // New Link: Lyrics
@@ -270,7 +269,7 @@ export function UploadPageClient({
               <div>
                 <h4 className="font-bold text-sm text-zinc-700 dark:text-zinc-200">탐색 (Explore)</h4>
                 <p className="text-xs text-zinc-500 mt-1">
-                  '프로젝트 찾기' 탭에서<br />새로운 의뢰 확인
+                  &apos;프로젝트 찾기&apos; 탭에서<br />새로운 의뢰 확인
                 </p>
               </div>
             </div>
@@ -557,7 +556,7 @@ export function UploadPageClient({
                           <select
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             value={videoSubject}
-                            onChange={(e) => setVideoSubject(e.target.value as any)}
+                            onChange={(e) => setVideoSubject(e.target.value as VideoSubject)}
                           >
                             <option value="COUNSELOR">상담사 (Counselor)</option>
                             <option value="BRAND">브랜드 (Brand)</option>
@@ -673,7 +672,6 @@ export function UploadPageClient({
                 const dDay = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
                 const isUrgent = dDay >= 0 && dDay <= 3;
-                const isVeryUrgent = dDay >= 0 && dDay <= 1;
                 const isClosed = req.status === "CLOSED" || req.status === "FULL" || dDay < 0;
                 const isMyProject = !!req.myAssignmentStatus;
 

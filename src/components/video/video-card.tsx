@@ -17,6 +17,8 @@ type VideoCardProps = {
   createdAt: string;
   /** When true, renders a compact card for swimlane layout */
   compact?: boolean;
+  /** When true, loads image eagerly (use for above-the-fold LCP images) */
+  priority?: boolean;
 };
 
 /** Static thumbnail URL */
@@ -47,6 +49,7 @@ export function VideoCard({
   categoryName,
   createdAt,
   compact = false,
+  priority = false,
 }: VideoCardProps) {
   const thumb = getStaticThumb(streamUid, thumbnailUrl);
   const [isHovered, setIsHovered] = useState(false);
@@ -84,6 +87,7 @@ export function VideoCard({
                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                  className={`object-cover transition-all duration-500 ${showAnimated ? "opacity-0" : "opacity-100 group-hover:scale-105"}`}
                  onError={() => setThumbFailed(true)}
+                 priority={priority}
                />
                {/* Animated GIF (shown on hover) */}
                {showAnimated && streamUid && (

@@ -153,9 +153,10 @@ export async function analyzeVideo(videoUrl: string): Promise<AiAnalysisResult> 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
             return await _callGemini(videoUrl);
-        } catch (err: any) {
-            lastError = err;
-            const is429 = err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("RESOURCE_EXHAUSTED");
+        } catch (err: unknown) {
+            lastError = err instanceof Error ? err : new Error(String(err));
+            const errObj = err as Record<string, unknown>;
+            const is429 = errObj?.status === 429 || lastError.message?.includes("429") || lastError.message?.includes("RESOURCE_EXHAUSTED");
 
             if (is429 && attempt < MAX_RETRIES) {
                 const delay = BASE_DELAY_MS * Math.pow(2, attempt); // 10s, 20s, 40s
@@ -165,7 +166,7 @@ export async function analyzeVideo(videoUrl: string): Promise<AiAnalysisResult> 
             }
 
             // 모든 재시도 실패 시 mock 데이터로 폴백 (사용자에게 에러 대신 결과 표시)
-            console.warn(`[Gemini] API 호출 실패 — mock 데이터로 폴백:`, err?.message);
+            console.warn(`[Gemini] API 호출 실패 — mock 데이터로 폴백:`, lastError.message);
             return getMockResult();
         }
     }

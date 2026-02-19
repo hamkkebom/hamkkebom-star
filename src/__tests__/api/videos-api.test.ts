@@ -26,6 +26,11 @@ vi.mock("@/generated/prisma/client", () => ({
     FINAL: "FINAL",
     ARCHIVED: "ARCHIVED",
   },
+  VideoSubject: {
+    COUNSELOR: "COUNSELOR",
+    BRAND: "BRAND",
+    OTHER: "OTHER",
+  },
 }));
 
 // --- Helpers ---
