@@ -187,17 +187,17 @@ export function AdminRequestsPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">제작요청 관리</h1>
+          <h1 className="text-2xl font-bold">프로젝트 관리</h1>
           <p className="text-sm text-muted-foreground">요청을 생성하고 상태를 관리할 수 있습니다.</p>
         </div>
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
-            <Button>새 요청 생성</Button>
+            <Button>프로젝트 생성</Button>
           </DialogTrigger>
           <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
             <DialogHeader>
-              <DialogTitle>새 제작요청 생성</DialogTitle>
+              <DialogTitle>새 프로젝트 생성</DialogTitle>
               <DialogDescription>필수 정보를 입력한 뒤 요청을 생성하세요.</DialogDescription>
             </DialogHeader>
             <RequestForm

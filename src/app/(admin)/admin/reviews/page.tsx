@@ -150,7 +150,7 @@ export default function AdminReviewsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">영상 리뷰</h1>
+        <h1 className="text-2xl font-bold">피드백 작성</h1>
         <p className="text-sm text-muted-foreground">
           제출된 영상을 리뷰하고 피드백을 작성하세요.
         </p>
