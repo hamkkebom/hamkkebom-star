@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,8 +31,13 @@ type UserData = {
 export default function AdminSettingsPage() {
     const supabase = createClient();
     const router = useRouter();
+    const queryClient = useQueryClient();
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+    // Name change
+    const [newName, setNewName] = useState("");
+    const [changingName, setChangingName] = useState(false);
 
     // Email change
     const [newEmail, setNewEmail] = useState("");
@@ -53,6 +58,51 @@ export default function AdminSettingsPage() {
             return json.data;
         },
     });
+
+    useEffect(() => {
+        if (data?.name) {
+            setNewName(data.name);
+        }
+    }, [data?.name]);
+
+    async function handleNameChange() {
+        const trimmed = newName.trim();
+        if (!trimmed) {
+            toast.error("이름을 입력해주세요.");
+            return;
+        }
+        if (trimmed.length < 2) {
+            toast.error("이름은 2자 이상이어야 합니다.");
+            return;
+        }
+        if (trimmed === data?.name) {
+            toast.error("현재 이름과 동일합니다.");
+            return;
+        }
+
+        setChangingName(true);
+        try {
+            const res = await fetch("/api/users/me", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: trimmed }),
+            });
+
+            if (!res.ok) {
+                const json = await res.json();
+                throw new Error(json.error?.message || "이름 변경 실패");
+            }
+
+            toast.success("이름이 변경되었습니다.");
+            queryClient.invalidateQueries({ queryKey: ["user-me"] });
+        } catch (err) {
+            toast.error(
+                err instanceof Error ? err.message : "이름 변경 요청에 실패했습니다."
+            );
+        } finally {
+            setChangingName(false);
+        }
+    }
 
     async function handleEmailChangeRequest() {
         const trimmed = newEmail.trim();
@@ -161,6 +211,36 @@ export default function AdminSettingsPage() {
                             </div>
                         </div>
                     )}
+                </CardContent>
+            </Card>
+
+            {/* 이름 변경 */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">이름 변경</CardTitle>
+                    <CardDescription>
+                        표시될 이름을 변경합니다. (최소 2자 이상)
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="change-name-input">새 이름</Label>
+                        <Input
+                            id="change-name-input"
+                            name="change-name-input"
+                            type="text"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            placeholder="홍길동"
+                            disabled={changingName}
+                        />
+                    </div>
+                    <Button
+                        onClick={handleNameChange}
+                        disabled={changingName || !newName.trim() || newName.trim() === data?.name}
+                    >
+                        {changingName ? "변경 중..." : "이름 변경"}
+                    </Button>
                 </CardContent>
             </Card>
 
