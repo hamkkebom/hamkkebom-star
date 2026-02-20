@@ -21,6 +21,9 @@ model User {
   chineseName     String?
   externalId      String?             @unique
   isApproved      Boolean             @default(false)
+  idNumber        String?
+  bankName        String?
+  bankAccount     String?
   feedbacks       Feedback[]          @relation("AuthoredFeedbacks")
   portfolio       Portfolio?
   assignments     ProjectAssignment[]
@@ -217,6 +220,7 @@ model Settlement {
   totalAmount Decimal          @default(0) @db.Decimal(12, 2)
   status      SettlementStatus @default(PENDING)
   note        String?
+  paymentDate DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   items       SettlementItem[]
@@ -229,18 +233,31 @@ model Settlement {
 model SettlementItem {
   id             String     @id @default(cuid())
   settlementId   String
-  submissionId   String     @unique
+  submissionId   String?    @unique
   starId         String
   baseAmount     Decimal    @db.Decimal(10, 2)
   adjustedAmount Decimal?   @db.Decimal(10, 2)
   finalAmount    Decimal    @db.Decimal(10, 2)
+  description    String?
+  itemType       String     @default("SUBMISSION")
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   settlement     Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
   star           User       @relation(fields: [starId], references: [id])
-  submission     Submission @relation(fields: [submissionId], references: [id])
+  submission     Submission? @relation(fields: [submissionId], references: [id])
 
   @@map("settlement_items")
+}
+
+model SystemSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  label     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
 }
 
 model Portfolio {

@@ -137,7 +137,11 @@ describe("POST /api/settlements/generate", () => {
         itemCount: 3,
       },
     ];
-    mockTransaction.mockResolvedValue(settlements);
+    mockTransaction.mockResolvedValue({
+      created: settlements,
+      skippedStars: [],
+      completedStars: [],
+    });
 
     const res = await POST(makeRequest({ year: 2026, month: 1 }));
     const json = await res.json();

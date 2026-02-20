@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { SettlementStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { maskIdNumber } from "@/lib/settlement-utils";
 
 const settlementStatuses = new Set(Object.values(SettlementStatus));
 
@@ -71,6 +72,10 @@ export async function GET(request: Request) {
             name: true,
             chineseName: true,
             email: true,
+            phone: true,
+            idNumber: true,
+            bankName: true,
+            bankAccount: true,
           },
         },
         _count: {
@@ -86,8 +91,16 @@ export async function GET(request: Request) {
     prisma.settlement.count({ where }),
   ]);
 
+  const maskedRows = rows.map((row) => ({
+    ...row,
+    star: {
+      ...row.star,
+      idNumber: row.star.idNumber ? maskIdNumber(row.star.idNumber) : null,
+    },
+  }));
+
   return NextResponse.json({
-    data: rows,
+    data: maskedRows,
     total,
     page,
     pageSize,

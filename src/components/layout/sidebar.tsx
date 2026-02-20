@@ -8,6 +8,7 @@ import { type LucideIcon,
   Clapperboard, // More vibrant than Film
   Rocket,
   MessageCircleHeart, // Friendlier than MessageSquare
+  Wallet,
   Settings,
   LogOut,
   Sparkles,
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
     isSpecial: true
   },
   { href: "/stars/feedback", label: "피드백 확인", icon: MessageCircleHeart }, // Updated Icon
+  { href: "/stars/earnings", label: "수입 관리", icon: Wallet },
 ];
 
 export function Sidebar() {

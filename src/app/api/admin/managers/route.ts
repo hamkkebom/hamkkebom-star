@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
                 name,
                 authId: authData.user.id,
                 role: "ADMIN",
+                isApproved: true,
                 avatarUrl: null,
             },
         });

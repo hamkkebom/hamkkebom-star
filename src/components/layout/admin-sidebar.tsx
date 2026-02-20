@@ -73,7 +73,6 @@ const navGroups: NavGroup[] = [
       { href: "/admin/users", label: "모든 계정 관리", icon: UserCheck },
       { href: "/admin/admins", label: "관리자 계정 관리", icon: UserCog },
       { href: "/admin/users/assign", label: "담당 STAR 배정", icon: Users },
-      { href: "/admin/stars", label: "STAR 관리", icon: Users },
     ],
   },
   {
@@ -83,6 +82,7 @@ const navGroups: NavGroup[] = [
     color: "amber",
     children: [
       { href: "/admin/settlements", label: "정산 관리", icon: DollarSign },
+      { href: "/admin/stars", label: "단가 설정", icon: Wallet },
     ],
   },
 ];

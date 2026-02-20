@@ -53,7 +53,7 @@ export default function AdminStarsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">STAR 관리</h1>
+        <h1 className="text-2xl font-bold">단가 설정</h1>
         <p className="text-sm text-muted-foreground">STAR 회원 목록을 관리하고 단가를 설정하세요. ({data?.total ?? 0}명)</p>
       </div>
 

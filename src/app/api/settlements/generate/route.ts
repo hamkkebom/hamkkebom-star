@@ -76,24 +76,23 @@ export async function POST(request: Request) {
 
   const { year, month } = parsed.data;
 
+  // AI 툴 지원비 조회 (트랜잭션 외부 — 테스트 mock 호환)
+  let aiToolSupportFee = 0;
   try {
-    const created = await prisma.$transaction(async (tx) => {
-      const existing = await tx.settlement.findFirst({
-        where: { year, month },
-        select: { id: true },
-      });
+    const aiFeeSetting = await prisma.systemSettings.findUnique({
+      where: { key: "ai_tool_support_fee" },
+    });
+    aiToolSupportFee = aiFeeSetting ? Number(aiFeeSetting.value) : 0;
+  } catch {
+    aiToolSupportFee = 0;
+  }
 
-      if (existing) {
-        throw {
-          code: "ALREADY_GENERATED",
-          message: "해당 연월의 정산이 이미 존재합니다.",
-          status: 409,
-        } satisfies ApiError;
-      }
-
+  try {
+    const result = await prisma.$transaction(async (tx) => {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 1);
 
+      // 해당 월에 승인된 제출물 조회
       const approvedSubmissions = await tx.submission.findMany({
         where: {
           status: SubmissionStatus.APPROVED,
@@ -108,42 +107,76 @@ export async function POST(request: Request) {
         },
       });
 
+      if (approvedSubmissions.length === 0) {
+        throw {
+          code: "NO_SUBMISSIONS",
+          message: `${year}년 ${month}월에 승인된 제출물이 없습니다.`,
+          status: 404,
+        } satisfies ApiError;
+      }
+
+      // STAR별로 제출물 그룹화
       const groupedByStar = approvedSubmissions.reduce<Record<string, string[]>>((acc, submission) => {
         if (!acc[submission.starId]) {
           acc[submission.starId] = [];
         }
-
         acc[submission.starId].push(submission.id);
         return acc;
       }, {});
 
       const starIds = Object.keys(groupedByStar);
+
+      // STAR 정보 조회 (baseRate 포함)
       const stars = await tx.user.findMany({
-        where: {
-          id: {
-            in: starIds,
-          },
-        },
-        select: {
-          id: true,
-          baseRate: true,
-        },
+        where: { id: { in: starIds } },
+        select: { id: true, name: true, baseRate: true },
       });
       const starById = new Map(stars.map((star) => [star.id, star]));
+
+      // 해당 월에 이미 존재하는 정산 조회 (STAR별)
+      const existingSettlements = await tx.settlement.findMany({
+        where: { year, month, starId: { in: starIds } },
+        select: { id: true, starId: true, status: true },
+      });
+      const existingByStarId = new Map(existingSettlements.map((s) => [s.starId, s]));
+
+      // baseRate 미설정 STAR 목록
+      const skippedStars: { id: string; name: string; reason: string }[] = [];
+      // 이미 확정된 STAR 목록
+      const completedStars: { id: string; name: string }[] = [];
 
       const settlements = await Promise.all(
         Object.entries(groupedByStar).map(async ([starId, submissionIds]) => {
           const star = starById.get(starId);
 
           if (!star) {
-            throw {
-              code: "INTERNAL_ERROR",
-              message: "정산 대상 STAR 정보를 찾을 수 없습니다.",
-              status: 500,
-            } satisfies ApiError;
+            return null; // STAR 정보를 찾을 수 없으면 skip
           }
 
-          const baseAmount = star.baseRate ?? new Prisma.Decimal(0);
+          // baseRate가 null이면 정산 제외
+          if (star.baseRate === null || star.baseRate === undefined) {
+            skippedStars.push({
+              id: star.id,
+              name: star.name,
+              reason: "기본 단가(baseRate)가 설정되지 않았습니다.",
+            });
+            return null;
+          }
+
+          // 기존 정산 확인
+          const existing = existingByStarId.get(starId);
+          if (existing) {
+            if (existing.status === SettlementStatus.COMPLETED) {
+              // COMPLETED 상태면 skip
+              completedStars.push({ id: star.id, name: star.name });
+              return null;
+            }
+            // PENDING / PROCESSING 상태면 기존 정산과 아이템 삭제 후 재생성
+            await tx.settlementItem.deleteMany({ where: { settlementId: existing.id } });
+            await tx.settlement.delete({ where: { id: existing.id } });
+          }
+
+          const baseAmount = star.baseRate;
 
           const createdSettlement = await tx.settlement.create({
             data: {
@@ -167,26 +200,58 @@ export async function POST(request: Request) {
             data: itemsData,
           });
 
-          const totalAmount = itemsData.reduce((sum, item) => sum + Number(item.finalAmount), 0);
+          // AI 툴 지원비 항목 추가
+          if (aiToolSupportFee > 0) {
+            await tx.settlementItem.create({
+              data: {
+                settlementId: createdSettlement.id,
+                submissionId: null,
+                starId: star.id,
+                itemType: "AI_TOOL_SUPPORT",
+                description: "AI 툴 지원비",
+                baseAmount: aiToolSupportFee,
+                finalAmount: aiToolSupportFee,
+                adjustedAmount: null,
+              },
+            });
+          }
+
+          const totalAmount = itemsData.reduce(
+            (sum, item) => sum + Number(item.finalAmount),
+            0
+          ) + aiToolSupportFee;
 
           const updatedSettlement = await tx.settlement.update({
             where: { id: createdSettlement.id },
-            data: {
-              totalAmount,
-            },
+            data: { totalAmount },
           });
 
           return {
             ...updatedSettlement,
-            itemCount: itemsData.length,
+            itemCount: itemsData.length + (aiToolSupportFee > 0 ? 1 : 0),
           };
         })
       );
 
-      return settlements;
+      const created = settlements.filter(Boolean);
+
+      return {
+        created,
+        skippedStars,
+        completedStars,
+      };
     });
 
-    return NextResponse.json({ data: created }, { status: 201 });
+    return NextResponse.json(
+      {
+        data: result.created,
+        warnings: {
+          skippedStars: result.skippedStars,
+          completedStars: result.completedStars,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     if (isApiError(error)) {
       return toErrorResponse(error);

@@ -9,5 +9,11 @@ export const adjustItemSchema = z.object({
   adjustedAmount: z.number().nonnegative("조정 금액은 0 이상이어야 합니다."),
 });
 
+export const updateSettlementConfigSchema = z.object({
+  key: z.string().min(1, "키는 필수입니다."),
+  value: z.string().min(0, "값은 필수입니다."),
+});
+
 export type GenerateSettlementInput = z.infer<typeof generateSettlementSchema>;
 export type AdjustItemInput = z.infer<typeof adjustItemSchema>;
+export type UpdateSettlementConfigInput = z.infer<typeof updateSettlementConfigSchema>;

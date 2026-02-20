@@ -4,15 +4,19 @@ export type {
   ProjectRequest,
   ProjectAssignment,
   Submission,
+  AiAnalysis,
   Feedback,
   Video,
   VideoTechnicalSpec,
   VideoEventLog,
   Settlement,
   SettlementItem,
+  SystemSettings,
   Portfolio,
   PortfolioItem,
   Category,
+  Counselor,
+  MediaPlacement,
 } from "@/generated/prisma/client";
 
 export {
