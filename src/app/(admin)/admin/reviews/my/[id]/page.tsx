@@ -21,7 +21,7 @@ export default function ReviewDetailPage() {
 
     if (isLoading) {
         return (
-            <div className="flex h-[calc(100vh-4rem)] w-full items-center justify-center bg-[#050508]">
+            <div className="flex h-[calc(100vh-4rem)] w-full items-center justify-center bg-slate-50 dark:bg-[#050508]">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
                     <p className="text-sm font-medium text-slate-500 animate-pulse">상세 워크스페이스 로딩 중...</p>
@@ -32,7 +32,7 @@ export default function ReviewDetailPage() {
 
     if (error) {
         return (
-            <div className="p-8 bg-[#050508] h-full flex items-center justify-center">
+            <div className="p-8 bg-slate-50 dark:bg-[#050508] h-full flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2 p-6 rounded-xl border border-red-500/50 bg-red-500/10 text-red-400 max-w-md text-center">
                     <AlertCircle className="h-8 w-8 mb-2" />
                     <h3 className="text-lg font-bold">오류 발생</h3>

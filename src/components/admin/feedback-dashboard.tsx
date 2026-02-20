@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,7 +13,7 @@ import { ko } from "date-fns/locale";
 import {
     Search, Play, Clock, MessageSquare,
     Sparkles, LayoutGrid, ArrowRight,
-    Eye, Film, Zap, TrendingUp
+    Eye, Zap, TrendingUp
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ type Submission = {
     createdAt: string;
     streamUid?: string | null;
     thumbnailUrl?: string | null;
+    signedThumbnailUrl?: string | null;
     video: {
         id: string;
         title: string;
@@ -54,17 +55,11 @@ type Submission = {
 };
 
 // ============================================================
-//  THUMBNAIL HELPERS (Cloudflare Stream 기반)
+//  THUMBNAIL HELPERS (서명된 URL 사용)
 // ============================================================
 function getStaticThumb(sub: Submission): string | null {
-    const uid = sub.streamUid || sub.video?.streamUid;
-    if (uid) return `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg?width=640&height=360&fit=crop`;
-    return sub.thumbnailUrl || sub.video?.thumbnailUrl || null;
-}
-
-function getAnimatedThumb(sub: Submission): string | null {
-    const uid = sub.streamUid || sub.video?.streamUid;
-    if (uid) return `https://videodelivery.net/${uid}/thumbnails/thumbnail.gif?duration=4s&width=640&height=360&fit=crop`;
+    // API에서 생성한 서명된 썸네일 URL 우선 사용
+    if (sub.signedThumbnailUrl) return sub.signedThumbnailUrl;
     return null;
 }
 
@@ -126,53 +121,30 @@ const FILTERS = [
 // ============================================================
 function ThumbnailPreview({ sub }: { sub: Submission }) {
     const staticThumb = getStaticThumb(sub);
-    const animatedThumb = getAnimatedThumb(sub);
-    const [isHovered, setIsHovered] = useState(false);
     const [thumbError, setThumbError] = useState(false);
-    const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const handleMouseEnter = useCallback(() => {
-        hoverTimer.current = setTimeout(() => setIsHovered(true), 400);
-    }, []);
-
-    const handleMouseLeave = useCallback(() => {
-        if (hoverTimer.current) clearTimeout(hoverTimer.current);
-        setIsHovered(false);
-    }, []);
 
     return (
         <div
             className="relative aspect-video overflow-hidden bg-slate-200 dark:bg-black rounded-t-2xl"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
         >
             {staticThumb && !thumbError ? (
-                <>
-                    <Image
-                        src={staticThumb}
-                        alt=""
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        className={cn(
-                            "object-cover transition-all duration-700",
-                            isHovered && animatedThumb ? "opacity-0 scale-110" : "opacity-90 group-hover:opacity-100 group-hover:scale-105"
-                        )}
-                        onError={() => setThumbError(true)}
-                    />
-                    {isHovered && animatedThumb && (
-                        <Image
-                            src={animatedThumb}
-                            alt=""
-                            fill
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            className="object-cover"
-                            unoptimized
-                        />
-                    )}
-                </>
+                <Image
+                    src={staticThumb}
+                    alt={sub.video?.title || "영상 썸네일"}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={() => setThumbError(true)}
+                />
             ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-950/80 dark:to-purple-950/80">
-                    <Film className="w-12 h-12 text-indigo-300 dark:text-indigo-700/50" />
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-inner">
+                            <Play className="w-8 h-8 text-indigo-400 dark:text-indigo-500/70 fill-indigo-400/20 dark:fill-indigo-500/20" />
+                        </div>
+                        <span className="text-[10px] font-semibold text-indigo-400/70 dark:text-indigo-600/70 tracking-wider uppercase">Preview</span>
+                    </div>
                 </div>
             )}
 
@@ -485,7 +457,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                         className="flex flex-col items-center justify-center py-32 text-center"
                     >
                         <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] flex items-center justify-center mb-6">
-                            <Film className="w-10 h-10 text-indigo-400/50 dark:text-indigo-500/50" />
+                            <Play className="w-10 h-10 text-indigo-400/50 dark:text-indigo-500/50" />
                         </div>
                         <h3 className="text-lg font-bold text-slate-500 dark:text-slate-400 mb-2">표시할 항목이 없습니다</h3>
                         <p className="text-sm text-slate-400 dark:text-slate-600 max-w-sm">

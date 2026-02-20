@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
+import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
+import { extractR2Key, getPresignedGetUrl } from "@/lib/cloudflare/r2-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -71,7 +73,56 @@ export async function GET(_req: NextRequest) {
             orderBy: { createdAt: "asc" },
         });
 
-        return NextResponse.json({ data: submissions });
+        // 각 submission의 서명된 썸네일 URL 생성 (submissions/my와 동일 로직)
+        const submissionsWithThumbnails = await Promise.all(
+            submissions.map(async (row) => {
+                let signedThumbnailUrl: string | null = null;
+
+                // 1순위: Video.thumbnailUrl이 R2 URL이면 → presigned GET URL
+                const videoThumbUrl = row.video?.thumbnailUrl;
+                if (videoThumbUrl) {
+                    const r2Key = extractR2Key(videoThumbUrl);
+                    if (r2Key) {
+                        try {
+                            signedThumbnailUrl = await getPresignedGetUrl(r2Key);
+                        } catch {
+                            // R2 실패 시 fallback
+                        }
+                    }
+                }
+
+                // 2순위: Submission.thumbnailUrl이 R2 URL이면 → presigned GET URL
+                if (!signedThumbnailUrl && row.thumbnailUrl) {
+                    const r2Key = extractR2Key(row.thumbnailUrl);
+                    if (r2Key) {
+                        try {
+                            signedThumbnailUrl = await getPresignedGetUrl(r2Key);
+                        } catch {
+                            // ignore
+                        }
+                    }
+                }
+
+                // 3순위: Cloudflare Stream 서명 썸네일
+                if (!signedThumbnailUrl) {
+                    const uid = row.streamUid || row.video?.streamUid;
+                    if (uid) {
+                        try {
+                            const token = await getSignedPlaybackToken(uid);
+                            if (token) {
+                                signedThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+                            }
+                        } catch {
+                            // ignore
+                        }
+                    }
+                }
+
+                return { ...row, signedThumbnailUrl };
+            })
+        );
+
+        return NextResponse.json({ data: submissionsWithThumbnails });
 
     } catch (err) {
         console.error("Fetch My Reviews Error:", err);

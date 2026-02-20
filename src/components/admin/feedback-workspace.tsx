@@ -99,18 +99,18 @@ type ReviewAction = "APPROVE" | "REJECT" | "REQUEST_CHANGES";
 // ============================================================
 
 const FEEDBACK_TYPES: { value: FeedbackType; label: string; icon: typeof Zap; color: string }[] = [
-    { value: "GENERAL", label: "일반", icon: MessageSquare, color: "text-slate-400 bg-slate-500/10 border-slate-500/20" },
-    { value: "SUBTITLE", label: "자막", icon: Type, color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
-    { value: "BGM", label: "BGM", icon: Music, color: "text-pink-400 bg-pink-500/10 border-pink-500/20" },
-    { value: "CUT_EDIT", label: "컷 편집", icon: Scissors, color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
-    { value: "COLOR_GRADE", label: "색보정", icon: Palette, color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
+    { value: "GENERAL", label: "일반", icon: MessageSquare, color: "text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-slate-500/10 dark:border-slate-500/20" },
+    { value: "SUBTITLE", label: "자막", icon: Type, color: "text-cyan-600 bg-cyan-50 border-cyan-200 dark:text-cyan-400 dark:bg-cyan-500/10 dark:border-cyan-500/20" },
+    { value: "BGM", label: "BGM", icon: Music, color: "text-pink-600 bg-pink-50 border-pink-200 dark:text-pink-400 dark:bg-pink-500/10 dark:border-pink-500/20" },
+    { value: "CUT_EDIT", label: "컷 편집", icon: Scissors, color: "text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20" },
+    { value: "COLOR_GRADE", label: "색보정", icon: Palette, color: "text-violet-600 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-500/10 dark:border-violet-500/20" },
 ];
 
 const PRIORITY_OPTIONS: { value: FeedbackPriority; label: string; color: string; dot: string }[] = [
-    { value: "LOW", label: "낮음", color: "text-slate-400", dot: "bg-slate-400" },
-    { value: "NORMAL", label: "보통", color: "text-blue-400", dot: "bg-blue-400" },
-    { value: "HIGH", label: "높음", color: "text-orange-400", dot: "bg-orange-400" },
-    { value: "URGENT", label: "긴급", color: "text-red-400", dot: "bg-red-400" },
+    { value: "LOW", label: "낮음", color: "text-slate-600 dark:text-slate-400", dot: "bg-slate-500 dark:bg-slate-400" },
+    { value: "NORMAL", label: "보통", color: "text-blue-600 dark:text-blue-400", dot: "bg-blue-500 dark:bg-blue-400" },
+    { value: "HIGH", label: "높음", color: "text-orange-600 dark:text-orange-400", dot: "bg-orange-500 dark:bg-orange-400" },
+    { value: "URGENT", label: "긴급", color: "text-red-600 dark:text-red-400", dot: "bg-red-500 dark:bg-red-400" },
 ];
 
 const TYPE_LABELS: Record<FeedbackType, string> = {
@@ -118,18 +118,18 @@ const TYPE_LABELS: Record<FeedbackType, string> = {
 };
 
 const TYPE_COLORS: Record<FeedbackType, string> = {
-    GENERAL: "border-slate-500/30 bg-slate-500/10 text-slate-300",
-    SUBTITLE: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300",
-    BGM: "border-pink-500/30 bg-pink-500/10 text-pink-300",
-    CUT_EDIT: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-    COLOR_GRADE: "border-violet-500/30 bg-violet-500/10 text-violet-300",
+    GENERAL: "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/10 dark:text-slate-300",
+    SUBTITLE: "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-300",
+    BGM: "border-pink-200 bg-pink-50 text-pink-700 dark:border-pink-500/30 dark:bg-pink-500/10 dark:text-pink-300",
+    CUT_EDIT: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
+    COLOR_GRADE: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300",
 };
 
 const PRIORITY_BADGE: Record<FeedbackPriority, string> = {
-    LOW: "border-slate-500/20 bg-slate-500/5 text-slate-500",
-    NORMAL: "border-blue-500/20 bg-blue-500/5 text-blue-400",
-    HIGH: "border-orange-500/20 bg-orange-500/5 text-orange-400",
-    URGENT: "border-red-500/20 bg-red-500/5 text-red-400 animate-pulse",
+    LOW: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-500/20 dark:bg-slate-500/5 dark:text-slate-500",
+    NORMAL: "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-500/20 dark:bg-blue-500/5 dark:text-blue-400",
+    HIGH: "border-orange-200 bg-orange-50 text-orange-600 dark:border-orange-500/20 dark:bg-orange-500/5 dark:text-orange-400",
+    URGENT: "border-red-200 bg-red-50 text-red-600 animate-pulse dark:border-red-500/20 dark:bg-red-500/5 dark:text-red-400",
 };
 
 // ============================================================
@@ -338,7 +338,7 @@ export function FeedbackWorkspace({
 
     return (
         <TooltipProvider>
-            <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#080810] text-slate-200 font-sans selection:bg-indigo-500/30">
+            <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-slate-50 dark:bg-[#080810] text-slate-800 dark:text-slate-200 font-sans selection:bg-indigo-500/30">
 
                 {/* ================================================================
                     LEFT PANEL: QUEUE
@@ -348,7 +348,7 @@ export function FeedbackWorkspace({
                         initial={{ width: 380, opacity: 0 }}
                         animate={{ width: selectedId ? 320 : 380, opacity: 1 }}
                         transition={{ duration: 0.4, type: "spring", stiffness: 120, damping: 20 }}
-                        className="flex flex-col border-r border-white/[0.06] bg-[#0c0c14] relative z-20"
+                        className="flex flex-col border-r border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0c0c14] relative z-20"
                     >
                         {/* Header */}
                         <div className="p-5 pb-2">
@@ -504,7 +504,7 @@ export function FeedbackWorkspace({
                                 {/* Video Area */}
                                 <div className="flex-1 flex flex-col relative">
                                     {/* Top Toolbar */}
-                                    <div className="h-12 border-b border-white/[0.06] bg-[#0c0c14]/90 backdrop-blur-xl flex items-center justify-between px-5 z-30">
+                                    <div className="h-12 border-b border-slate-200 dark:border-white/[0.06] bg-white/90 dark:bg-[#0c0c14]/90 backdrop-blur-xl flex items-center justify-between px-5 z-30">
                                         <div className="flex items-center gap-3">
                                             {isStandalone && (
                                                 <Link href="/admin/reviews/my">
@@ -513,7 +513,7 @@ export function FeedbackWorkspace({
                                                     </Button>
                                                 </Link>
                                             )}
-                                            <h2 className="text-sm font-bold text-white tracking-tight truncate max-w-[300px]">
+                                            <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate max-w-[300px]">
                                                 {selectedSubmission.video?.title || "영상"}
                                             </h2>
                                             <Badge className="bg-white/[0.06] text-slate-400 hover:bg-white/10 border-0 text-[10px] h-5">
@@ -559,7 +559,7 @@ export function FeedbackWorkspace({
                                     </div>
 
                                     {/* Timeline Bar */}
-                                    <div className="h-12 bg-[#0c0c14] border-t border-white/[0.06] px-5 flex items-center">
+                                    <div className="h-12 bg-white dark:bg-[#0c0c14] border-t border-slate-200 dark:border-white/[0.06] px-5 flex items-center">
                                         <div className="flex items-center gap-3 w-full max-w-3xl mx-auto">
                                             <span className="text-[10px] font-mono text-slate-500 w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
                                             <input
@@ -578,17 +578,17 @@ export function FeedbackWorkspace({
                                 {/* ================================================================
                                     RIGHT PANEL: FEEDBACK COMPOSER + HISTORY
                                    ================================================================ */}
-                                <div className="w-[400px] border-l border-white/[0.06] bg-[#0c0c14] flex flex-col relative z-20">
+                                <div className="w-[400px] border-l border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0c0c14] flex flex-col relative z-20">
                                     <Tabs defaultValue="compose" className="flex flex-col h-full">
                                         <div className="px-4 pt-3 pb-1">
-                                            <TabsList className="w-full bg-white/[0.04] h-8">
-                                                <TabsTrigger value="compose" className="flex-1 text-xs data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
+                                            <TabsList className="w-full bg-slate-100 dark:bg-white/[0.04] h-8">
+                                                <TabsTrigger value="compose" className="flex-1 text-xs text-slate-500 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-300 dark:data-[state=active]:shadow-none">
                                                     ✏️ 피드백 작성
                                                 </TabsTrigger>
-                                                <TabsTrigger value="history" className="flex-1 text-xs data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
+                                                <TabsTrigger value="history" className="flex-1 text-xs text-slate-500 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-300 dark:data-[state=active]:shadow-none">
                                                     📋 피드백 ({feedbacksRaw.length})
                                                 </TabsTrigger>
-                                                <TabsTrigger value="info" className="flex-1 text-xs data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
+                                                <TabsTrigger value="info" className="flex-1 text-xs text-slate-500 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-300 dark:data-[state=active]:shadow-none">
                                                     ℹ️ 정보
                                                 </TabsTrigger>
                                             </TabsList>
@@ -600,7 +600,7 @@ export function FeedbackWorkspace({
                                                 <div className="p-4 space-y-5">
                                                     {/* Feedback Type Selector — Chip Style */}
                                                     <div className="space-y-2">
-                                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                                             <Tag className="w-3 h-3" /> 피드백 유형
                                                         </label>
                                                         <div className="flex flex-wrap gap-1.5">
@@ -617,7 +617,7 @@ export function FeedbackWorkspace({
                                                                             "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200",
                                                                             isActive
                                                                                 ? `${ft.color} ring-1 ring-current/20 shadow-sm`
-                                                                                : "border-white/[0.06] bg-white/[0.02] text-slate-500 hover:bg-white/[0.05] hover:text-slate-300"
+                                                                                : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:border-white/[0.06] dark:bg-white/[0.02] dark:hover:bg-white/[0.05] dark:hover:text-slate-300"
                                                                         )}
                                                                     >
                                                                         <Icon className="w-3.5 h-3.5" />
@@ -630,7 +630,7 @@ export function FeedbackWorkspace({
 
                                                     {/* Priority Selector — Pill Style */}
                                                     <div className="space-y-2">
-                                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                                             <Flag className="w-3 h-3" /> 우선순위
                                                         </label>
                                                         <div className="flex gap-1.5">
@@ -646,7 +646,7 @@ export function FeedbackWorkspace({
                                                                             "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold border transition-all duration-200",
                                                                             isActive
                                                                                 ? `${pr.color} border-current/20 bg-current/5`
-                                                                                : "border-white/[0.06] bg-white/[0.02] text-slate-600 hover:text-slate-400 hover:bg-white/[0.04]"
+                                                                                : "border-slate-200 bg-slate-50 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-slate-400 dark:hover:text-slate-300 dark:hover:bg-white/[0.04]"
                                                                         )}
                                                                     >
                                                                         <div className={cn("w-1.5 h-1.5 rounded-full", isActive ? pr.dot : "bg-slate-600")} />
@@ -661,7 +661,7 @@ export function FeedbackWorkspace({
 
                                                     {/* Timecode Capture */}
                                                     <div className="space-y-2">
-                                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                                             <Clock className="w-3 h-3" /> 타임스탬프
                                                         </label>
                                                         <div className="flex items-center gap-2">
@@ -672,8 +672,8 @@ export function FeedbackWorkspace({
                                                                 className={cn(
                                                                     "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all duration-200",
                                                                     isTimeCaptured
-                                                                        ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-300"
-                                                                        : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06] hover:text-white"
+                                                                        ? "border-indigo-300 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-300 shadow-sm"
+                                                                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
                                                                 )}
                                                             >
                                                                 <Clock className="w-3.5 h-3.5" />
@@ -688,7 +688,7 @@ export function FeedbackWorkspace({
                                                                     exit={{ scale: 0, opacity: 0 }}
                                                                     whileHover={{ scale: 1.1 }}
                                                                     onClick={clearCapturedTime}
-                                                                    className="w-8 h-8 rounded-lg border border-white/[0.08] bg-white/[0.03] flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                                                    className="w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:text-red-400 dark:hover:bg-red-500/10 dark:hover:border-red-500/20 transition-colors"
                                                                 >
                                                                     <X className="w-3.5 h-3.5" />
                                                                 </motion.button>
@@ -698,14 +698,14 @@ export function FeedbackWorkspace({
 
                                                     {/* Feedback Text */}
                                                     <div className="space-y-2">
-                                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                                             <MessageSquare className="w-3 h-3" /> 피드백 내용
                                                         </label>
                                                         <Textarea
                                                             value={feedbackText}
                                                             onChange={(e) => setFeedbackText(e.target.value)}
                                                             placeholder="구체적인 피드백을 작성해주세요... (Shift+Enter로 줄바꿈)"
-                                                            className="min-h-[120px] bg-white/[0.03] border-white/[0.06] focus:border-indigo-500/40 focus:bg-white/[0.05] resize-none text-sm rounded-xl py-3 leading-relaxed transition-all"
+                                                            className="min-h-[120px] bg-slate-50 border-slate-200 focus:border-indigo-400 focus:bg-white dark:bg-white/[0.03] dark:border-white/[0.06] dark:focus:border-indigo-500/40 dark:focus:bg-white/[0.05] resize-none text-sm rounded-xl py-3 leading-relaxed transition-all"
                                                             onKeyDown={(e) => {
                                                                 if (e.key === "Enter" && !e.shiftKey) {
                                                                     e.preventDefault();
@@ -718,7 +718,7 @@ export function FeedbackWorkspace({
                                             </ScrollArea>
 
                                             {/* Submit Bar */}
-                                            <div className="p-4 border-t border-white/[0.06] bg-[#0a0a12]">
+                                            <div className="p-4 border-t border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0a0a12]">
                                                 <div className="flex items-center gap-2 mb-3">
                                                     {/* Summary of current form state */}
                                                     <Badge className={cn("text-[9px] h-5 border", TYPE_COLORS[feedbackType])}>

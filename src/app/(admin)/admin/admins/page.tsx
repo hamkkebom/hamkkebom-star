@@ -55,7 +55,7 @@ function AdminCard({ admin, isMe, onDelete }: { admin: AdminUser; isMe: boolean;
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
-            className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md transition-all hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/10"
+            className="group relative overflow-hidden rounded-3xl border border-border/50 bg-background/50 p-6 backdrop-blur-md transition-all hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/10 dark:border-white/10 dark:bg-white/5"
         >
             {/* Background Gradient Animation */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
@@ -64,7 +64,7 @@ function AdminCard({ admin, isMe, onDelete }: { admin: AdminUser; isMe: boolean;
                 {/* Avatar Ring */}
                 <div className="relative mb-4">
                     <div className="absolute -inset-1 animate-pulse rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 opacity-20 blur-md transition-opacity group-hover:opacity-40" />
-                    <Avatar className="h-20 w-20 border-2 border-white/10 shadow-xl">
+                    <Avatar className="h-20 w-20 border-2 border-border shadow-xl dark:border-white/10">
                         <AvatarImage src={admin.avatarUrl || undefined} />
                         <AvatarFallback className="bg-gradient-to-br from-slate-800 to-slate-900 text-xl font-bold text-white">
                             {admin.name.substring(0, 2)}
@@ -75,20 +75,20 @@ function AdminCard({ admin, isMe, onDelete }: { admin: AdminUser; isMe: boolean;
                     </div>
                 </div>
 
-                <h3 className="mb-1 text-lg font-bold text-slate-100">{admin.name}</h3>
-                <p className="mb-4 text-xs font-medium text-slate-400">{admin.email}</p>
+                <h3 className="mb-1 text-lg font-bold text-foreground">{admin.name}</h3>
+                <p className="mb-4 text-xs font-medium text-muted-foreground">{admin.email}</p>
 
                 {/* Stats */}
-                <div className="mb-6 flex w-full justify-center gap-4 border-y border-white/5 py-3">
+                <div className="mb-6 flex w-full justify-center gap-4 border-y border-border/50 py-3 dark:border-white/5">
                     <div className="flex flex-col items-center">
-                        <span className="text-xs text-slate-500">담당 STAR</span>
-                        <span className="text-lg font-bold text-indigo-400 tabular-nums">
+                        <span className="text-xs text-muted-foreground">담당 STAR</span>
+                        <span className="text-lg font-bold text-indigo-500 tabular-nums dark:text-indigo-400">
                             {admin._count.managedStars}
                         </span>
                     </div>
-                    <div className="flex flex-col items-center border-l border-white/5 pl-4">
-                        <span className="text-xs text-slate-500">가입일</span>
-                        <span className="text-xs font-medium text-slate-300">
+                    <div className="flex flex-col items-center border-l border-border/50 pl-4 dark:border-white/5">
+                        <span className="text-xs text-muted-foreground">가입일</span>
+                        <span className="text-xs font-medium text-foreground/80 dark:text-slate-300">
                             {new Date(admin.createdAt).toLocaleDateString()}
                         </span>
                     </div>
@@ -100,13 +100,13 @@ function AdminCard({ admin, isMe, onDelete }: { admin: AdminUser; isMe: boolean;
                         variant="ghost"
                         size="sm"
                         onClick={() => onDelete(admin.id)}
-                        className="w-full rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 transition-all hover:bg-red-500/20 hover:text-red-300"
+                        className="w-full rounded-xl border border-red-500/20 bg-red-500/5 text-red-500 transition-all hover:bg-red-500/20 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
                     >
                         <Trash2 className="mr-2 h-4 w-4" />
                         계정 삭제
                     </Button>
                 ) : (
-                    <div className="flex h-9 w-full items-center justify-center rounded-xl bg-indigo-500/10 text-xs font-bold text-indigo-400">
+                    <div className="flex h-9 w-full items-center justify-center rounded-xl bg-indigo-500/10 text-xs font-bold text-indigo-600 dark:text-indigo-400">
                         현재 로그인 중
                     </div>
                 )}
@@ -485,9 +485,9 @@ export default function AdminsPage() {
                     <motion.button
                         layout
                         onClick={() => setIsModalOpen(true)}
-                        className="group flex h-[280px] flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-white/10 bg-white/5 p-6 text-slate-400 transition-all hover:border-indigo-500/50 hover:bg-indigo-500/5 hover:text-indigo-400"
+                        className="group flex h-[280px] flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-border bg-background/50 p-6 text-muted-foreground transition-all hover:border-indigo-500/50 hover:bg-indigo-500/5 hover:text-indigo-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:text-indigo-400"
                     >
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/5 transition-all group-hover:scale-110 group-hover:bg-indigo-500/20">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted transition-all group-hover:scale-110 group-hover:bg-indigo-500/20 dark:bg-white/5">
                             <Plus className="h-8 w-8" />
                         </div>
                         <span className="font-bold">새 관리자 등록하기</span>
