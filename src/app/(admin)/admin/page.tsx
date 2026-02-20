@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { WorkflowDashboard } from "@/components/admin/workflow-dashboard";
-import { SubmissionStatus } from "@prisma/client";
+import { SubmissionStatus } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
