@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(_req: NextRequest) {
     try {
         const supabase = await createClient();
@@ -20,7 +22,7 @@ export async function GET(_req: NextRequest) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        // 담당하는 STAR의 대기중/리뷰중 제출 조회
+        // 담당하는 STAR의 대기중/피드백중 제출 조회
         const submissions = await prisma.submission.findMany({
             where: {
                 star: {

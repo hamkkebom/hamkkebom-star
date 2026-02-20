@@ -140,7 +140,7 @@ function CreateAdminModal({ isOpen, onClose, onCreate }: { isOpen: boolean; onCl
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/10 bg-slate-900 shadow-2xl"
+                        className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-border bg-background shadow-2xl"
                     >
                         <div className="relative overflow-hidden rounded-3xl p-6">
                             {/* Header Gradient */}
@@ -148,10 +148,10 @@ function CreateAdminModal({ isOpen, onClose, onCreate }: { isOpen: boolean; onCl
 
                             <div className="mb-6 flex items-start justify-between">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white">새 관리자 추가</h2>
-                                    <p className="text-sm text-slate-400">새로운 관리자 계정을 생성합니다.</p>
+                                    <h2 className="text-xl font-bold text-foreground">새 관리자 추가</h2>
+                                    <p className="text-sm text-muted-foreground">새로운 관리자 계정을 생성합니다.</p>
                                 </div>
-                                <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-white/10 hover:text-white">
+                                <button onClick={onClose} className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
                                     <X className="h-5 w-5" />
                                 </button>
                             </div>
@@ -159,11 +159,11 @@ function CreateAdminModal({ isOpen, onClose, onCreate }: { isOpen: boolean; onCl
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                                 <div className="space-y-2">
                                     <div className="relative">
-                                        <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                                        <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                         <Input
                                             placeholder="이름 (예: 김관리)"
                                             {...register("name")}
-                                            className="pl-10 bg-slate-950/50 border-white/10 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                                            className="pl-10 bg-muted/50 border-input font-medium focus:ring-indigo-500/20"
                                         />
                                     </div>
                                     {errors.name && <p className="text-xs text-red-500 ml-1">{errors.name.message}</p>}
@@ -171,11 +171,11 @@ function CreateAdminModal({ isOpen, onClose, onCreate }: { isOpen: boolean; onCl
 
                                 <div className="space-y-2">
                                     <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                                        <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                         <Input
                                             placeholder="이메일 (예: admin@example.com)"
                                             {...register("email")}
-                                            className="pl-10 bg-slate-950/50 border-white/10 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                                            className="pl-10 bg-muted/50 border-input font-medium focus:ring-indigo-500/20"
                                         />
                                     </div>
                                     {errors.email && <p className="text-xs text-red-500 ml-1">{errors.email.message}</p>}
@@ -183,12 +183,12 @@ function CreateAdminModal({ isOpen, onClose, onCreate }: { isOpen: boolean; onCl
 
                                 <div className="space-y-2">
                                     <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                         <Input
                                             type="password"
                                             placeholder="비밀번호 (6자리 이상)"
                                             {...register("password")}
-                                            className="pl-10 bg-slate-950/50 border-white/10 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                                            className="pl-10 bg-muted/50 border-input font-medium focus:ring-indigo-500/20"
                                         />
                                     </div>
                                     {errors.password && <p className="text-xs text-red-500 ml-1">{errors.password.message}</p>}
@@ -207,6 +207,117 @@ function CreateAdminModal({ isOpen, onClose, onCreate }: { isOpen: boolean; onCl
                                             </>
                                         ) : (
                                             "관리자 계정 생성"
+                                        )}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
+    );
+}
+
+function DeleteAdminModal({
+    isOpen,
+    onClose,
+    onConfirm,
+    adminName
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (password: string) => void;
+    adminName: string;
+}) {
+    const [password, setPassword] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!password) {
+            toast.error("비밀번호를 입력해주세요.");
+            return;
+        }
+        setIsSubmitting(true);
+        await onConfirm(password);
+        setIsSubmitting(false);
+        setPassword("");
+    };
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+                    />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-destructive/20 bg-background shadow-2xl"
+                    >
+                        <div className="relative overflow-hidden rounded-3xl p-6">
+                            <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-red-500 to-rose-500" />
+
+                            <div className="mb-6 flex items-start justify-between">
+                                <div>
+                                    <h2 className="text-xl font-bold text-destructive">관리자 계정 삭제</h2>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        <strong className="text-foreground">{adminName}</strong> 관리자 계정을 완전히 삭제합니다. 이 작업은 되돌릴 수 없습니다.
+                                    </p>
+                                </div>
+                                <button onClick={onClose} className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-foreground">
+                                        삭제 시 본인(현재 관리자)의 비밀번호를 입력해주세요.
+                                    </label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                        <Input
+                                            type="password"
+                                            placeholder="비밀번호 본인 확인"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="pl-10 bg-muted/50 border-input font-medium focus:ring-destructive/20"
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 grid grid-cols-2 gap-3">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={onClose}
+                                        className="w-full rounded-xl"
+                                        disabled={isSubmitting}
+                                    >
+                                        취소
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        variant="destructive"
+                                        className="w-full font-bold rounded-xl shadow-lg shadow-destructive/25 transition-all active:scale-[0.98]"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                삭제 중...
+                                            </>
+                                        ) : (
+                                            "계정 영구 삭제"
                                         )}
                                     </Button>
                                 </div>
@@ -263,19 +374,34 @@ export default function AdminsPage() {
 
     // 3. Delete Mutation
     const deleteMutation = useMutation({
-        mutationFn: async (id: string) => {
-            // TODO: Implement DELETE API
-            // const res = await fetch(`/api/admin/managers/${id}`, { method: "DELETE" });
-            // if (!res.ok) throw new Error("Failed");
-
-            // 임시로 알림만 (API 아직 없으므로)
-            return new Promise((resolve) => setTimeout(resolve, 500));
+        mutationFn: async ({ id, password }: { id: string, password: string }) => {
+            const res = await fetch(`/api/admin/managers/${id}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password }),
+            });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error || "삭제에 실패했습니다.");
+            }
+            return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admins"] });
-            toast.success("관리자 계정이 삭제되었습니다.");
+            setDeleteModalState({ isOpen: false, adminId: null, adminName: "" });
+            toast.success("관리자 계정이 성공적으로 삭제되었습니다.");
         },
-        onError: () => toast.error("삭제 실패")
+        onError: (err) => toast.error(err.message)
+    });
+
+    const [deleteModalState, setDeleteModalState] = useState<{
+        isOpen: boolean;
+        adminId: string | null;
+        adminName: string;
+    }>({
+        isOpen: false,
+        adminId: null,
+        adminName: ""
     });
 
     // Fetch current user info for "isMe" check (Simple approach: check email from another query or store)
@@ -345,10 +471,11 @@ export default function AdminsPage() {
                                 admin={admin}
                                 isMe={me?.email === admin.email} // Simple check
                                 onDelete={(id) => {
-                                    if (confirm("정말 이 관리자 계정을 삭제하시겠습니까? (되돌릴 수 없습니다)")) {
-                                        // deleteMutation.mutate(id);
-                                        toast.info("삭제 기능은 안전을 위해 아직 비활성화되어 있습니다.");
-                                    }
+                                    setDeleteModalState({
+                                        isOpen: true,
+                                        adminId: id,
+                                        adminName: admin.name
+                                    });
                                 }}
                             />
                         ))}
@@ -373,6 +500,20 @@ export default function AdminsPage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onCreate={(data) => createMutation.mutate(data)}
+            />
+
+            <DeleteAdminModal
+                isOpen={deleteModalState.isOpen}
+                onClose={() => setDeleteModalState({ isOpen: false, adminId: null, adminName: "" })}
+                adminName={deleteModalState.adminName}
+                onConfirm={async (password) => {
+                    if (deleteModalState.adminId) {
+                        await deleteMutation.mutateAsync({
+                            id: deleteModalState.adminId,
+                            password
+                        });
+                    }
+                }}
             />
         </div>
     );

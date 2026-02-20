@@ -241,7 +241,29 @@ export function FeedbackWorkspace({
             setFeedbackText("");
             setIsTimeCaptured(false);
             setCapturedTime(null);
+
+            // 등록에 성공하면 현재 선택된 영상의 status를 프론트엔드 레벨에서 IN_REVIEW 상태로 만듦
+            if (selectedId) {
+                setSubmissions(prev =>
+                    prev.map(sub =>
+                        sub.id === selectedId
+                            ? {
+                                ...sub,
+                                status: "IN_REVIEW",
+                                _count: {
+                                    ...sub._count,
+                                    feedbacks: (sub._count?.feedbacks || 0) + 1
+                                }
+                            }
+                            : sub
+                    )
+                );
+            }
+            // 그리고 IN_REVIEW(피드백중) 탭으로 화면 전환
+            setFilter("IN_REVIEW");
+
             queryClient.invalidateQueries({ queryKey: ["feedbacks", selectedId] });
+            queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
             toast.success("피드백이 등록되었습니다 ✨");
         },
         onError: (err) => toast.error(err instanceof Error ? err.message : "피드백 등록 실패")
@@ -358,7 +380,7 @@ export function FeedbackWorkspace({
                                 {[
                                     { id: "ALL", label: "전체" },
                                     { id: "PENDING", label: "대기" },
-                                    { id: "IN_REVIEW", label: "작업중" }
+                                    { id: "IN_REVIEW", label: "피드백중" }
                                 ].map(tab => (
                                     <button
                                         key={tab.id}
@@ -436,7 +458,7 @@ export function FeedbackWorkspace({
                                                             "text-xs font-semibold truncate leading-tight transition-colors",
                                                             selectedId === sub.id ? "text-white" : "text-slate-300 group-hover:text-white"
                                                         )}>
-                                                            {sub.video?.title || sub.assignment?.request.title || "제목 없음"}
+                                                            {sub.video?.title || sub.assignment?.request.title || sub.versionTitle || "제목 없음"}
                                                         </h3>
                                                         <div className="flex items-center gap-1.5 mt-1">
                                                             <span className="text-[9px] text-slate-600">
@@ -564,7 +586,7 @@ export function FeedbackWorkspace({
                                                     ✏️ 피드백 작성
                                                 </TabsTrigger>
                                                 <TabsTrigger value="history" className="flex-1 text-xs data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
-                                                    📋 히스토리 ({feedbacksRaw.length})
+                                                    📋 피드백 ({feedbacksRaw.length})
                                                 </TabsTrigger>
                                                 <TabsTrigger value="info" className="flex-1 text-xs data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
                                                     ℹ️ 정보

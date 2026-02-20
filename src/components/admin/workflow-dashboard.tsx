@@ -53,7 +53,7 @@ const STATUS_CONFIG: Record<SubmissionStatus, {
         icon: Clock,
     },
     IN_REVIEW: {
-        label: "리뷰중 (In Review)",
+        label: "피드백중 (In Review)",
         description: "관리자 피드백 작성 중",
         color: "from-blue-500 to-indigo-500",
         icon: FileText,

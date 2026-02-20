@@ -8,7 +8,7 @@ export default function MyReviewsPage() {
     const { data: submissions, isLoading, error } = useQuery({
         queryKey: ["my-reviews"],
         queryFn: async () => {
-            const res = await fetch("/api/admin/reviews/my");
+            const res = await fetch("/api/admin/reviews/my", { cache: "no-store" });
             if (!res.ok) throw new Error("Failed to fetch reviews");
             const json = await res.json();
             return json.data;

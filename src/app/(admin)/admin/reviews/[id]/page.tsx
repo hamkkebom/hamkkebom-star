@@ -54,7 +54,7 @@ const statusColors: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   PENDING: "대기",
-  IN_REVIEW: "검수중",
+  IN_REVIEW: "피드백중",
   APPROVED: "승인",
   REJECTED: "반려",
   REVISED: "수정요청",

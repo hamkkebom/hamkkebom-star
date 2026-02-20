@@ -73,7 +73,7 @@ const statusMap: Record<SubmissionStatus, { label: string; className: string; ic
     icon: Loader2
   },
   IN_REVIEW: {
-    label: "리뷰중",
+    label: "피드백중",
     className: "bg-violet-600 text-white border-violet-400/20 ring-1 ring-violet-500/50 shadow-[0_0_15px_rgba(124,58,237,0.5)] animate-pulse-subtle",
     icon: PlayCircle
   },
@@ -97,7 +97,7 @@ const statusMap: Record<SubmissionStatus, { label: string; className: string; ic
 const statusFilters: { value: string; label: string }[] = [
   { value: "ALL", label: "전체" },
   { value: "PENDING", label: "대기중" },
-  { value: "IN_REVIEW", label: "리뷰중" },
+  { value: "IN_REVIEW", label: "피드백중" },
   { value: "APPROVED", label: "승인됨" },
   { value: "REJECTED", label: "반려됨" },
   { value: "REVISED", label: "수정됨" },

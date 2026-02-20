@@ -116,9 +116,9 @@ const PARTICLES_OPTIONS = {
 //  FILTER TABS
 // ============================================================
 const FILTERS = [
-    { key: "ALL", label: "전체", icon: LayoutGrid },
     { key: "PENDING", label: "대기중", icon: Clock, color: "text-amber-500 dark:text-amber-400" },
-    { key: "IN_REVIEW", label: "작업중", icon: Eye, color: "text-indigo-500 dark:text-indigo-400" },
+    { key: "IN_REVIEW", label: "피드백중", icon: Eye, color: "text-indigo-500 dark:text-indigo-400" },
+    { key: "ALL", label: "전체", icon: LayoutGrid },
 ];
 
 // ============================================================
@@ -204,7 +204,7 @@ function ThumbnailPreview({ sub }: { sub: Submission }) {
 //  MAIN DASHBOARD COMPONENT
 // ============================================================
 export function FeedbackDashboard({ submissions }: { submissions: Submission[] }) {
-    const [filter, setFilter] = useState("ALL");
+    const [filter, setFilter] = useState("PENDING");
     const [searchQuery, setSearchQuery] = useState("");
     const [particlesReady, setParticlesReady] = useState(false);
 
@@ -290,7 +290,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                         {[
                             { label: "전체", value: stats.total, gradient: "from-slate-500 to-slate-400", ring: "ring-slate-300/40 dark:ring-slate-500/20", icon: TrendingUp, iconColor: "#94a3b8" },
                             { label: "대기중", value: stats.pending, gradient: "from-amber-500 to-orange-400", ring: "ring-amber-300/40 dark:ring-amber-500/20", icon: Clock, iconColor: "#f59e0b" },
-                            { label: "작업중", value: stats.inReview, gradient: "from-indigo-500 to-purple-400", ring: "ring-indigo-300/40 dark:ring-indigo-500/20", icon: Zap, iconColor: "#6366f1" },
+                            { label: "피드백중", value: stats.inReview, gradient: "from-indigo-500 to-purple-400", ring: "ring-indigo-300/40 dark:ring-indigo-500/20", icon: Zap, iconColor: "#6366f1" },
                         ].map((stat, i) => (
                             <motion.div
                                 key={stat.label}
@@ -382,7 +382,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                                     exit={{ opacity: 0, scale: 0.9, y: -20 }}
                                     transition={{ delay: index * 0.05, duration: 0.4, type: "spring", stiffness: 150 }}
                                 >
-                                    <Link href={`/admin/reviews/my/${sub.id}`} className="block group">
+                                    <Link href={`/admin/reviews/my/${sub.id}`} prefetch={false} className="block group">
                                         <Atropos
                                             className="my-atropos"
                                             activeOffset={40}
@@ -409,7 +409,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                                                     )}
                                                     {isInReview && (
                                                         <Badge className="bg-indigo-100/90 text-indigo-700 border-indigo-300/50 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30 backdrop-blur-xl shadow-sm dark:shadow-lg dark:shadow-indigo-500/10 text-[11px] animate-pulse">
-                                                            <Eye className="w-3 h-3 mr-1" />작업중
+                                                            <Eye className="w-3 h-3 mr-1" />피드백중
                                                         </Badge>
                                                     )}
                                                 </div>
@@ -423,7 +423,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                                                 <div className="p-5 relative" data-atropos-offset="3">
                                                     {/* Title */}
                                                     <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug line-clamp-2 mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors" data-atropos-offset="5">
-                                                        {sub.video?.title || sub.assignment?.request?.title || "제목 없음"}
+                                                        {sub.video?.title || sub.assignment?.request?.title || sub.versionTitle || "제목 없음"}
                                                     </h3>
 
                                                     {/* Description */}

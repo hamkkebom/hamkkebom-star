@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { createFeedbackSchema } from "@/lib/validations/feedback";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   const user = await getAuthUser();
 
@@ -47,43 +49,57 @@ export async function POST(request: Request) {
   }
 
   try {
-    const submission = await prisma.submission.findUnique({
-      where: { id: parsed.data.submissionId },
-      select: { id: true },
+    const feedback = await prisma.$transaction(async (tx) => {
+      const sub = await tx.submission.findUnique({
+        where: { id: parsed.data.submissionId },
+        select: { id: true, status: true }
+      });
+
+      if (!sub) {
+        throw new Error("NOT_FOUND");
+      }
+
+      const created = await tx.feedback.create({
+        data: {
+          submissionId: parsed.data.submissionId,
+          authorId: user.id,
+          type: parsed.data.type,
+          priority: parsed.data.priority,
+          content: parsed.data.content,
+          startTime: parsed.data.startTime ?? null,
+          endTime: parsed.data.endTime ?? null,
+          annotation: parsed.data.annotation ?? Prisma.JsonNull,
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+            },
+          },
+        },
+      });
+
+      if (sub.status === "PENDING") {
+        await tx.submission.update({
+          where: { id: sub.id },
+          data: { status: "IN_REVIEW" }
+        });
+      }
+
+      return created;
     });
 
-    if (!submission) {
+    return NextResponse.json({ data: feedback }, { status: 201 });
+  } catch (error) {
+    if (error instanceof Error && error.message === "NOT_FOUND") {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "제출물을 찾을 수 없습니다." } },
         { status: 404 }
       );
     }
-
-    const feedback = await prisma.feedback.create({
-      data: {
-        submissionId: parsed.data.submissionId,
-        authorId: user.id,
-        type: parsed.data.type,
-        priority: parsed.data.priority,
-        content: parsed.data.content,
-        startTime: parsed.data.startTime ?? null,
-        endTime: parsed.data.endTime ?? null,
-        annotation: parsed.data.annotation ?? Prisma.JsonNull,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatarUrl: true,
-          },
-        },
-      },
-    });
-
-    return NextResponse.json({ data: feedback }, { status: 201 });
-  } catch {
     return NextResponse.json(
       { error: { code: "INTERNAL_ERROR", message: "피드백 등록 중 오류가 발생했습니다." } },
       { status: 500 }

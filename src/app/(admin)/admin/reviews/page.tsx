@@ -63,7 +63,7 @@ type SubmissionsResponse = {
 
 const statusLabels: Record<SubmissionStatus, string> = {
   PENDING: "대기중",
-  IN_REVIEW: "리뷰중",
+  IN_REVIEW: "피드백중",
   APPROVED: "승인됨",
   REJECTED: "반려됨",
   REVISED: "수정됨",

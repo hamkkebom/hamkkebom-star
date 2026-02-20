@@ -12,7 +12,8 @@ import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackList } from "@/components/feedback/feedback-list";
 import { AiTodoList } from "@/components/feedback/ai-todo-list";
 import { AiInsightsPanel } from "@/components/feedback/ai-insights-panel";
-import { type LucideIcon,
+import {
+  type LucideIcon,
   ArrowLeft,
   Calendar,
   Clock,
@@ -70,7 +71,7 @@ const statusMap: Record<SubmissionStatus, { label: string; className: string; ic
     glowColor: "rgba(100,116,139,0.3)"
   },
   IN_REVIEW: {
-    label: "리뷰중",
+    label: "피드백중",
     className: "bg-violet-600 text-white border-violet-400/20 shadow-[0_0_15px_rgba(124,58,237,0.5)] animate-pulse-subtle",
     icon: PlayCircle,
     glowColor: "rgba(124,58,237,0.6)"
