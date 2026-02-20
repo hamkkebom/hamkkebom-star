@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 type User = {
     id: string;
     name: string;
+    chineseName?: string | null;
     email: string;
     avatarUrl: string | null;
     role?: string;
@@ -158,8 +159,13 @@ function DraggableStar({ star, isOverlay = false }: { star: StarUser; isOverlay?
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm truncate">{star.name}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1.5 truncate">
+                            <span className="font-bold text-sm truncate">{star.chineseName || star.name}</span>
+                            {star.chineseName && (
+                                <span className="text-[11px] text-muted-foreground/60 font-medium truncate">({star.name})</span>
+                            )}
+                        </div>
                         {star.managerId && (
                             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted/80 text-[9px] font-semibold text-muted-foreground border border-border/50">
                                 <Lock className="w-2.5 h-2.5" />
@@ -287,7 +293,11 @@ export default function AssignmentPage() {
 
     // Filter logic
     const filterList = (list: StarUser[]) =>
-        list.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.email.toLowerCase().includes(searchTerm.toLowerCase()));
+        list.filter(s =>
+            s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (s.chineseName && s.chineseName.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
 
     const displayedMyStars = filterList(myStars);
     const displayedUnassigned = filterList(unassignedStars);

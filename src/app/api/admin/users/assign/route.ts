@@ -48,6 +48,7 @@ export async function GET(_req: NextRequest) {
             select: {
                 id: true,
                 name: true,
+                chineseName: true,
                 email: true,
                 avatarUrl: true,
                 managerId: true,
