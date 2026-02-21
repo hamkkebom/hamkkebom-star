@@ -54,12 +54,28 @@ export async function POST(req: NextRequest) {
                     status: newStatus as any,
                     reviewedAt,
                     reviewerId,
-                    // 반려/수정요청 시 요약 피드백 저장 (UNDO 시엔 덮지 않고 놔두거나 널처리하지만 여기선 생략/조정가능: 우선 생략)
-                    // summaryFeedback: action === 'UNDO' ? null : summaryFeedback
-                }
+                },
+                include: { video: { select: { id: true } } }
             });
 
-            // 2. 피드백 코멘트가 있다면 개별 Feedback 레코드로도 저장 (선택)
+            // 2. Video.status 자동 연동
+            // Submission 승인 → Video도 APPROVED로 공개
+            // Submission 반려/취소 → Video를 DRAFT로 비공개 처리
+            if (updatedSubmission.videoId) {
+                if (action === "APPROVE") {
+                    await tx.video.update({
+                        where: { id: updatedSubmission.videoId },
+                        data: { status: "APPROVED" }
+                    });
+                } else if (action === "REJECT" || action === "UNDO") {
+                    await tx.video.update({
+                        where: { id: updatedSubmission.videoId },
+                        data: { status: "DRAFT" }
+                    });
+                }
+            }
+
+            // 3. 피드백 코멘트가 있다면 개별 Feedback 레코드로도 저장 (선택)
             if (feedback) {
                 await tx.feedback.create({
                     data: {

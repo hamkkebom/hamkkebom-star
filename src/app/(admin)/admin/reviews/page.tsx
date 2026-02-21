@@ -2,7 +2,9 @@
 
 import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { Clock, Eye, CheckCircle2, LayoutGrid } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,11 +87,21 @@ function formatDate(dateStr: string) {
   }).format(new Date(dateStr));
 }
 
-async function fetchAllSubmissions(): Promise<SubmissionsResponse> {
-  const res = await fetch("/api/submissions?page=1&pageSize=50", { cache: "no-store" });
+async function fetchAllSubmissions(status: string): Promise<SubmissionsResponse> {
+  const url = status === "ALL"
+    ? "/api/submissions?page=1&pageSize=50"
+    : `/api/submissions?page=1&pageSize=50&status=${status}`;
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("제출물 목록을 불러오지 못했습니다.");
   return (await res.json()) as SubmissionsResponse;
 }
+
+const FILTERS = [
+  { key: "PENDING", label: "대기중", icon: Clock },
+  { key: "IN_REVIEW", label: "피드백중", icon: Eye },
+  { key: "COMPLETED", label: "승인/반려", icon: CheckCircle2 },
+  { key: "ALL", label: "전체", icon: LayoutGrid },
+];
 
 export default function AdminReviewsPage() {
   const queryClient = useQueryClient();
@@ -99,9 +111,11 @@ export default function AdminReviewsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const handleTimeUpdate = useCallback((t: number) => setCurrentTime(t), []);
 
+  const [filter, setFilter] = useState("PENDING");
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["admin-submissions"],
-    queryFn: fetchAllSubmissions,
+    queryKey: ["admin-submissions", filter],
+    queryFn: () => fetchAllSubmissions(filter),
   });
 
   const approveMutation = useMutation({
@@ -148,12 +162,42 @@ export default function AdminReviewsPage() {
   const rows = data?.data ?? [];
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">피드백 작성</h1>
-        <p className="text-sm text-muted-foreground">
-          제출된 영상을 리뷰하고 피드백을 작성하세요.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">전체 피드백 관리</h1>
+          <p className="text-sm text-muted-foreground">
+            제출된 영상들을 부서 구분 없이 모두 확인하고 리뷰합니다.
+          </p>
+        </div>
+
+        {/* Premium Filter Segments */}
+        <div className="flex p-1 bg-slate-100/80 dark:bg-zinc-900/80 rounded-2xl border border-black/5 dark:border-white/5 backdrop-blur-xl shadow-sm overflow-x-auto w-full sm:w-auto scrollbar-none">
+          {FILTERS.map((tab) => {
+            const isActive = filter === tab.key;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setFilter(tab.key)}
+                className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap
+                  ${isActive ? "text-slate-900 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="active-filter-bg"
+                    className="absolute inset-0 bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-black/[0.04] dark:border-white/[0.04]"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-1.5">
+                  <Icon className={`w-4 h-4 ${isActive ? "opacity-100" : "opacity-70"}`} />
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {isLoading ? (

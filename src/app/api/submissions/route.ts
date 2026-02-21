@@ -212,7 +212,7 @@ export async function GET(request: Request) {
   const starId = searchParams.get("starId")?.trim();
   const status = searchParams.get("status");
 
-  if (status && status !== "ALL" && !submissionStatuses.has(status as SubmissionStatus)) {
+  if (status && status !== "ALL" && status !== "COMPLETED" && !submissionStatuses.has(status as SubmissionStatus)) {
     return NextResponse.json(
       { error: { code: "BAD_REQUEST", message: "유효하지 않은 상태값입니다." } },
       { status: 400 }
@@ -221,7 +221,11 @@ export async function GET(request: Request) {
 
   const where = {
     ...(starId ? { starId } : {}),
-    ...(status && status !== "ALL" ? { status: status as SubmissionStatus } : {}),
+    ...(status === "COMPLETED"
+      ? { status: { in: [SubmissionStatus.APPROVED, SubmissionStatus.REJECTED, SubmissionStatus.REVISED] } }
+      : status && status !== "ALL"
+        ? { status: status as SubmissionStatus }
+        : {}),
     ...(requestId
       ? {
         assignment: {
