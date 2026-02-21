@@ -13,8 +13,14 @@ import { ko } from "date-fns/locale";
 import {
     Search, Play, Clock, MessageSquare,
     Sparkles, LayoutGrid, ArrowRight,
-    Eye, Zap, TrendingUp
+    Eye, Zap, TrendingUp, ArrowUpDown
 } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -165,7 +171,7 @@ function ThumbnailPreview({ sub }: { sub: Submission }) {
             {/* Version chip */}
             <div className="absolute top-3 right-3 z-10" data-atropos-offset="5">
                 <Badge className="bg-black/60 text-white/90 border-white/10 backdrop-blur-xl font-mono text-[10px] px-2 py-0.5">
-                    v{sub.version}
+                    v{sub.version.replace(/^v/i, "")}
                 </Badge>
             </div>
         </div>
@@ -178,6 +184,7 @@ function ThumbnailPreview({ sub }: { sub: Submission }) {
 export function FeedbackDashboard({ submissions }: { submissions: Submission[] }) {
     const [filter, setFilter] = useState("PENDING");
     const [searchQuery, setSearchQuery] = useState("");
+    const [sortBy, setSortBy] = useState<"latest" | "oldest">("latest");
     const [particlesReady, setParticlesReady] = useState(false);
 
     // Init tsparticles engine
@@ -188,14 +195,22 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
     }, []);
 
     const filteredSubmissions = useMemo(() => {
-        return submissions.filter(s => {
+        let result = submissions.filter(s => {
             const matchesFilter = filter === "ALL" || s.status === filter;
             const matchesSearch = !searchQuery ||
                 s.video?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 s.star.name.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesFilter && matchesSearch;
         });
-    }, [submissions, filter, searchQuery]);
+
+        result.sort((a, b) => {
+            const timeA = new Date(a.createdAt).getTime();
+            const timeB = new Date(b.createdAt).getTime();
+            return sortBy === "latest" ? timeB - timeA : timeA - timeB;
+        });
+
+        return result;
+    }, [submissions, filter, searchQuery, sortBy]);
 
     const stats = useMemo(() => ({
         total: submissions.length,
@@ -322,15 +337,33 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                         ))}
                     </div>
 
-                    <div className="relative w-full sm:w-72">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-600" />
-                        <input
-                            type="text"
-                            placeholder="영상 제목, STAR 이름 검색..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] rounded-xl text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-700"
-                        />
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="relative flex-1 sm:w-72">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-600" />
+                            <input
+                                type="text"
+                                placeholder="영상 제목, STAR 이름 검색..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] rounded-xl text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-700"
+                            />
+                        </div>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] rounded-xl text-sm hover:bg-slate-200 dark:hover:bg-white/[0.06] transition-colors text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
+                                    <ArrowUpDown className="w-4 h-4" />
+                                    {sortBy === "latest" ? "최신순" : "오래된순"}
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setSortBy("latest")}>
+                                    최신순
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSortBy("oldest")}>
+                                    오래된순
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </motion.div>
 

@@ -139,7 +139,7 @@ export default function ReviewDetailPage() {
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">
-            {sub.versionTitle || `v${sub.version}`}
+            {sub.versionTitle || `v${sub.version.replace(/^v/i, "")}`}
           </h1>
           <p className="text-sm text-muted-foreground">
             {sub.star.name} · {sub.assignment?.request.title || "직접 제출"}

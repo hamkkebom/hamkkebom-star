@@ -196,7 +196,7 @@ export default function AdminReviewsPage() {
                       </TableCell>
                       <TableCell>{row.star.chineseName || row.star.name}</TableCell>
                       <TableCell>
-                        {row.versionTitle || `v${row.version}`}
+                        {row.versionTitle || `v${row.version.replace(/^v/i, "")}`}
                       </TableCell>
                       <TableCell>
                         <Badge variant={statusVariants[row.status] ?? "secondary"}>
@@ -233,7 +233,7 @@ export default function AdminReviewsPage() {
             <>
               <DialogHeader>
                 <DialogTitle>
-                  {selectedSubmission?.assignment?.request?.title ?? '제목 없음'} — {selectedSubmission.versionTitle || `v${selectedSubmission.version}`}
+                  {selectedSubmission?.assignment?.request?.title ?? '제목 없음'} — {selectedSubmission.versionTitle || `v${selectedSubmission.version.replace(/^v/i, "")}`}
                 </DialogTitle>
                 <DialogDescription>
                   {selectedSubmission.star.chineseName || selectedSubmission.star.name} ({selectedSubmission.star.email})

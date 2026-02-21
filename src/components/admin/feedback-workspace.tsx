@@ -10,7 +10,7 @@ import {
     Search, Filter, Command, User,
     Maximize2, Settings, AlertTriangle,
     Zap, Type, Music, Scissors, Palette, Tag, Flag,
-    ChevronLeft
+    ChevronLeft, Edit2, Trash2, MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,6 +20,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
@@ -177,6 +184,12 @@ export function FeedbackWorkspace({
     const [actionModal, setActionModal] = useState<{ isOpen: boolean; type: ReviewAction | null }>({ isOpen: false, type: null });
     const [rejectReason, setRejectReason] = useState("");
 
+    // Edit State
+    const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
+    const [editFeedbackText, setEditFeedbackText] = useState("");
+    const [editFeedbackType, setEditFeedbackType] = useState<FeedbackType>("GENERAL");
+    const [editFeedbackPriority, setEditFeedbackPriority] = useState<FeedbackPriority>("NORMAL");
+
     useEffect(() => { setSubmissions(initialSubmissions); }, [initialSubmissions]);
 
     // Set initial selected ID if provided
@@ -269,6 +282,38 @@ export function FeedbackWorkspace({
         onError: (err) => toast.error(err instanceof Error ? err.message : "피드백 등록 실패")
     });
 
+    const updateFeedbackMutation = useMutation({
+        mutationFn: async (args: { id: string, content: string, type: FeedbackType, priority: FeedbackPriority }) => {
+            const res = await fetch(`/api/feedbacks/${args.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(args)
+            });
+            if (!res.ok) throw new Error("수정에 실패했습니다.");
+            return res.json();
+        },
+        onSuccess: () => {
+            setEditingFeedbackId(null);
+            queryClient.invalidateQueries({ queryKey: ["feedbacks", selectedId] });
+            toast.success("피드백이 수정되었습니다.");
+        },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "수정 실패")
+    });
+
+    const deleteFeedbackMutation = useMutation({
+        mutationFn: async (id: string) => {
+            const res = await fetch(`/api/feedbacks/${id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error("삭제에 실패했습니다.");
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["feedbacks", selectedId] });
+            queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
+            toast.success("피드백이 삭제되었습니다.");
+        },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "삭제 실패")
+    });
+
     const reviewMutation = useMutation({
         mutationFn: async ({ id, action, feedback }: { id: string; action: ReviewAction; feedback?: string }) => {
             const res = await fetch("/api/admin/reviews/action", {
@@ -318,6 +363,27 @@ export function FeedbackWorkspace({
             id: selectedId,
             action: actionModal.type,
             feedback: actionModal.type === "APPROVE" ? undefined : rejectReason
+        });
+    };
+
+    const startEditingFeedback = (fb: FeedbackItem) => {
+        setEditingFeedbackId(fb.id);
+        setEditFeedbackText(fb.content);
+        setEditFeedbackType(fb.type);
+        setEditFeedbackPriority(fb.priority);
+    };
+
+    const cancelEditing = () => {
+        setEditingFeedbackId(null);
+    };
+
+    const saveEditing = () => {
+        if (!editingFeedbackId || !editFeedbackText.trim()) return;
+        updateFeedbackMutation.mutate({
+            id: editingFeedbackId,
+            content: editFeedbackText.trim(),
+            type: editFeedbackType,
+            priority: editFeedbackPriority
         });
     };
 
@@ -441,7 +507,7 @@ export function FeedbackWorkspace({
                                                             </div>
                                                         )}
                                                         <div className="absolute bottom-0.5 right-0.5 px-1 py-0.5 bg-black/80 rounded text-[8px] font-mono text-white/60">
-                                                            v{sub.version}
+                                                            v{sub.version.replace(/^v/i, "")}
                                                         </div>
                                                     </div>
 
@@ -517,7 +583,7 @@ export function FeedbackWorkspace({
                                                 {selectedSubmission.video?.title || "영상"}
                                             </h2>
                                             <Badge className="bg-white/[0.06] text-slate-400 hover:bg-white/10 border-0 text-[10px] h-5">
-                                                {selectedSubmission.versionTitle || `v${selectedSubmission.version}`}
+                                                {selectedSubmission.versionTitle || `v${selectedSubmission.version.replace(/^v/i, "")}`}
                                             </Badge>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -802,10 +868,98 @@ export function FeedbackWorkspace({
                                                                                     </button>
                                                                                 )}
                                                                             </div>
-                                                                            {/* Content */}
-                                                                            <div className="text-[13px] text-slate-300 bg-white/[0.03] p-3 rounded-lg rounded-tl-none border border-white/[0.05] leading-relaxed whitespace-pre-line group-hover:bg-white/[0.06] transition-colors">
-                                                                                {fb.content}
-                                                                            </div>
+
+                                                                            {/* Content / Edit Mode */}
+                                                                            {editingFeedbackId === fb.id ? (
+                                                                                <div className="p-4 bg-indigo-50/50 dark:bg-indigo-500/5 rounded-xl border border-indigo-200 dark:border-indigo-500/20 shadow-inner mt-2 animate-in fade-in duration-200">
+                                                                                    {/* Edit Type & Priority */}
+                                                                                    <div className="flex flex-col gap-3 mb-3">
+                                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                                            <span className="text-[10px] font-bold text-slate-400 mr-1 self-center">유형:</span>
+                                                                                            {FEEDBACK_TYPES.map(ft => (
+                                                                                                <button
+                                                                                                    key={ft.value}
+                                                                                                    onClick={() => setEditFeedbackType(ft.value)}
+                                                                                                    className={cn(
+                                                                                                        "text-[10px] px-2 py-1 rounded-md border transition-all duration-200",
+                                                                                                        editFeedbackType === ft.value
+                                                                                                            ? `${ft.color} shadow-sm ring-1 ring-current/20`
+                                                                                                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-slate-400 dark:hover:bg-white/[0.05]"
+                                                                                                    )}
+                                                                                                >
+                                                                                                    {ft.label}
+                                                                                                </button>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                                            <span className="text-[10px] font-bold text-slate-400 mr-1 self-center">중요도:</span>
+                                                                                            {PRIORITY_OPTIONS.map(pr => (
+                                                                                                <button
+                                                                                                    key={pr.value}
+                                                                                                    onClick={() => setEditFeedbackPriority(pr.value)}
+                                                                                                    className={cn(
+                                                                                                        "text-[10px] px-2 py-1 rounded-md border transition-all duration-200 font-medium",
+                                                                                                        editFeedbackPriority === pr.value
+                                                                                                            ? `${pr.color} bg-current/5 border-current/20`
+                                                                                                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-slate-400 dark:hover:bg-white/[0.05]"
+                                                                                                    )}
+                                                                                                >
+                                                                                                    {pr.label}
+                                                                                                </button>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <Textarea
+                                                                                        value={editFeedbackText}
+                                                                                        onChange={(e) => setEditFeedbackText(e.target.value)}
+                                                                                        className="min-h-[80px] bg-white dark:bg-[#0c0c14] border-slate-200 dark:border-white/[0.1] text-xs resize-none mb-3 shadow-sm focus-visible:ring-indigo-500/50"
+                                                                                        autoFocus
+                                                                                    />
+                                                                                    <div className="flex items-center justify-end">
+                                                                                        <div className="flex gap-2">
+                                                                                            <Button size="sm" variant="ghost" className="h-7 text-[11px] px-3 text-slate-500 hover:text-slate-700 bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.05]" onClick={cancelEditing}>취소</Button>
+                                                                                            <Button size="sm" className="h-7 text-[11px] px-4 bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm" onClick={saveEditing} disabled={updateFeedbackMutation.isPending}>
+                                                                                                {updateFeedbackMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : <CheckCircle2 className="w-3 h-3 mr-1.5" />}
+                                                                                                저장
+                                                                                            </Button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="relative group/content">
+                                                                                    <div className="text-[13px] text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-white/[0.03] p-3.5 rounded-2xl rounded-tl-none border border-slate-200 dark:border-white/[0.05] leading-relaxed whitespace-pre-line group-hover:bg-slate-100 dark:group-hover:bg-white/[0.06] transition-colors shadow-sm">
+                                                                                        {fb.content}
+                                                                                    </div>
+
+                                                                                    {/* Actions Menu (Edit/Delete) */}
+                                                                                    <div className="absolute top-2 right-2 opacity-0 group-hover/content:opacity-100 transition-opacity">
+                                                                                        <DropdownMenu>
+                                                                                            <DropdownMenuTrigger asChild>
+                                                                                                <button className="p-1.5 rounded-lg bg-white/80 dark:bg-black/50 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 backdrop-blur-sm border border-slate-200 dark:border-white/10 shadow-sm transition-all focus:outline-none">
+                                                                                                    <MoreHorizontal className="w-3.5 h-3.5" />
+                                                                                                </button>
+                                                                                            </DropdownMenuTrigger>
+                                                                                            <DropdownMenuContent align="end" className="w-32 min-w-0">
+                                                                                                <DropdownMenuItem onClick={() => startEditingFeedback(fb)} className="text-xs text-slate-600 dark:text-slate-300 focus:bg-slate-50 dark:focus:bg-white/5 cursor-pointer">
+                                                                                                    <Edit2 className="w-3.5 h-3.5 mr-2" /> 수정하기
+                                                                                                </DropdownMenuItem>
+                                                                                                <DropdownMenuSeparator />
+                                                                                                <DropdownMenuItem
+                                                                                                    onClick={() => {
+                                                                                                        if (confirm("정말로 이 피드백을 삭제하시겠습니까?")) {
+                                                                                                            deleteFeedbackMutation.mutate(fb.id);
+                                                                                                        }
+                                                                                                    }}
+                                                                                                    className="text-xs text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-500/10 cursor-pointer"
+                                                                                                >
+                                                                                                    <Trash2 className="w-3.5 h-3.5 mr-2" /> 삭제하기
+                                                                                                </DropdownMenuItem>
+                                                                                            </DropdownMenuContent>
+                                                                                        </DropdownMenu>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </motion.div>
