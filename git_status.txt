@@ -1,0 +1,28 @@
+﻿ M package-lock.json
+ M package.json
+ M prisma/schema.prisma
+ M src/__tests__/api/settlements-generate.test.ts
+ M src/app/(admin)/admin/settlements/page.tsx
+ M src/app/(admin)/admin/stars/page.tsx
+ M src/app/(dashboard)/stars/earnings/page.tsx
+ M src/app/api/admin/managers/route.ts
+ M src/app/api/settlements/[id]/route.ts
+ M src/app/api/settlements/generate/route.ts
+ M src/app/api/settlements/route.ts
+ M src/components/layout/admin-sidebar.tsx
+ M src/components/layout/sidebar.tsx
+ M src/lib/validations/settlement.ts
+ M src/types/database.ts
+?? dev_err.txt
+?? dev_out.txt
+?? git_status.txt
+?? git_status_output.txt
+?? install_err.txt
+?? install_out.txt
+?? "public/2025-12_\352\271\200\354\230\210\354\206\224(92_3749)_\354\247\200\352\270\211\353\202\264\354\227\255\354\204\234.pdf"
+?? public/fonts/
+?? src/app/api/settlements/[id]/pdf/
+?? src/app/api/settlements/config/
+?? src/components/settlement/
+?? src/lib/pdf-fonts.ts
+?? src/lib/settlement-utils.ts

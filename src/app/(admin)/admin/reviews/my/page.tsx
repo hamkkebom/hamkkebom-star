@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, AlertCircle } from "lucide-react";
 import { FeedbackDashboard } from "@/components/admin/feedback-dashboard";
-
+import { FeedbackDashboardSkeleton } from "@/components/admin/feedback-dashboard-skeleton";
 export default function MyReviewsPage() {
     const { data: submissions, isLoading, error } = useQuery({
         queryKey: ["my-reviews"],
@@ -16,14 +16,7 @@ export default function MyReviewsPage() {
     });
 
     if (isLoading) {
-        return (
-            <div className="flex h-[calc(100vh-4rem)] w-full items-center justify-center bg-slate-950">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
-                    <p className="text-sm font-medium text-slate-500 animate-pulse">워크스페이스 준비 중...</p>
-                </div>
-            </div>
-        );
+        return <FeedbackDashboardSkeleton />;
     }
 
     if (error) {

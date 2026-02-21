@@ -50,6 +50,9 @@ type SubmissionRow = {
       title: string;
     };
   } | null;
+  video: {
+    title: string;
+  } | null;
   _count: {
     feedbacks: number;
   };
@@ -237,42 +240,47 @@ export default function AdminReviewsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  rows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="max-w-[200px] font-medium">
-                        <div className="truncate" title={row?.assignment?.request?.title ?? '제목 없음'}>
-                          {row?.assignment?.request?.title ?? '제목 없음'}
-                        </div>
-                        {row.versionTitle && (
-                          <div className="text-xs text-muted-foreground truncate mt-0.5" title={row.versionTitle}>
-                            {row.versionTitle}
+                  rows.map((row) => {
+                    const projectTitle = row.versionTitle || row.assignment?.request?.title || row.video?.title || `v${row.version.replace(/^v/i, "")}`;
+                    const showSubtitle = row.assignment?.request?.title && row.versionTitle;
+
+                    return (
+                      <TableRow key={row.id}>
+                        <TableCell className="max-w-[200px] font-medium">
+                          <div className="truncate" title={projectTitle}>
+                            {projectTitle}
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>{row.star.chineseName || row.star.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono text-xs font-semibold bg-slate-50 dark:bg-slate-900">
-                          v{row.version.replace(/^v/i, "")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={statusVariants[row.status] ?? "secondary"}>
-                          {statusLabels[row.status] ?? row.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{row._count.feedbacks}개</TableCell>
-                      <TableCell>{formatDate(row.createdAt)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedSubmission(row)}
-                        >
-                          리뷰
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                          {showSubtitle && (
+                            <div className="text-xs text-muted-foreground truncate mt-0.5" title={row.assignment!.request.title}>
+                              {row.assignment!.request.title}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>{row.star.chineseName || row.star.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono text-xs font-semibold bg-slate-50 dark:bg-slate-900">
+                            v{row.version.replace(/^v/i, "")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariants[row.status] ?? "secondary"}>
+                            {statusLabels[row.status] ?? row.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{row._count.feedbacks}개</TableCell>
+                        <TableCell>{formatDate(row.createdAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedSubmission(row)}
+                          >
+                            리뷰
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -286,22 +294,52 @@ export default function AdminReviewsPage() {
           <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
             총 <span className="text-slate-900 dark:text-slate-100">{data.total}</span>건 ({data.page} / {data.totalPages})
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="sm"
               disabled={data.page <= 1}
               onClick={() => setPage(p => Math.max(1, p - 1))}
-              className="px-4"
+              className="px-3 hidden sm:flex"
             >
               이전
             </Button>
+
+            {/* Page Numbers */}
+            {Array.from({ length: 5 }, (_, i) => {
+              const maxVisiblePages = 5;
+              let startPage = Math.max(1, data.page - Math.floor(maxVisiblePages / 2));
+              let endPage = startPage + maxVisiblePages - 1;
+
+              if (endPage > data.totalPages) {
+                endPage = data.totalPages;
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+              }
+
+              const pageNum = startPage + i;
+              if (pageNum > endPage) return null;
+
+              const isActive = data.page === pageNum;
+
+              return (
+                <Button
+                  key={pageNum}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPage(pageNum)}
+                  className={`w-9 h-9 p-0 ${isActive ? "pointer-events-none" : ""}`}
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+
             <Button
               variant="outline"
               size="sm"
               disabled={data.page >= data.totalPages}
               onClick={() => setPage(p => p + 1)}
-              className="px-4"
+              className="px-3 hidden sm:flex"
             >
               다음
             </Button>
@@ -319,7 +357,11 @@ export default function AdminReviewsPage() {
             <>
               <DialogHeader>
                 <DialogTitle>
-                  {selectedSubmission?.assignment?.request?.title ?? '제목 없음'} — {selectedSubmission.versionTitle || `v${selectedSubmission.version.replace(/^v/i, "")}`}
+                  {(() => {
+                    const title = selectedSubmission.versionTitle || selectedSubmission.assignment?.request?.title || selectedSubmission.video?.title || `v${selectedSubmission.version.replace(/^v/i, "")}`;
+                    const subtitle = selectedSubmission.assignment?.request?.title && selectedSubmission.versionTitle ? selectedSubmission.assignment.request.title : null;
+                    return subtitle ? `${title} — ${subtitle}` : `${title} — v${selectedSubmission.version.replace(/^v/i, "")}`;
+                  })()}
                 </DialogTitle>
                 <DialogDescription>
                   {selectedSubmission.star.chineseName || selectedSubmission.star.name} ({selectedSubmission.star.email})

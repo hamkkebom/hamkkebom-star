@@ -257,6 +257,11 @@ export async function GET(request: Request) {
             },
           },
         },
+        video: {
+          select: {
+            title: true,
+          },
+        },
         _count: {
           select: {
             feedbacks: true,

@@ -1,0 +1,10 @@
+﻿
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\admin\feedback-dashboard.tsx
+   13:10  warning  'MoveRight' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   13:21  warning  'Loader2' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  195:13  error    'result' is never reassigned. Use 'const' instead                            prefer-const
+  231:51  error    Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+??4 problems (2 errors, 2 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

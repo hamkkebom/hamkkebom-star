@@ -4,10 +4,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import Atropos from "atropos/react";
-import "atropos/css";
-import Particles, { initParticlesEngine } from "@tsparticles/react";
-import { loadSlim } from "@tsparticles/slim";
+// Removed Atropos and tsparticles for performance
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Sparkles, TrendingUp, Clock, Zap, Play, Search, ArrowUpDown, CheckCircle2, Eye, LayoutGrid, MessageSquare, ArrowRight, AlertTriangle } from "lucide-react";
@@ -65,49 +62,7 @@ function getStaticThumb(sub: Submission): string | null {
     return null;
 }
 
-// ============================================================
-//  PARTICLES CONFIG (라이트/다크 겸용 - 낮은 투명도)
-// ============================================================
-const PARTICLES_OPTIONS = {
-    fullScreen: false,
-    fpsLimit: 60,
-    particles: {
-        number: { value: 40, density: { enable: true } },
-        color: { value: ["#6366f1", "#8b5cf6", "#a78bfa", "#c4b5fd"] },
-        opacity: {
-            value: { min: 0.05, max: 0.25 },
-            animation: { enable: true, speed: 0.8, startValue: "random" as const, sync: false },
-        },
-        size: {
-            value: { min: 1, max: 3 },
-            animation: { enable: true, speed: 1.5, startValue: "random" as const, sync: false },
-        },
-        move: {
-            enable: true,
-            speed: 0.4,
-            direction: "none" as const,
-            random: true,
-            straight: false,
-            outModes: { default: "out" as const },
-        },
-        links: {
-            enable: true,
-            distance: 120,
-            color: "#6366f1",
-            opacity: 0.06,
-            width: 1,
-        },
-    },
-    interactivity: {
-        events: {
-            onHover: { enable: true, mode: "grab" as const },
-        },
-        modes: {
-            grab: { distance: 140, links: { opacity: 0.2 } },
-        },
-    },
-    detectRetina: true,
-};
+// Removed PARTICLES_OPTIONS for performance
 
 // ============================================================
 //  FILTER TABS
@@ -120,7 +75,7 @@ const FILTERS = [
 ];
 
 // ============================================================
-//  ANIMATED THUMBNAIL CARD (inside Atropos)
+//  ANIMATED THUMBNAIL CARD
 // ============================================================
 function ThumbnailPreview({ sub }: { sub: Submission }) {
     const staticThumb = getStaticThumb(sub);
@@ -166,7 +121,7 @@ function ThumbnailPreview({ sub }: { sub: Submission }) {
             </div>
 
             {/* Version chip */}
-            <div className="absolute top-3 right-3 z-10" data-atropos-offset="5">
+            <div className="absolute top-3 right-3 z-10">
                 <Badge className="bg-black/60 text-white/90 border-white/10 backdrop-blur-xl font-mono text-[10px] px-2 py-0.5">
                     v{sub.version.replace(/^v/i, "")}
                 </Badge>
@@ -184,12 +139,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
     const [sortBy, setSortBy] = useState<"latest" | "oldest">("latest");
     const [particlesReady, setParticlesReady] = useState(false);
 
-    // Init tsparticles engine
-    useEffect(() => {
-        initParticlesEngine(async (engine) => {
-            await loadSlim(engine);
-        }).then(() => setParticlesReady(true));
-    }, []);
+    // Removed initParticlesEngine for performance
 
     const filteredSubmissions = useMemo(() => {
         const result = submissions.filter(s => {
@@ -213,6 +163,30 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
         return result;
     }, [submissions, filter, searchQuery, sortBy]);
 
+    // 그룹화 로직 추가: star.id 기준으로 묶기
+    const groupedSubmissions = useMemo(() => {
+        const groups: Record<string, { star: Submission['star'], submissions: Submission[], latestTime: number }> = {};
+
+        filteredSubmissions.forEach(sub => {
+            if (!groups[sub.star.id]) {
+                groups[sub.star.id] = {
+                    star: sub.star,
+                    submissions: [],
+                    latestTime: 0
+                };
+            }
+            groups[sub.star.id].submissions.push(sub);
+
+            const subTime = new Date(sub.createdAt).getTime();
+            if (subTime > groups[sub.star.id].latestTime) {
+                groups[sub.star.id].latestTime = subTime;
+            }
+        });
+
+        // 최신 제출물이 있는 STAR를 먼저 보여주도록 정렬 (혹은 이름순 등 원하는 정렬)
+        return Object.values(groups).sort((a, b) => b.latestTime - a.latestTime);
+    }, [filteredSubmissions]);
+
     const stats = useMemo(() => ({
         total: submissions.length,
         pending: submissions.filter(s => s.status === "PENDING").length,
@@ -223,21 +197,13 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
     return (
         <div className="min-h-screen w-full bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-[#050508] dark:via-[#050508] dark:to-[#08081a] relative overflow-hidden text-slate-800 dark:text-slate-200 font-sans">
 
-            {/* ========== PARTICLE BACKGROUND ========== */}
-            {particlesReady && (
-                <Particles
-                    id="dashboard-particles"
-                    className="absolute inset-0 z-0"
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    options={PARTICLES_OPTIONS as any}
-                />
-            )}
+            {/* ========== PARTICLE BACKGROUND (Removed for Performance) ========== */}
 
-            {/* ========== AMBIENT GLOW ========== */}
+            {/* ========== AMBIENT GLOW (성능 최적화: blur 축소 및 opacity로 대체) ========== */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-30%] left-[-15%] w-[60%] h-[60%] rounded-full bg-indigo-400/[0.08] dark:bg-indigo-600/[0.07] blur-[150px]" />
-                <div className="absolute bottom-[-20%] right-[-15%] w-[55%] h-[55%] rounded-full bg-purple-400/[0.06] dark:bg-purple-600/[0.06] blur-[150px]" />
-                <div className="absolute top-[40%] left-[50%] w-[30%] h-[30%] rounded-full bg-cyan-400/[0.05] dark:bg-cyan-600/[0.04] blur-[100px]" />
+                <div className="absolute top-[-30%] left-[-15%] w-[60%] h-[60%] rounded-full bg-indigo-400/5 dark:bg-indigo-600/5 blur-[40px] md:blur-[60px]" />
+                <div className="absolute bottom-[-20%] right-[-15%] w-[55%] h-[55%] rounded-full bg-purple-400/5 dark:bg-purple-600/5 blur-[40px] md:blur-[60px]" />
+                <div className="absolute top-[40%] left-[50%] w-[30%] h-[30%] rounded-full bg-cyan-400/5 dark:bg-cyan-600/5 blur-[30px] md:blur-[50px]" />
             </div>
 
             <div className="relative z-10 max-w-[1600px] mx-auto px-6 lg:px-10 py-10 space-y-10">
@@ -371,134 +337,135 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                     </div>
                 </motion.div>
 
-                {/* ======================== ATROPOS CARD GRID ======================== */}
-                <motion.div
-                    layout
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20"
-                >
+                {/* ======================== GROUPED DASHBOARD ======================== */}
+                <div className="space-y-16 pb-20">
                     <AnimatePresence mode="popLayout">
-                        {filteredSubmissions.map((sub, index) => {
-                            const isPending = sub.status === "PENDING";
-                            const isInReview = sub.status === "IN_REVIEW";
-                            const isApproved = sub.status === "APPROVED";
-                            const isRejected = sub.status === "REJECTED" || sub.status === "REVISED";
-                            const feedbackCount = sub._count?.feedbacks ?? 0;
+                        {groupedSubmissions.map((group) => (
+                            <motion.div
+                                key={group.star.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.4 }}
+                                className="flex flex-col gap-5"
+                            >
+                                {/* Group Header (STAR Info) */}
+                                <div className="flex items-center gap-4 px-2">
+                                    <Avatar className="w-12 h-12 border-2 border-white dark:border-[#0a0a12] shadow-md ring-2 ring-indigo-500/20 dark:ring-indigo-400/20">
+                                        <AvatarImage src={group.star.avatarUrl || undefined} />
+                                        <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white font-bold text-lg">
+                                            {group.star.name[0]}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                            {group.star.name}
+                                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400">
+                                                {group.submissions.length}개의 영상
+                                            </span>
+                                        </h2>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{group.star.email}</p>
+                                    </div>
+                                </div>
 
-                            return (
-                                <motion.div
-                                    key={sub.id}
-                                    layout
-                                    initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9, y: -20 }}
-                                    transition={{ delay: index * 0.05, duration: 0.4, type: "spring", stiffness: 150 }}
-                                >
-                                    <Link href={`/admin/reviews/my/${sub.id}`} prefetch={false} className="block group">
-                                        <Atropos
-                                            className="my-atropos"
-                                            activeOffset={40}
-                                            shadowScale={1.02}
-                                            rotateXMax={12}
-                                            rotateYMax={12}
-                                            shadow={true}
-                                            highlight={true}
-                                        >
-                                            <div className={cn(
-                                                "relative rounded-2xl overflow-hidden border transition-all duration-500",
-                                                "bg-white/90 dark:bg-[#0c0c14]/90 backdrop-blur-xl shadow-md dark:shadow-none",
-                                                isPending && "border-amber-300/50 hover:border-amber-400/70 dark:border-amber-500/20 dark:hover:border-amber-400/40 border-l-4 border-l-amber-500",
-                                                isInReview && "border-indigo-300/50 hover:border-indigo-400/70 dark:border-indigo-500/20 dark:hover:border-indigo-400/40 border-l-4 border-l-indigo-500",
-                                                isApproved && "border-emerald-300/50 hover:border-emerald-400/70 dark:border-emerald-500/20 dark:hover:border-emerald-400/40 border-l-4 border-l-emerald-500",
-                                                isRejected && "border-rose-300/50 hover:border-rose-400/70 dark:border-rose-500/20 dark:hover:border-rose-400/40 border-l-4 border-l-rose-500",
-                                                !isPending && !isInReview && !isApproved && !isRejected && "border-slate-200 hover:border-slate-300 dark:border-white/[0.06] dark:hover:border-white/20"
-                                            )}>
+                                {/* Horizontal Scrollable List */}
+                                <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 pt-2 px-2 snap-x snap-mandatory custom-scrollbar group/scroll">
+                                    {group.submissions.map((sub) => {
+                                        const isPending = sub.status === "PENDING";
+                                        const isInReview = sub.status === "IN_REVIEW";
+                                        const isApproved = sub.status === "APPROVED";
+                                        const isRejected = sub.status === "REJECTED" || sub.status === "REVISED";
+                                        const feedbackCount = sub._count?.feedbacks ?? 0;
 
-                                                {/* Status Indicator */}
-                                                <div className="absolute top-3 left-3 z-20 flex gap-1.5" data-atropos-offset="8">
-                                                    {isPending && (
-                                                        <Badge className="bg-amber-100/90 text-amber-700 border-amber-300/50 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 backdrop-blur-xl shadow-sm dark:shadow-lg dark:shadow-amber-500/10 text-[11px]">
-                                                            <Clock className="w-3 h-3 mr-1" />대기중
-                                                        </Badge>
-                                                    )}
-                                                    {isInReview && (
-                                                        <Badge className="bg-indigo-100/90 text-indigo-700 border-indigo-300/50 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30 backdrop-blur-xl shadow-sm dark:shadow-lg dark:shadow-indigo-500/10 text-[11px] animate-pulse">
-                                                            <Eye className="w-3 h-3 mr-1" />피드백중
-                                                        </Badge>
-                                                    )}
-                                                    {isApproved && (
-                                                        <Badge className="bg-emerald-100/90 text-emerald-700 border-emerald-300/50 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 backdrop-blur-xl shadow-sm dark:shadow-lg dark:shadow-emerald-500/10 text-[11px]">
-                                                            <CheckCircle2 className="w-3 h-3 mr-1" />승인됨
-                                                        </Badge>
-                                                    )}
-                                                    {isRejected && (
-                                                        <Badge className="bg-rose-100/90 text-rose-700 border-rose-300/50 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30 backdrop-blur-xl shadow-sm dark:shadow-lg dark:shadow-rose-500/10 text-[11px]">
-                                                            <AlertTriangle className="w-3 h-3 mr-1" />반려됨
-                                                        </Badge>
-                                                    )}
-                                                </div>
+                                        return (
+                                            <div key={sub.id} className="snap-start shrink-0 w-[260px] sm:w-[280px] perspective-1000">
+                                                <Link href={`/admin/reviews/my/${sub.id}`} prefetch={false} className="block group/card w-full h-full">
+                                                    <div className="w-full h-full relative transition-all duration-300 ease-out transform-gpu group-hover/card:-translate-y-1.5 group-hover/card:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.12)] dark:group-hover/card:shadow-[0_20px_40px_-15px_rgba(99,102,241,0.2)] rounded-3xl">
+                                                        <div className={cn(
+                                                            "relative w-full h-full rounded-3xl overflow-hidden border transition-colors duration-300 flex flex-col",
+                                                            "bg-white/95 dark:bg-[#0c0c14]/95 backdrop-blur-xl shadow-sm dark:shadow-none",
+                                                            isPending && "border-amber-300/50 hover:border-amber-400/80 dark:border-amber-500/20 dark:hover:border-amber-500/50",
+                                                            isInReview && "border-indigo-300/50 hover:border-indigo-400/80 dark:border-indigo-500/20 dark:hover:border-indigo-500/50",
+                                                            isApproved && "border-emerald-300/50 hover:border-emerald-400/80 dark:border-emerald-500/20 dark:hover:border-emerald-500/50",
+                                                            isRejected && "border-rose-300/50 hover:border-rose-400/80 dark:border-rose-500/20 dark:hover:border-rose-500/50",
+                                                            !isPending && !isInReview && !isApproved && !isRejected && "border-slate-200 hover:border-slate-300 dark:border-white/[0.08] dark:hover:border-white/20"
+                                                        )}>
 
-                                                {/* Thumbnail Layer - behind scene */}
-                                                <div data-atropos-offset="-3">
-                                                    <ThumbnailPreview sub={sub} />
-                                                </div>
+                                                            {/* Status Indicator overlapping thumbnail */}
+                                                            <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5">
+                                                                {isPending && (
+                                                                    <Badge className="bg-amber-400/90 text-amber-950 border-none shadow-lg shadow-amber-500/20 backdrop-blur-md text-[10px] font-bold tracking-wide px-2 py-0.5">
+                                                                        <Clock className="w-3 h-3 mr-1" />대기중
+                                                                    </Badge>
+                                                                )}
+                                                                {isInReview && (
+                                                                    <Badge className="bg-indigo-500/90 text-white border-none shadow-lg shadow-indigo-500/30 backdrop-blur-md text-[10px] font-bold tracking-wide animate-pulse px-2 py-0.5">
+                                                                        <Eye className="w-3 h-3 mr-1" />피드백중
+                                                                    </Badge>
+                                                                )}
+                                                                {isApproved && (
+                                                                    <Badge className="bg-emerald-500/90 text-white border-none shadow-lg shadow-emerald-500/20 backdrop-blur-md text-[10px] font-bold tracking-wide px-2 py-0.5">
+                                                                        <CheckCircle2 className="w-3 h-3 mr-1" />승인됨
+                                                                    </Badge>
+                                                                )}
+                                                                {isRejected && (
+                                                                    <Badge className="bg-rose-500/90 text-white border-none shadow-lg shadow-rose-500/20 backdrop-blur-md text-[10px] font-bold tracking-wide px-2 py-0.5">
+                                                                        <AlertTriangle className="w-3 h-3 mr-1" />반려됨
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
 
-                                                {/* Content Layer - floats forward */}
-                                                <div className="p-5 relative" data-atropos-offset="3">
-                                                    {/* Title */}
-                                                    <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug line-clamp-2 mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors" data-atropos-offset="5">
-                                                        {sub.video?.title || sub.assignment?.request?.title || sub.versionTitle || "제목 없음"}
-                                                    </h3>
+                                                            {/* Thumbnail Layer - slightly shorter aspect ratio for compact look */}
+                                                            <div className="aspect-[16/10] shrink-0">
+                                                                <ThumbnailPreview sub={sub} />
+                                                            </div>
 
-                                                    {/* Description */}
-                                                    {sub.video?.description && (
-                                                        <p className="text-xs text-slate-500 dark:text-slate-500 line-clamp-2 mb-3 leading-relaxed">
-                                                            {sub.video.description}
-                                                        </p>
-                                                    )}
+                                                            {/* Content Layer - Compact Padding */}
+                                                            <div className="p-4 flex flex-col grow justify-between bg-gradient-to-b from-transparent to-slate-50/50 dark:to-white/[0.02]">
+                                                                <div>
+                                                                    {/* Title */}
+                                                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight line-clamp-2 mb-2 group-hover/card:text-indigo-600 dark:group-hover/card:text-indigo-400 transition-colors">
+                                                                        {sub.video?.title || sub.assignment?.request?.title || sub.versionTitle || "제목 없음"}
+                                                                    </h3>
 
-                                                    {/* Meta Chips */}
-                                                    <div className="flex flex-wrap gap-2 mb-4">
-                                                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.04] px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.06]">
-                                                            <Clock className="w-3 h-3 text-slate-400 dark:text-slate-500" />
-                                                            {formatDistanceToNow(new Date(sub.createdAt), { addSuffix: true, locale: ko })}
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5 text-[11px] bg-indigo-50 dark:bg-white/[0.04] px-2.5 py-1.5 rounded-lg border border-indigo-200/60 dark:border-white/[0.06]">
-                                                            <MessageSquare className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
-                                                            <span className="text-indigo-600 dark:text-indigo-300 font-bold">{feedbackCount}</span>
-                                                            <span className="text-slate-500">피드백</span>
-                                                        </div>
-                                                    </div>
+                                                                    {/* Description Snippet (Hidden on very small cards) */}
+                                                                    {sub.video?.description && (
+                                                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mb-3">
+                                                                            {sub.video.description}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
 
-                                                    {/* Footer */}
-                                                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-white/[0.05]" data-atropos-offset="6">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <Avatar className="w-8 h-8 border-2 border-transparent ring-2 ring-slate-200 dark:ring-white/[0.06] group-hover:ring-indigo-400/60 dark:group-hover:ring-indigo-500/40 transition-all duration-300">
-                                                                <AvatarImage src={sub.star.avatarUrl || undefined} />
-                                                                <AvatarFallback className="text-[10px] bg-gradient-to-br from-indigo-500 to-purple-500 dark:from-indigo-800 dark:to-purple-800 text-white font-bold">
-                                                                    {sub.star.name[0]}
-                                                                </AvatarFallback>
-                                                            </Avatar>
-                                                            <div>
-                                                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                                                                    {sub.star.name}
-                                                                </p>
-                                                                <p className="text-[10px] text-slate-400 dark:text-slate-600">STAR</p>
+                                                                <div className="mt-auto pt-2 flex items-center justify-between">
+                                                                    {/* Time Info */}
+                                                                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                                                                        <Clock className="w-3 h-3" />
+                                                                        {formatDistanceToNow(new Date(sub.createdAt), { addSuffix: true, locale: ko })}
+                                                                    </div>
+                                                                    {/* Action / Feedback count */}
+                                                                    {feedbackCount > 0 ? (
+                                                                        <div className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1 rounded-md">
+                                                                            <MessageSquare className="w-3 h-3" />
+                                                                            {feedbackCount}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover/card:bg-indigo-500 group-hover/card:text-white transition-all">
+                                                                            <ArrowRight className="w-3 h-3 transition-transform group-hover/card:translate-x-0.5" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
-
-                                                        <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center group-hover:bg-indigo-500 group-hover:border-indigo-400 group-hover:text-white text-slate-400 dark:text-slate-600 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-indigo-500/20">
-                                                            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-                                                        </div>
                                                     </div>
-                                                </div>
+                                                </Link>
                                             </div>
-                                        </Atropos>
-                                    </Link>
-                                </motion.div>
-                            );
-                        })}
+                                        );
+                                    })}
+                                </div>
+                            </motion.div>
+                        ))}
                     </AnimatePresence>
-                </motion.div>
+                </div>
 
                 {/* Empty State */}
                 {filteredSubmissions.length === 0 && (
@@ -518,42 +485,8 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                 )}
             </div>
 
-            {/* Custom Atropos Styles - 라이트/다크 겸용 */}
+            {/* Custom Styles overrides */}
             <style jsx global>{`
-                .my-atropos {
-                    perspective: 1200px;
-                }
-                .my-atropos .atropos-inner {
-                    overflow: visible;
-                }
-                .my-atropos .atropos-shadow {
-                    filter: blur(50px);
-                    opacity: 0.08;
-                    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                }
-                .my-atropos .atropos-highlight {
-                    background-image: linear-gradient(
-                        135deg,
-                        rgba(255,255,255,0.08) 0%,
-                        rgba(255,255,255,0) 50%
-                    );
-                }
-                .my-atropos:hover .atropos-shadow {
-                    opacity: 0.2;
-                }
-                :is(.dark) .my-atropos .atropos-shadow {
-                    opacity: 0.15;
-                }
-                :is(.dark) .my-atropos:hover .atropos-shadow {
-                    opacity: 0.3;
-                }
-                :is(.dark) .my-atropos .atropos-highlight {
-                    background-image: linear-gradient(
-                        135deg,
-                        rgba(255,255,255,0.12) 0%,
-                        rgba(255,255,255,0) 50%
-                    );
-                }
                 @keyframes gradient-x {
                     0%, 100% { background-position: 0% 50%; }
                     50% { background-position: 100% 50%; }
@@ -561,6 +494,26 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                 .animate-gradient-x {
                     background-size: 200% 200%;
                     animation: gradient-x 4s ease infinite;
+                }
+                .perspective-1000 {
+                    perspective: 1000px;
+                }
+                .custom-scrollbar {
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar {
+                    height: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background-color: rgba(148, 163, 184, 0.4);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+                    background-color: rgba(148, 163, 184, 0.7);
                 }
             `}</style>
         </div>
