@@ -10,7 +10,7 @@ import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { MoveRight, Loader2, Sparkles, TrendingUp, Clock, Zap, Play, Search, ArrowUpDown, CheckCircle2, Eye, LayoutGrid, MessageSquare, ArrowRight } from "lucide-react";
+import { Sparkles, TrendingUp, Clock, Zap, Play, Search, ArrowUpDown, CheckCircle2, Eye, LayoutGrid, MessageSquare, ArrowRight, AlertTriangle } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -115,7 +115,7 @@ const PARTICLES_OPTIONS = {
 const FILTERS = [
     { key: "PENDING", label: "대기중", icon: Clock, color: "text-amber-500 dark:text-amber-400" },
     { key: "IN_REVIEW", label: "피드백중", icon: Eye, color: "text-indigo-500 dark:text-indigo-400" },
-    { key: "COMPLETED", label: "완료됨", icon: CheckCircle2, color: "text-emerald-500 dark:text-emerald-400" },
+    { key: "COMPLETED", label: "승인/반려", icon: CheckCircle2, color: "text-emerald-500 dark:text-emerald-400" },
     { key: "ALL", label: "전체", icon: LayoutGrid },
 ];
 
@@ -192,7 +192,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
     }, []);
 
     const filteredSubmissions = useMemo(() => {
-        let result = submissions.filter(s => {
+        const result = submissions.filter(s => {
             let matchesFilter = false;
             if (filter === "ALL") matchesFilter = true;
             else if (filter === "COMPLETED") matchesFilter = s.status === "APPROVED" || s.status === "REJECTED" || s.status === "REVISED";
@@ -228,6 +228,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                 <Particles
                     id="dashboard-particles"
                     className="absolute inset-0 z-0"
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     options={PARTICLES_OPTIONS as any}
                 />
             )}
@@ -280,7 +281,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                             { label: "전체", value: stats.total, gradient: "from-slate-500 to-slate-400", ring: "ring-slate-300/40 dark:ring-slate-500/20", icon: TrendingUp, iconColor: "#94a3b8" },
                             { label: "대기중", value: stats.pending, gradient: "from-amber-500 to-orange-400", ring: "ring-amber-300/40 dark:ring-amber-500/20", icon: Clock, iconColor: "#f59e0b" },
                             { label: "피드백중", value: stats.inReview, gradient: "from-indigo-500 to-purple-400", ring: "ring-indigo-300/40 dark:ring-indigo-500/20", icon: Zap, iconColor: "#6366f1" },
-                            { label: "완료됨", value: stats.completed, gradient: "from-emerald-500 to-teal-400", ring: "ring-emerald-300/40 dark:ring-emerald-500/20", icon: CheckCircle2, iconColor: "#10b981" }
+                            { label: "승인/반려", value: stats.completed, gradient: "from-emerald-500 to-teal-400", ring: "ring-emerald-300/40 dark:ring-emerald-500/20", icon: CheckCircle2, iconColor: "#10b981" }
                         ].map((stat, i) => (
                             <motion.div
                                 key={stat.label}
@@ -379,6 +380,8 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                         {filteredSubmissions.map((sub, index) => {
                             const isPending = sub.status === "PENDING";
                             const isInReview = sub.status === "IN_REVIEW";
+                            const isApproved = sub.status === "APPROVED";
+                            const isRejected = sub.status === "REJECTED" || sub.status === "REVISED";
                             const feedbackCount = sub._count?.feedbacks ?? 0;
 
                             return (
@@ -403,13 +406,15 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                                             <div className={cn(
                                                 "relative rounded-2xl overflow-hidden border transition-all duration-500",
                                                 "bg-white/90 dark:bg-[#0c0c14]/90 backdrop-blur-xl shadow-md dark:shadow-none",
-                                                isPending && "border-amber-300/50 hover:border-amber-400/70 dark:border-amber-500/20 dark:hover:border-amber-400/40",
-                                                isInReview && "border-indigo-300/50 hover:border-indigo-400/70 dark:border-indigo-500/20 dark:hover:border-indigo-400/40",
-                                                !isPending && !isInReview && "border-slate-200 hover:border-slate-300 dark:border-white/[0.06] dark:hover:border-white/20"
+                                                isPending && "border-amber-300/50 hover:border-amber-400/70 dark:border-amber-500/20 dark:hover:border-amber-400/40 border-l-4 border-l-amber-500",
+                                                isInReview && "border-indigo-300/50 hover:border-indigo-400/70 dark:border-indigo-500/20 dark:hover:border-indigo-400/40 border-l-4 border-l-indigo-500",
+                                                isApproved && "border-emerald-300/50 hover:border-emerald-400/70 dark:border-emerald-500/20 dark:hover:border-emerald-400/40 border-l-4 border-l-emerald-500",
+                                                isRejected && "border-rose-300/50 hover:border-rose-400/70 dark:border-rose-500/20 dark:hover:border-rose-400/40 border-l-4 border-l-rose-500",
+                                                !isPending && !isInReview && !isApproved && !isRejected && "border-slate-200 hover:border-slate-300 dark:border-white/[0.06] dark:hover:border-white/20"
                                             )}>
 
                                                 {/* Status Indicator */}
-                                                <div className="absolute top-3 left-3 z-20" data-atropos-offset="8">
+                                                <div className="absolute top-3 left-3 z-20 flex gap-1.5" data-atropos-offset="8">
                                                     {isPending && (
                                                         <Badge className="bg-amber-100/90 text-amber-700 border-amber-300/50 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 backdrop-blur-xl shadow-sm dark:shadow-lg dark:shadow-amber-500/10 text-[11px]">
                                                             <Clock className="w-3 h-3 mr-1" />대기중
@@ -418,6 +423,16 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                                                     {isInReview && (
                                                         <Badge className="bg-indigo-100/90 text-indigo-700 border-indigo-300/50 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30 backdrop-blur-xl shadow-sm dark:shadow-lg dark:shadow-indigo-500/10 text-[11px] animate-pulse">
                                                             <Eye className="w-3 h-3 mr-1" />피드백중
+                                                        </Badge>
+                                                    )}
+                                                    {isApproved && (
+                                                        <Badge className="bg-emerald-100/90 text-emerald-700 border-emerald-300/50 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 backdrop-blur-xl shadow-sm dark:shadow-lg dark:shadow-emerald-500/10 text-[11px]">
+                                                            <CheckCircle2 className="w-3 h-3 mr-1" />승인됨
+                                                        </Badge>
+                                                    )}
+                                                    {isRejected && (
+                                                        <Badge className="bg-rose-100/90 text-rose-700 border-rose-300/50 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30 backdrop-blur-xl shadow-sm dark:shadow-lg dark:shadow-rose-500/10 text-[11px]">
+                                                            <AlertTriangle className="w-3 h-3 mr-1" />반려됨
                                                         </Badge>
                                                     )}
                                                 </div>
