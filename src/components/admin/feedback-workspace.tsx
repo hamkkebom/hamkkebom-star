@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Undo2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
@@ -315,29 +316,48 @@ export function FeedbackWorkspace({
     });
 
     const reviewMutation = useMutation({
-        mutationFn: async ({ id, action, feedback }: { id: string; action: ReviewAction; feedback?: string }) => {
+        mutationFn: async ({ id, action, feedback }: { id: string; action: ReviewAction | "UNDO"; feedback?: string }) => {
             const res = await fetch("/api/admin/reviews/action", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ submissionId: id, action, feedback }),
+                body: JSON.stringify({ submissionId: id, action, feedback })
             });
-            if (!res.ok) throw new Error("Failed to submit review");
+            if (!res.ok) throw new Error("처리 중 오류가 발생했습니다.");
             return res.json();
         },
-        onSuccess: (_, variables) => {
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
+            queryClient.invalidateQueries({ queryKey: ["submissions"] });
+
+            // UI 상태 즉시 업데이트
+            setSubmissions(prev => prev.map(sub => {
+                if (sub.id === variables.id) {
+                    let newStatus = sub.status;
+                    if (variables.action === "APPROVE") newStatus = "APPROVED";
+                    else if (variables.action === "REJECT") newStatus = "REJECTED";
+                    else if (variables.action === "UNDO") newStatus = "IN_REVIEW";
+                    return { ...sub, status: newStatus };
+                }
+                return sub;
+            }));
+
             if (variables.action === "APPROVE") {
-                confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ["#10b981", "#34d399", "#6ee7b7"] });
                 toast.success("승인 완료! 🎉");
-            } else {
-                toast.success("검토 결과가 전송되었습니다.");
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            } else if (variables.action === "REJECT") {
+                toast.success("반려 처리되었습니다.");
+            } else if (variables.action === "UNDO") {
+                toast.success("처리가 취소되었습니다.");
             }
-            setSubmissions(prev => prev.filter(s => s.id !== variables.id));
-            setSelectedId(null);
+
             setActionModal({ isOpen: false, type: null });
             setRejectReason("");
-            queryClient.invalidateQueries({ queryKey: ["admin-reviews-my"] });
         },
-        onError: () => toast.error("작업 처리에 실패했습니다.")
+        onError: (err) => toast.error(err instanceof Error ? err.message : "요청 실패")
     });
 
     // --- Handlers ---
@@ -353,8 +373,16 @@ export function FeedbackWorkspace({
         setIsTimeCaptured(false);
     };
 
-    const handleAction = (type: ReviewAction) => {
-        setActionModal({ isOpen: true, type });
+    const handleAction = (type: ReviewAction | "UNDO") => {
+        if (!selectedId) return;
+        if (type === "APPROVE") {
+            setActionModal({ isOpen: true, type });
+        } else if (type === "REJECT") {
+            setActionModal({ isOpen: true, type });
+        } else if (type === "UNDO") {
+            // 실행 취소는 모달 없이 바로 실행
+            reviewMutation.mutate({ id: selectedId, action: "UNDO" });
+        }
     };
 
     const confirmAction = () => {
@@ -587,21 +615,68 @@ export function FeedbackWorkspace({
                                             </Badge>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-400 hover:text-red-300 hover:bg-red-950/30 h-8 text-xs"
-                                                onClick={() => handleAction("REJECT")}
-                                            >
-                                                <ThumbsDown className="w-3.5 h-3.5 mr-1.5" /> 반려
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 h-8 text-xs"
-                                                onClick={() => handleAction("APPROVE")}
-                                            >
-                                                <ThumbsUp className="w-3.5 h-3.5 mr-1.5" /> 승인
-                                            </Button>
+                                            <AnimatePresence mode="popLayout">
+                                                {selectedSubmission.status === "APPROVED" || selectedSubmission.status === "REJECTED" ? (
+                                                    <motion.div
+                                                        key="status-badge"
+                                                        initial={{ opacity: 0, scale: 0.95 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        exit={{ opacity: 0, scale: 0.95 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <div className={cn(
+                                                            "px-3 py-1.5 rounded-full text-xs font-medium flex items-center border shadow-sm",
+                                                            selectedSubmission.status === "APPROVED"
+                                                                ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
+                                                                : "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20"
+                                                        )}>
+                                                            {selectedSubmission.status === "APPROVED" ? (
+                                                                <><CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> 승인 완료</>
+                                                            ) : (
+                                                                <><AlertTriangle className="w-3.5 h-3.5 mr-1.5" /> 반려됨</>
+                                                            )}
+                                                        </div>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 h-8 text-xs font-medium group transition-all"
+                                                            onClick={() => handleAction("UNDO")}
+                                                            disabled={reviewMutation.isPending}
+                                                        >
+                                                            <Undo2 className="w-3.5 h-3.5 mr-1.5 group-hover:-rotate-45 transition-transform duration-300" />
+                                                            실행 취소
+                                                        </Button>
+                                                    </motion.div>
+                                                ) : (
+                                                    <motion.div
+                                                        key="action-buttons"
+                                                        initial={{ opacity: 0, scale: 0.95 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        exit={{ opacity: 0, scale: 0.95 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-red-400 hover:text-red-300 hover:bg-red-950/30 h-8 text-xs"
+                                                            onClick={() => handleAction("REJECT")}
+                                                            disabled={reviewMutation.isPending}
+                                                        >
+                                                            <ThumbsDown className="w-3.5 h-3.5 mr-1.5" /> 반려
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 h-8 text-xs"
+                                                            onClick={() => handleAction("APPROVE")}
+                                                            disabled={reviewMutation.isPending}
+                                                        >
+                                                            <ThumbsUp className="w-3.5 h-3.5 mr-1.5" /> 승인
+                                                        </Button>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                         </div>
                                     </div>
 

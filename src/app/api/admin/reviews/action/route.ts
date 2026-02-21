@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 
 // POST /api/admin/reviews/action
-// body: { submissionId, action: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES', feedback?: string }
+// body: { submissionId, action: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES' | 'UNDO', feedback?: string }
 export async function POST(req: NextRequest) {
     try {
         const supabase = await createClient();
@@ -32,20 +32,30 @@ export async function POST(req: NextRequest) {
         // 트랜잭션 처리
         const result = await prisma.$transaction(async (tx) => {
             let newStatus = "PENDING";
+            let reviewedAt: Date | null = new Date();
+            let reviewerId: string | null = requester.id;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            let summaryFeedback: string | undefined = feedback || undefined;
 
             if (action === "APPROVE") newStatus = "APPROVED";
             else if (action === "REJECT") newStatus = "REJECTED";
             else if (action === "REQUEST_CHANGES") newStatus = "REVISED"; // or 'REJECTED' with feedback
+            else if (action === "UNDO") {
+                newStatus = "IN_REVIEW";
+                reviewedAt = null;
+                reviewerId = null;
+                summaryFeedback = undefined;
+            }
 
             // 1. 상태 업데이트
             const updatedSubmission = await tx.submission.update({
                 where: { id: submissionId },
                 data: {
                     status: newStatus as any,
-                    reviewedAt: new Date(),
-                    reviewerId: requester.id,
-                    // 반려/수정요청 시 요약 피드백 저장
-                    summaryFeedback: feedback || undefined
+                    reviewedAt,
+                    reviewerId,
+                    // 반려/수정요청 시 요약 피드백 저장 (UNDO 시엔 덮지 않고 놔두거나 널처리하지만 여기선 생략/조정가능: 우선 생략)
+                    // summaryFeedback: action === 'UNDO' ? null : summaryFeedback
                 }
             });
 
