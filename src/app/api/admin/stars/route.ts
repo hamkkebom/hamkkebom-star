@@ -47,6 +47,15 @@ export async function GET(request: Request) {
         phone: true,
         avatarUrl: true,
         baseRate: true,
+        gradeId: true,
+        grade: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            baseRate: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
         _count: {

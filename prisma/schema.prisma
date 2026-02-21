@@ -33,6 +33,10 @@ model User {
   submissions     Submission[]
   videos          Video[]
 
+  // Grade Relation
+  gradeId         String?
+  grade           PricingGrade?       @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+
   // Manager Relation (Self-relation)
   managerId       String?
   manager         User?               @relation("ManagerToStar", fields: [managerId], references: [id])
@@ -352,6 +356,19 @@ model MediaPlacement {
   video         Video           @relation(fields: [videoId], references: [id])
 
   @@map("media_placements")
+}
+
+model PricingGrade {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  baseRate  Decimal  @db.Decimal(10, 2)
+  color     String   @default("slate")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+
+  @@map("pricing_grades")
 }
 
 enum Role {

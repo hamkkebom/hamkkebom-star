@@ -87,10 +87,10 @@ function formatDate(dateStr: string) {
   }).format(new Date(dateStr));
 }
 
-async function fetchAllSubmissions(status: string): Promise<SubmissionsResponse> {
+async function fetchAllSubmissions(status: string, page: number): Promise<SubmissionsResponse> {
   const url = status === "ALL"
-    ? "/api/submissions?page=1&pageSize=50"
-    : `/api/submissions?page=1&pageSize=50&status=${status}`;
+    ? `/api/submissions?page=${page}&pageSize=50`
+    : `/api/submissions?page=${page}&pageSize=50&status=${status}`;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("제출물 목록을 불러오지 못했습니다.");
   return (await res.json()) as SubmissionsResponse;
@@ -112,10 +112,11 @@ export default function AdminReviewsPage() {
   const handleTimeUpdate = useCallback((t: number) => setCurrentTime(t), []);
 
   const [filter, setFilter] = useState("PENDING");
+  const [page, setPage] = useState(1);
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["admin-submissions", filter],
-    queryFn: () => fetchAllSubmissions(filter),
+    queryKey: ["admin-submissions", filter, page],
+    queryFn: () => fetchAllSubmissions(filter, page),
   });
 
   const approveMutation = useMutation({
@@ -179,7 +180,10 @@ export default function AdminReviewsPage() {
             return (
               <button
                 key={tab.key}
-                onClick={() => setFilter(tab.key)}
+                onClick={() => {
+                  setFilter(tab.key);
+                  setPage(1);
+                }}
                 className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap
                   ${isActive ? "text-slate-900 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
               >
@@ -235,12 +239,21 @@ export default function AdminReviewsPage() {
                 ) : (
                   rows.map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell className="max-w-[200px] truncate font-medium">
-                        {row?.assignment?.request?.title ?? '제목 없음'}
+                      <TableCell className="max-w-[200px] font-medium">
+                        <div className="truncate" title={row?.assignment?.request?.title ?? '제목 없음'}>
+                          {row?.assignment?.request?.title ?? '제목 없음'}
+                        </div>
+                        {row.versionTitle && (
+                          <div className="text-xs text-muted-foreground truncate mt-0.5" title={row.versionTitle}>
+                            {row.versionTitle}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>{row.star.chineseName || row.star.name}</TableCell>
                       <TableCell>
-                        {row.versionTitle || `v${row.version.replace(/^v/i, "")}`}
+                        <Badge variant="outline" className="font-mono text-xs font-semibold bg-slate-50 dark:bg-slate-900">
+                          v{row.version.replace(/^v/i, "")}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={statusVariants[row.status] ?? "secondary"}>
@@ -265,6 +278,35 @@ export default function AdminReviewsPage() {
             </Table>
           </CardContent>
         </Card>
+      )}
+
+      {/* Pagination Controls */}
+      {data && data.totalPages > 1 && (
+        <div className="flex items-center justify-between sm:justify-end gap-4 mt-2 mb-8">
+          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            총 <span className="text-slate-900 dark:text-slate-100">{data.total}</span>건 ({data.page} / {data.totalPages})
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={data.page <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              className="px-4"
+            >
+              이전
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={data.page >= data.totalPages}
+              onClick={() => setPage(p => p + 1)}
+              className="px-4"
+            >
+              다음
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* 리뷰 다이얼로그 */}

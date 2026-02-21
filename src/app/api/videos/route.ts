@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { VideoStatus, VideoSubject } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
+import { extractR2Key, getPresignedGetUrl } from "@/lib/cloudflare/r2-upload";
 
 const videoStatuses = new Set(Object.values(VideoStatus));
 const videoSubjects = new Set(Object.values(VideoSubject));
@@ -55,13 +57,13 @@ export async function GET(request: Request) {
   const durationFilter =
     durationMin !== undefined || durationMax !== undefined
       ? {
-          technicalSpec: {
-            duration: {
-              ...(durationMin !== undefined ? { gte: durationMin } : {}),
-              ...(durationMax !== undefined ? { lte: durationMax } : {}),
-            },
+        technicalSpec: {
+          duration: {
+            ...(durationMin !== undefined ? { gte: durationMin } : {}),
+            ...(durationMax !== undefined ? { lte: durationMax } : {}),
           },
-        }
+        },
+      }
       : {};
 
   const where = {
@@ -116,9 +118,41 @@ export async function GET(request: Request) {
     prisma.video.count({ where }),
   ]);
 
+  const rowsWithThumbnails = await Promise.all(
+    rows.map(async (row) => {
+      let finalThumbnailUrl: string | null = null;
+
+      // 1순위: Video.thumbnailUrl이 R2 URL이면 → presigned GET URL
+      if (row.thumbnailUrl) {
+        const r2Key = extractR2Key(row.thumbnailUrl);
+        if (r2Key) {
+          try {
+            finalThumbnailUrl = await getPresignedGetUrl(r2Key);
+          } catch {
+            // R2 실패 시 fallback
+          }
+        }
+      }
+
+      // 2순위: Cloudflare Stream 서명 썸네일
+      if (!finalThumbnailUrl && row.streamUid) {
+        try {
+          const token = await getSignedPlaybackToken(row.streamUid);
+          if (token) {
+            finalThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      return { ...row, signedThumbnailUrl: finalThumbnailUrl };
+    })
+  );
+
   return NextResponse.json(
     {
-      data: rows,
+      data: rowsWithThumbnails,
       total,
       page,
       pageSize,

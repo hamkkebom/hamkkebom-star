@@ -17,6 +17,7 @@ export type {
   Category,
   Counselor,
   MediaPlacement,
+  PricingGrade,
 } from "@/generated/prisma/client";
 
 export {

@@ -9,8 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Mail, Phone, DollarSign, Film, FileText, Calendar } from "lucide-react";
+import { ArrowLeft, Mail, Phone, DollarSign, Film, FileText, Calendar, Info } from "lucide-react";
 import { useState } from "react";
+import { getGradeColor } from "@/lib/grade-config";
+import { cn } from "@/lib/utils";
 
 type Assignment = {
   id: string;
@@ -34,6 +36,8 @@ type StarDetail = {
   phone: string | null;
   avatarUrl: string | null;
   baseRate: number | null;
+  gradeId: string | null;
+  grade: { id: string; name: string; color: string; baseRate: number } | null;
   externalId: string | null;
   chineseName: string | null;
   createdAt: string;
@@ -124,12 +128,19 @@ export default function AdminStarDetailPage() {
           {(star.chineseName || star.name).charAt(0)}
         </div>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">
-            {star.chineseName || star.name}
-            {star.chineseName && star.name && (
-              <span className="text-muted-foreground text-base ml-2">({star.name})</span>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">
+              {star.chineseName || star.name}
+              {star.chineseName && star.name && (
+                <span className="text-muted-foreground text-base ml-2">({star.name})</span>
+              )}
+            </h1>
+            {star.grade && (
+              <Badge className={cn(getGradeColor(star.grade.color).badge, "font-semibold")}>
+                {star.grade.name}
+              </Badge>
             )}
-          </h1>
+          </div>
           <p className="text-sm text-muted-foreground">
             {star.externalId || "ID 없음"} · 가입일 {new Date(star.createdAt).toLocaleDateString("ko-KR")}
           </p>
@@ -186,6 +197,12 @@ export default function AdminStarDetailPage() {
           <CardDescription>제출물 1건당 정산 금액</CardDescription>
         </CardHeader>
         <CardContent>
+          {star.grade && (
+            <div className="flex items-center gap-2 mb-3 rounded-md bg-muted/50 p-2 text-sm text-muted-foreground">
+              <Info className="h-4 w-4 shrink-0" />
+              <span>이 단가는 <strong>{star.grade.name}</strong> 등급에 의해 관리됩니다.</span>
+            </div>
+          )}
           {isEditing ? (
             <div className="flex items-end gap-3">
               <div className="flex-1">

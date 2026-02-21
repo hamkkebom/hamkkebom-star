@@ -104,6 +104,7 @@ function ProjectCard({ sub, index }: { sub: MySubmission; index: number }) {
                 src={sub.signedThumbnailUrl}
                 alt={sub.versionTitle || "Project"}
                 fill
+                unoptimized
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
             ) : (

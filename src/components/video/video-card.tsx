@@ -84,6 +84,7 @@ export function VideoCard({
                  src={thumb}
                  alt={title}
                  fill
+                 unoptimized
                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                  className={`object-cover transition-all duration-500 ${showAnimated ? "opacity-0" : "opacity-100 group-hover:scale-105"}`}
                  onError={() => setThumbFailed(true)}
@@ -95,6 +96,7 @@ export function VideoCard({
                    src={getAnimatedThumb(streamUid)}
                    alt={`${title} 미리보기`}
                    fill
+                   unoptimized
                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                    className="object-cover"
                  />

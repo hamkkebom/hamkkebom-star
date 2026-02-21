@@ -40,6 +40,7 @@ type VideoRow = {
   title: string;
   status: string;
   thumbnailUrl: string | null;
+  signedThumbnailUrl?: string | null;
   streamUid: string;
   createdAt: string;
   owner: { id: string; name: string; chineseName: string | null; email: string };
@@ -493,20 +494,26 @@ export function VideosBrowser() {
             </div>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {data.data.map((video, index) => (
-                <VideoCard
-                  key={video.id}
-                  id={video.id}
-                  title={video.title}
-                  thumbnailUrl={video.thumbnailUrl}
-                  streamUid={video.streamUid}
-                  duration={video.technicalSpec?.duration ?? null}
-                  ownerName={video.owner.chineseName || video.owner.name}
-                  categoryName={video.category?.name ?? null}
-                  createdAt={video.createdAt}
-                  priority={page === 1 && index < 3}
-                />
-              ))}
+              {data.data.map((video, index) => {
+                // 서명된 썸네일 URL 우선 사용, 이 경우 streamUid를 null로 넘겨 
+                // VideoCard 컴포넌트 내부에서 강제로 URL을 더럽히지(오염) 않도록 함.
+                const useSigned = !!video.signedThumbnailUrl;
+
+                return (
+                  <VideoCard
+                    key={video.id}
+                    id={video.id}
+                    title={video.title}
+                    thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
+                    streamUid={useSigned ? null : video.streamUid}
+                    duration={video.technicalSpec?.duration ?? null}
+                    ownerName={video.owner.chineseName || video.owner.name}
+                    categoryName={video.category?.name ?? null}
+                    createdAt={video.createdAt}
+                    priority={page === 1 && index < 3}
+                  />
+                )
+              })}
             </div>
           )
         }

@@ -30,6 +30,15 @@ export async function GET(_request: Request, { params }: Params) {
       phone: true,
       avatarUrl: true,
       baseRate: true,
+      gradeId: true,
+      grade: {
+        select: {
+          id: true,
+          name: true,
+          color: true,
+          baseRate: true,
+        },
+      },
       externalId: true,
       chineseName: true,
       createdAt: true,
@@ -109,10 +118,23 @@ export async function PATCH(request: Request, { params }: Params) {
     );
   }
 
-  const allowedFields = ["baseRate", "name", "phone"];
+  const allowedFields = ["baseRate", "name", "phone", "gradeId"];
   const data: Record<string, unknown> = {};
   for (const key of allowedFields) {
     if (key in body) data[key] = body[key];
+  }
+
+  if ("gradeId" in data && data.gradeId) {
+    const grade = await prisma.pricingGrade.findUnique({
+      where: { id: data.gradeId as string },
+    });
+    if (!grade) {
+      return NextResponse.json(
+        { error: { code: "NOT_FOUND", message: "등급을 찾을 수 없습니다." } },
+        { status: 404 }
+      );
+    }
+    data.baseRate = grade.baseRate;
   }
 
   try {
@@ -125,6 +147,7 @@ export async function PATCH(request: Request, { params }: Params) {
         name: true,
         phone: true,
         baseRate: true,
+        gradeId: true,
         updatedAt: true,
       },
     });

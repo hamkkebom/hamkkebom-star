@@ -176,6 +176,7 @@ export default function VideoDetailPage() {
                    }
                    alt={video.title}
                    fill
+                   unoptimized
                    className="object-cover"
                    sizes="(max-width: 1280px) 100vw, 1280px"
                  />
