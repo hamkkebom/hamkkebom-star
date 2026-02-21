@@ -131,7 +131,7 @@ export function FeedbackDashboardSkeleton() {
                             </div>
 
                             {/* Horizontal Scrollable List Skeleton */}
-                            <div className="flex gap-4 sm:gap-6 overflow-hidden pb-6 pt-2 px-2 hide-scrollbar">
+                            <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 pt-2 px-2 custom-scrollbar">
                                 {dummyItems.map((_, itemIndex) => (
                                     <div key={itemIndex} className="shrink-0 w-[260px] sm:w-[280px] perspective-1000">
                                         <div className="w-full h-full relative rounded-3xl">
@@ -188,12 +188,22 @@ export function FeedbackDashboardSkeleton() {
                 .perspective-1000 {
                     perspective: 1000px;
                 }
-                .hide-scrollbar::-webkit-scrollbar {
-                    display: none;
+                .custom-scrollbar {
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
                 }
-                .hide-scrollbar {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
+                .custom-scrollbar::-webkit-scrollbar {
+                    height: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background-color: rgba(148, 163, 184, 0.4);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+                    background-color: rgba(148, 163, 184, 0.7);
                 }
             `}</style>
         </div>

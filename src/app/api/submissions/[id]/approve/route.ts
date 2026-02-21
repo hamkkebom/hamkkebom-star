@@ -26,7 +26,7 @@ export async function PATCH(_request: Request, { params }: Params) {
     const updated = await prisma.$transaction(async (tx) => {
       const submission = await tx.submission.findUnique({
         where: { id },
-        select: { id: true, status: true, assignmentId: true },
+        select: { id: true, status: true, assignmentId: true, videoId: true },
       });
 
       if (!submission) {
@@ -50,6 +50,14 @@ export async function PATCH(_request: Request, { params }: Params) {
         await tx.projectAssignment.update({
           where: { id: submission.assignmentId },
           data: { status: AssignmentStatus.COMPLETED },
+        });
+      }
+
+      // Video.status도 APPROVED로 연동 → 메인 페이지에 공개
+      if (submission.videoId) {
+        await tx.video.update({
+          where: { id: submission.videoId },
+          data: { status: "APPROVED" },
         });
       }
 

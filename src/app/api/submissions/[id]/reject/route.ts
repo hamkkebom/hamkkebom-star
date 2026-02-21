@@ -31,17 +31,38 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   try {
-    const updated = await prisma.submission.update({
-      where: { id },
-      data: {
-        status: SubmissionStatus.REJECTED,
-        reviewerId: user.id,
-        reviewedAt: new Date(),
-        summaryFeedback: reason || null,
-      },
-      include: {
-        star: { select: { id: true, name: true, email: true } },
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const submission = await tx.submission.findUnique({
+        where: { id },
+        select: { id: true, videoId: true },
+      });
+
+      if (!submission) {
+        throw { code: "NOT_FOUND", message: "제출물을 찾을 수 없습니다.", status: 404 };
+      }
+
+      const result = await tx.submission.update({
+        where: { id },
+        data: {
+          status: SubmissionStatus.REJECTED,
+          reviewerId: user.id,
+          reviewedAt: new Date(),
+          summaryFeedback: reason || null,
+        },
+        include: {
+          star: { select: { id: true, name: true, email: true } },
+        },
+      });
+
+      // Video.status를 DRAFT로 되돌려 메인에서 비공개 처리
+      if (submission.videoId) {
+        await tx.video.update({
+          where: { id: submission.videoId },
+          data: { status: "DRAFT" },
+        });
+      }
+
+      return result;
     });
 
     return NextResponse.json({ data: updated });
