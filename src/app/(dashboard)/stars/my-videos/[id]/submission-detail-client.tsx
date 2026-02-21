@@ -182,22 +182,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
     queryFn: () => fetchSubmission(submissionId),
   });
 
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-pulse">
-        <div className="lg:col-span-2 space-y-4">
-          <Skeleton className="h-8 w-1/3 mb-4" />
-          <Skeleton className="aspect-video w-full rounded-3xl" />
-        </div>
-        <div className="space-y-4">
-          <Skeleton className="aspect-video w-full rounded-xl" />
-          <Skeleton className="h-32 w-full rounded-xl" />
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
+  if (!isLoading && isError) {
     return (
       <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-6 text-sm text-destructive flex items-center gap-2">
         <AlertCircle className="w-5 h-5" />
@@ -206,21 +191,19 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
     );
   }
 
-  if (!submission) return null;
-
   // streamUid: submission 직접 → video 관계 순서로 fallback
-  const streamUid = submission.streamUid || submission.video?.streamUid;
-  const statusInfo = statusMap[submission.status] || {
+  const streamUid = submission?.streamUid || submission?.video?.streamUid;
+  const statusInfo = submission ? (statusMap[submission.status] || {
     label: submission.status,
     className: "bg-secondary",
     icon: null,
     glowColor: "rgba(255,255,255,0.1)"
-  };
-  const StatusIcon = statusInfo.icon;
+  }) : null;
+  const StatusIcon = statusInfo?.icon;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
-      {/* Header Navigation */}
+      {/* Header Navigation — 항상 즉시 표시 */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <Link
@@ -230,33 +213,46 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
             피드백 목록으로
           </Link>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">
-            {submission.versionTitle || submission.assignment?.request?.title || submission.video?.title || (submission.version.startsWith("v") ? submission.version : `v${submission.version}`)}
-          </h1>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <FileText className="w-3.5 h-3.5" />
-            {submission.assignment?.request?.title ?? "프로젝트 정보 없음"}
-          </div>
+          {isLoading ? (
+            <>
+              <Skeleton className="h-9 w-64" />
+              <Skeleton className="h-5 w-40" />
+            </>
+          ) : submission ? (
+            <>
+              <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">
+                {submission.versionTitle || submission.assignment?.request?.title || submission.video?.title || (submission.version.startsWith("v") ? submission.version : `v${submission.version}`)}
+              </h1>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <FileText className="w-3.5 h-3.5" />
+                {submission.assignment?.request?.title ?? "프로젝트 정보 없음"}
+              </div>
+            </>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-3">
           {/* Status Badge */}
-          <div className={cn(
-            "flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-md transition-all hover:scale-105 cursor-default select-none",
-            statusInfo.className
-          )}>
-            {StatusIcon && <StatusIcon className="w-4 h-4" />}
-            {statusInfo.label}
-          </div>
+          {statusInfo && (
+            <div className={cn(
+              "flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-md transition-all hover:scale-105 cursor-default select-none",
+              statusInfo.className
+            )}>
+              {StatusIcon && <StatusIcon className="w-4 h-4" />}
+              {statusInfo.label}
+            </div>
+          )}
 
           {/* Go to Manager Button */}
-          <Link
-            href={`/stars/my-videos/${submission.id}`}
-            className="inline-flex items-center gap-2 rounded-full bg-secondary/80 border border-secondary px-4 py-1.5 text-xs font-bold hover:bg-secondary hover:scale-105 transition-all"
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-            영상 관리
-          </Link>
+          {submission && (
+            <Link
+              href={`/stars/my-videos/${submission.id}`}
+              className="inline-flex items-center gap-2 rounded-full bg-secondary/80 border border-secondary px-4 py-1.5 text-xs font-bold hover:bg-secondary hover:scale-105 transition-all"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              영상 관리
+            </Link>
+          )}
 
           {/* Edit/Upload Button */}
           <Link
@@ -312,7 +308,9 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
                 </Badge>
               </div>
 
-              {streamUid ? (
+              {isLoading ? (
+                <Skeleton className="aspect-video w-full" />
+              ) : streamUid ? (
                 <div className="aspect-video w-full">
                   <VideoPlayer
                     streamUid={streamUid}
@@ -328,90 +326,112 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
             </div>
           </div>
 
-          {/* [Phase 5] AI Insights Panel */}
-          <AiInsightsPanel submissionId={submission.id} />
+          {isLoading ? (
+            <>
+              <Skeleton className="h-32 w-full rounded-xl" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </>
+          ) : submission ? (
+            <>
+              {/* [Phase 5] AI Insights Panel */}
+              <AiInsightsPanel submissionId={submission.id} />
 
-          {/* 제작 설명 (Memo) */}
-          {submission.summaryFeedback && (
-            <Card className="border-0 bg-secondary/30 backdrop-blur-sm ring-1 ring-border/50 shadow-sm">
-              <CardHeader className="pb-2 flex flex-row items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-primary" />
-                <CardTitle className="text-sm font-bold">제작 설명 / 메모</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground/90">
-                  {submission.summaryFeedback}
-                </p>
-              </CardContent>
-            </Card>
-          )}
+              {/* 제작 설명 (Memo) */}
+              {submission.summaryFeedback && (
+                <Card className="border-0 bg-secondary/30 backdrop-blur-sm ring-1 ring-border/50 shadow-sm">
+                  <CardHeader className="pb-2 flex flex-row items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                    <CardTitle className="text-sm font-bold">제작 설명 / 메모</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground/90">
+                      {submission.summaryFeedback}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
-          {/* Feedback List Container */}
-          <div className="space-y-4 pt-4">
-            <div className="flex items-center justify-between border-b pb-2 border-border/50">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-indigo-500" />
-                피드백 리스트
-              </h2>
-              <Badge variant="outline" className="text-xs font-mono">
-                Total: {submission._count.feedbacks}
-              </Badge>
-            </div>
-            <FeedbackList
-              submissionId={submission.id}
-              onTimecodeClick={(time) => setSeekTo(time)}
-            />
-          </div>
+              {/* Feedback List Container */}
+              <div className="space-y-4 pt-4">
+                <div className="flex items-center justify-between border-b pb-2 border-border/50">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-indigo-500" />
+                    피드백 리스트
+                  </h2>
+                  <Badge variant="outline" className="text-xs font-mono">
+                    Total: {submission._count.feedbacks}
+                  </Badge>
+                </div>
+                <FeedbackList
+                  submissionId={submission.id}
+                  onTimecodeClick={(time) => setSeekTo(time)}
+                />
+              </div>
+            </>
+          ) : null}
         </div>
 
         {/* Right Column: AI To-Do & Metadata (4 cols) */}
         <div className="lg:col-span-4 space-y-6 sticky top-6">
+          {isLoading ? (
+            <>
+              <Skeleton className="h-40 w-full rounded-xl" />
+              <Skeleton className="aspect-video w-full rounded-2xl" />
+              <div className="grid grid-cols-2 gap-3">
+                <Skeleton className="col-span-2 h-20 rounded-xl" />
+                <Skeleton className="h-16 rounded-xl" />
+                <Skeleton className="h-16 rounded-xl" />
+              </div>
+            </>
+          ) : submission ? (
+            <>
+              {/* [Phase 2] AI To-Do List */}
+              <AiTodoList submissionId={submission.id} />
 
-          {/* [Phase 2] AI To-Do List */}
-          <AiTodoList submissionId={submission.id} />
+              {/* Thumbnail Preview Card */}
+              <div className="group relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-black/20 hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer">
+                <DetailThumbnail
+                  src={submission.signedThumbnailUrl || submission.thumbnailUrl}
+                  alt={submission.versionTitle || "영상 썸네일"}
+                />
+              </div>
 
-          {/* Thumbnail Preview Card */}
-          <div className="group relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-black/20 hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer">
-            <DetailThumbnail
-              src={submission.signedThumbnailUrl || submission.thumbnailUrl}
-              alt={submission.versionTitle || "영상 썸네일"}
-            />
-          </div>
+              {/* Info Cards Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <Card className="col-span-2 bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-blue-500/10 text-blue-500">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">재생 시간</p>
+                      <p className="text-sm font-bold">{(submission.duration || submission.video?.technicalSpec?.duration) ? formatDuration(submission.duration || submission.video?.technicalSpec?.duration || 0) : "-"}</p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-          {/* Info Cards Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <Card className="col-span-2 bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 rounded-full bg-blue-500/10 text-blue-500">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">재생 시간</p>
-                  <p className="text-sm font-bold">{(submission.duration || submission.video?.technicalSpec?.duration) ? formatDuration(submission.duration || submission.video?.technicalSpec?.duration || 0) : "-"}</p>
-                </div>
-              </CardContent>
-            </Card>
+                <Card className="bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
+                  <CardContent className="p-4 flex flex-col gap-1">
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      제출일
+                    </p>
+                    <p className="text-xs font-medium truncate">{formatDate(submission.createdAt)}</p>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
-              <CardContent className="p-4 flex flex-col gap-1">
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  제출일
-                </p>
-                <p className="text-xs font-medium truncate">{formatDate(submission.createdAt)}</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
-              <CardContent className="p-4 flex flex-col gap-1">
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  버전
-                </p>
-                <p className="text-xs font-medium">{submission.version}</p>
-              </CardContent>
-            </Card>
-          </div>
+                <Card className="bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
+                  <CardContent className="p-4 flex flex-col gap-1">
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      버전
+                    </p>
+                    <p className="text-xs font-medium">{submission.version}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          ) : null}
         </div>
 
       </div>

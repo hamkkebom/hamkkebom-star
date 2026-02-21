@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -203,16 +204,7 @@ export function VideoManagerClient({
         onError: (err) => toast.error(err.message),
     });
 
-    if (isLoading) {
-        return (
-            <div className="h-[80vh] flex flex-col items-center justify-center gap-3 text-primary animate-pulse">
-                <Loader2 className="w-8 h-8 animate-spin" />
-                <span className="font-bold text-lg">스튜디오 로딩 중...</span>
-            </div>
-        );
-    }
-
-    if (isError || !data) {
+    if (!isLoading && (isError || !data)) {
         return (
             <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-muted-foreground">
                 <p>데이터를 불러올 수 없습니다.</p>
@@ -233,15 +225,15 @@ export function VideoManagerClient({
 
     // === 데이터 접근 (피드백 페이지와 동일 패턴) ===
     // streamUid: submission 직접 → video 관계 순서로 fallback
-    const streamUid = data.streamUid || data.video?.streamUid;
+    const streamUid = data?.streamUid || data?.video?.streamUid;
     // 썸네일: signedThumbnailUrl → thumbnailUrl 순서
-    const thumbnailSrc = data.signedThumbnailUrl || data.thumbnailUrl;
+    const thumbnailSrc = data?.signedThumbnailUrl || data?.thumbnailUrl;
     // 프로젝트 제목
-    const projectTitle = data.versionTitle || data.assignment?.request?.title || data.video?.title || `v${data.version}`;
+    const projectTitle = data?.versionTitle || data?.assignment?.request?.title || data?.video?.title || (data ? `v${data.version}` : "로딩 중...");
     // 재생 시간
-    const durationSecs = data.duration || data.video?.technicalSpec?.duration;
+    const durationSecs = data?.duration || data?.video?.technicalSpec?.duration;
 
-    const allVersions = [
+    const allVersions = data ? [
         {
             id: data.id,
             version: data.version,
@@ -250,20 +242,20 @@ export function VideoManagerClient({
             versionTitle: data.versionTitle,
         },
         ...(data.siblings ?? []),
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : [];
 
     // 현재 보고 있는 버전이 최신인지 확인 (나보다 나중에 생성된 sibling이 없으면 최신)
-    const isLatestVersion = !(data.siblings ?? []).some(
+    const isLatestVersion = data ? !(data.siblings ?? []).some(
         (s) => new Date(s.createdAt).getTime() > new Date(data.createdAt).getTime()
-    );
+    ) : false;
 
     return (
         <div className="relative min-h-screen pb-40 bg-background transition-colors duration-500">
-            {/* Background Ambient (Adaptive) */}
+            {/* Background Ambient (Adaptive) — 항상 즉시 표시 */}
             <div className="fixed inset-0 -z-20 bg-background transition-colors duration-500" />
             <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/15 dark:bg-primary/10 blur-[120px] rounded-full -translate-y-1/2 pointer-events-none -z-10" />
 
-            {/* 1. Floating Header */}
+            {/* 1. Floating Header — 항상 즉시 표시 */}
             <header className="sticky top-4 z-50 mx-4 sm:mx-6 mb-8">
                 <div className="bg-background/80 backdrop-blur-2xl border border-border rounded-full px-4 py-3 flex items-center justify-between shadow-xl transition-all">
                     <div className="flex items-center gap-3">
@@ -275,22 +267,29 @@ export function VideoManagerClient({
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
-                        <div>
-                            <h1 className="font-bold text-sm tracking-wide flex items-center gap-2">
-                                {projectTitle}
-                                <span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold uppercase tracking-widest shadow-sm">
-                                    v{data.version}
-                                </span>
-                            </h1>
-                            {data.assignment?.request?.title && data.versionTitle && (
-                                <p className="text-xs text-muted-foreground ml-0.5">{data.assignment.request.title}</p>
-                            )}
-                        </div>
+                        {isLoading ? (
+                            <div className="space-y-1">
+                                <Skeleton className="h-5 w-32" />
+                                <Skeleton className="h-3 w-20" />
+                            </div>
+                        ) : data ? (
+                            <div>
+                                <h1 className="font-bold text-sm tracking-wide flex items-center gap-2">
+                                    {projectTitle}
+                                    <span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold uppercase tracking-widest shadow-sm">
+                                        v{data.version}
+                                    </span>
+                                </h1>
+                                {data.assignment?.request?.title && data.versionTitle && (
+                                    <p className="text-xs text-muted-foreground ml-0.5">{data.assignment.request.title}</p>
+                                )}
+                            </div>
+                        ) : null}
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* Version Bump Button — 최신 버전에서만 노출 */}
-                        {isLatestVersion && (
+                        {/* Version Bump Button — 데이터 로드 후 최신 버전에서만 노출 */}
+                        {!isLoading && data && isLatestVersion && (
                             <Dialog open={showBumpModal} onOpenChange={setShowBumpModal}>
                                 <DialogTrigger asChild>
                                     <Button className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 gap-2 shadow-lg shadow-indigo-500/20 border border-indigo-400/30 animate-pulse-subtle">
@@ -337,16 +336,18 @@ export function VideoManagerClient({
                                     </SheetTitle>
                                 </SheetHeader>
                                 <div className="h-full overflow-y-auto p-4">
-                                    <VersionTimeline versions={allVersions} currentVersionId={data.id} />
+                                    <VersionTimeline versions={allVersions} currentVersionId={data?.id ?? ""} />
                                 </div>
                             </SheetContent>
                         </Sheet>
 
-                        <Button asChild className="rounded-full font-bold px-6 h-10">
-                            <Link href={`/stars/feedback/${data.id}`}>
-                                피드백 확인하기 <ChevronRight className="w-4 h-4 ml-1" />
-                            </Link>
-                        </Button>
+                        {data && (
+                            <Button asChild className="rounded-full font-bold px-6 h-10">
+                                <Link href={`/stars/feedback/${data.id}`}>
+                                    피드백 확인하기 <ChevronRight className="w-4 h-4 ml-1" />
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 </div>
             </header>
@@ -358,7 +359,9 @@ export function VideoManagerClient({
                     <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-60 dark:group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
 
                     <div className="relative rounded-[2rem] overflow-hidden shadow-2xl ring-1 ring-border bg-muted dark:bg-black transform transition-transform duration-700 hover:scale-[1.005]">
-                        {streamUid ? (
+                        {isLoading ? (
+                            <Skeleton className="aspect-video w-full" />
+                        ) : streamUid ? (
                             <CinemaContainer streamUid={streamUid} />
                         ) : (
                             <div className="aspect-video w-full flex flex-col items-center justify-center bg-muted dark:bg-gray-900 text-muted-foreground gap-3">
@@ -368,18 +371,33 @@ export function VideoManagerClient({
                         )}
 
                         {/* Overlay Info on Hover */}
-                        <div className="absolute top-0 left-0 right-0 p-6 bg-gradient-to-b from-black/50 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                            <div className="flex items-center justify-between text-white/70 font-mono text-xs tracking-widest">
-                                <span className="bg-black/40 px-2 py-1 rounded backdrop-blur-sm">{data.status}</span>
-                                <span className="bg-black/40 px-2 py-1 rounded backdrop-blur-sm">SEQ: {data.id.substring(0, 8)}</span>
+                        {data && (
+                            <div className="absolute top-0 left-0 right-0 p-6 bg-gradient-to-b from-black/50 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                <div className="flex items-center justify-between text-white/70 font-mono text-xs tracking-widest">
+                                    <span className="bg-black/40 px-2 py-1 rounded backdrop-blur-sm">{data.status}</span>
+                                    <span className="bg-black/40 px-2 py-1 rounded backdrop-blur-sm">SEQ: {data.id.substring(0, 8)}</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </section>
 
             {/* 3. Info Section: Metadata + Asset Card */}
             <section className="px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto">
+                {isLoading ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 bg-card/80 backdrop-blur-lg border border-border rounded-3xl p-8 shadow-lg">
+                            <Skeleton className="h-8 w-48 mb-4" />
+                            <Skeleton className="h-12 w-full mb-4" />
+                            <Skeleton className="h-32 w-full" />
+                        </div>
+                        <div className="lg:col-span-1">
+                            <Skeleton className="aspect-video w-full rounded-2xl mb-4" />
+                            <Skeleton className="h-40 w-full rounded-3xl" />
+                        </div>
+                    </div>
+                ) : data ? (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left 2/3: Creator Notes */}
                     <div className="lg:col-span-2 bg-card/80 backdrop-blur-lg border border-border rounded-3xl p-8 shadow-lg relative overflow-hidden transition-colors">
@@ -399,10 +417,10 @@ export function VideoManagerClient({
                                     <div className="flex gap-2">
                                         <Button variant="ghost" onClick={() => {
                                             setIsEditing(false);
-                                            setTitle(data.versionTitle ?? "");
-                                            setDesc(data.summaryFeedback ?? "");
-                                            setLyrics(data.video?.lyrics ?? "");
-                                            setCategoryId(data.video?.categoryId ?? "");
+                                            setTitle(data?.versionTitle ?? "");
+                                            setDesc(data?.summaryFeedback ?? "");
+                                            setLyrics(data?.video?.lyrics ?? "");
+                                            setCategoryId(data?.video?.categoryId ?? "");
                                         }} className="text-muted-foreground">취소</Button>
                                         <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="gap-2"><Save className="w-4 h-4" /> 저장</Button>
                                     </div>
@@ -553,17 +571,17 @@ export function VideoManagerClient({
                             <div className="space-y-3 relative z-10">
                                 <div>
                                     <h3 className="text-base font-bold">영상 정보</h3>
-                                    <p className="text-xs text-muted-foreground font-mono mt-1">ID: {data.id.substring(0, 8).toUpperCase()}</p>
+                                     <p className="text-xs text-muted-foreground font-mono mt-1">ID: {data?.id.substring(0, 8).toUpperCase()}</p>
                                 </div>
 
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between items-center py-1.5 border-b border-border/50">
                                         <span className="text-muted-foreground flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> 상태</span>
-                                        <span className="font-medium capitalize">{data.status}</span>
+                                         <span className="font-medium capitalize">{data?.status}</span>
                                     </div>
                                     <div className="flex justify-between items-center py-1.5 border-b border-border/50">
                                         <span className="text-muted-foreground">버전</span>
-                                        <span className="font-medium">v{data.version}</span>
+                                         <span className="font-medium">v{data?.version}</span>
                                     </div>
                                     <div className="flex justify-between items-center py-1.5 border-b border-border/50">
                                         <span className="text-muted-foreground flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> 등록일</span>
@@ -580,6 +598,7 @@ export function VideoManagerClient({
                         </div>
                     </div>
                 </div>
+                ) : null}
             </section>
         </div>
     );

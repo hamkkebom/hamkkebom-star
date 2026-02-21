@@ -239,11 +239,15 @@ export default function ReviewDetailPage() {
             currentTime={currentTime}
             onSubmitted={() => {
               queryClient.invalidateQueries({ queryKey: ["feedbacks", sub.id] });
+              queryClient.invalidateQueries({ queryKey: ["submission-detail", id] });
             }}
           />
           <FeedbackList
             submissionId={sub.id}
             onTimecodeClick={setSeekTo}
+            onFeedbacksChanged={() => {
+              queryClient.invalidateQueries({ queryKey: ["submission-detail", id] });
+            }}
           />
         </CardContent>
       </Card>

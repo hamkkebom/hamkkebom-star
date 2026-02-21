@@ -307,7 +307,28 @@ export function FeedbackWorkspace({
             if (!res.ok) throw new Error("삭제에 실패했습니다.");
             return res.json();
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
+            // 삭제 후 남은 피드백이 0개이면 PENDING으로 전환
+            const remaining = data?.remainingFeedbacks;
+            if (remaining === 0 && selectedId) {
+                setSubmissions(prev =>
+                    prev.map(sub =>
+                        sub.id === selectedId
+                            ? { ...sub, status: "PENDING", _count: { ...sub._count, feedbacks: 0 } }
+                            : sub
+                    )
+                );
+                setFilter("PENDING");
+            } else if (selectedId) {
+                // 피드백 카운트 감소
+                setSubmissions(prev =>
+                    prev.map(sub =>
+                        sub.id === selectedId
+                            ? { ...sub, _count: { ...sub._count, feedbacks: Math.max(0, (sub._count?.feedbacks || 1) - 1) } }
+                            : sub
+                    )
+                );
+            }
             queryClient.invalidateQueries({ queryKey: ["feedbacks", selectedId] });
             queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
             toast.success("피드백이 삭제되었습니다.");

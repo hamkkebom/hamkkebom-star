@@ -39,13 +39,13 @@ export async function GET(request: Request) {
   const durationFilter =
     durationMin !== undefined || durationMax !== undefined
       ? {
-          technicalSpec: {
-            duration: {
-              ...(durationMin !== undefined ? { gte: durationMin } : {}),
-              ...(durationMax !== undefined ? { lte: durationMax } : {}),
-            },
+        technicalSpec: {
+          duration: {
+            ...(durationMin !== undefined ? { gte: durationMin } : {}),
+            ...(durationMax !== undefined ? { lte: durationMax } : {}),
           },
-        }
+        },
+      }
       : {};
 
   const where: Prisma.VideoWhereInput = {

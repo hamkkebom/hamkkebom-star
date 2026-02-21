@@ -122,7 +122,7 @@ export async function DELETE(_request: Request, { params }: Params) {
 
   const existing = await prisma.feedback.findUnique({
     where: { id },
-    select: { authorId: true },
+    select: { authorId: true, submissionId: true },
   });
 
   if (!existing) {
@@ -139,6 +139,24 @@ export async function DELETE(_request: Request, { params }: Params) {
     );
   }
 
-  await prisma.feedback.delete({ where: { id } });
-  return NextResponse.json({ data: { success: true } });
+  // 트랜잭션으로 삭제 + 남은 피드백 0개 시 PENDING 전환
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.feedback.delete({ where: { id } });
+
+    const remainingCount = await tx.feedback.count({
+      where: { submissionId: existing.submissionId },
+    });
+
+    if (remainingCount === 0) {
+      await tx.submission.update({
+        where: { id: existing.submissionId },
+        data: { status: "PENDING" },
+      });
+    }
+
+    return { remainingCount };
+  });
+
+  return NextResponse.json({ data: { success: true, remainingFeedbacks: result.remainingCount } });
 }
+

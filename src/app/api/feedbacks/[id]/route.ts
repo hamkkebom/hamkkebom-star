@@ -103,7 +103,7 @@ export async function DELETE(
         // 본인 피드백인지 확인
         const existing = await prisma.feedback.findUnique({
             where: { id },
-            select: { authorId: true },
+            select: { authorId: true, submissionId: true },
         });
 
         if (!existing) {
@@ -120,8 +120,27 @@ export async function DELETE(
             );
         }
 
-        await prisma.feedback.delete({ where: { id } });
-        return NextResponse.json({ success: true });
+        // 트랜잭션으로 삭제 + 남은 피드백 0개 시 PENDING 전환
+        const result = await prisma.$transaction(async (tx) => {
+            await tx.feedback.delete({ where: { id } });
+
+            // 남은 피드백 수 확인
+            const remainingCount = await tx.feedback.count({
+                where: { submissionId: existing.submissionId },
+            });
+
+            // 피드백이 0개이면 submission 상태를 PENDING으로 되돌림
+            if (remainingCount === 0) {
+                await tx.submission.update({
+                    where: { id: existing.submissionId },
+                    data: { status: "PENDING" },
+                });
+            }
+
+            return { remainingCount };
+        });
+
+        return NextResponse.json({ success: true, remainingFeedbacks: result.remainingCount });
     } catch (error) {
         console.error("Failed to delete feedback:", error);
         return NextResponse.json(
@@ -130,3 +149,4 @@ export async function DELETE(
         );
     }
 }
+
