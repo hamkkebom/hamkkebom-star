@@ -163,6 +163,61 @@ export default function AdminReviewsPage() {
     },
   });
 
+  const cancelReviewMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/submissions/${id}/cancel-review`, {
+        method: "PATCH",
+      });
+      if (!res.ok) {
+        const err = (await res.json()) as { error?: { message?: string } };
+        throw new Error(err.error?.message ?? "상태 취소에 실패했습니다.");
+      }
+      return (await res.json()).data as SubmissionRow;
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["admin-submissions"] });
+      const previousData = queryClient.getQueryData<SubmissionsResponse>(["admin-submissions", filter, page]);
+
+      // Optimistic update for the list
+      queryClient.setQueryData<SubmissionsResponse>(["admin-submissions", filter, page], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          data: old.data.map((sub) => {
+            if (sub.id === id) {
+              const newStatus = sub._count.feedbacks > 0 ? "IN_REVIEW" : "PENDING";
+              return { ...sub, status: newStatus as SubmissionStatus };
+            }
+            return sub;
+          }),
+        };
+      });
+
+      // Optimistic update for the dialog
+      if (selectedSubmission?.id === id) {
+        setSelectedSubmission((prev) => {
+          if (!prev) return prev;
+          const newStatus = prev._count.feedbacks > 0 ? "IN_REVIEW" : "PENDING";
+          return { ...prev, status: newStatus as SubmissionStatus };
+        });
+      }
+
+      return { previousData };
+    },
+    onSuccess: () => {
+      toast.success("처리가 취소되었습니다.");
+    },
+    onError: (err, id, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(["admin-submissions", filter, page], context.previousData);
+      }
+      toast.error(err instanceof Error ? err.message : "상태 취소에 실패했습니다.");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-submissions"] });
+    },
+  });
+
   const rows = data?.data ?? [];
 
   return (
@@ -375,27 +430,41 @@ export default function AdminReviewsPage() {
                   seekTo={seekTo}
                 />
 
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => approveMutation.mutate(selectedSubmission.id)}
-                    disabled={
-                      approveMutation.isPending ||
-                      selectedSubmission.status === "APPROVED"
-                    }
-                  >
-                    {approveMutation.isPending ? "승인 중..." : "승인"}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => rejectMutation.mutate({ id: selectedSubmission.id, reason: rejectReason })}
-                    disabled={
-                      rejectMutation.isPending ||
-                      selectedSubmission.status === "REJECTED" ||
-                      !rejectReason.trim()
-                    }
-                  >
-                    {rejectMutation.isPending ? "반려 중..." : "반려"}
-                  </Button>
+                <div className="flex gap-2 items-center">
+                  {(selectedSubmission.status === "PENDING" ||
+                    selectedSubmission.status === "IN_REVIEW" ||
+                    selectedSubmission.status === "REVISED") && (
+                      <>
+                        <Button
+                          onClick={() => approveMutation.mutate(selectedSubmission.id)}
+                          disabled={approveMutation.isPending}
+                        >
+                          {approveMutation.isPending ? "승인 중..." : "승인"}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => rejectMutation.mutate({ id: selectedSubmission.id, reason: rejectReason })}
+                          disabled={rejectMutation.isPending || !rejectReason.trim()}
+                        >
+                          {rejectMutation.isPending ? "반려 중..." : "반려"}
+                        </Button>
+                      </>
+                    )}
+
+                  {(selectedSubmission.status === "APPROVED" ||
+                    selectedSubmission.status === "REJECTED") && (
+                      <Button
+                        variant="secondary"
+                        onClick={() => cancelReviewMutation.mutate(selectedSubmission.id)}
+                        disabled={cancelReviewMutation.isPending}
+                      >
+                        {cancelReviewMutation.isPending
+                          ? "취소 중..."
+                          : selectedSubmission.status === "APPROVED"
+                            ? "승인 취소"
+                            : "반려 취소"}
+                      </Button>
+                    )}
                 </div>
 
                 <div className="space-y-2">
