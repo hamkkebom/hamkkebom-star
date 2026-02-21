@@ -10,11 +10,7 @@ import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import {
-    Search, Play, Clock, MessageSquare,
-    Sparkles, LayoutGrid, ArrowRight,
-    Eye, Zap, TrendingUp, ArrowUpDown
-} from "lucide-react";
+import { MoveRight, Loader2, Sparkles, TrendingUp, Clock, Zap, Play, Search, ArrowUpDown, CheckCircle2, Eye, LayoutGrid, MessageSquare, ArrowRight } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -119,6 +115,7 @@ const PARTICLES_OPTIONS = {
 const FILTERS = [
     { key: "PENDING", label: "대기중", icon: Clock, color: "text-amber-500 dark:text-amber-400" },
     { key: "IN_REVIEW", label: "피드백중", icon: Eye, color: "text-indigo-500 dark:text-indigo-400" },
+    { key: "COMPLETED", label: "완료됨", icon: CheckCircle2, color: "text-emerald-500 dark:text-emerald-400" },
     { key: "ALL", label: "전체", icon: LayoutGrid },
 ];
 
@@ -196,7 +193,11 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
 
     const filteredSubmissions = useMemo(() => {
         let result = submissions.filter(s => {
-            const matchesFilter = filter === "ALL" || s.status === filter;
+            let matchesFilter = false;
+            if (filter === "ALL") matchesFilter = true;
+            else if (filter === "COMPLETED") matchesFilter = s.status === "APPROVED" || s.status === "REJECTED" || s.status === "REVISED";
+            else matchesFilter = s.status === filter;
+
             const matchesSearch = !searchQuery ||
                 s.video?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 s.star.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -216,6 +217,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
         total: submissions.length,
         pending: submissions.filter(s => s.status === "PENDING").length,
         inReview: submissions.filter(s => s.status === "IN_REVIEW").length,
+        completed: submissions.filter(s => s.status === "APPROVED" || s.status === "REJECTED" || s.status === "REVISED").length,
     }), [submissions]);
 
     return (
@@ -278,6 +280,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                             { label: "전체", value: stats.total, gradient: "from-slate-500 to-slate-400", ring: "ring-slate-300/40 dark:ring-slate-500/20", icon: TrendingUp, iconColor: "#94a3b8" },
                             { label: "대기중", value: stats.pending, gradient: "from-amber-500 to-orange-400", ring: "ring-amber-300/40 dark:ring-amber-500/20", icon: Clock, iconColor: "#f59e0b" },
                             { label: "피드백중", value: stats.inReview, gradient: "from-indigo-500 to-purple-400", ring: "ring-indigo-300/40 dark:ring-indigo-500/20", icon: Zap, iconColor: "#6366f1" },
+                            { label: "완료됨", value: stats.completed, gradient: "from-emerald-500 to-teal-400", ring: "ring-emerald-300/40 dark:ring-emerald-500/20", icon: CheckCircle2, iconColor: "#10b981" }
                         ].map((stat, i) => (
                             <motion.div
                                 key={stat.label}
@@ -330,7 +333,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                                         "relative z-10 px-1.5 py-0.5 rounded-full text-[10px] font-bold min-w-[20px] text-center",
                                         filter === tab.key ? "bg-white/20" : "bg-slate-200 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400"
                                     )}>
-                                        {tab.key === "PENDING" ? stats.pending : stats.inReview}
+                                        {tab.key === "PENDING" ? stats.pending : tab.key === "IN_REVIEW" ? stats.inReview : stats.completed}
                                     </span>
                                 )}
                             </button>

@@ -24,15 +24,12 @@ export async function GET(_req: NextRequest) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        // 담당하는 STAR의 대기중/피드백중 제출 조회
+        // 담당하는 STAR의 모든 제출 조회 (상태 무관 - 전체/완료된 내역도 볼 수 있도록)
         const submissions = await prisma.submission.findMany({
             where: {
                 star: {
                     managerId: requester.id
-                },
-                status: {
-                    in: ["PENDING", "IN_REVIEW"],
-                },
+                }
             },
             select: {
                 id: true,
