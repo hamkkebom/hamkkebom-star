@@ -21,7 +21,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/generated/prisma/client", () => ({
-  AssignmentStatus: { ACCEPTED: "ACCEPTED", IN_PROGRESS: "IN_PROGRESS", COMPLETED: "COMPLETED" },
+  AssignmentStatus: { ACCEPTED: "ACCEPTED", IN_PROGRESS: "IN_PROGRESS", COMPLETED: "COMPLETED", PENDING_APPROVAL: "PENDING_APPROVAL", REJECTED: "REJECTED" },
   SubmissionStatus: { PENDING: "PENDING", APPROVED: "APPROVED", REJECTED: "REJECTED" },
   Prisma: {
     PrismaClientKnownRequestError: class extends Error {
@@ -46,6 +46,10 @@ vi.mock("@/lib/validations/submission", async () => {
     }),
   };
 });
+
+vi.mock("@/lib/ai/trigger", () => ({
+  triggerAiAnalysis: vi.fn().mockResolvedValue(undefined),
+}));
 
 // --- Helpers ---
 
@@ -144,6 +148,22 @@ describe("POST /api/submissions", () => {
 
     expect(res.status).toBe(404);
     expect(json.error.code).toBe("NOT_FOUND");
+  });
+
+  it("403 — 승인되지 않은 프로젝트 제출 차단", async () => {
+    mockGetAuthUser.mockResolvedValue(starUser);
+    mockTransaction.mockRejectedValue({
+      code: "FORBIDDEN",
+      message: "승인되지 않은 프로젝트에는 제출할 수 없습니다.",
+      status: 403,
+    });
+
+    const res = await POST(makePostRequest(validSubmission));
+    const json = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(json.error.code).toBe("FORBIDDEN");
+    expect(json.error.message).toBe("승인되지 않은 프로젝트에는 제출할 수 없습니다.");
   });
 
   it("201 — 제출 성공", async () => {

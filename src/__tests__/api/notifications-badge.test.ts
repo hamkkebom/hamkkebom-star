@@ -10,6 +10,7 @@ vi.mock("@/lib/auth-helpers", () => ({
 const mockFeedbackCount = vi.fn();
 const mockSubmissionCount = vi.fn();
 const mockSettlementCount = vi.fn();
+const mockProjectAssignmentCount = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     feedback: {
@@ -21,6 +22,9 @@ vi.mock("@/lib/prisma", () => ({
     settlement: {
       count: (...args: unknown[]) => mockSettlementCount(...args),
     },
+    projectAssignment: {
+      count: (...args: unknown[]) => mockProjectAssignmentCount(...args),
+    },
   },
 }));
 
@@ -28,6 +32,7 @@ vi.mock("@/generated/prisma/client", () => ({
   FeedbackStatus: { PENDING: "PENDING", RESOLVED: "RESOLVED", WONTFIX: "WONTFIX" },
   SubmissionStatus: { PENDING: "PENDING", APPROVED: "APPROVED", REJECTED: "REJECTED" },
   SettlementStatus: { PENDING: "PENDING", COMPLETED: "COMPLETED" },
+  AssignmentStatus: { PENDING_APPROVAL: "PENDING_APPROVAL" },
 }));
 
 // --- Helpers ---
@@ -65,10 +70,11 @@ describe("GET /api/notifications/badge", () => {
     expect(json.data.unreadFeedbacks).toBe(5);
   });
 
-  it("200 — ADMIN 뱃지 (미리뷰 제출물 + 대기 정산)", async () => {
+  it("200 — ADMIN 뱃지 (미리뷰 제출물 + 대기 정산 + 승인 대기)", async () => {
     mockGetAuthUser.mockResolvedValue(adminUser);
     mockSubmissionCount.mockResolvedValue(3);
     mockSettlementCount.mockResolvedValue(2);
+    mockProjectAssignmentCount.mockResolvedValue(1);
 
     const res = await GET();
     const json = await res.json();
@@ -76,6 +82,7 @@ describe("GET /api/notifications/badge", () => {
     expect(res.status).toBe(200);
     expect(json.data.unreviewedSubmissions).toBe(3);
     expect(json.data.pendingSettlements).toBe(2);
+    expect(json.data.pendingApprovals).toBe(1);
   });
 
   it("403 — 알 수 없는 role", async () => {
