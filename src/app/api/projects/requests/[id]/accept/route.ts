@@ -26,7 +26,6 @@ export async function POST(_request: Request, { params }: Params) {
     const result = await prisma.$transaction(async (tx) => {
       const req = await tx.projectRequest.findUnique({
         where: { id },
-        include: { _count: { select: { assignments: true } } },
       });
 
       if (!req) {
@@ -42,11 +41,10 @@ export async function POST(_request: Request, { params }: Params) {
       });
 
       if (existing) {
+        if (existing.status === "REJECTED") {
+          throw { code: "CONFLICT", message: "거절된 요청에는 다시 지원할 수 없습니다.", status: 409 };
+        }
         throw { code: "CONFLICT", message: "이미 수락한 요청입니다.", status: 409 };
-      }
-
-      if (req._count.assignments >= req.maxAssignees) {
-        throw { code: "BAD_REQUEST", message: "정원이 가득 찼습니다.", status: 400 };
       }
 
       const assignment = await tx.projectAssignment.create({
@@ -56,14 +54,6 @@ export async function POST(_request: Request, { params }: Params) {
           request: { select: { id: true, title: true } },
         },
       });
-
-      // 정원 도달 시 FULL로 변경
-      if (req._count.assignments + 1 >= req.maxAssignees) {
-        await tx.projectRequest.update({
-          where: { id },
-          data: { status: RequestStatus.FULL },
-        });
-      }
 
       return assignment;
     });
