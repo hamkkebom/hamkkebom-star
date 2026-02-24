@@ -130,7 +130,7 @@ export async function getVideoStatus(uid: string): Promise<VideoInfo | null> {
  * Cloudflare Stream의 requireSignedURLs 옵션이 활성화된 경우 필요합니다.
  * API 토큰만으로 /token 엔드포인트를 사용하여 1시간 유효 토큰을 발급합니다.
  */
-export async function getSignedPlaybackToken(uid: string): Promise<string | null> {
+export async function getSignedPlaybackToken(uid: string, downloadable: boolean = false): Promise<string | null> {
   if (!isConfigured()) {
     return null;
   }
@@ -144,6 +144,7 @@ export async function getSignedPlaybackToken(uid: string): Promise<string | null
       },
       body: JSON.stringify({
         exp: Math.floor(Date.now() / 1000) + 3600, // 1시간 유효
+        downloadable,
         accessRules: [
           { type: "any", action: "allow" },
         ],

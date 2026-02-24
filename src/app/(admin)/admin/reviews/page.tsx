@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Clock, Eye, CheckCircle2, LayoutGrid } from "lucide-react";
+import { Clock, Eye, CheckCircle2, LayoutGrid, Download, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,6 +113,8 @@ export default function AdminReviewsPage() {
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
   const [rejectReason, setRejectReason] = useState("");
   const handleTimeUpdate = useCallback((t: number) => setCurrentTime(t), []);
+
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const [filter, setFilter] = useState("PENDING");
   const [page, setPage] = useState(1);
@@ -465,6 +467,39 @@ export default function AdminReviewsPage() {
                             : "반려 취소"}
                       </Button>
                     )}
+
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      setIsDownloading(true);
+                      try {
+                        const res = await fetch(`/api/submissions/${selectedSubmission.id}/download`);
+                        if (!res.ok) {
+                          const err = (await res.json()) as { error?: { message?: string } };
+                          throw new Error(err.error?.message ?? "다운로드에 실패했습니다.");
+                        }
+                        const { data } = (await res.json()) as { data: { downloadUrl: string; filename: string } };
+                        const a = document.createElement("a");
+                        a.href = data.downloadUrl;
+                        a.download = `${data.filename}.mp4`;
+                        a.target = "_blank";
+                        a.rel = "noopener noreferrer";
+                        a.click();
+                        toast.success("다운로드가 시작되었습니다.");
+                      } catch (err) {
+                        toast.error(err instanceof Error ? err.message : "다운로드에 실패했습니다.");
+                      } finally {
+                        setIsDownloading(false);
+                      }
+                    }}
+                    disabled={isDownloading}
+                  >
+                    {isDownloading ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />다운로드 중...</>
+                    ) : (
+                      <><Download className="mr-2 h-4 w-4" />영상 다운로드</>
+                    )}
+                  </Button>
                 </div>
 
                 <div className="space-y-2">

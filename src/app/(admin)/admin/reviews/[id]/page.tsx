@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { FeedbackList } from "@/components/feedback/feedback-list";
-import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Download, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
 
 type Feedback = {
@@ -69,6 +69,30 @@ export default function ReviewDetailPage() {
   const [currentTime, setCurrentTime] = useState(0);
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
   const handleTimeUpdate = useCallback((t: number) => setCurrentTime(t), []);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      const res = await fetch(`/api/submissions/${id}/download`);
+      if (!res.ok) {
+        const err = (await res.json()) as { error?: { message?: string } };
+        throw new Error(err.error?.message ?? "다운로드에 실패했습니다.");
+      }
+      const { data: dlData } = (await res.json()) as { data: { downloadUrl: string; filename: string } };
+      const a = document.createElement("a");
+      a.href = dlData.downloadUrl;
+      a.download = `${dlData.filename}.mp4`;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.click();
+      toast.success("다운로드가 시작되었습니다.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "다운로드에 실패했습니다.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const { data, isLoading, error } = useQuery<{ data: SubmissionDetail }>({
     queryKey: ["submission-detail", id],
@@ -166,6 +190,18 @@ export default function ReviewDetailPage() {
           )}
         </CardContent>
       </Card>
+
+
+      {/* 영상 다운로드 */}
+      {(sub.streamUid || sub.video?.streamUid) && (
+        <Button variant="outline" onClick={handleDownload} disabled={isDownloading}>
+          {isDownloading ? (
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />다운로드 중...</>
+          ) : (
+            <><Download className="mr-2 h-4 w-4" />영상 다운로드</>
+          )}
+        </Button>
+      )}
 
       {/* Approve / Reject Controls */}
       {(sub.status === "PENDING" || sub.status === "IN_REVIEW") && (
