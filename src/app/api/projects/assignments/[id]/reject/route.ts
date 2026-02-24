@@ -88,7 +88,7 @@ export async function POST(request: Request, { params }: Params) {
     });
 
     return NextResponse.json({ data: updated }, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: { code: "INTERNAL_ERROR", message: "거절 처리 중 오류가 발생했습니다." } },
       { status: 500 }
