@@ -10,7 +10,7 @@ import {
     Search, Filter, Command, User,
     Maximize2, Settings, AlertTriangle,
     Zap, Type, Music, Scissors, Palette, Tag, Flag,
-    ChevronLeft, Edit2, Trash2, MoreHorizontal
+    ChevronLeft, Edit2, Trash2, MoreHorizontal, Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -190,6 +190,9 @@ export function FeedbackWorkspace({
     const [editFeedbackText, setEditFeedbackText] = useState("");
     const [editFeedbackType, setEditFeedbackType] = useState<FeedbackType>("GENERAL");
     const [editFeedbackPriority, setEditFeedbackPriority] = useState<FeedbackPriority>("NORMAL");
+
+    // Download State
+    const [isDownloading, setIsDownloading] = useState(false);
 
     useEffect(() => { setSubmissions(initialSubmissions); }, [initialSubmissions]);
 
@@ -449,6 +452,30 @@ export function FeedbackWorkspace({
         setSeekTo(undefined);
     };
 
+    const handleDownload = async () => {
+        if (!selectedId) return;
+        setIsDownloading(true);
+        try {
+            const res = await fetch(`/api/submissions/${selectedId}/download`);
+            if (!res.ok) {
+                const err = (await res.json()) as { error?: { message?: string } };
+                throw new Error(err.error?.message ?? "다운로드에 실패했습니다.");
+            }
+            const { data: dlData } = (await res.json()) as { data: { downloadUrl: string; filename: string } };
+            const a = document.createElement("a");
+            a.href = dlData.downloadUrl;
+            a.download = `${dlData.filename}.mp4`;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.click();
+            toast.success("다운로드가 시작되었습니다.");
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "다운로드에 실패했습니다.");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     const streamUid = selectedSubmission?.video?.streamUid || selectedSubmission?.streamUid;
 
     return (
@@ -636,6 +663,26 @@ export function FeedbackWorkspace({
                                             </Badge>
                                         </div>
                                         <div className="flex items-center gap-2">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 h-8 text-xs font-medium transition-all"
+                                                        onClick={handleDownload}
+                                                        disabled={isDownloading || !streamUid}
+                                                    >
+                                                        {isDownloading ? (
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Download className="w-3.5 h-3.5" />
+                                                        )}
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="bottom">
+                                                    <p>영상 다운로드</p>
+                                                </TooltipContent>
+                                            </Tooltip>
                                             <AnimatePresence mode="popLayout">
                                                 {selectedSubmission.status === "APPROVED" || selectedSubmission.status === "REJECTED" ? (
                                                     <motion.div

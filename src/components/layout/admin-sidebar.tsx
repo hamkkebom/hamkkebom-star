@@ -25,6 +25,7 @@ import {
   PenTool,
   MessageSquare,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -418,6 +419,20 @@ export function AdminSidebar() {
 
       {/* 하단: 프로필 + 로그아웃 */}
       <div className="px-3 py-4 space-y-2 relative mt-auto border-t border-border/50">
+        {/* 시스템 업데이트 (NEW!) */}
+        <Link
+          href="/admin/updates"
+          className="flex items-center justify-between px-3 py-2.5 mb-1 rounded-xl bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 text-amber-700 dark:text-amber-300 hover:from-amber-500/20 hover:to-amber-500/5 transition-all duration-300 group"
+        >
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
+            <span className="text-xs font-bold tracking-tight">업데이트 노트</span>
+          </div>
+          <span className="text-[9px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full shadow-sm group-hover:scale-105 transition-transform">
+            NEW
+          </span>
+        </Link>
+
         {userData && (
           <Link
             href="/admin/settings"

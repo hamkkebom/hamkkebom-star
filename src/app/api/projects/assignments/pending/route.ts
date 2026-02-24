@@ -28,38 +28,40 @@ export async function GET(request: Request) {
     status: AssignmentStatus.PENDING_APPROVAL,
   };
 
-  const [rows, total] = await Promise.all([
-    prisma.projectAssignment.findMany({
-      where,
-      include: {
-        star: {
-          select: {
-            id: true,
-            name: true,
-            chineseName: true,
-            email: true,
-            avatarUrl: true,
+  try {
+    const [rows, total] = await Promise.all([
+      prisma.projectAssignment.findMany({
+        where,
+        include: {
+          star: {
+            select: {
+              id: true,
+              name: true,
+              chineseName: true,
+              email: true,
+              avatarUrl: true,
+            },
           },
-        },
-        request: {
-          select: {
-            id: true,
-            title: true,
-            deadline: true,
-            maxAssignees: true,
-            categories: true,
-            status: true,
-            _count: {
-              select: {
-                assignments: {
-                  where: {
-                    status: {
-                      in: [
-                        AssignmentStatus.ACCEPTED,
-                        AssignmentStatus.IN_PROGRESS,
-                        AssignmentStatus.SUBMITTED,
-                        AssignmentStatus.COMPLETED,
-                      ],
+          request: {
+            select: {
+              id: true,
+              title: true,
+              deadline: true,
+              maxAssignees: true,
+              categories: true,
+              status: true,
+              _count: {
+                select: {
+                  assignments: {
+                    where: {
+                      status: {
+                        in: [
+                          AssignmentStatus.ACCEPTED,
+                          AssignmentStatus.IN_PROGRESS,
+                          AssignmentStatus.SUBMITTED,
+                          AssignmentStatus.COMPLETED,
+                        ],
+                      },
                     },
                   },
                 },
@@ -67,19 +69,24 @@ export async function GET(request: Request) {
             },
           },
         },
-      },
-      orderBy: [{ createdAt: "asc" }],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.projectAssignment.count({ where }),
-  ]);
+        orderBy: [{ createdAt: "asc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.projectAssignment.count({ where }),
+    ]);
 
-  return NextResponse.json({
-    data: rows,
-    total,
-    page,
-    pageSize,
-    totalPages: Math.max(1, Math.ceil(total / pageSize)),
-  });
+    return NextResponse.json({
+      data: rows,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: { code: "SERVER_ERROR", message: error.message || String(error) } },
+      { status: 500 }
+    );
+  }
 }
