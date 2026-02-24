@@ -34,6 +34,7 @@ export interface StarNotificationBadge {
 export interface AdminNotificationBadge {
   unreviewedSubmissions: number;
   pendingSettlements: number;
+  pendingApprovals: number;
 }
 
 export type NotificationBadge = StarNotificationBadge | AdminNotificationBadge;

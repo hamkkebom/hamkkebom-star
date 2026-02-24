@@ -5,7 +5,7 @@ import { getAuthUser } from "@/lib/auth-helpers";
 
 type NotificationItem = {
   id: string;
-  type: "feedback" | "submission" | "settlement";
+  type: "feedback" | "submission" | "settlement" | "assignment";
   title: string;
   description: string;
   createdAt: string;
@@ -98,6 +98,49 @@ export async function GET() {
         link: `/stars/earnings`,
       });
     }
+
+    // Recent assignment approval/rejection (last 7 days)
+    const recentAssignments = await prisma.projectAssignment.findMany({
+      where: {
+        starId: user.id,
+        reviewedAt: {
+          not: null,
+          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        },
+        status: { in: ["ACCEPTED", "REJECTED"] },
+      },
+      orderBy: { reviewedAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        status: true,
+        rejectionReason: true,
+        reviewedAt: true,
+        request: { select: { title: true } },
+      },
+    });
+
+    for (const assignment of recentAssignments) {
+      if (assignment.status === "ACCEPTED") {
+        items.push({
+          id: assignment.id,
+          type: "assignment",
+          title: `프로젝트 승인됨 — ${assignment.request.title}`,
+          description: "작업을 시작하세요!",
+          createdAt: assignment.reviewedAt!.toISOString(),
+          link: "/stars/upload",
+        });
+      } else if (assignment.status === "REJECTED") {
+        items.push({
+          id: assignment.id,
+          type: "assignment",
+          title: `프로젝트 지원 거절 — ${assignment.request.title}`,
+          description: assignment.rejectionReason || "거절되었습니다.",
+          createdAt: assignment.reviewedAt!.toISOString(),
+          link: "/stars/upload",
+        });
+      }
+    }
   }
 
   if (user.role === "ADMIN") {
@@ -155,6 +198,30 @@ export async function GET() {
         description: `${s.star.name} • ${s.year}년 ${String(s.month).padStart(2, "0")}월`,
         createdAt: s.createdAt.toISOString(),
         link: `/admin/settlements`,
+      });
+    }
+
+    // Pending assignment approvals
+    const pendingAssignments = await prisma.projectAssignment.findMany({
+      where: { status: "PENDING_APPROVAL" },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        createdAt: true,
+        star: { select: { name: true } },
+        request: { select: { title: true } },
+      },
+    });
+
+    for (const assignment of pendingAssignments) {
+      items.push({
+        id: assignment.id,
+        type: "assignment",
+        title: `${assignment.star.name}님이 '${assignment.request.title}' 프로젝트에 지원했습니다.`,
+        description: "승인 또는 거절해 주세요.",
+        createdAt: assignment.createdAt.toISOString(),
+        link: "/admin/approvals",
       });
     }
   }

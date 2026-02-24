@@ -24,7 +24,7 @@ export async function GET(_request: Request, { params }: Params) {
           star: { select: { id: true, name: true, email: true, avatarUrl: true } },
         },
       },
-      _count: { select: { assignments: true } },
+      _count: { select: { assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } } } },
     },
   });
 
@@ -83,7 +83,7 @@ export async function PATCH(request: Request, { params }: Params) {
       data,
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
-        _count: { select: { assignments: true } },
+        _count: { select: { assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } } } },
       },
     });
 

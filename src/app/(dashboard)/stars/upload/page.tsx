@@ -29,7 +29,7 @@ export default async function UploadPage() {
           estimatedBudget: true,
           _count: {
             select: {
-              assignments: true,
+              assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } },
             }
           }
         },
@@ -54,7 +54,7 @@ export default async function UploadPage() {
         take: 1
       },
       _count: {
-        select: { assignments: true }
+        select: { assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } } }
       }
     },
     orderBy: [{ createdAt: "desc" }],

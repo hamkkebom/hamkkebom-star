@@ -10,6 +10,7 @@ interface StarBadge {
 interface AdminBadge {
   unreviewedSubmissions: number;
   pendingSettlements: number;
+  pendingApprovals: number;
 }
 
 export type NotificationBadge = StarBadge | AdminBadge;
@@ -46,7 +47,7 @@ export function useNotifications() {
 
   const totalCount = badge
     ? isAdminBadge(badge)
-      ? badge.unreviewedSubmissions + badge.pendingSettlements
+      ? badge.unreviewedSubmissions + badge.pendingSettlements + badge.pendingApprovals
       : badge.unreadFeedbacks
     : 0;
 

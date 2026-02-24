@@ -40,7 +40,7 @@ export async function GET() {
               isApproved: true,
               _count: {
                 select: {
-                  assignments: true,
+                  assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } },
                   submissions: true,
                   videos: true,
                 },
@@ -68,7 +68,7 @@ export async function GET() {
           isApproved: true,
           _count: {
             select: {
-              assignments: true,
+              assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } },
               submissions: true,
               videos: true,
             },

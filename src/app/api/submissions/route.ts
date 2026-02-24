@@ -97,6 +97,14 @@ export async function POST(request: Request) {
         } satisfies ApiError;
       }
 
+      if (assignment.status === AssignmentStatus.PENDING_APPROVAL || assignment.status === AssignmentStatus.REJECTED) {
+        throw {
+          code: "FORBIDDEN",
+          message: "승인되지 않은 프로젝트에는 제출할 수 없습니다.",
+          status: 403,
+        } satisfies ApiError;
+      }
+
       // 0. 카테고리 유효성 검사 (입력된 경우)
       if (parsed.data.categoryId) {
         const categoryExists = await tx.category.findUnique({ where: { id: parsed.data.categoryId } });

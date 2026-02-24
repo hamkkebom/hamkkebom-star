@@ -33,7 +33,7 @@ export async function GET() {
 
   if (user.role === "ADMIN") {
     // Count pending submissions and settlements
-    const [unreviewedSubmissions, pendingSettlements] = await Promise.all([
+    const [unreviewedSubmissions, pendingSettlements, pendingApprovals] = await Promise.all([
       prisma.submission.count({
         where: {
           status: SubmissionStatus.PENDING,
@@ -44,12 +44,18 @@ export async function GET() {
           status: SettlementStatus.PENDING,
         },
       }),
+      prisma.projectAssignment.count({
+        where: {
+          status: "PENDING_APPROVAL",
+        },
+      }),
     ]);
 
     return NextResponse.json({
       data: {
         unreviewedSubmissions,
         pendingSettlements,
+        pendingApprovals,
       },
     });
   }

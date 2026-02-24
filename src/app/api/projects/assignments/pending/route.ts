@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { AssignmentStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 
@@ -22,64 +23,60 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
   const pageSize = Math.min(50, Math.max(1, Number(searchParams.get("pageSize") ?? "20") || 20));
-  const search = searchParams.get("search")?.trim();
 
   const where = {
-    role: "STAR" as const,
-    ...(search
-      ? {
-          OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
-            { email: { contains: search, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
+    status: AssignmentStatus.PENDING_APPROVAL,
   };
 
   const [rows, total] = await Promise.all([
-    prisma.user.findMany({
+    prisma.projectAssignment.findMany({
       where,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        chineseName: true,
-        phone: true,
-        avatarUrl: true,
-        baseRate: true,
-        gradeId: true,
-        grade: {
+      include: {
+        star: {
           select: {
             id: true,
             name: true,
-            color: true,
-            baseRate: true,
+            chineseName: true,
+            email: true,
+            avatarUrl: true,
           },
         },
-        createdAt: true,
-        updatedAt: true,
-        _count: {
+        request: {
           select: {
-            assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } },
-            submissions: true,
-            videos: true,
+            id: true,
+            title: true,
+            deadline: true,
+            maxAssignees: true,
+            categories: true,
+            status: true,
+            _count: {
+              select: {
+                assignments: {
+                  where: {
+                    status: {
+                      in: [
+                        AssignmentStatus.ACCEPTED,
+                        AssignmentStatus.IN_PROGRESS,
+                        AssignmentStatus.SUBMITTED,
+                        AssignmentStatus.COMPLETED,
+                      ],
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
-      orderBy: [{ createdAt: "desc" }],
+      orderBy: [{ createdAt: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.user.count({ where }),
+    prisma.projectAssignment.count({ where }),
   ]);
 
   return NextResponse.json({
-    data: rows.map((row) => ({
-      ...row,
-      assignmentCount: row._count.assignments,
-      submissionCount: row._count.submissions,
-      videoCount: row._count.videos,
-    })),
+    data: rows,
     total,
     page,
     pageSize,

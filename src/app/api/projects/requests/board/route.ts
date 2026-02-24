@@ -53,7 +53,7 @@ export async function GET(request: Request) {
       include: {
         _count: {
           select: {
-            assignments: true,
+            assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } },
           },
         },
       },
