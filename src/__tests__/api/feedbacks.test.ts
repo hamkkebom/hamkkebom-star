@@ -8,10 +8,21 @@ vi.mock("@/lib/auth-helpers", () => ({
 }));
 
 const mockSubmissionFindUnique = vi.fn();
+const mockSubmissionUpdate = vi.fn();
 const mockFeedbackCreate = vi.fn();
 const mockFeedbackFindMany = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
+      fn({
+        submission: {
+          findUnique: (...args: unknown[]) => mockSubmissionFindUnique(...args),
+          update: (...args: unknown[]) => mockSubmissionUpdate(...args),
+        },
+        feedback: {
+          create: (...args: unknown[]) => mockFeedbackCreate(...args),
+        },
+      }),
     submission: {
       findUnique: (...args: unknown[]) => mockSubmissionFindUnique(...args),
     },
