@@ -42,6 +42,9 @@ model User {
   manager         User?               @relation("ManagerToStar", fields: [managerId], references: [id])
   managedStars    User[]              @relation("ManagerToStar")
 
+
+  // Reviewed Assignments Relation
+  reviewedAssignments ProjectAssignment[] @relation("ReviewedAssignments")
   @@map("users")
 }
 
@@ -66,17 +69,19 @@ model ProjectRequest {
 }
 
 model ProjectAssignment {
-  id          String           @id @default(cuid())
-  status      AssignmentStatus @default(ACCEPTED)
-  starId      String
-  requestId   String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  request     ProjectRequest   @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  star        User             @relation(fields: [starId], references: [id])
+  id               String           @id @default(cuid())
+  status           AssignmentStatus @default(PENDING_APPROVAL)
+  starId           String
+  requestId        String
+  rejectionReason  String?
+  reviewedAt       DateTime?
+  reviewedById     String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  request          ProjectRequest   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  reviewedBy       User?            @relation("ReviewedAssignments", fields: [reviewedById], references: [id])
+  star             User             @relation(fields: [starId], references: [id])
   submissions Submission[]
-
-  @@unique([starId, requestId])
   @@map("project_assignments")
 }
 
@@ -389,11 +394,13 @@ enum AssignmentType {
 }
 
 enum AssignmentStatus {
+  PENDING_APPROVAL
   ACCEPTED
   IN_PROGRESS
   SUBMITTED
   COMPLETED
   CANCELLED
+  REJECTED
 }
 
 enum SubmissionStatus {

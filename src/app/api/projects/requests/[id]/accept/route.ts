@@ -37,8 +37,8 @@ export async function POST(_request: Request, { params }: Params) {
         throw { code: "BAD_REQUEST", message: "수락 가능한 상태가 아닙니다.", status: 400 };
       }
 
-      const existing = await tx.projectAssignment.findUnique({
-        where: { starId_requestId: { starId: user.id, requestId: id } },
+      const existing = await tx.projectAssignment.findFirst({
+        where: { starId: user.id, requestId: id },
       });
 
       if (existing) {
