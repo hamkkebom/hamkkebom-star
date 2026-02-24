@@ -24,6 +24,7 @@ import {
   UserCog,
   PenTool,
   MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -51,6 +52,7 @@ const navGroups: NavGroup[] = [
     color: "violet",
     children: [
       { href: "/admin/requests", label: "프로젝트 관리", icon: ClipboardList },
+      { href: "/admin/approvals", label: "프로젝트 승인", icon: ShieldCheck },
     ],
   },
   {

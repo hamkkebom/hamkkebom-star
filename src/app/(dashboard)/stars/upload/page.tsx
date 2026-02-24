@@ -14,6 +14,7 @@ export default async function UploadPage() {
   const assignments = await prisma.projectAssignment.findMany({
     where: {
       starId: user.id,
+      status: { not: "REJECTED" },
     },
     include: {
       request: {
@@ -88,9 +89,8 @@ export default async function UploadPage() {
 
   // 6. Transform open requests
   const formattedOpenRequests = allRequests.map((req) => {
-    // Check if the current user has an assignment for this request
-    // This is an in-memory check to avoid complex query if meaningful
-    const myAssignment = assignments.find((a) => a.requestId === req.id);
+    // Use allRequests.assignments (includes PENDING_APPROVAL/REJECTED) instead of filtered assignments
+    const myAssignment = req.assignments[0];
     const myStatus = myAssignment ? myAssignment.status : null;
 
     return {

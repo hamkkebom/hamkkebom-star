@@ -61,10 +61,12 @@ type OpenRequestItem = {
 const SPECIAL_PROJECT_TITLE = "🐴 2026년 신년 운세 (연애/재회/결혼)";
 
 const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" | "ghost", className?: string }> = {
+  PENDING_APPROVAL: { label: "승인 대기", variant: "outline", className: "bg-amber-500/10 text-amber-600 border-amber-200 hover:bg-amber-500/20" },
   ACCEPTED: { label: "작업중", variant: "default", className: "bg-indigo-500 hover:bg-indigo-600 text-white" },
   IN_PROGRESS: { label: "작업중", variant: "default", className: "bg-indigo-500 hover:bg-indigo-600 text-white" },
   COMPLETED: { label: "완료됨", variant: "secondary", className: "bg-green-500/10 text-green-600 hover:bg-green-500/20" },
   CANCELLED: { label: "취소됨", variant: "destructive", className: "opacity-70" },
+  REJECTED: { label: "거절됨", variant: "destructive", className: "opacity-70" },
   EXPIRED: { label: "마감됨", variant: "outline", className: "text-muted-foreground" },
 };
 
@@ -135,8 +137,8 @@ export function UploadPageClient({
       return res.json();
     },
     onSuccess: () => {
-      toast.success("프로젝트 신청이 완료되었습니다!", {
-        description: "이제 '내 프로젝트' 탭에서 작업을 시작할 수 있습니다.",
+      toast.success("프로젝트 지원이 완료되었습니다!", {
+        description: "관리자 승인 후 작업을 시작할 수 있습니다.",
       });
       router.refresh();
       setMainTab("my-projects"); // 내 프로젝트 탭으로 이동
@@ -166,7 +168,7 @@ export function UploadPageClient({
     let filtered = assignments;
 
     if (filterTab === "active") {
-      filtered = filtered.filter(a => ["ACCEPTED", "IN_PROGRESS"].includes(a.status));
+      filtered = filtered.filter(a => ["PENDING_APPROVAL", "ACCEPTED", "IN_PROGRESS"].includes(a.status));
     }
 
     if (searchTerm && mainTab === "my-projects") {
@@ -456,11 +458,29 @@ export function UploadPageClient({
                   {selectedAssignment ? selectedAssignment.requestTitle : "프로젝트를 선택해주세요"}
                 </CardTitle>
                 <CardDescription>
-                  이 프로젝트에 대한 새로운 영상 버전을 업로드합니다.
+                  {selectedAssignment?.status === "PENDING_APPROVAL"
+                    ? "이 프로젝트는 관리자 승인을 기다리고 있습니다."
+                    : "이 프로젝트에 대한 새로운 영상 버전을 업로드합니다."}
                 </CardDescription>
               </CardHeader>
-
-              {selectedAssignment && (
+              {selectedAssignment && selectedAssignment.status === "PENDING_APPROVAL" ? (
+                <CardContent className="py-12">
+                  <div className="flex flex-col items-center justify-center text-center space-y-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
+                      <Clock className="h-8 w-8 text-amber-600" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold text-amber-600">승인 대기 중</h3>
+                      <p className="text-sm text-muted-foreground max-w-md">
+                        관리자 승인을 기다리고 있습니다. 승인이 완료되면 영상을 업로드할 수 있습니다.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200">
+                      승인 대기
+                    </Badge>
+                  </div>
+                </CardContent>
+              ) : selectedAssignment && (
                 <CardContent className="space-y-8 pt-8">
                   {/* 프로젝트 정보 요약 */}
                   <div className="grid gap-6 md:grid-cols-2">
@@ -674,6 +694,8 @@ export function UploadPageClient({
                 const isUrgent = dDay >= 0 && dDay <= 3;
                 const isClosed = req.status === "CLOSED" || req.status === "FULL" || dDay < 0;
                 const isMyProject = !!req.myAssignmentStatus;
+                const isPendingApproval = req.myAssignmentStatus === "PENDING_APPROVAL";
+                const isRejected = req.myAssignmentStatus === "REJECTED";
 
                 // 모집율 계산
                 const progress = Math.min(100, Math.round((req.currentCount / req.maxAssignees) * 100));
@@ -688,13 +710,24 @@ export function UploadPageClient({
                         ? "opacity-60 bg-muted/20 border-border/50 grayscale-[0.5]"
                         : "hover:shadow-xl hover:-translate-y-1 hover:border-primary/50",
                       isUrgent && !isClosed && "ring-1 ring-destructive/20 border-destructive/20",
-                      isMyProject && "ring-2 ring-primary border-primary bg-primary/5"
+                      isPendingApproval && "ring-1 ring-amber-200 border-amber-200 bg-amber-500/5",
+                      isRejected && "opacity-60 grayscale-[0.3]",
+                      isMyProject && !isPendingApproval && !isRejected && "ring-2 ring-primary border-primary bg-primary/5"
                     )}
                   >
                     {/* 상단 뱃지 영역 */}
                     <div className="p-5 pb-3 flex justify-between items-start z-10">
                       <div className="flex gap-2">
-                        {isMyProject ? (
+                        {isPendingApproval ? (
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 font-bold shadow-sm">
+                            <Clock className="w-3 h-3 mr-1" />
+                            승인 대기 중
+                          </Badge>
+                        ) : isRejected ? (
+                          <Badge variant="destructive" className="opacity-70 font-bold shadow-sm">
+                            거절됨
+                          </Badge>
+                        ) : isMyProject ? (
                           <Badge className="bg-primary hover:bg-primary font-bold shadow-sm">
                             <CheckCircle2 className="w-3 h-3 mr-1" />
                             참여중
@@ -766,7 +799,16 @@ export function UploadPageClient({
                         </span>
                       </div>
 
-                      {isMyProject ? (
+                      {isPendingApproval ? (
+                        <Button size="sm" variant="outline" disabled className="rounded-full opacity-70 border-amber-200 text-amber-600">
+                          <Clock className="h-3.5 w-3.5 mr-1.5" />
+                          승인 대기 중
+                        </Button>
+                      ) : isRejected ? (
+                        <Button size="sm" variant="outline" disabled className="rounded-full opacity-50">
+                          거절됨
+                        </Button>
+                      ) : isMyProject ? (
                         <Button
                           size="sm"
                           className="rounded-full px-5 font-bold shadow-sm"

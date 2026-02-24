@@ -47,6 +47,16 @@ const statusLabels: Record<string, string> = {
   CANCELLED: "취소",
 };
 
+const assignmentStatusLabels: Record<string, string> = {
+  PENDING_APPROVAL: "승인 대기",
+  ACCEPTED: "수락됨",
+  IN_PROGRESS: "작업중",
+  SUBMITTED: "제출됨",
+  COMPLETED: "완료",
+  CANCELLED: "취소",
+  REJECTED: "거절됨",
+};
+
 export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -68,7 +78,7 @@ export default function RequestDetailPage() {
         return r.json();
       }),
     onSuccess: () => {
-      toast.success("요청을 수락했습니다!");
+      toast.success("지원이 완료되었습니다! 관리자 승인 후 작업을 시작할 수 있습니다.");
       queryClient.invalidateQueries({ queryKey: ["request-detail", id] });
     },
     onError: (e: Error) => {
@@ -219,7 +229,7 @@ export default function RequestDetailPage() {
           className="w-full"
           size="lg"
         >
-          {acceptMutation.isPending ? "수락 중..." : "이 요청 수락하기"}
+          {acceptMutation.isPending ? "지원 중..." : "이 프로젝트 지원하기"}
         </Button>
       )}
 
@@ -239,7 +249,7 @@ export default function RequestDetailPage() {
                 <div className="flex-1">
                   <p className="text-sm font-medium">{a.star.name}</p>
                 </div>
-                <Badge variant="outline" className="text-xs">{a.status}</Badge>
+                <Badge variant="outline" className="text-xs">{assignmentStatusLabels[a.status] || a.status}</Badge>
               </div>
             ))}
           </CardContent>
