@@ -17,12 +17,15 @@ export async function GET(request: Request) {
   const pageSize = Math.min(50, Math.max(1, Number(searchParams.get("pageSize") ?? "20") || 20));
   const categoryId = searchParams.get("categoryId")?.trim();
   const ownerId = searchParams.get("ownerId")?.trim();
+  const ownerNameParam = searchParams.get("ownerName")?.trim();
   const counselorId = searchParams.get("counselorId")?.trim();
   const sort = searchParams.get("sort") ?? "latest";
   const statusParam = searchParams.get("status");
   const videoSubjectParam = searchParams.get("videoSubject")?.trim();
   const durationMinParam = searchParams.get("durationMin");
   const durationMaxParam = searchParams.get("durationMax");
+  const dateFrom = searchParams.get("dateFrom");
+  const dateTo = searchParams.get("dateTo");
 
   if (sort !== "latest" && sort !== "oldest") {
     return NextResponse.json(
@@ -66,9 +69,35 @@ export async function GET(request: Request) {
       }
       : {};
 
-  const where = {
+  const ownerFilter = ownerNameParam
+    ? {
+      owner: {
+        OR: [
+          { chineseName: { contains: ownerNameParam, mode: "insensitive" } },
+          { name: { contains: ownerNameParam, mode: "insensitive" } },
+        ],
+      },
+    }
+    : {};
+
+  const dateFilter: any = {};
+  if (dateFrom || dateTo) {
+    dateFilter.createdAt = {};
+    if (dateFrom) {
+      dateFilter.createdAt.gte = new Date(dateFrom);
+    }
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setUTCHours(23, 59, 59, 999);
+      dateFilter.createdAt.lte = end;
+    }
+  }
+
+  const where: any = {
     ...(categoryId ? { categoryId } : {}),
     ...(ownerId ? { ownerId } : {}),
+    ...ownerFilter,
+    ...dateFilter,
     ...(counselorId ? { counselorId } : {}),
     ...(videoSubjectParam ? { videoSubject: videoSubjectParam as VideoSubject } : {}),
     ...durationFilter,
@@ -104,6 +133,11 @@ export async function GET(request: Request) {
           select: {
             duration: true,
           },
+        },
+        submissions: {
+          select: { id: true },
+          orderBy: { createdAt: "desc" },
+          take: 1,
         },
         _count: {
           select: {
@@ -146,7 +180,17 @@ export async function GET(request: Request) {
         }
       }
 
-      return { ...row, signedThumbnailUrl: finalThumbnailUrl };
+      // 가장 최신 제출물 ID
+      const latestSubmissionId = row.submissions?.[0]?.id ?? null;
+
+      // 필요 없는 submissions 배열은 제외하고 필요한 값만 반환
+      const { submissions, ...restRow } = row;
+
+      return {
+        ...restRow,
+        signedThumbnailUrl: finalThumbnailUrl,
+        submissionId: latestSubmissionId
+      };
     })
   );
 
