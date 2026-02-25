@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale/ko";
-import { Calendar as CalendarIcon, Search, X } from "lucide-react";
+import { Calendar as CalendarIcon, Search, X, Share2 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { useQuery } from "@tanstack/react-query";
 
@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { AssignPlacementModal } from "@/components/admin/assign-placement-modal";
 
 type VideoRow = {
   id: string;
@@ -80,6 +81,8 @@ export default function AdminVideosPage() {
   const [searchInput, setSearchInput] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string } | null>(null);
 
   const pageSize = 50;
 
@@ -266,7 +269,18 @@ export default function AdminVideosPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>{formatDate(row.createdAt)}</TableCell>
-                        <TableCell className="text-right pr-6">
+                        <TableCell className="text-right pr-6 space-x-2 whitespace-nowrap">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedVideo({ id: row.id, title: row.title });
+                              setModalOpen(true);
+                            }}
+                            className="bg-primary/10 text-primary hover:bg-primary/20 transition-colors border-transparent"
+                          >
+                            <Share2 className="w-3.5 h-3.5 mr-1" /> 매체 등록
+                          </Button>
                           {row.submissionId ? (
                             <Button variant="outline" size="sm" asChild>
                               <Link href={`/admin/reviews/${row.submissionId}`}>
@@ -344,6 +358,15 @@ export default function AdminVideosPage() {
           )}
         </CardContent>
       </Card>
+
+      {selectedVideo && (
+        <AssignPlacementModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          videoId={selectedVideo.id}
+          videoTitle={selectedVideo.title}
+        />
+      )}
     </div>
   );
 }

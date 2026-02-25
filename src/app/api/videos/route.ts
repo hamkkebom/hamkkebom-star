@@ -26,6 +26,7 @@ export async function GET(request: Request) {
   const durationMaxParam = searchParams.get("durationMax");
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
+  const q = searchParams.get("q")?.trim(); // Global search query
 
   if (sort !== "latest" && sort !== "oldest") {
     return NextResponse.json(
@@ -80,6 +81,14 @@ export async function GET(request: Request) {
     }
     : {};
 
+  const queryFilter = q ? {
+    OR: [
+      { title: { contains: q, mode: "insensitive" } },
+      { owner: { chineseName: { contains: q, mode: "insensitive" } } },
+      { owner: { name: { contains: q, mode: "insensitive" } } }
+    ]
+  } : {};
+
   const dateFilter: any = {};
   if (dateFrom || dateTo) {
     dateFilter.createdAt = {};
@@ -97,6 +106,7 @@ export async function GET(request: Request) {
     ...(categoryId ? { categoryId } : {}),
     ...(ownerId ? { ownerId } : {}),
     ...ownerFilter,
+    ...queryFilter,
     ...dateFilter,
     ...(counselorId ? { counselorId } : {}),
     ...(videoSubjectParam ? { videoSubject: videoSubjectParam as VideoSubject } : {}),

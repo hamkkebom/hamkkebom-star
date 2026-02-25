@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Youtube, Instagram, MonitorPlay, Layers, ExternalLink, Loader2 } from "lucide-react";
+import { Youtube, Instagram, MonitorPlay, Layers, ExternalLink, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale/ko";
 
@@ -64,9 +64,21 @@ export default function PlacementsDashboard() {
             {/* Header & Filters */}
             <div className="space-y-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
-                        매체별 영상 현황
-                    </h1>
+                    <div className="flex justify-between items-center pb-1">
+                        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
+                            매체별 영상 현황
+                        </h1>
+                        <Button
+                            onClick={() => {
+                                setSelectedVideo(null);
+                                setModalOpen(true);
+                            }}
+                            className="rounded-full shadow-sm hover:shadow-md transition-all group"
+                        >
+                            <Plus className="w-4 h-4 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
+                            새 매체 등록
+                        </Button>
+                    </div>
                     <p className="text-sm text-muted-foreground mt-1">
                         승인된 영상들이 광고 및 소셜 미디어 플랫폼에 어떻게 사용되고 있는지 확인합니다.
                     </p>
@@ -249,14 +261,12 @@ export default function PlacementsDashboard() {
             )}
 
             {/* Assign Placement Modal (Reused) */}
-            {selectedVideo && (
-                <AssignPlacementModal
-                    open={modalOpen}
-                    onOpenChange={setModalOpen}
-                    videoId={selectedVideo.id}
-                    videoTitle={selectedVideo.title}
-                />
-            )}
+            <AssignPlacementModal
+                open={modalOpen}
+                onOpenChange={setModalOpen}
+                videoId={selectedVideo?.id || ""}
+                videoTitle={selectedVideo?.title || ""}
+            />
         </div>
     );
 }

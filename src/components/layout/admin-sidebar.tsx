@@ -26,6 +26,7 @@ import {
   MessageSquare,
   ShieldCheck,
   Sparkles,
+  Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -65,6 +66,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/reviews/my", label: "담당 피드백 작성", icon: PenTool },
       { href: "/admin/reviews", label: "전체 피드백 관리", icon: MessageSquare },
       { href: "/admin/videos", label: "영상 관리", icon: Film },
+      { href: "/admin/placements", label: "매체별 영상 현황", icon: Share2 },
     ],
   },
   {
