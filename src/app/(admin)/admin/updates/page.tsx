@@ -15,6 +15,16 @@ export default async function AdminUpdatesPage() {
         {
             date: "2026-02-25",
             version: "Feature Update",
+            title: "신규 기능 추가: 매체별 영상 현황 관리",
+            items: [
+                "매체별 영상 트래킹: 등록된 영상이 YouTube, Instagram, TikTok 중 어떤 채널에 활용되고 있는지 한눈에 파악할 수 있는 대시보드가 추가되었습니다.",
+                "빠른 매체 할당(Assign): 영상 관리 및 현황 대시보드 내에서 곧바로 특정 영상의 매체 업로드 링크를 등록하고 언제든 수정할 수 있습니다.",
+                "성과 및 분포 확인: 상단 필터 탭을 통해 플랫폼별로 영상이 얼마나 배포되었는지 즉시 집계를 확인할 수 있습니다."
+            ]
+        },
+        {
+            date: "2026-02-25",
+            version: "Feature Update",
             title: "영상 관리 페이지 대규모 개선",
             items: [
                 "정렬 기능 추가: 최신순 / 오래된순으로 영상을 정렬할 수 있습니다.",
