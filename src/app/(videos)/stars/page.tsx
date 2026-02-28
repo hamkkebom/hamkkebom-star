@@ -194,13 +194,14 @@ function PremiumStarCard({ star }: { star: StarItem }) {
       {/* Image Container */}
       <div className="relative aspect-[3.5/4.5] w-full overflow-hidden rounded-3xl bg-muted transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-xl group-hover:shadow-violet-500/20 dark:group-hover:shadow-violet-900/40">
         {star.avatarUrl ? (
-          <Image
-            src={star.avatarUrl}
-            alt={star.name}
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
-            unoptimized
-          />
+           <Image
+             src={star.avatarUrl}
+             alt={star.name}
+             fill
+             className="object-cover transition-transform duration-700 group-hover:scale-105"
+             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+             unoptimized
+           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-violet-100 to-amber-100 text-6xl font-black text-violet-900/20 dark:from-violet-900/20 dark:to-amber-900/20 dark:text-white/20">
             {star.name.charAt(0)}

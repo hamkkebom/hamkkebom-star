@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
@@ -77,7 +77,7 @@ function fetchSubmissions(filter: string = "ALL"): Promise<MySubmission[]> {
 
 // --- Components ---
 
-function ProjectCard({ sub, index }: { sub: MySubmission; index: number }) {
+const ProjectCard = memo(function ProjectCard({ sub, index }: { sub: MySubmission; index: number }) {
   const hasAi = sub.aiAnalysis?.status === "DONE";
   const feedbackCount = sub._count?.feedbacks ?? 0;
 
@@ -105,6 +105,7 @@ function ProjectCard({ sub, index }: { sub: MySubmission; index: number }) {
                 alt={sub.versionTitle || "Project"}
                 fill
                 unoptimized
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
@@ -187,7 +188,7 @@ function ProjectCard({ sub, index }: { sub: MySubmission; index: number }) {
       </Link>
     </motion.div>
   );
-}
+});
 
 // --- Main Page ---
 

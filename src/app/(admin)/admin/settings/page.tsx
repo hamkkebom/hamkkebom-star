@@ -182,9 +182,11 @@ export default function AdminSettingsPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold">설정</h1>
-                <p className="text-sm text-muted-foreground">계정 및 보안 설정을 관리하세요.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold">설정</h1>
+                    <p className="text-sm text-muted-foreground">계정 및 보안 설정을 관리하세요.</p>
+                </div>
             </div>
 
             {/* 계정 정보 */}

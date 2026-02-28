@@ -107,13 +107,13 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">프로필</h1>
           <p className="text-sm text-muted-foreground">프로필 정보를 확인하고 수정하세요.</p>
         </div>
         {!editing && (
-          <Button variant="outline" onClick={startEditing}>
+          <Button variant="outline" onClick={startEditing} className="w-full sm:w-auto">
             수정
           </Button>
         )}

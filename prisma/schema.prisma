@@ -173,6 +173,7 @@ model Video {
   counselorId     String?
   externalId      String?             @unique
   lyrics          String?
+  customRate      Decimal?            @db.Decimal(10, 2)
   videoSubject    VideoSubject?
   mediaPlacements MediaPlacement[]
   submissions     Submission[]

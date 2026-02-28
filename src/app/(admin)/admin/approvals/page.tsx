@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -202,7 +202,7 @@ function EmptyState() {
 
 // --- Star Assignment Card ---
 
-function AssignmentCard({
+const AssignmentCard = memo(function AssignmentCard({
   assignment,
   isHiding,
   onApprove,
@@ -269,7 +269,7 @@ function AssignmentCard({
       </CardContent>
     </Card>
   );
-}
+});
 
 // --- Reject Dialog ---
 

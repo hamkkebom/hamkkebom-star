@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 type GlowVariant = "approved" | "pending" | "completed" | "failed" | "processing";
@@ -61,12 +60,9 @@ export function GlowBadge({ label, variant, glow = true, className, size = "sm" 
   const config = variantConfig[variant];
 
   return (
-    <motion.span
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+    <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border font-medium transition-all duration-300",
+        "inline-flex items-center gap-1.5 rounded-full border font-medium transition-all duration-300 animate-scale-in",
         size === "sm" ? "px-2.5 py-0.5 text-xs" : "px-3 py-1 text-sm",
         config.bg,
         config.text,
@@ -75,12 +71,14 @@ export function GlowBadge({ label, variant, glow = true, className, size = "sm" 
         className,
       )}
     >
-      <motion.span
-        className={cn("rounded-full", size === "sm" ? "h-1.5 w-1.5" : "h-2 w-2", config.dot)}
-        animate={{ scale: [1, 1.3, 1] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      <span
+        className={cn(
+          "rounded-full animate-[badgePulse_2s_ease-in-out_infinite]",
+          size === "sm" ? "h-1.5 w-1.5" : "h-2 w-2",
+          config.dot,
+        )}
       />
       {label}
-    </motion.span>
+    </span>
   );
 }

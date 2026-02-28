@@ -31,6 +31,13 @@ export async function GET(_request: Request, { params }: Params) {
               version: true,
               status: true,
               createdAt: true,
+              video: {
+                select: {
+                  id: true,
+                  title: true,
+                  customRate: true,
+                },
+              },
             },
           },
         },

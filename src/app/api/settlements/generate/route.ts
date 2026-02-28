@@ -92,7 +92,7 @@ export async function POST(request: Request) {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 1);
 
-      // 해당 월에 승인된 제출물 조회
+      // 해당 월에 승인된 제출물 조회 (영상 단가 포함)
       const approvedSubmissions = await tx.submission.findMany({
         where: {
           status: SubmissionStatus.APPROVED,
@@ -104,6 +104,11 @@ export async function POST(request: Request) {
         select: {
           id: true,
           starId: true,
+          video: {
+            select: {
+              customRate: true,
+            },
+          },
         },
       });
 
@@ -115,21 +120,30 @@ export async function POST(request: Request) {
         } satisfies ApiError;
       }
 
-      // STAR별로 제출물 그룹화
-      const groupedByStar = approvedSubmissions.reduce<Record<string, string[]>>((acc, submission) => {
-        if (!acc[submission.starId]) {
-          acc[submission.starId] = [];
+      // STAR별로 제출물 그룹화 (영상 단가 보존)
+      type SubmissionEntry = { id: string; customRate: number | null };
+      const groupedByStar = approvedSubmissions.reduce<Record<string, SubmissionEntry[]>>((acc, sub) => {
+        if (!acc[sub.starId]) {
+          acc[sub.starId] = [];
         }
-        acc[submission.starId].push(submission.id);
+        acc[sub.starId].push({
+          id: sub.id,
+          customRate: sub.video?.customRate ? Number(sub.video.customRate) : null,
+        });
         return acc;
       }, {});
 
       const starIds = Object.keys(groupedByStar);
 
-      // STAR 정보 조회 (baseRate 포함)
+      // STAR 정보 조회 (baseRate + 등급 단가 포함)
       const stars = await tx.user.findMany({
         where: { id: { in: starIds } },
-        select: { id: true, name: true, baseRate: true },
+        select: {
+          id: true,
+          name: true,
+          baseRate: true,
+          grade: { select: { baseRate: true } },
+        },
       });
       const starById = new Map(stars.map((star) => [star.id, star]));
 
@@ -146,15 +160,20 @@ export async function POST(request: Request) {
       const completedStars: { id: string; name: string }[] = [];
 
       const settlements = await Promise.all(
-        Object.entries(groupedByStar).map(async ([starId, submissionIds]) => {
+        Object.entries(groupedByStar).map(async ([starId, submissions]) => {
           const star = starById.get(starId);
 
           if (!star) {
             return null; // STAR 정보를 찾을 수 없으면 skip
           }
 
-          // baseRate가 null이면 정산 제외
-          if (star.baseRate === null || star.baseRate === undefined) {
+          // STAR 기본 단가 결정: 개인 단가 > 등급 단가 > null(스킵)
+          const starBaseRate = star.baseRate ?? star.grade?.baseRate ?? null;
+
+          // 모든 submission에 영상 단가가 없고 STAR 기본 단가도 없으면 스킵
+          const hasAnyRate = starBaseRate !== null || submissions.some(s => s.customRate !== null);
+
+          if (!hasAnyRate) {
             skippedStars.push({
               id: star.id,
               name: star.name,
@@ -176,7 +195,7 @@ export async function POST(request: Request) {
             await tx.settlement.delete({ where: { id: existing.id } });
           }
 
-          const baseAmount = star.baseRate;
+          const defaultRate = starBaseRate ? Number(starBaseRate) : 0;
 
           const createdSettlement = await tx.settlement.create({
             data: {
@@ -187,14 +206,18 @@ export async function POST(request: Request) {
             },
           });
 
-          const itemsData = submissionIds.map((submissionId) => ({
-            settlementId: createdSettlement.id,
-            submissionId,
-            starId: star.id,
-            baseAmount,
-            finalAmount: baseAmount,
-            adjustedAmount: null,
-          }));
+          // 각 제출물마다 개별 단가 적용: 영상 단가 > STAR 기본 단가
+          const itemsData = submissions.map((sub) => {
+            const rate = sub.customRate ?? defaultRate;
+            return {
+              settlementId: createdSettlement.id,
+              submissionId: sub.id,
+              starId: star.id,
+              baseAmount: rate,
+              finalAmount: rate,
+              adjustedAmount: null,
+            };
+          });
 
           await tx.settlementItem.createMany({
             data: itemsData,
@@ -217,7 +240,7 @@ export async function POST(request: Request) {
           }
 
           const totalAmount = itemsData.reduce(
-            (sum, item) => sum + Number(item.finalAmount),
+            (sum, item) => sum + item.finalAmount,
             0
           ) + aiToolSupportFee;
 

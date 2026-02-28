@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+
 import { toast } from "sonner";
 import { Clock, Eye, CheckCircle2, LayoutGrid, Download, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -248,10 +248,8 @@ export default function AdminReviewsPage() {
                   ${isActive ? "text-slate-900 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
               >
                 {isActive && (
-                  <motion.div
-                    layoutId="active-filter-bg"
-                    className="absolute inset-0 bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-black/[0.04] dark:border-white/[0.04]"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                  <div
+                    className="absolute inset-0 bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-black/[0.04] dark:border-white/[0.04] transition-all duration-300"
                   />
                 )}
                 <span className="relative z-10 flex items-center gap-1.5">

@@ -14,12 +14,16 @@ import {
   Settings,
   Trash2,
   AlertTriangle,
+  Film,
   ChevronRight,
   Plus,
   Clock,
   Pencil,
   Save,
   X,
+  ExternalLink,
+  Tag,
+  Undo2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -139,6 +143,11 @@ type SettlementDetail = {
       version: string;
       status: string;
       createdAt: string;
+      video: {
+        id: string;
+        title: string;
+        customRate: number | null;
+      } | null;
     } | null;
   }>;
 };
@@ -212,9 +221,10 @@ export default function AdminSettlementsPage() {
   const [genYear, setGenYear] = useState(now.getFullYear());
   const [genMonth, setGenMonth] = useState(now.getMonth() + 1);
 
-  // Confirm / Delete
+  // Confirm / Delete / Cancel
   const [confirmTarget, setConfirmTarget] = useState<SettlementRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SettlementRow | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<SettlementRow | null>(null);
 
   // Detail Sheet
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -250,7 +260,7 @@ export default function AdminSettlementsPage() {
     },
   });
 
-  const { data: detailData, isLoading: detailLoading } = useQuery({
+  const { data: detailData, isLoading: detailLoading, refetch: refetchDetail } = useQuery({
     queryKey: ["settlement-detail", detailId],
     queryFn: async () => {
       const res = await fetch(`/api/settlements/${detailId}`);
@@ -327,6 +337,26 @@ export default function AdminSettlementsPage() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/settlements/${id}/cancel`, { method: "PATCH" });
+      if (!res.ok) {
+        const err = (await res.json()) as { error?: { message?: string } };
+        throw new Error(err.error?.message ?? "정산 확정 취소에 실패했습니다.");
+      }
+    },
+    onSuccess: async () => {
+      toast.success("정산 확정이 취소되었습니다. (대기 상태로 변경됨)");
+      setCancelTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ["admin-settlements"] });
+      if (detailId) await queryClient.invalidateQueries({ queryKey: ["settlement-detail", detailId] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "정산 확정 취소에 실패했습니다.");
+      setCancelTarget(null);
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/settlements/${id}`, { method: "DELETE" });
@@ -379,6 +409,22 @@ export default function AdminSettlementsPage() {
       await queryClient.invalidateQueries({ queryKey: ["settlement-config"] });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "설정 저장에 실패했습니다."),
+  });
+
+  const updateVideoRateMutation = useMutation({
+    mutationFn: async ({ videoId, customRate }: { videoId: string; customRate: number | null }) => {
+      const res = await fetch(`/api/videos/${videoId}/rate`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customRate }),
+      });
+      if (!res.ok) throw new Error("영상 단가 설정에 실패했습니다.");
+    },
+    onSuccess: async () => {
+      toast.success("영상 단가가 저장되었습니다. 정산을 재생성하면 반영됩니다.");
+      if (detailId) await queryClient.invalidateQueries({ queryKey: ["settlement-detail", detailId] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "영상 단가 설정에 실패했습니다."),
   });
 
   // ---------------------------------------------------------------------------
@@ -824,6 +870,41 @@ export default function AdminSettlementsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* ======================== Cancel Dialog ======================== */}
+      <AlertDialog open={!!cancelTarget} onOpenChange={(open) => !open && setCancelTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              정산 확정을 취소하시겠습니까?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {cancelTarget && (
+                <>
+                  <strong className="text-foreground">{getStarDisplayName(cancelTarget.star)}</strong>님의{" "}
+                  {cancelTarget.year}년 {cancelTarget.month}월 정산의 확정 상태를 해제하고 다시 대기 상태로 변경합니다.
+                  <br />
+                  <br />
+                  대기 상태로 돌아가면 내역 수정이 다시 가능해집니다.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCancelTarget(null)}>닫기</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => {
+                if (cancelTarget) cancelMutation.mutate(cancelTarget.id);
+              }}
+              disabled={cancelMutation.isPending}
+            >
+              {cancelMutation.isPending ? "처리 중..." : "확정 취소"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* ======================== Delete Dialog ======================== */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
@@ -931,30 +1012,111 @@ export default function AdminSettlementsPage() {
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-muted-foreground">정산 항목 ({detail.items.length})</h4>
                 <div className="space-y-2">
-                  {detail.items.map((item) => (
-                    <Card key={item.id}>
-                      <CardContent className="p-3">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="text-sm font-medium">
-                              {item.description ?? (item.itemType === "AI_TOOL_SUPPORT" ? "AI 툴 지원비" : item.submission?.versionTitle ?? "작품료")}
-                            </p>
-                            {item.submission && (
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                v{item.submission.version} &middot; {new Intl.DateTimeFormat("ko-KR").format(new Date(item.submission.createdAt))}
-                              </p>
-                            )}
+                  {detail.items.map((item) => {
+                    const videoTitle = item.submission?.video?.title;
+                    const videoId = item.submission?.video?.id;
+                    const videoCustomRate = item.submission?.video?.customRate;
+                    const submissionId = item.submission?.id;
+                    const isClickable = !!submissionId;
+                    const hasCustomRate = videoCustomRate !== null && videoCustomRate !== undefined;
+                    const displayTitle = item.description
+                      ?? (item.itemType === "AI_TOOL_SUPPORT"
+                        ? "AI 툴 지원비"
+                        : videoTitle ?? item.submission?.versionTitle ?? "작품료");
+
+                    return (
+                      <Card
+                        key={item.id}
+                        className={isClickable ? "transition-all hover:border-violet-400/60 hover:shadow-md hover:shadow-violet-500/5 group" : ""}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                              {item.itemType !== "AI_TOOL_SUPPORT" && (
+                                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/30">
+                                  <Film className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <p
+                                    className={`text-sm font-medium truncate ${isClickable ? "cursor-pointer group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" : ""}`}
+                                    onClick={() => {
+                                      if (isClickable) {
+                                        window.open(`/admin/reviews/${submissionId}`, "_blank");
+                                      }
+                                    }}
+                                  >
+                                    {displayTitle}
+                                  </p>
+                                  {isClickable && (
+                                    <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {item.submission && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {item.submission.version} · {new Intl.DateTimeFormat("ko-KR").format(new Date(item.submission.createdAt))}
+                                    </p>
+                                  )}
+                                  {hasCustomRate && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full">
+                                      <Tag className="h-2.5 w-2.5" />
+                                      영상 단가
+                                    </span>
+                                  )}
+                                </div>
+                                {/* 영상 단가 설정 UI */}
+                                {videoId && item.itemType !== "AI_TOOL_SUPPORT" && (
+                                  <div className="mt-1.5 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                    <Input
+                                      type="number"
+                                      placeholder="영상 단가 (미설정 시 기본)"
+                                      defaultValue={hasCustomRate ? Number(videoCustomRate) : ""}
+                                      className="h-7 text-xs w-[160px]"
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          const val = (e.target as HTMLInputElement).value;
+                                          updateVideoRateMutation.mutate({
+                                            videoId,
+                                            customRate: val ? Number(val) : null,
+                                          });
+                                        }
+                                      }}
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 text-xs px-2"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                                        const val = input?.value;
+                                        updateVideoRateMutation.mutate({
+                                          videoId,
+                                          customRate: val ? Number(val) : null,
+                                        });
+                                      }}
+                                      disabled={updateVideoRateMutation.isPending}
+                                    >
+                                      <Save className="h-3 w-3 mr-1" />
+                                      저장
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0 ml-3">
+                              <p className="text-sm font-semibold tabular-nums">{formatKRW(Number(item.finalAmount))}</p>
+                              {item.adjustedAmount !== null && Number(item.adjustedAmount) !== Number(item.baseAmount) && (
+                                <p className="text-xs text-muted-foreground line-through tabular-nums">{formatKRW(Number(item.baseAmount))}</p>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-semibold tabular-nums">{formatKRW(Number(item.finalAmount))}</p>
-                            {item.adjustedAmount !== null && Number(item.adjustedAmount) !== Number(item.baseAmount) && (
-                              <p className="text-xs text-muted-foreground line-through tabular-nums">{formatKRW(Number(item.baseAmount))}</p>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1007,6 +1169,19 @@ export default function AdminSettlementsPage() {
                   >
                     <CheckCircle2 className="h-4 w-4" />
                     확정
+                  </Button>
+                )}
+                {detail.status === "COMPLETED" && (
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                    onClick={() => {
+                      const row = rows.find((r) => r.id === detail.id);
+                      if (row) setCancelTarget(row);
+                    }}
+                  >
+                    <Undo2 className="h-4 w-4" />
+                    확정 취소
                   </Button>
                 )}
               </div>

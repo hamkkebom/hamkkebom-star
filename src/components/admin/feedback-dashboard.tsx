@@ -40,6 +40,7 @@ type Submission = {
     star: {
         id: string;
         name: string;
+        chineseName?: string | null;
         avatarUrl: string | null;
         email: string;
     };
@@ -150,7 +151,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
 
             const matchesSearch = !searchQuery ||
                 s.video?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.star.name.toLowerCase().includes(searchQuery.toLowerCase());
+                (s.star.chineseName || s.star.name).toLowerCase().includes(searchQuery.toLowerCase());
             return matchesFilter && matchesSearch;
         });
 
@@ -354,12 +355,12 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                                     <Avatar className="w-12 h-12 border-2 border-white dark:border-[#0a0a12] shadow-md ring-2 ring-indigo-500/20 dark:ring-indigo-400/20">
                                         <AvatarImage src={group.star.avatarUrl || undefined} />
                                         <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white font-bold text-lg">
-                                            {group.star.name[0]}
+                                            {(group.star.chineseName || group.star.name)[0]}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div>
                                         <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                            {group.star.name}
+                                            {group.star.chineseName || group.star.name}
                                             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400">
                                                 {group.submissions.length}개의 영상
                                             </span>

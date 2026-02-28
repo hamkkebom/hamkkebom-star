@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface AnimatedCardProps {
@@ -11,24 +10,15 @@ interface AnimatedCardProps {
 
 export function AnimatedCard({ children, delay = 0, className }: AnimatedCardProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.4,
-        delay,
-        ease: [0.25, 0.1, 0.25, 1],
-      }}
-      whileHover={{
-        y: -2,
-        transition: { duration: 0.15 },
-      }}
+    <div
       className={cn(
-        "rounded-xl border bg-card shadow-sm hover:shadow-md transition-shadow duration-200",
+        "rounded-xl border bg-card shadow-sm animate-fade-in-up",
+        "hover:-translate-y-0.5 hover:shadow-md transition-all duration-200",
         className,
       )}
+      style={delay > 0 ? { animationDelay: `${delay}s` } : undefined}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

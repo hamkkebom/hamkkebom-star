@@ -27,6 +27,7 @@ import {
   ShieldCheck,
   Sparkles,
   Share2,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -88,6 +89,7 @@ const navGroups: NavGroup[] = [
     children: [
       { href: "/admin/settlements", label: "정산 관리", icon: DollarSign },
       { href: "/admin/stars", label: "단가 설정", icon: Wallet },
+      { href: "/admin/settlements/guide", label: "정산 가이드", icon: BookOpen },
     ],
   },
 ];
@@ -162,7 +164,7 @@ function SidebarGroup({
         {/* 활성 그룹 좌측 글로우 바 */}
         <AnimatePresence>
           {hasActiveChild && (
-            <motion.div
+            <motion.span
               layoutId="group-indicator"
               className={cn(
                 "absolute left-0 top-2 bottom-2 w-[3px] rounded-full",
@@ -197,9 +199,10 @@ function SidebarGroup({
         </span>
 
         {/* Chevron */}
-        <motion.div
+        <motion.span
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          className="flex flex-shrink-0"
         >
           <ChevronDown
             className={cn(
@@ -207,7 +210,7 @@ function SidebarGroup({
               isOpen ? colors.text : "text-muted-foreground/50",
             )}
           />
-        </motion.div>
+        </motion.span>
       </button>
 
       {/* 하위 메뉴 (아코디언) */}
@@ -374,7 +377,7 @@ export function AdminSidebar() {
           )}
         >
           {isDashboardActive && (
-            <motion.div
+            <motion.span
               layoutId="dashboard-indicator"
               className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-primary shadow-[0_0_12px_rgba(124,58,237,0.4)]"
             />

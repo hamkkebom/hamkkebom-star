@@ -8,6 +8,26 @@ import { extractR2Key, getPresignedGetUrl } from "@/lib/cloudflare/r2-upload";
 const videoStatuses = new Set(Object.values(VideoStatus));
 const videoSubjects = new Set(Object.values(VideoSubject));
 
+// ── 서버사이드 썸네일 URL 메모리 캐시 (TTL 50분) ──
+const thumbnailCache = new Map<string, { url: string; expiresAt: number }>();
+const CACHE_TTL_MS = 50 * 60 * 1000; // 50분 (토큰 유효기간 60분보다 짧게)
+
+function getCachedThumbnail(key: string): string | null {
+  const cached = thumbnailCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+  if (cached) thumbnailCache.delete(key);
+  return null;
+}
+
+function setCachedThumbnail(key: string, url: string): void {
+  thumbnailCache.set(key, { url, expiresAt: Date.now() + CACHE_TTL_MS });
+  // 캐시 크기 제한 (최대 500개)
+  if (thumbnailCache.size > 500) {
+    const firstKey = thumbnailCache.keys().next().value;
+    if (firstKey) thumbnailCache.delete(firstKey);
+  }
+}
+
 export async function GET(request: Request) {
   // 비로그인도 APPROVED/FINAL 영상 조회 가능 (공개 API)
   const user = await getAuthUser().catch(() => null);
@@ -162,44 +182,50 @@ export async function GET(request: Request) {
     prisma.video.count({ where }),
   ]);
 
+  // ── 썸네일 URL 생성 (메모리 캐시 활용, 캐시 미스만 외부 호출) ──
   const rowsWithThumbnails = await Promise.all(
     rows.map(async (row) => {
       let finalThumbnailUrl: string | null = null;
+      const cacheKey = `thumb:${row.id}`;
 
-      // 1순위: Video.thumbnailUrl이 R2 URL이면 → presigned GET URL
-      if (row.thumbnailUrl) {
-        const r2Key = extractR2Key(row.thumbnailUrl);
-        if (r2Key) {
+      // 캐시 확인 — 히트 시 외부 API 호출 스킵
+      const cached = getCachedThumbnail(cacheKey);
+      if (cached) {
+        finalThumbnailUrl = cached;
+      } else {
+        // 1순위: R2 URL → presigned GET URL
+        if (row.thumbnailUrl) {
+          const r2Key = extractR2Key(row.thumbnailUrl);
+          if (r2Key) {
+            try {
+              finalThumbnailUrl = await getPresignedGetUrl(r2Key);
+            } catch { /* R2 실패 시 fallback */ }
+          }
+        }
+
+        // 2순위: Cloudflare Stream 서명 썸네일
+        if (!finalThumbnailUrl && row.streamUid) {
           try {
-            finalThumbnailUrl = await getPresignedGetUrl(r2Key);
-          } catch {
-            // R2 실패 시 fallback
-          }
+            const token = await getSignedPlaybackToken(row.streamUid);
+            if (token) {
+              finalThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+            }
+          } catch { /* ignore */ }
+        }
+
+        // 캐시에 저장
+        if (finalThumbnailUrl) {
+          setCachedThumbnail(cacheKey, finalThumbnailUrl);
         }
       }
 
-      // 2순위: Cloudflare Stream 서명 썸네일
-      if (!finalThumbnailUrl && row.streamUid) {
-        try {
-          const token = await getSignedPlaybackToken(row.streamUid);
-          if (token) {
-            finalThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
-          }
-        } catch {
-          // ignore
-        }
-      }
-
-      // 가장 최신 제출물 ID
       const latestSubmissionId = row.submissions?.[0]?.id ?? null;
-
-      // 필요 없는 submissions 배열은 제외하고 필요한 값만 반환
       const { submissions, ...restRow } = row;
 
       return {
         ...restRow,
         signedThumbnailUrl: finalThumbnailUrl,
-        submissionId: latestSubmissionId
+        submissionId: latestSubmissionId,
       };
     })
   );

@@ -70,6 +70,7 @@ type Submission = {
     star: {
         id: string;
         name: string;
+        chineseName?: string | null;
         avatarUrl: string | null;
         email: string;
     };
@@ -213,7 +214,7 @@ export function FeedbackWorkspace({
             const matchesFilter = filter === "ALL" || s.status === filter;
             const matchesSearch = !searchQuery ||
                 s.video?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.star.name.toLowerCase().includes(searchQuery.toLowerCase());
+                (s.star.chineseName || s.star.name).toLowerCase().includes(searchQuery.toLowerCase());
             return matchesFilter && matchesSearch;
         });
     }, [submissions, filter, searchQuery]);
@@ -592,9 +593,9 @@ export function FeedbackWorkspace({
                                                         <div className="flex items-center gap-1 mb-0.5">
                                                             <Avatar className="w-3.5 h-3.5">
                                                                 <AvatarImage src={sub.star.avatarUrl || undefined} />
-                                                                <AvatarFallback className="text-[7px] bg-slate-700">{sub.star.name[0]}</AvatarFallback>
+                                                                <AvatarFallback className="text-[7px] bg-slate-700">{(sub.star.chineseName || sub.star.name)[0]}</AvatarFallback>
                                                             </Avatar>
-                                                            <span className="text-[10px] text-slate-500 truncate">{sub.star.name}</span>
+                                                            <span className="text-[10px] text-slate-500 truncate">{sub.star.chineseName || sub.star.name}</span>
                                                         </div>
                                                         <h3 className={cn(
                                                             "text-xs font-semibold truncate leading-tight transition-colors",

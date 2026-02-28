@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -103,7 +103,7 @@ type BoardData = {
 
 // --- StarCard (draggable) ---
 
-function StarCard({
+const StarCard = memo(function StarCard({
   star,
   fromGradeId,
   overlay,
@@ -167,7 +167,7 @@ function StarCard({
       </div>
     </motion.div>
   );
-}
+});
 
 // --- GradeColumn (droppable) ---
 

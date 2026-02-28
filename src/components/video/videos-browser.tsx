@@ -254,10 +254,11 @@ export function VideosBrowser() {
   const { data, isLoading } = useQuery<VideosResponse>({
     queryKey: ["videos-browse", activeSearch, page, categoryId, ownerId, counselorId, durationRange, sort],
     queryFn: async () => {
-      const res = await fetch(buildEndpoint(), { cache: "no-store" });
+      const res = await fetch(buildEndpoint());
       if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
       return (await res.json()) as VideosResponse;
     },
+    staleTime: 30_000,
   });
 
   // ─── Handlers ───

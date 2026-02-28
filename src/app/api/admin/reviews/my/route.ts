@@ -45,6 +45,7 @@ export async function GET(_req: NextRequest) {
                         name: true,
                         email: true,
                         avatarUrl: true,
+                        chineseName: true,
                     }
                 },
                 video: {

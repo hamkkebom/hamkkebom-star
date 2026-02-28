@@ -80,8 +80,8 @@ export function NotificationBadge() {
 
   const totalCount = badge
     ? (badge.unreadFeedbacks ?? 0) +
-      (badge.unreviewedSubmissions ?? 0) +
-      (badge.pendingSettlements ?? 0)
+    (badge.unreviewedSubmissions ?? 0) +
+    (badge.pendingSettlements ?? 0)
     : 0;
 
   function handleClickItem(link: string) {
@@ -119,10 +119,17 @@ export function NotificationBadge() {
               const Icon = typeIcons[item.type];
               const color = typeColors[item.type];
               return (
-                <button
+                <div
                   key={item.id}
                   onClick={() => handleClickItem(item.link)}
-                  className="flex w-full items-start gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-muted/50"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      handleClickItem(item.link);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  className="flex w-full items-start gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-muted/50 cursor-pointer focus:outline-none focus:bg-muted/50"
                 >
                   <div className={`mt-0.5 ${color}`}>
                     <Icon className="h-4 w-4" />
@@ -136,7 +143,7 @@ export function NotificationBadge() {
                       {timeAgo(item.createdAt)}
                     </p>
                   </div>
-                </button>
+                </div>
               );
             })
           )}
