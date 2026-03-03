@@ -25,6 +25,7 @@ model User {
   idNumber        String?
   bankName        String?
   bankAccount     String?
+  aiToolSupportFee Int?
   feedbacks       Feedback[]          @relation("AuthoredFeedbacks")
   portfolio       Portfolio?
   assignments     ProjectAssignment[]
