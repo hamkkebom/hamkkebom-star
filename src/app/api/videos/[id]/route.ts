@@ -71,7 +71,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const existing = await prisma.video.findUnique({
     where: { id },
-    select: { ownerId: true },
+    select: { ownerId: true, status: true },
   });
 
   if (!existing) {
@@ -112,6 +112,22 @@ export async function PATCH(request: Request, { params }: Params) {
       category: { select: { id: true, name: true, slug: true } },
     },
   });
+
+  // VideoEventLog 기록 (실패해도 메인 로직에 영향 없음)
+  try {
+    const updatedFields = Object.keys(data);
+    await prisma.videoEventLog.create({
+      data: {
+        videoId: id,
+        event: "METADATA_UPDATED",
+        fromState: existing.status,
+        toState: typeof data.status === "string" ? data.status : existing.status,
+        metadata: { updatedFields, updatedBy: user.id },
+      },
+    });
+  } catch {
+    // 로그 생성 실패는 무시
+  }
 
   return NextResponse.json({ data: updated });
 }

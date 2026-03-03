@@ -55,10 +55,30 @@ export async function PATCH(_request: Request, { params }: Params) {
 
       // Video.status도 APPROVED로 연동 → 메인 페이지에 공개
       if (submission.videoId) {
+        const video = await tx.video.findUnique({
+          where: { id: submission.videoId },
+          select: { status: true },
+        });
+
         await tx.video.update({
           where: { id: submission.videoId },
           data: { status: "APPROVED" },
         });
+
+        // VideoEventLog 기록 (실패해도 메인 로직에 영향 없음)
+        try {
+          await tx.videoEventLog.create({
+            data: {
+              videoId: submission.videoId,
+              event: "SUBMISSION_APPROVED",
+              fromState: video?.status ?? null,
+              toState: "APPROVED",
+              metadata: { submissionId: id, reviewerId: user.id },
+            },
+          });
+        } catch {
+          // 로그 생성 실패는 무시
+        }
       }
 
       return result;

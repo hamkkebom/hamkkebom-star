@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MoreHorizontal, Pencil, Trash2, X, Check } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, X, Check, CheckCircle2, Circle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,6 +140,24 @@ export function FeedbackList({ submissionId, onTimecodeClick, onFeedbacksChanged
     onError: (err) => toast.error(err instanceof Error ? err.message : "삭제 실패"),
   });
 
+  const statusToggleMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const res = await fetch(`/api/feedbacks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("상태 변경에 실패했습니다.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feedbacks", submissionId] });
+      toast.success("피드백 상태가 변경되었습니다.");
+      onFeedbacksChanged?.();
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "상태 변경 실패"),
+  });
+
   const startEditing = (feedback: FeedbackItem) => {
     setEditingId(feedback.id);
     setEditContent(feedback.content);
@@ -184,7 +202,7 @@ export function FeedbackList({ submissionId, onTimecodeClick, onFeedbacksChanged
   return (
     <div className="space-y-3">
       {data.map((feedback) => (
-        <div key={feedback.id} className="rounded-xl border bg-card p-4 relative group/item">
+        <div key={feedback.id} className={`rounded-xl border bg-card p-4 relative group/item${feedback.status === "RESOLVED" ? " opacity-60" : ""}`}>
           {/* Header: Badges + Actions */}
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -265,7 +283,7 @@ export function FeedbackList({ submissionId, onTimecodeClick, onFeedbacksChanged
               </div>
             </div>
           ) : (
-            <p className="whitespace-pre-line text-sm leading-6">{feedback.content}</p>
+            <p className={`whitespace-pre-line text-sm leading-6${feedback.status === "RESOLVED" ? " line-through text-muted-foreground" : ""}`}>{feedback.content}</p>
           )}
 
           {/* Delete Confirmation */}
@@ -294,10 +312,36 @@ export function FeedbackList({ submissionId, onTimecodeClick, onFeedbacksChanged
           )}
 
           {/* Footer */}
-          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{feedback.author.name}</span>
-            <span>•</span>
-            <span>{formatDate(feedback.createdAt)}</span>
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{feedback.author.name}</span>
+              <span>•</span>
+              <span>{formatDate(feedback.createdAt)}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-7 gap-1 text-xs ${feedback.status === "RESOLVED" ? "text-green-600 hover:text-green-700" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() =>
+                statusToggleMutation.mutate({
+                  id: feedback.id,
+                  status: feedback.status === "RESOLVED" ? "PENDING" : "RESOLVED",
+                })
+              }
+              disabled={statusToggleMutation.isPending}
+            >
+              {feedback.status === "RESOLVED" ? (
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  해결됨
+                </>
+              ) : (
+                <>
+                  <Circle className="h-3.5 w-3.5" />
+                  미해결
+                </>
+              )}
+            </Button>
           </div>
         </div>
       ))}

@@ -1,9 +1,12 @@
 import { z } from "zod";
 
 export const generateSettlementSchema = z.object({
-  year: z.number().int().min(2020, "연도는 2020 이상이어야 합니다.").max(2100),
-  month: z.number().int().min(1, "월은 1~12 사이여야 합니다.").max(12, "월은 1~12 사이여야 합니다."),
-});
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "날짜 형식이 올바르지 않습니다. (YYYY-MM-DD)"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "날짜 형식이 올바르지 않습니다. (YYYY-MM-DD)"),
+}).refine(
+  (data) => new Date(data.startDate) <= new Date(data.endDate),
+  { message: "시작일은 종료일보다 이전이어야 합니다.", path: ["startDate"] }
+);
 
 export const adjustItemSchema = z.object({
   adjustedAmount: z.number().nonnegative("조정 금액은 0 이상이어야 합니다."),

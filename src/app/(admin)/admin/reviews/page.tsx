@@ -1,11 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale/ko";
 
 import { toast } from "sonner";
 import { Clock, Eye, CheckCircle2, LayoutGrid, Download, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -53,6 +57,10 @@ type SubmissionRow = {
   video: {
     title: string;
   } | null;
+  feedbacks?: Array<{
+    id: string;
+    status: string;
+  }>;
   _count: {
     feedbacks: number;
   };
@@ -96,7 +104,16 @@ async function fetchAllSubmissions(status: string, page: number): Promise<Submis
     : `/api/submissions?page=${page}&pageSize=50&status=${status}`;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("제출물 목록을 불러오지 못했습니다.");
-  return (await res.json()) as SubmissionsResponse;
+  const data = (await res.json()) as SubmissionsResponse;
+
+  // Ensure feedbacks array exists for each row (fallback to empty array)
+  return {
+    ...data,
+    data: data.data.map(row => ({
+      ...row,
+      feedbacks: row.feedbacks || []
+    }))
+  };
 }
 
 const FILTERS = [
@@ -118,6 +135,9 @@ export default function AdminReviewsPage() {
 
   const [filter, setFilter] = useState("PENDING");
   const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkRejectDialogOpen, setIsBulkRejectDialogOpen] = useState(false);
+  const [bulkRejectReason, setBulkRejectReason] = useState("");
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-submissions", filter, page],
@@ -220,7 +240,64 @@ export default function AdminReviewsPage() {
     },
   });
 
+
+  const bulkActionMutation = useMutation({
+    mutationFn: async ({ action, reason }: { action: "APPROVE" | "REJECT"; reason?: string }) => {
+      const res = await fetch("/api/submissions/bulk-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds), action, reason }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error?.message ?? "일괄 처리에 실패했습니다.");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      const { approved, rejected, failed } = data.data;
+      const successCount = approved + rejected;
+      if (successCount > 0) {
+        toast.success(`${successCount}건 처리되었습니다.`);
+      }
+      if (failed.length > 0) {
+        toast.error(`${failed.length}건 처리 실패`);
+      }
+      setSelectedIds(new Set());
+      setIsBulkRejectDialogOpen(false);
+      setBulkRejectReason("");
+      queryClient.invalidateQueries({ queryKey: ["admin-submissions"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "일괄 처리에 실패했습니다.");
+    },
+  });
+
   const rows = data?.data ?? [];
+
+  const selectableRows = rows.filter(r => ["PENDING", "IN_REVIEW", "REVISED"].includes(r.status));
+  const isAllSelected = selectableRows.length > 0 && selectableRows.every(r => selectedIds.has(r.id));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      const newSet = new Set(selectedIds);
+      selectableRows.forEach(r => newSet.add(r.id));
+      setSelectedIds(newSet);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
+  };
+
 
   return (
     <div className="space-y-6">
@@ -262,6 +339,29 @@ export default function AdminReviewsPage() {
         </div>
       </div>
 
+
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border mb-4 transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-top-2">
+          <span className="text-sm font-medium">{selectedIds.size}건 선택됨</span>
+          <Button
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => bulkActionMutation.mutate({ action: "APPROVE" })}
+            disabled={bulkActionMutation.isPending}
+          >
+            일괄 승인
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => setIsBulkRejectDialogOpen(true)}
+            disabled={bulkActionMutation.isPending}
+          >
+            일괄 반려
+          </Button>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="space-y-2">
           <Skeleton className="h-12 w-full" />
@@ -278,6 +378,13 @@ export default function AdminReviewsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={toggleSelectAll}
+                      disabled={selectableRows.length === 0}
+                    />
+                  </TableHead>
                   <TableHead>프로젝트</TableHead>
                   <TableHead>STAR</TableHead>
                   <TableHead>버전</TableHead>
@@ -290,7 +397,7 @@ export default function AdminReviewsPage() {
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
                       제출된 영상이 없습니다.
                     </TableCell>
                   </TableRow>
@@ -301,6 +408,14 @@ export default function AdminReviewsPage() {
 
                     return (
                       <TableRow key={row.id}>
+                        <TableCell>
+                          {["PENDING", "IN_REVIEW", "REVISED"].includes(row.status) ? (
+                            <Checkbox
+                              checked={selectedIds.has(row.id)}
+                              onCheckedChange={() => toggleSelect(row.id)}
+                            />
+                          ) : null}
+                        </TableCell>
                         <TableCell className="max-w-[200px] font-medium">
                           <div className="truncate" title={projectTitle}>
                             {projectTitle}
@@ -311,7 +426,14 @@ export default function AdminReviewsPage() {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell>{row.star.chineseName || row.star.name}</TableCell>
+                        <TableCell>
+                          <Link
+                            href={`/admin/stars/${row.star.id}`}
+                            className="hover:underline text-primary"
+                          >
+                            {row.star.chineseName || row.star.name}
+                          </Link>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="font-mono text-xs font-semibold bg-slate-50 dark:bg-slate-900">
                             v{row.version.replace(/^v/i, "")}
@@ -322,16 +444,29 @@ export default function AdminReviewsPage() {
                             {statusLabels[row.status] ?? row.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{row._count.feedbacks}개</TableCell>
-                        <TableCell>{formatDate(row.createdAt)}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            const feedbacks = row.feedbacks || [];
+                            const resolved = feedbacks.filter(f => f.status === "RESOLVED").length;
+                            const total = row._count.feedbacks;
+                            return total > 0 ? `${resolved}/${total} 해결` : "0건";
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          <div>{formatDate(row.createdAt)}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {formatDistanceToNow(new Date(row.createdAt), { addSuffix: true, locale: ko })}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedSubmission(row)}
-                          >
-                            리뷰
-                          </Button>
+                          <Link href={`/admin/reviews/${row.id}`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                            >
+                              리뷰
+                            </Button>
+                          </Link>
                         </TableCell>
                       </TableRow>
                     );
@@ -354,7 +489,10 @@ export default function AdminReviewsPage() {
               variant="outline"
               size="sm"
               disabled={data.page <= 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={() => {
+                setPage(p => Math.max(1, p - 1));
+                setSelectedIds(new Set());
+              }}
               className="px-3 hidden sm:flex"
             >
               이전
@@ -381,7 +519,10 @@ export default function AdminReviewsPage() {
                   key={pageNum}
                   variant={isActive ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setPage(pageNum)}
+                  onClick={() => {
+                    setPage(pageNum);
+                    setSelectedIds(new Set());
+                  }}
                   className={`w-9 h-9 p-0 ${isActive ? "pointer-events-none" : ""}`}
                 >
                   {pageNum}
@@ -393,7 +534,10 @@ export default function AdminReviewsPage() {
               variant="outline"
               size="sm"
               disabled={data.page >= data.totalPages}
-              onClick={() => setPage(p => p + 1)}
+              onClick={() => {
+                setPage(p => p + 1);
+                setSelectedIds(new Set());
+              }}
               className="px-3 hidden sm:flex"
             >
               다음

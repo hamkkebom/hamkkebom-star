@@ -16,7 +16,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 // ============================================================
 //  TYPES
@@ -122,7 +126,7 @@ function ThumbnailPreview({ sub }: { sub: Submission }) {
             </div>
 
             {/* Version chip */}
-            <div className="absolute top-3 right-3 z-10">
+            <div className="absolute bottom-3 right-3 z-10">
                 <Badge className="bg-black/60 text-white/90 border-white/10 backdrop-blur-xl font-mono text-[10px] px-2 py-0.5">
                     v{sub.version.replace(/^v/i, "")}
                 </Badge>
@@ -135,10 +139,42 @@ function ThumbnailPreview({ sub }: { sub: Submission }) {
 //  MAIN DASHBOARD COMPONENT
 // ============================================================
 export function FeedbackDashboard({ submissions }: { submissions: Submission[] }) {
+    const queryClient = useQueryClient();
     const [filter, setFilter] = useState("PENDING");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"latest" | "oldest">("latest");
     const [particlesReady, setParticlesReady] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    const bulkActionMutation = useMutation({
+        mutationFn: async ({ action, reason }: { action: "APPROVE" | "REJECT"; reason?: string }) => {
+            const res = await fetch("/api/submissions/bulk-action", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids: Array.from(selectedIds), action, reason }),
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error?.message ?? "일괄 처리에 실패했습니다.");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            const { approved, rejected, failed } = data.data;
+            const successCount = approved + rejected;
+            if (successCount > 0) {
+                toast.success(`${successCount}건 처리되었습니다.`);
+            }
+            if (failed.length > 0) {
+                toast.error(`${failed.length}건 처리 실패`);
+            }
+            setSelectedIds(new Set());
+            queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
+        },
+        onError: (err) => {
+            toast.error(err instanceof Error ? err.message : "일괄 처리에 실패했습니다.");
+        },
+    });
 
     // Removed initParticlesEngine for performance
 
@@ -163,6 +199,39 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
 
         return result;
     }, [submissions, filter, searchQuery, sortBy]);
+
+    useEffect(() => {
+        // filter 변경 시 선택 초기화
+        setSelectedIds(new Set());
+    }, [filter]);
+
+    const selectableSubmissions = useMemo(() => {
+        return filteredSubmissions.filter(s => ["PENDING", "IN_REVIEW", "REVISED"].includes(s.status));
+    }, [filteredSubmissions]);
+
+    const isAllSelected = selectableSubmissions.length > 0 && selectableSubmissions.every(s => selectedIds.has(s.id));
+
+    const toggleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedIds(new Set());
+        } else {
+            const newSet = new Set(selectedIds);
+            selectableSubmissions.forEach(s => newSet.add(s.id));
+            setSelectedIds(newSet);
+        }
+    };
+
+    const toggleSelect = (id: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        setSelectedIds(newSet);
+    };
 
     // 그룹화 로직 추가: star.id 기준으로 묶기
     const groupedSubmissions = useMemo(() => {
@@ -309,6 +378,19 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                     </div>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex items-center px-2 mr-2">
+                            <Checkbox
+                                id="select-all"
+                                checked={isAllSelected}
+                                onCheckedChange={toggleSelectAll}
+                                disabled={selectableSubmissions.length === 0}
+                                className="mr-2"
+                            />
+                            <label htmlFor="select-all" className="text-sm font-medium text-slate-600 dark:text-slate-300 cursor-pointer whitespace-nowrap">
+                                부분 일괄선택
+                            </label>
+                        </div>
+
                         <div className="relative flex-1 sm:w-72">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-600" />
                             <input
@@ -416,6 +498,19 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                                                                 )}
                                                             </div>
 
+                                                            {/* Selection Checkbox */}
+                                                            {["PENDING", "IN_REVIEW", "REVISED"].includes(sub.status) && (
+                                                                <div
+                                                                    className="absolute top-3 right-3 z-30"
+                                                                    onClick={(e) => toggleSelect(sub.id, e)}
+                                                                >
+                                                                    <Checkbox
+                                                                        checked={selectedIds.has(sub.id)}
+                                                                        className="w-5 h-5 border-2 bg-white/50 backdrop-blur-md border-indigo-400 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 outline-none ring-0 shadow-lg cursor-pointer"
+                                                                    />
+                                                                </div>
+                                                            )}
+
                                                             {/* Thumbnail Layer - slightly shorter aspect ratio for compact look */}
                                                             <div className="aspect-[16/10] shrink-0">
                                                                 <ThumbnailPreview sub={sub} />
@@ -485,6 +580,46 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
                     </motion.div>
                 )}
             </div>
+
+            {/* Floating Bulk Action Bar */}
+            <AnimatePresence>
+                {selectedIds.size > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 100 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 100 }}
+                        transition={{ type: "spring", bounce: 0.2 }}
+                        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 px-6 py-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-indigo-200 dark:border-indigo-500/30 rounded-full shadow-2xl"
+                    >
+                        <span className="text-sm font-bold text-indigo-900 dark:text-indigo-100 min-w-[80px] text-center">
+                            {selectedIds.size}건 선택됨
+                        </span>
+                        <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
+                        <Button
+                            size="sm"
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-6 font-bold shadow-lg shadow-emerald-500/20"
+                            onClick={() => bulkActionMutation.mutate({ action: "APPROVE" })}
+                            disabled={bulkActionMutation.isPending}
+                        >
+                            일괄 승인
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="rounded-full px-6 font-bold shadow-lg shadow-red-500/20"
+                            onClick={() => {
+                                const reason = window.prompt("일괄 반려 사유를 입력해주세요.", "담당자 일괄 반려");
+                                if (reason !== null) {
+                                    bulkActionMutation.mutate({ action: "REJECT", reason });
+                                }
+                            }}
+                            disabled={bulkActionMutation.isPending}
+                        >
+                            일괄 반려
+                        </Button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Custom Styles overrides */}
             <style jsx global>{`

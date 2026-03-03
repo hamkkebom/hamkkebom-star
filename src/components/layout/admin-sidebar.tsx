@@ -10,7 +10,6 @@ import {
   FolderKanban,
   ClipboardList,
   Clapperboard,
-  Eye,
   Film,
   UsersRound,
   UserCheck,
@@ -28,6 +27,9 @@ import {
   Sparkles,
   Share2,
   BookOpen,
+  TrendingUp,
+  Activity,
+  BadgeDollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -92,6 +94,16 @@ const navGroups: NavGroup[] = [
       { href: "/admin/settlements/guide", label: "정산 가이드", icon: BookOpen },
     ],
   },
+  {
+    id: "insight",
+    label: "지표",
+    icon: TrendingUp,
+    color: "indigo",
+    children: [
+      { href: "/admin/insights/operational", label: "운영 지표", icon: Activity },
+      { href: "/admin/insights/financial", label: "재무 지표", icon: BadgeDollarSign },
+    ],
+  },
 ];
 
 const externalItems = [
@@ -100,6 +112,13 @@ const externalItems = [
 
 // --- 그룹 색상 매핑 ---
 const colorMap: Record<string, { bg: string; text: string; glow: string; dot: string; line: string }> = {
+  indigo: {
+    bg: "bg-indigo-500/8 dark:bg-indigo-500/10",
+    text: "text-indigo-600 dark:text-indigo-400",
+    glow: "shadow-[0_0_12px_rgba(99,102,241,0.3)]",
+    dot: "bg-indigo-500",
+    line: "border-indigo-500/20 dark:border-indigo-400/15",
+  },
   violet: {
     bg: "bg-violet-500/8 dark:bg-violet-500/10",
     text: "text-violet-600 dark:text-violet-400",

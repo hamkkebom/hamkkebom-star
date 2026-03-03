@@ -53,6 +53,7 @@ export async function GET(request: Request) {
         avatarUrl: true,
         role: true,
         isApproved: true,
+        adEligible: true,
         createdAt: true,
       },
       orderBy: [{ createdAt: "desc" }],

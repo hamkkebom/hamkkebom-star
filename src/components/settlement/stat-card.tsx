@@ -20,6 +20,7 @@ interface StatCardProps {
   iconColor?: string;
   className?: string;
   decimals?: number;
+  onClick?: () => void;
 }
 
 export function StatCard({
@@ -33,10 +34,11 @@ export function StatCard({
   iconColor = "text-primary",
   className,
   decimals,
+  onClick,
 }: StatCardProps) {
   return (
     <AnimatedCard delay={delay} className={className}>
-      <div className="p-5">
+      <div className={cn("p-5", onClick && "cursor-pointer")} onClick={onClick}>
         <div className="flex items-start justify-between mb-3">
           <div className={cn("p-2 rounded-lg bg-primary/8", iconColor.replace("text-", "bg-").replace(/-([\d]+)$/, "-500/10"))}>
             <Icon className={cn("h-5 w-5", iconColor)} />

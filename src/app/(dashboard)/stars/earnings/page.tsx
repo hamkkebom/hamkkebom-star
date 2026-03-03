@@ -22,7 +22,7 @@ import { StatCard } from "@/components/settlement/stat-card";
 import { AnimatedCard } from "@/components/settlement/animated-card";
 import { GlowBadge } from "@/components/settlement/glow-badge";
 import { NumberTicker } from "@/components/settlement/number-ticker";
-import { formatKRW } from "@/lib/settlement-utils";
+import { formatKRW, formatDateRange } from "@/lib/settlement-utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,8 +30,8 @@ import { formatKRW } from "@/lib/settlement-utils";
 
 type SettlementRow = {
   id: string;
-  year: number;
-  month: number;
+  startDate: string;
+  endDate: string;
   totalAmount: number;
   status: string;
   paymentDate: string | null;
@@ -49,8 +49,8 @@ type SettlementsResponse = {
 
 type SettlementDetail = {
   id: string;
-  year: number;
-  month: number;
+  startDate: string;
+  endDate: string;
   totalAmount: number;
   status: string;
   paymentDate: string | null;
@@ -211,10 +211,9 @@ export default function EarningsPage() {
                   <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col">
-                        <p className="font-semibold">
-                          {settlement.year}년{" "}
-                          {String(settlement.month).padStart(2, "0")}월
-                        </p>
+                         <p className="font-semibold">
+                           {formatDateRange(new Date(settlement.startDate), new Date(settlement.endDate))}
+                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           항목 {settlement._count.items}건
                           {settlement.paymentDate &&

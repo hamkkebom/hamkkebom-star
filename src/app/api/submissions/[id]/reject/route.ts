@@ -34,7 +34,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const updated = await prisma.$transaction(async (tx) => {
       const submission = await tx.submission.findUnique({
         where: { id },
-        select: { id: true, videoId: true },
+        select: { id: true, videoId: true, status: true },
       });
 
       if (!submission) {
@@ -56,10 +56,30 @@ export async function PATCH(request: Request, { params }: Params) {
 
       // Video.status를 DRAFT로 되돌려 메인에서 비공개 처리
       if (submission.videoId) {
+        const video = await tx.video.findUnique({
+          where: { id: submission.videoId },
+          select: { status: true },
+        });
+
         await tx.video.update({
           where: { id: submission.videoId },
           data: { status: "DRAFT" },
         });
+
+        // VideoEventLog 기록 (실패해도 메인 로직에 영향 없음)
+        try {
+          await tx.videoEventLog.create({
+            data: {
+              videoId: submission.videoId,
+              event: "SUBMISSION_REJECTED",
+              fromState: video?.status ?? null,
+              toState: "DRAFT",
+              metadata: { submissionId: id, reviewerId: user.id, reason: reason || null },
+            },
+          });
+        } catch {
+          // 로그 생성 실패는 무시
+        }
       }
 
       return result;

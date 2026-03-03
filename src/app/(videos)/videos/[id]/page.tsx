@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from 'react';
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
@@ -85,7 +86,7 @@ function formatFileSize(bytes: number | null): string {
 
 function handleShare(title: string) {
   if (navigator.share) {
-    navigator.share({ title, url: window.location.href }).catch(() => {});
+    navigator.share({ title, url: window.location.href }).catch(() => { });
   } else {
     navigator.clipboard.writeText(window.location.href);
   }
@@ -104,7 +105,14 @@ export default function VideoDetailPage() {
     enabled: !!id,
   });
 
-
+  // ─── 조회수 증가 트리거 (StrictMode 중복 방지) ───
+  const viewTracked = useRef(false);
+  useEffect(() => {
+    if (id && !viewTracked.current) {
+      viewTracked.current = true;
+      fetch(`/api/videos/${id}/view`, { method: "POST" }).catch(() => { });
+    }
+  }, [id]);
 
   /* ─── Error / Not found ─── */
   if (!isLoading && (error || !data?.data)) {
@@ -166,17 +174,17 @@ export default function VideoDetailPage() {
             ) : video?.thumbnailUrl || video?.streamUid ? (
               <div className="relative h-full w-full">
                 <Image
-                   src={
-                     video.streamUid
-                       ? `https://videodelivery.net/${video.streamUid}/thumbnails/thumbnail.jpg?width=1280&height=720&fit=crop`
-                       : video.thumbnailUrl!
-                   }
-                   alt={video.title}
-                   fill
-                   unoptimized
-                   className="object-cover"
-                   sizes="(max-width: 1280px) 100vw, 1280px"
-                 />
+                  src={
+                    video.streamUid
+                      ? `https://videodelivery.net/${video.streamUid}/thumbnails/thumbnail.jpg?width=1280&height=720&fit=crop`
+                      : video.thumbnailUrl!
+                  }
+                  alt={video.title}
+                  fill
+                  unoptimized
+                  className="object-cover"
+                  sizes="(max-width: 1280px) 100vw, 1280px"
+                />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
                     <Play className="ml-1 h-8 w-8 text-white" />

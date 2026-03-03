@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
     ReactFlow,
     MiniMap,
@@ -80,15 +81,39 @@ const STATUS_CONFIG: Record<SubmissionStatus, {
 
 // --- Custom Node Component ---
 const CustomNode = ({ data }: { data: any }) => {
+    const router = useRouter();
     const { status, label, count, description, color, icon: Icon } = data;
     const [isHovered, setIsHovered] = React.useState(false);
 
+    // Map status to filter parameter for reviews page
+    const getFilterForStatus = (status: SubmissionStatus): string => {
+        switch (status) {
+            case "PENDING":
+            case "REVISED":
+                return "PENDING";
+            case "IN_REVIEW":
+                return "IN_REVIEW";
+            case "APPROVED":
+            case "REJECTED":
+                return "COMPLETED";
+            default:
+                return "ALL";
+        }
+    };
+
+    const handleNodeClick = () => {
+        const filter = getFilterForStatus(status);
+        router.push(`/admin/reviews?filter=${filter}`);
+    };
+
     return (
         <div
-            className="relative"
+            className="relative cursor-pointer"
             style={{ width: NODE_WIDTH }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            onClick={handleNodeClick}
+            title="클릭하여 목록 보기"
         >
             {/* Handles for React Flow */}
             <Handle type="target" position={Position.Left} className="!bg-slate-500 !w-3 !h-3 opacity-0 group-hover:opacity-100 transition-opacity" />

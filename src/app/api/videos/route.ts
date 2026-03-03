@@ -48,7 +48,7 @@ export async function GET(request: Request) {
   const dateTo = searchParams.get("dateTo");
   const q = searchParams.get("q")?.trim(); // Global search query
 
-  if (sort !== "latest" && sort !== "oldest") {
+  if (sort !== "latest" && sort !== "oldest" && sort !== "popular") {
     return NextResponse.json(
       { error: { code: "BAD_REQUEST", message: "유효하지 않은 정렬 값입니다." } },
       { status: 400 }
@@ -175,7 +175,7 @@ export async function GET(request: Request) {
           },
         },
       },
-      orderBy: [{ createdAt: sort === "oldest" ? "asc" : "desc" }],
+      orderBy: sort === "popular" ? [{ viewCount: "desc" }, { createdAt: "desc" }] : [{ createdAt: sort === "oldest" ? "asc" : "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

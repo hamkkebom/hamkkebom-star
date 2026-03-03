@@ -97,7 +97,7 @@ export default function SettlementGuidePage() {
                                 />
                             </div>
                             <div className="p-6">
-                                <h3 className="text-xl font-bold mb-2">1단계: 월별 정산 생성</h3>
+                                <h3 className="text-xl font-bold mb-2">1단계: 기간 지정 정산 생성</h3>
                                 <p className="text-muted-foreground mb-4">
                                     매월 초, 지난달 작업물에 대한 정산을 일괄 생성합니다.
                                     <strong className="text-foreground"> 피드백 완료(승인)된 제출물만</strong> 대상이 됩니다.
@@ -105,7 +105,7 @@ export default function SettlementGuidePage() {
                                 <ul className="space-y-2 text-sm text-muted-foreground">
                                     <li className="flex items-start gap-2">
                                         <MousePointerClick className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-                                        <span><strong className="text-foreground">수행 방법:</strong> 우측 상단의 <strong className="text-purple-500">정산 생성</strong> 버튼 클릭 &gt; 연도와 월 선택 &gt; 확인</span>
+                                        <span><strong className="text-foreground">수행 방법:</strong> 우측 상단의 <strong className="text-purple-500">정산 생성</strong> 버튼 클릭 &gt; 시작일과 종료일을 선택 &gt; 확인</span>
                                     </li>
                                     <li className="flex items-start gap-2">
                                         <Info className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />

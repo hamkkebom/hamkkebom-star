@@ -27,23 +27,20 @@ export async function GET(request: Request) {
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
   const pageSize = Math.min(50, Math.max(1, Number(searchParams.get("pageSize") ?? "20") || 20));
 
-  const yearParam = searchParams.get("year");
-  const monthParam = searchParams.get("month");
+  const startDateParam = searchParams.get("startDate");
+  const endDateParam = searchParams.get("endDate");
   const statusParam = searchParams.get("status");
 
-  const year = yearParam ? Number(yearParam) : undefined;
-  const month = monthParam ? Number(monthParam) : undefined;
-
-  if (year !== undefined && (!Number.isInteger(year) || year < 2020 || year > 2100)) {
+  if (startDateParam && isNaN(new Date(startDateParam).getTime())) {
     return NextResponse.json(
-      { error: { code: "BAD_REQUEST", message: "유효한 연도를 입력해주세요." } },
+      { error: { code: "BAD_REQUEST", message: "유효한 시작 날짜를 입력해주세요." } },
       { status: 400 }
     );
   }
 
-  if (month !== undefined && (!Number.isInteger(month) || month < 1 || month > 12)) {
+  if (endDateParam && isNaN(new Date(endDateParam).getTime())) {
     return NextResponse.json(
-      { error: { code: "BAD_REQUEST", message: "유효한 월을 입력해주세요." } },
+      { error: { code: "BAD_REQUEST", message: "유효한 종료 날짜를 입력해주세요." } },
       { status: 400 }
     );
   }
@@ -55,12 +52,18 @@ export async function GET(request: Request) {
     );
   }
 
-  const where = {
-    ...(year !== undefined ? { year } : {}),
-    ...(month !== undefined ? { month } : {}),
+  const where: any = {
     ...(statusParam && statusParam !== "ALL" ? { status: statusParam as SettlementStatus } : {}),
     ...(user.role === "STAR" ? { starId: user.id } : {}),
   };
+
+  if (startDateParam) {
+    where.endDate = { gte: new Date(startDateParam + "T00:00:00.000Z") };
+  }
+
+  if (endDateParam) {
+    where.startDate = { lte: new Date(endDateParam + "T23:59:59.999Z") };
+  }
 
   const [rows, total] = await Promise.all([
     prisma.settlement.findMany({
@@ -84,14 +87,14 @@ export async function GET(request: Request) {
           },
         },
       },
-      orderBy: [{ year: "desc" }, { month: "desc" }],
+      orderBy: [{ startDate: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
     prisma.settlement.count({ where }),
   ]);
 
-  const maskedRows = rows.map((row) => ({
+  const maskedRows = rows.map((row: any) => ({
     ...row,
     star: {
       ...row.star,

@@ -1,10 +1,10 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf-fonts";
-import { formatKRW } from "@/lib/settlement-utils";
+import { formatKRW, formatDateRange } from "@/lib/settlement-utils";
 
 export type SettlementDocumentProps = {
-  year: number;
-  month: number;
+  startDate: Date;
+  endDate: Date;
   starName: string;
   phone?: string | null;
   email?: string | null;
@@ -153,8 +153,8 @@ const styles = StyleSheet.create({
 });
 
 export function SettlementDocument({
-  year,
-  month,
+  startDate,
+  endDate,
   starName,
   phone,
   email,
@@ -174,7 +174,7 @@ export function SettlementDocument({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>
-            {year}년 {month}월 지급 내역서
+            {formatDateRange(startDate, endDate)} 지급 내역서
           </Text>
           <Text style={styles.headerCompany}>{companyName}</Text>
         </View>

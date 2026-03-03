@@ -8,6 +8,9 @@ import {
   ChevronDown,
   X,
   Film,
+  ChevronLeft,
+  ChevronRight,
+  Play,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoCard } from "@/components/video/video-card";
@@ -47,6 +50,7 @@ type VideoRow = {
   category: { id: string; name: string; slug: string } | null;
   counselor: { id: string; displayName: string } | null;
   technicalSpec: { duration: number | null } | null;
+  viewCount: number;
   _count: { eventLogs: number };
 };
 
@@ -183,6 +187,80 @@ function DropdownItem({
 }
 
 
+/* ───── SwimlaneRow Component ───── */
+function SwimlaneRow({ title, videos, page }: { title: string; videos: VideoRow[], page: number }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(true);
+
+  const handleScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setShowLeft(scrollLeft > 0);
+      setShowRight(Math.ceil(scrollLeft + clientWidth) < scrollWidth);
+    }
+  };
+
+  const scroll = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      const { clientWidth } = scrollRef.current;
+      const scrollAmount = direction === "left" ? -clientWidth * 0.75 : clientWidth * 0.75;
+      scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
+
+  if (!videos.length) return null;
+
+  return (
+    <div className="relative group w-full pt-2 pb-6 overflow-visible">
+      <h3 className="px-4 sm:px-6 lg:px-8 xl:px-[calc((100vw-1920px)/2+2rem)] text-lg sm:text-2xl font-bold mb-4 drop-shadow-md text-white">
+        {title}
+      </h3>
+
+      {/* Scroll Arrows */}
+      <div className={`absolute left-0 top-14 bottom-14 w-12 sm:w-24 z-20 bg-gradient-to-r from-[#050505] via-[#050505]/80 to-transparent pointer-events-none flex items-center shrink-0 transition-opacity duration-300 ${showLeft ? 'opacity-100' : 'opacity-0'}`}>
+        <button onClick={() => scroll("left")} className="pointer-events-auto w-10 h-10 sm:w-14 sm:h-14 ml-1 sm:ml-4 rounded-full bg-black/80 border border-white/20 hover:bg-white hover:text-black hover:scale-110 text-white backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+          <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 -ml-1" />
+        </button>
+      </div>
+
+      <div className={`absolute right-0 top-14 bottom-14 w-16 sm:w-32 z-20 bg-gradient-to-l from-[#050505] via-[#050505]/80 to-transparent pointer-events-none flex items-center justify-end shrink-0 transition-opacity duration-300 ${showRight ? 'opacity-100' : 'opacity-0'}`}>
+        <button onClick={() => scroll("right")} className="pointer-events-auto w-10 h-10 sm:w-14 sm:h-14 mr-1 sm:mr-4 rounded-full bg-black/80 border border-white/20 hover:bg-white hover:text-black hover:scale-110 text-white backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+          <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 ml-1" />
+        </button>
+      </div>
+
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex gap-4 sm:gap-5 overflow-x-auto overflow-y-visible pb-12 pt-4 scrollbar-none [&::-webkit-scrollbar]:hidden snap-x snap-mandatory px-4 sm:px-6 lg:px-8 xl:px-[calc((100vw-1920px)/2+2rem)] w-full"
+      >
+        {videos.map((video, idx) => {
+          const useSigned = !!video.signedThumbnailUrl;
+          return (
+            <div key={video.id} className="w-[75vw] sm:w-[300px] lg:w-[380px] xl:w-[420px] flex-shrink-0 snap-start">
+              <VideoCard
+                id={video.id}
+                title={video.title}
+                thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
+                streamUid={useSigned ? null : video.streamUid}
+                duration={video.technicalSpec?.duration ?? null}
+                ownerName={video.owner.chineseName || video.owner.name}
+                categoryName={video.category?.name ?? null}
+                createdAt={video.createdAt}
+                viewCount={video.viewCount}
+                priority={page === 1 && idx < 4}
+                compact={true}
+              />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  );
+}
+
+
 /* ───── Main Component ───── */
 export function VideosBrowser() {
   const [search, setSearch] = useState("");
@@ -251,15 +329,58 @@ export function VideosBrowser() {
     return `/api/videos?${params.toString()}`;
   }, [page, sort, categoryId, ownerId, counselorId, durationRange, activeSearch]);
 
-  const { data, isLoading } = useQuery<VideosResponse>({
+  const hasActiveFilter = categoryId || ownerId || counselorId || durationRange !== "all" || activeSearch;
+  const isDefaultView = !hasActiveFilter;
+
+  const { data: filteredData, isLoading: isFilteredLoading } = useQuery<VideosResponse>({
     queryKey: ["videos-browse", activeSearch, page, categoryId, ownerId, counselorId, durationRange, sort],
     queryFn: async () => {
       const res = await fetch(buildEndpoint());
       if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
       return (await res.json()) as VideosResponse;
     },
+    enabled: !isDefaultView,
     staleTime: 30_000,
   });
+
+  const { data: latestData, isLoading: isLatestLoading } = useQuery<VideosResponse>({
+    queryKey: ["videos-browse-latest"],
+    queryFn: async () => {
+      const res = await fetch(`/api/videos?sort=latest&pageSize=20`);
+      if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
+      return (await res.json()) as VideosResponse;
+    },
+    enabled: isDefaultView,
+    staleTime: 30_000,
+  });
+
+  const { data: popularData, isLoading: isPopularLoading } = useQuery<VideosResponse>({
+    queryKey: ["videos-browse-popular"],
+    queryFn: async () => {
+      const res = await fetch(`/api/videos?sort=popular&pageSize=20`);
+      if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
+      return (await res.json()) as VideosResponse;
+    },
+    enabled: isDefaultView,
+    staleTime: 30_000,
+  });
+
+  const randomCategoryId = categories.length > 0 ? categories[0].id : "";
+  const randomCategoryName = categories.length > 0 ? categories[0].name : "추천";
+
+  const { data: catData, isLoading: isCatLoading } = useQuery<VideosResponse>({
+    queryKey: ["videos-browse-cat", randomCategoryId],
+    queryFn: async () => {
+      const res = await fetch(`/api/videos?sort=popular&categoryId=${randomCategoryId}&pageSize=20`);
+      if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
+      return (await res.json()) as VideosResponse;
+    },
+    enabled: isDefaultView && !!randomCategoryId,
+    staleTime: 30_000,
+  });
+
+  const isLoading = isDefaultView ? (isLatestLoading || isPopularLoading) : isFilteredLoading;
+  const displayData = isDefaultView ? latestData : filteredData;
 
   // ─── Handlers ───
   const handleSearch = (e: React.FormEvent) => {
@@ -278,8 +399,6 @@ export function VideosBrowser() {
     setSort("latest");
     setPage(1);
   };
-
-  const hasActiveFilter = categoryId || ownerId || counselorId || durationRange !== "all" || activeSearch;
 
   // ─── Labels for active state ───
   const catLabel = categoryId ? categories.find((c) => c.id === categoryId)?.name ?? "카테고리" : "카테고리";
@@ -442,139 +561,160 @@ export function VideosBrowser() {
         </div>
       </div>
 
-      {/* ═══ Content ═══ */}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        {/* Active search indicator */}
-        {
-          activeSearch && (
-            <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-              <span>&quot;{activeSearch}&quot; 검색 결과</span>
-              <button
-                onClick={() => { setActiveSearch(""); setSearch(""); setPage(1); }}
-                className="rounded-md bg-muted px-2 py-0.5 text-xs hover:bg-accent"
-              >
-                초기화
-              </button>
-            </div>
-          )
-        }
+      {/* ═══ V6 Enterprise Cinematic Hero Section (Netflix/Disney+ Style) ═══ */}
+      {/* 가장 최신 영상 1개를 히어로 배너로 사용 (데이터가 있을 때만) */}
+      <div className="relative z-10 w-full pb-20 bg-background text-foreground transition-all duration-500">
+        {displayData?.data && displayData.data.length > 0 && page === 1 && !hasActiveFilter ? (
+          <div className="relative w-full h-[75vh] min-h-[500px] max-h-[850px] overflow-hidden bg-[#050505] flex items-end">
+            <div
+              className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-105"
+              style={{
+                backgroundImage: `url(${displayData.data[0].signedThumbnailUrl || displayData.data[0].thumbnailUrl})`,
+                maskImage: 'linear-gradient(to top, transparent 0%, black 30%, black 100%), linear-gradient(to right, black 50%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to top, transparent 0%, black 30%, black 100%)'
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent" />
 
-        {/* Video Grid */}
-        {
-          isLoading ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={`skel-${i}`} className="space-y-3">
-                  <Skeleton className="aspect-video w-full rounded-xl" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
+            <div className="relative z-10 w-full max-w-[1920px] mx-auto px-4 sm:px-8 pb-12 sm:pb-20">
+              <div className="flex flex-col items-start gap-4 sm:gap-5 max-w-3xl p-6 sm:p-8 rounded-3xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-8 duration-700 relative">
+                <div>
+                  <span className="inline-block bg-white/15 text-white border border-white/20 px-4 py-1.5 font-bold text-xs sm:text-sm tracking-widest uppercase rounded-full">
+                    {displayData.data[0].category?.name || "추천 영상"}
+                  </span>
+                </div>
+                <div>
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white leading-[1.1] drop-shadow-2xl break-keep">
+                    {displayData.data[0].title}
+                  </h1>
+                </div>
+                <div>
+                  <p className="text-white/80 text-sm sm:text-lg font-medium flex items-center gap-3 drop-shadow-md">
+                    <span className="flex items-center gap-2"><Film className="w-4 h-4 sm:w-5 sm:h-5" /> {displayData.data[0].owner.chineseName || displayData.data[0].owner.name}님의 작품</span>
+                    <span>•</span>
+                    <span>{new Date(displayData.data[0].createdAt).toLocaleDateString()}</span>
+                  </p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-4 mt-2">
+                    <Button
+                      onClick={() => router.push(`/videos/${displayData.data[0].id}`)}
+                      className="bg-white text-black hover:bg-neutral-200 font-extrabold px-10 py-7 rounded-xl text-lg sm:text-xl flex items-center gap-3 transition-all duration-300 shadow-[0_0_40px_rgba(255,255,255,0.4)] hover:shadow-[0_0_60px_rgba(255,255,255,0.6)] hover:scale-105"
+                    >
+                      <Play className="w-6 h-6 fill-current" /> 재생
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* ═══ Content Lists ═══ */}
+        {isLoading ? (
+          <div className="mx-auto max-w-[1920px] px-4 sm:px-6 pt-10">
+            <div className="flex gap-4 overflow-x-hidden">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={`skel-${i}`} className="w-[300px] shrink-0 space-y-3">
+                  <Skeleton className="aspect-video w-full rounded-xl bg-white/5" />
+                  <Skeleton className="h-4 w-3/4 bg-white/5" />
+                  <Skeleton className="h-3 w-1/2 bg-white/5" />
                 </div>
               ))}
             </div>
-          ) : !data?.data.length ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-3xl dark:bg-zinc-800">
-                <Film className="h-8 w-8 text-black dark:text-white" />
+          </div>
+        ) : (!isDefaultView && !filteredData?.data.length) || (isDefaultView && !latestData?.data.length && !popularData?.data.length) ? (
+          <div className="mx-auto max-w-[1920px] px-4 sm:px-6 py-20">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 py-20">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-900 text-3xl">
+                <Film className="h-8 w-8 text-white" />
               </div>
-              <h3 className="mb-1 text-lg font-semibold">
+              <h3 className="mb-1 text-lg font-semibold text-white">
                 {activeSearch || hasActiveFilter ? "조건에 맞는 영상이 없습니다" : "영상이 없습니다"}
               </h3>
-              <p className="text-sm text-muted-foreground">
-                {activeSearch || hasActiveFilter
-                  ? "다른 검색어나 필터 조합으로 시도해 보세요."
-                  : "아직 공개된 영상이 없습니다. 곧 추가될 예정이에요!"}
+              <p className="text-sm text-zinc-400">
+                {activeSearch || hasActiveFilter ? "다른 검색어나 필터 조합으로 시도해 보세요." : "아직 공개된 영상이 없습니다."}
               </p>
               {hasActiveFilter && (
-                <button
-                  onClick={resetFilters}
-                  className="mt-4 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 transition-colors dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-                >
+                <button onClick={resetFilters} className="mt-4 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black hover:bg-zinc-200">
                   필터 초기화
                 </button>
               )}
             </div>
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {data.data.map((video, index) => {
-                // 서명된 썸네일 URL 우선 사용, 이 경우 streamUid를 null로 넘겨 
-                // VideoCard 컴포넌트 내부에서 강제로 URL을 더럽히지(오염) 않도록 함.
-                const useSigned = !!video.signedThumbnailUrl;
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6 sm:gap-10 pt-8">
+            {!isDefaultView ? (
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">
+                  {hasActiveFilter ? "탐색 결과" : "검색 결과"}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
+                  {filteredData?.data.map((video, index) => {
+                    const useSigned = !!video.signedThumbnailUrl;
+                    return (
+                      <div key={video.id} className="animate-in fade-in slide-in-from-bottom-4 group">
+                        <VideoCard
+                          id={video.id}
+                          title={video.title}
+                          thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
+                          streamUid={useSigned ? null : video.streamUid}
+                          duration={video.technicalSpec?.duration ?? null}
+                          ownerName={video.owner.chineseName || video.owner.name}
+                          categoryName={video.category?.name ?? null}
+                          createdAt={video.createdAt}
+                          viewCount={video.viewCount}
+                          priority={page === 1 && index < 8}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <>
+                <SwimlaneRow title="✨ 이제 막 올라온 따끈따끈한 새 영상" videos={latestData?.data || []} page={1} />
+                <SwimlaneRow title="🔥 영감이 뿜뿜! 주간 인기 레퍼런스" videos={popularData?.data || []} page={1} />
+                {catData?.data && catData.data.length > 0 && (
+                  <SwimlaneRow title={`👀 다른 스타들은 [${randomCategoryName}]에서 어떻게 풀이했을까?`} videos={catData.data} page={1} />
+                )}
+              </>
+            )}
+          </div>
+        )}
 
-                return (
-                  <VideoCard
-                    key={video.id}
-                    id={video.id}
-                    title={video.title}
-                    thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
-                    streamUid={useSigned ? null : video.streamUid}
-                    duration={video.technicalSpec?.duration ?? null}
-                    ownerName={video.owner.chineseName || video.owner.name}
-                    categoryName={video.category?.name ?? null}
-                    createdAt={video.createdAt}
-                    priority={page === 1 && index < 3}
-                  />
-                )
-              })}
-            </div>
-          )
-        }
-
-        {/* Pagination */}
-        {
-          data && data.totalPages > 1 && (
-            <div className="mt-8 flex items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-              >
+        {/* Minimal Pagination at Bottom - Only show when filtering */}
+        {displayData && !isDefaultView && displayData.totalPages > 1 && (
+          <div className="mt-12 flex flex-col items-center justify-center gap-4">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)} className="text-white hover:bg-white/10 rounded-full px-6">
                 이전
               </Button>
-
               <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(data.totalPages, 7) }).map((_, i) => {
+                {Array.from({ length: Math.min(displayData.totalPages, 5) }).map((_, i) => {
                   let pageNum: number;
-                  if (data.totalPages <= 7) {
-                    pageNum = i + 1;
-                  } else if (page <= 4) {
-                    pageNum = i + 1;
-                  } else if (page >= data.totalPages - 3) {
-                    pageNum = data.totalPages - 6 + i;
-                  } else {
-                    pageNum = page - 3 + i;
-                  }
+                  if (displayData.totalPages <= 5) pageNum = i + 1;
+                  else if (page <= 3) pageNum = i + 1;
+                  else if (page >= displayData.totalPages - 2) pageNum = displayData.totalPages - 4 + i;
+                  else pageNum = page - 2 + i;
                   return (
                     <button
                       key={pageNum}
                       onClick={() => setPage(pageNum)}
-                      className={`h-8 min-w-8 rounded-md px-2 text-sm font-medium transition-colors
-                      ${pageNum === page
-                          ? "bg-black text-white dark:bg-white dark:text-black"
-                          : "text-muted-foreground hover:bg-accent"
-                        }`}
+                      className={`h-9 min-w-9 rounded-full px-2 text-sm font-bold transition-colors ${pageNum === page ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.5)]" : "text-zinc-500 hover:text-white hover:bg-white/10"}`}
                     >
                       {pageNum}
                     </button>
                   );
                 })}
               </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= data.totalPages}
-                onClick={() => setPage(page + 1)}
-              >
+              <Button variant="ghost" size="sm" disabled={page >= displayData.totalPages} onClick={() => setPage(page + 1)} className="text-white hover:bg-white/10 rounded-full px-6">
                 다음
               </Button>
-
-              <span className="ml-2 text-xs text-muted-foreground">
-                총 {data.total}개
-              </span>
             </div>
-          )
-        }
+          </div>
+        )}
       </div>
     </div>
   );

@@ -47,6 +47,7 @@ export async function PATCH(
             content: z.string().min(1, "내용을 입력해주세요.").optional(),
             type: z.enum(["GENERAL", "SUBTITLE", "BGM", "CUT_EDIT", "COLOR_GRADE"]).optional(),
             priority: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]).optional(),
+            status: z.enum(["PENDING", "RESOLVED", "WONTFIX"]).optional(),
             startTime: z.number().nullable().optional(),
             endTime: z.number().nullable().optional(),
         });

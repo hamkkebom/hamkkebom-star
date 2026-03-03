@@ -21,7 +21,7 @@ export async function GET(_request: Request, { params }: Params) {
   const settlement = await prisma.settlement.findUnique({
     where: { id },
     include: {
-      star: { select: { id: true, name: true, email: true, baseRate: true, idNumber: true, bankName: true, bankAccount: true } },
+      star: { select: { id: true, name: true, email: true, phone: true, baseRate: true, idNumber: true, bankName: true, bankAccount: true } },
       items: {
         include: {
           submission: {

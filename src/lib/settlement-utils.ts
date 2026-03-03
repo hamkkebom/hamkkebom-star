@@ -47,21 +47,7 @@ export function formatKRWWithSymbol(amount: number): string {
   }).format(Math.round(amount));
 }
 
-/**
- * Generate PDF filename in the format: YYYY-MM_이름(externalId)_지급내역서.pdf
- * @example generatePdfFilename(2025, 12, "김예솔", "92_3749") → "2025-12_김예솔(92_3749)_지급내역서.pdf"
- * @example generatePdfFilename(2025, 12, "홍길동") → "2025-12_홍길동_지급내역서.pdf"
- */
-export function generatePdfFilename(
-  year: number,
-  month: number,
-  name: string,
-  externalId?: string | null,
-): string {
-  const monthStr = String(month).padStart(2, "0");
-  const idPart = externalId ? `(${externalId})` : "";
-  return `${year}-${monthStr}_${name}${idPart}_지급내역서.pdf`;
-}
+
 
 /**
  * Mask Korean resident registration number (주민등록번호)
@@ -107,4 +93,94 @@ export function formatYearMonth(year: number, month: number): string {
 export function getCurrentYearMonth(): { year: number; month: number } {
   const now = new Date();
   return { year: now.getFullYear(), month: now.getMonth() + 1 };
+}
+
+/**
+ * Format date range as Korean string
+ * @example formatDateRange(new Date(2026, 0, 1), new Date(2026, 0, 31)) → "2026.01.01 ~ 2026.01.31"
+ */
+export function formatDateRange(startDate: Date, endDate: Date): string {
+  function pad(n: number): string {
+    return String(n).padStart(2, "0");
+  }
+  const s = `${startDate.getFullYear()}.${pad(startDate.getMonth() + 1)}.${pad(startDate.getDate())}`;
+  const e = `${endDate.getFullYear()}.${pad(endDate.getMonth() + 1)}.${pad(endDate.getDate())}`;
+  return `${s} ~ ${e}`;
+}
+
+/**
+ * Parse date range from string format
+ * @example parseDateRange("2026-01-01", "2026-01-31") → { startDate: Date(2026-01-01), endDate: Date(2026-01-31) }
+ */
+export function parseDateRange(
+  startDate: string,
+  endDate: string,
+): { startDate: Date; endDate: Date } {
+  return {
+    startDate: new Date(startDate),
+    endDate: new Date(endDate),
+  };
+}
+
+/**
+ * Get default date range for current month (1st to last day)
+ * @returns { startDate: first day of current month at 00:00:00, endDate: last day of current month at 23:59:59 }
+ */
+export function getDefaultDateRange(): { startDate: Date; endDate: Date } {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  const startDate = new Date(year, month, 1, 0, 0, 0, 0);
+  const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+  return { startDate, endDate };
+}
+
+/**
+ * Generate PDF filename with date range
+ * @example generatePdfFilename(new Date(2026, 0, 1), new Date(2026, 0, 31), "김예솔", "92_3749") → "2026-01-01_2026-01-31_김예솔(92_3749)_지급내역서.pdf"
+ * @example generatePdfFilename(new Date(2026, 0, 1), new Date(2026, 0, 31), "홍길동") → "2026-01-01_2026-01-31_홍길동_지급내역서.pdf"
+ */
+export function generatePdfFilename(
+  startDate: Date,
+  endDate: Date,
+  name: string,
+  externalId?: string | null,
+): string;
+export function generatePdfFilename(
+  year: number,
+  month: number,
+  name: string,
+  externalId?: string | null,
+): string;
+export function generatePdfFilename(
+  yearOrStartDate: number | Date,
+  monthOrEndDate: number | Date,
+  name: string,
+  externalId?: string | null,
+): string {
+  // Overload: date range signature
+  if (yearOrStartDate instanceof Date && monthOrEndDate instanceof Date) {
+    const startDate = yearOrStartDate;
+    const endDate = monthOrEndDate;
+
+    const startYear = startDate.getFullYear();
+    const startMonth = String(startDate.getMonth() + 1).padStart(2, "0");
+    const startDay = String(startDate.getDate()).padStart(2, "0");
+
+    const endYear = endDate.getFullYear();
+    const endMonth = String(endDate.getMonth() + 1).padStart(2, "0");
+    const endDay = String(endDate.getDate()).padStart(2, "0");
+
+    const idPart = externalId ? `(${externalId})` : "";
+    return `${startYear}-${startMonth}-${startDay}_${endYear}-${endMonth}-${endDay}_${name}${idPart}_지급내역서.pdf`;
+  }
+
+  // Original: year/month signature
+  const year = yearOrStartDate as number;
+  const month = monthOrEndDate as number;
+  const monthStr = String(month).padStart(2, "0");
+  const idPart = externalId ? `(${externalId})` : "";
+  return `${year}-${monthStr}_${name}${idPart}_지급내역서.pdf`;
 }

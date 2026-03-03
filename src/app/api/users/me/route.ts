@@ -10,6 +10,8 @@ const updateUserSchema = z.object({
   avatarUrl: z.string().url("올바른 URL을 입력해주세요.").nullable().optional(),
 });
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -43,8 +45,6 @@ export async function GET() {
       select: userSelect,
     });
 
-    // Auto-create Prisma user if Supabase user exists but DB record is missing
-    // (e.g. callback failed during signup, or user was manually created in Supabase)
     if (!user) {
       const metadata: Record<string, unknown> =
         authUser.user_metadata && typeof authUser.user_metadata === "object"

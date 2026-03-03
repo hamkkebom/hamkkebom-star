@@ -108,8 +108,8 @@ export async function GET(request: Request, { params }: Params) {
 
   // PDF 스트림 생성
   const element = React.createElement(SettlementDocument, {
-    year: settlement.year,
-    month: settlement.month,
+    startDate: settlement.startDate,
+    endDate: settlement.endDate,
     starName: settlement.star.name,
     phone: settlement.star.phone,
     email: settlement.star.email,
@@ -141,14 +141,16 @@ export async function GET(request: Request, { params }: Params) {
   });
 
   const filename = generatePdfFilename(
-    settlement.year,
-    settlement.month,
+    settlement.startDate,
+    settlement.endDate,
     settlement.star.name,
     settlement.star.externalId
   );
 
   // ASCII-safe fallback filename for older/strict HTTP clients
-  const asciiFilename = `${settlement.year}-${String(settlement.month).padStart(2, "0")}_settlement.pdf`;
+  const startStr = settlement.startDate.toISOString().slice(0, 10);
+  const endStr = settlement.endDate.toISOString().slice(0, 10);
+  const asciiFilename = `${startStr}_${endStr}_settlement.pdf`;
 
   const headers: Record<string, string> = {
     "Content-Type": isDownload ? "application/octet-stream" : "application/pdf",

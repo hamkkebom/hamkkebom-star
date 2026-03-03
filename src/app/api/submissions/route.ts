@@ -218,6 +218,7 @@ export async function GET(request: Request) {
   const pageSize = Math.min(50, Math.max(1, Number(searchParams.get("pageSize") ?? "20") || 20));
   const requestId = searchParams.get("requestId")?.trim();
   const starId = searchParams.get("starId")?.trim();
+  const assignmentId = searchParams.get("assignmentId")?.trim();
   const status = searchParams.get("status");
 
   if (status && status !== "ALL" && status !== "COMPLETED" && !submissionStatuses.has(status as SubmissionStatus)) {
@@ -229,6 +230,7 @@ export async function GET(request: Request) {
 
   const where = {
     ...(starId ? { starId } : {}),
+    ...(assignmentId ? { assignmentId } : {}),
     ...(status === "COMPLETED"
       ? { status: { in: [SubmissionStatus.APPROVED, SubmissionStatus.REJECTED, SubmissionStatus.REVISED] } }
       : status && status !== "ALL"
@@ -268,6 +270,12 @@ export async function GET(request: Request) {
         video: {
           select: {
             title: true,
+          },
+        },
+        feedbacks: {
+          select: {
+            id: true,
+            status: true,
           },
         },
         _count: {

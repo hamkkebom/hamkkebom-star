@@ -83,9 +83,9 @@ export async function GET(request: Request) {
       pageSize,
       totalPages: Math.max(1, Math.ceil(total / pageSize)),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: { code: "SERVER_ERROR", message: error.message || String(error) } },
+      { error: { code: "SERVER_ERROR", message: error instanceof Error ? error.message : String(error) } },
       { status: 500 }
     );
   }

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale/ko";
-import { Calendar as CalendarIcon, Search, X, Share2 } from "lucide-react";
+import { Calendar as CalendarIcon, Search, X, Share2, Film, Pencil } from "lucide-react";
 import { DateRange } from "react-day-picker";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +38,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AssignPlacementModal } from "@/components/admin/assign-placement-modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 type VideoRow = {
   id: string;
@@ -43,10 +54,19 @@ type VideoRow = {
   status: string;
   streamUid: string;
   thumbnailUrl: string | null;
+  signedThumbnailUrl: string | null;
   createdAt: string;
   submissionId: string | null;
   owner: { id: string; name: string; chineseName?: string | null; email: string };
   category: { id: string; name: string; slug: string } | null;
+};
+
+type EditVideoData = {
+  id: string;
+  title: string;
+  description: string;
+  categoryId: string;
+  videoSubject: string;
 };
 
 type VideosResponse = {
@@ -64,14 +84,141 @@ type Category = {
 
 const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   DRAFT: { label: "초안", variant: "secondary" },
-  PROCESSING: { label: "처리중", variant: "default" },
+  PENDING: { label: "대기중", variant: "default" },
   APPROVED: { label: "승인됨", variant: "outline" },
   FINAL: { label: "최종", variant: "outline" },
-  REJECTED: { label: "반려됨", variant: "destructive" },
 };
 
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(dateStr));
+}
+
+const VIDEO_SUBJECT_OPTIONS = [
+  { value: "COUNSELOR", label: "상담사" },
+  { value: "BRAND", label: "브랜드" },
+  { value: "OTHER", label: "기타" },
+];
+
+function VideoEditDialog({
+  video,
+  onClose,
+  categories,
+}: {
+  video: EditVideoData | null;
+  onClose: () => void;
+  categories: Category[];
+}) {
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState("");
+  const [videoSubject, setVideoSubject] = useState("OTHER");
+
+  useEffect(() => {
+    if (video) {
+      setTitle(video.title);
+      setDescription(video.description);
+      setEditCategoryId(video.categoryId);
+      setVideoSubject(video.videoSubject);
+    }
+  }, [video]);
+
+  const mutation = useMutation({
+    mutationFn: async (data: { title: string; description: string; categoryId: string | null; videoSubject: string }) => {
+      if (!video) throw new Error("영상 정보가 없습니다.");
+      const res = await fetch(`/api/videos/${video.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error?.message ?? "수정에 실패했습니다.");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("영상 정보가 수정되었습니다");
+      queryClient.invalidateQueries({ queryKey: ["admin-videos"] });
+      onClose();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const handleSubmit = () => {
+    mutation.mutate({
+      title: title.trim(),
+      description: description.trim(),
+      categoryId: editCategoryId || null,
+      videoSubject,
+    });
+  };
+
+  return (
+    <Dialog open={!!video} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>영상 정보 수정</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="edit-title">제목</Label>
+            <Input
+              id="edit-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="영상 제목"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-description">설명</Label>
+            <Textarea
+              id="edit-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="영상 설명"
+              rows={3}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>카테고리</Label>
+            <Select value={editCategoryId} onValueChange={setEditCategoryId}>
+              <SelectTrigger>
+                <SelectValue placeholder="카테고리 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">없음</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>영상 주체</Label>
+            <Select value={videoSubject} onValueChange={setVideoSubject}>
+              <SelectTrigger>
+                <SelectValue placeholder="영상 주체 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {VIDEO_SUBJECT_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            취소
+          </Button>
+          <Button onClick={handleSubmit} disabled={mutation.isPending || !title.trim()}>
+            {mutation.isPending ? "저장 중..." : "저장"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function AdminVideosPage() {
@@ -83,6 +230,8 @@ export default function AdminVideosPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string } | null>(null);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [editVideo, setEditVideo] = useState<EditVideoData | null>(null);
 
   const pageSize = 50;
 
@@ -99,7 +248,7 @@ export default function AdminVideosPage() {
 
   // 영상 목록 가져오기 (필터 적용)
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["admin-videos", page, sort, categoryId, ownerName, dateRange],
+    queryKey: ["admin-videos", page, sort, categoryId, ownerName, statusFilter, dateRange],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -110,6 +259,7 @@ export default function AdminVideosPage() {
       if (ownerName) params.set("ownerName", ownerName);
       if (dateRange?.from) params.set("dateFrom", dateRange.from.toISOString());
       if (dateRange?.to) params.set("dateTo", dateRange.to.toISOString());
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
 
       const res = await fetch(`/api/videos?${params.toString()}`, { cache: "no-store" });
       if (!res.ok) throw new Error("영상을 불러오지 못했습니다.");
@@ -227,6 +377,19 @@ export default function AdminVideosPage() {
                   <SelectItem value="oldest">오래된순</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setPage(1); }}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="상태" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">전체</SelectItem>
+                  <SelectItem value="DRAFT">초안</SelectItem>
+                  <SelectItem value="PENDING">대기중</SelectItem>
+                  <SelectItem value="APPROVED">승인됨</SelectItem>
+                  <SelectItem value="FINAL">최종</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
@@ -240,7 +403,8 @@ export default function AdminVideosPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-6">제목</TableHead>
+                    <TableHead className="pl-6 w-[52px]">썸네일</TableHead>
+                    <TableHead>제목</TableHead>
                     <TableHead>소유자 (한글 이름)</TableHead>
                     <TableHead>소유자 (닉네임)</TableHead>
                     <TableHead>카테고리</TableHead>
@@ -252,14 +416,29 @@ export default function AdminVideosPage() {
                 <TableBody>
                   {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                      <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
                         조건에 맞는 영상이 없습니다.
                       </TableCell>
                     </TableRow>
                   ) : (
                     rows.map((row) => (
                       <TableRow key={row.id} className={isFetching ? "opacity-50 transition-opacity" : "transition-opacity"}>
-                        <TableCell className="pl-6 max-w-[250px] truncate font-medium">{row.title}</TableCell>
+                        <TableCell className="pl-6 w-[52px]">
+                          {row.signedThumbnailUrl ? (
+                            <Image
+                              src={row.signedThumbnailUrl}
+                              width={40}
+                              height={23}
+                              className="rounded aspect-video object-cover"
+                              sizes="40px"
+                              alt=""
+                              unoptimized
+                            />
+                          ) : (
+                            <Film className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-[250px] truncate font-medium">{row.title}</TableCell>
                         <TableCell>{row.owner.chineseName || "-"}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{row.owner.name}</TableCell>
                         <TableCell>{row.category?.name ?? "-"}</TableCell>
@@ -270,6 +449,9 @@ export default function AdminVideosPage() {
                         </TableCell>
                         <TableCell>{formatDate(row.createdAt)}</TableCell>
                         <TableCell className="text-right pr-6 space-x-2 whitespace-nowrap">
+                          <Button variant="ghost" size="icon" onClick={() => setEditVideo({ id: row.id, title: row.title, description: "", categoryId: row.category?.id ?? "", videoSubject: "OTHER" })}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="secondary"
                             size="sm"
@@ -367,6 +549,12 @@ export default function AdminVideosPage() {
           videoTitle={selectedVideo.title}
         />
       )}
+
+      <VideoEditDialog
+        video={editVideo}
+        onClose={() => setEditVideo(null)}
+        categories={categories}
+      />
     </div>
   );
 }

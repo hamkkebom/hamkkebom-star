@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,6 +24,7 @@ import {
   Pencil,
   Users,
   Wallet,
+  Search,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -651,6 +652,17 @@ export default function AdminStarsPage() {
   const [bulkRateOpen, setBulkRateOpen] = useState(false);
   const [editGrade, setEditGrade] = useState<Grade | null>(null);
   const [deleteGrade, setDeleteGrade] = useState<Grade | null>(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search input (350ms)
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(value);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, []);
 
   const { data, isLoading, isError, error } = useQuery<BoardData>({
     queryKey: ["admin-grades-board"],
@@ -766,19 +778,54 @@ export default function AdminStarsPage() {
   const unassigned = data?.data.unassigned ?? [];
   const totalStars = grades.reduce((sum, g) => sum + g.users.length, 0) + unassigned.length;
 
+  // Filter stars by search term (case-insensitive, name or chineseName)
+  const filteredGrades = useMemo(() => {
+    if (!debouncedSearch.trim()) return grades;
+    const searchLower = debouncedSearch.toLowerCase();
+    return grades.map((grade) => ({
+      ...grade,
+      users: grade.users.filter(
+        (star) =>
+          star.name.toLowerCase().includes(searchLower) ||
+          (star.chineseName?.toLowerCase().includes(searchLower) ?? false)
+      ),
+    }));
+  }, [grades, debouncedSearch]);
+
+  const filteredUnassigned = useMemo(() => {
+    if (!debouncedSearch.trim()) return unassigned;
+    const searchLower = debouncedSearch.toLowerCase();
+    return unassigned.filter(
+      (star) =>
+        star.name.toLowerCase().includes(searchLower) ||
+        (star.chineseName?.toLowerCase().includes(searchLower) ?? false)
+    );
+  }, [unassigned, debouncedSearch]);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">단가 설정</h1>
           <p className="text-sm text-muted-foreground">
             STAR를 등급으로 드래그하여 단가를 관리하세요. ({totalStars}명)
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          등급 추가
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="이름으로 검색..."
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-9 w-64"
+            />
+          </div>
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            등급 추가
+          </Button>
+        </div>
       </div>
 
       {data?._debug && data._debug.length > 0 && (
@@ -805,8 +852,8 @@ export default function AdminStarsPage() {
           onDragEnd={handleDragEnd}
         >
           <div className="flex overflow-x-auto gap-4 pb-4">
-            <UnassignedColumn stars={unassigned} onBulkRate={() => setBulkRateOpen(true)} />
-            {grades.map((grade) => (
+            <UnassignedColumn stars={filteredUnassigned} onBulkRate={() => setBulkRateOpen(true)} />
+            {filteredGrades.map((grade) => (
               <GradeColumn
                 key={grade.id}
                 grade={grade}

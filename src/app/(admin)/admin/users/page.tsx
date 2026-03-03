@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, Search, Users } from "lucide-react";
 
@@ -26,6 +27,7 @@ type UserRow = {
   phone: string | null;
   role: string;
   isApproved: boolean;
+  adEligible: boolean;
   createdAt: string;
 };
 
@@ -50,6 +52,11 @@ export default function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "approved" | "pending">("all");
+  const [approvalDialog, setApprovalDialog] = useState<{
+    open: boolean;
+    userId: string;
+    userName: string;
+  } | null>(null);
 
   const queryKey = ["admin-users", search, filter];
 
@@ -72,16 +79,18 @@ export default function AdminUsersPage() {
     mutationFn: async ({
       userId,
       approved,
+      adEligible,
     }: {
       userId: string;
       approved: boolean;
+      adEligible?: boolean;
     }) => {
       const res = await fetch(`/api/admin/users/${userId}/approve`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approved }),
+        body: JSON.stringify({ approved, adEligible }),
       });
-      if (!res.ok) throw new Error("처리에 실패했습니다.");
+      if (!res.ok) throw new Error((await res.json()).error?.message ?? "처리에 실패했습니다.");
       return res.json();
     },
     onSuccess: (_, variables) => {
@@ -90,7 +99,7 @@ export default function AdminUsersPage() {
         variables.approved ? "사용자를 승인했습니다." : "사용자를 반려했습니다."
       );
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(error.message);
     },
   });
@@ -217,9 +226,14 @@ export default function AdminUsersPage() {
                       </TableCell>
                       <TableCell>
                         {row.isApproved ? (
-                          <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20">
-                            승인됨
-                          </Badge>
+                          <div className="flex items-center gap-1">
+                            <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20">
+                              승인됨
+                            </Badge>
+                            <Badge variant={row.adEligible ? "default" : "secondary"} className="text-xs">
+                              {row.adEligible ? "광고 가능" : "광고 불가"}
+                            </Badge>
+                          </div>
                         ) : (
                           <Badge
                             variant="outline"
@@ -242,9 +256,10 @@ export default function AdminUsersPage() {
                                 className="bg-emerald-600 hover:bg-emerald-700"
                                 disabled={approveMutation.isPending}
                                 onClick={() =>
-                                  approveMutation.mutate({
+                                  setApprovalDialog({
+                                    open: true,
                                     userId: row.id,
-                                    approved: true,
+                                    userName: row.name,
                                   })
                                 }
                               >
@@ -279,6 +294,48 @@ export default function AdminUsersPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* 승인 다이얼로그 */}
+      <Dialog open={approvalDialog?.open ?? false} onOpenChange={(open) => !open && setApprovalDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>승인 방식 선택</DialogTitle>
+            <DialogDescription>
+              {approvalDialog?.userName}님의 승인 방식을 선택해주세요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button
+              className="w-full justify-start gap-3 h-14"
+              variant="outline"
+              onClick={() => {
+                approveMutation.mutate({ userId: approvalDialog!.userId, approved: true, adEligible: true });
+                setApprovalDialog(null);
+              }}
+            >
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div className="text-left">
+                <p className="font-semibold">광고 가능으로 승인</p>
+                <p className="text-xs text-muted-foreground">광고 영상 제작 가능</p>
+              </div>
+            </Button>
+            <Button
+              className="w-full justify-start gap-3 h-14"
+              variant="outline"
+              onClick={() => {
+                approveMutation.mutate({ userId: approvalDialog!.userId, approved: true, adEligible: false });
+                setApprovalDialog(null);
+              }}
+            >
+              <CheckCircle2 className="h-5 w-5 text-blue-500" />
+              <div className="text-left">
+                <p className="font-semibold">광고 불가능으로 승인</p>
+                <p className="text-xs text-muted-foreground">일반 영상 제작만 가능</p>
+              </div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

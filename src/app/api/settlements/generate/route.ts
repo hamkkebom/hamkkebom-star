@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { year, month } = parsed.data;
+  const { startDate: startDateStr, endDate: endDateStr } = parsed.data;
 
   // AI 툴 지원비 조회 (트랜잭션 외부 — 테스트 mock 호환)
   let aiToolSupportFee = 0;
@@ -89,8 +89,8 @@ export async function POST(request: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 1);
+      const startDate = new Date(startDateStr + "T00:00:00.000Z");
+      const endDate = new Date(endDateStr + "T23:59:59.999Z");
 
       // 해당 월에 승인된 제출물 조회 (영상 단가 포함)
       const approvedSubmissions = await tx.submission.findMany({
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       if (approvedSubmissions.length === 0) {
         throw {
           code: "NO_SUBMISSIONS",
-          message: `${year}년 ${month}월에 승인된 제출물이 없습니다.`,
+          message: "해당 기간에 승인된 제출물이 없습니다.",
           status: 404,
         } satisfies ApiError;
       }
@@ -147,12 +147,31 @@ export async function POST(request: Request) {
       });
       const starById = new Map(stars.map((star) => [star.id, star]));
 
-      // 해당 월에 이미 존재하는 정산 조회 (STAR별)
+      // Find existing settlements that overlap with the date range
       const existingSettlements = await tx.settlement.findMany({
-        where: { year, month, starId: { in: starIds } },
+        where: {
+          starId: { in: starIds },
+          status: { in: [SettlementStatus.PENDING, SettlementStatus.PROCESSING, SettlementStatus.COMPLETED] },
+          startDate: { lt: endDate },
+          endDate: { gt: startDate },
+        },
         select: { id: true, starId: true, status: true },
       });
-      const existingByStarId = new Map(existingSettlements.map((s) => [s.starId, s]));
+
+      // Skip STARs with COMPLETED overlapping settlements
+      const completedStarIds = new Set(
+        existingSettlements
+          .filter(s => s.status === SettlementStatus.COMPLETED)
+          .map(s => s.starId)
+      );
+
+      // Delete PENDING/PROCESSING overlapping settlements
+      const toDelete = existingSettlements
+        .filter(s => s.status !== SettlementStatus.COMPLETED)
+        .map(s => s.id);
+      if (toDelete.length > 0) {
+        await tx.settlement.deleteMany({ where: { id: { in: toDelete } } });
+      }
 
       // baseRate 미설정 STAR 목록
       const skippedStars: { id: string; name: string; reason: string }[] = [];
@@ -182,29 +201,22 @@ export async function POST(request: Request) {
             return null;
           }
 
-          // 기존 정산 확인
-          const existing = existingByStarId.get(starId);
-          if (existing) {
-            if (existing.status === SettlementStatus.COMPLETED) {
-              // COMPLETED 상태면 skip
-              completedStars.push({ id: star.id, name: star.name });
-              return null;
-            }
-            // PENDING / PROCESSING 상태면 기존 정산과 아이템 삭제 후 재생성
-            await tx.settlementItem.deleteMany({ where: { settlementId: existing.id } });
-            await tx.settlement.delete({ where: { id: existing.id } });
-          }
+           // Skip STARs with COMPLETED overlapping settlements
+           if (completedStarIds.has(starId)) {
+             completedStars.push({ id: star.id, name: star.name });
+             return null;
+           }
 
           const defaultRate = starBaseRate ? Number(starBaseRate) : 0;
 
-          const createdSettlement = await tx.settlement.create({
-            data: {
-              starId: star.id,
-              year,
-              month,
-              status: SettlementStatus.PENDING,
-            },
-          });
+           const createdSettlement = await tx.settlement.create({
+             data: {
+               starId: star.id,
+               startDate,
+               endDate,
+               status: SettlementStatus.PENDING,
+             },
+           });
 
           // 각 제출물마다 개별 단가 적용: 영상 단가 > STAR 기본 단가
           const itemsData = submissions.map((sub) => {

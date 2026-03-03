@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback, memo } from "react";
+import { useMemo, useState, useCallback, memo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -11,12 +11,14 @@ import {
   Inbox,
   CalendarDays,
   Users,
+  Search,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -347,7 +349,12 @@ export default function AdminApprovalsPage() {
   const [hidingIds, setHidingIds] = useState<Set<string>>(new Set());
 
   // Reject dialog state
+  // Reject dialog state
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+
+  // Search state with 350ms debounce
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["pending-assignments"],
@@ -460,9 +467,38 @@ export default function AdminApprovalsPage() {
     [rejectTarget, rejectMutation],
   );
 
+  // Debounce search input (350ms)
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchInput]);
+
   // Group assignments by request
   const assignments = useMemo(() => data?.data ?? [], [data?.data]);
-  const groups = useMemo(() => groupByRequest(assignments), [assignments]);
+  
+  // Filter groups by search term (STAR name or project title)
+  const groups = useMemo(() => {
+    const allGroups = groupByRequest(assignments);
+    if (!debouncedSearch.trim()) return allGroups;
+    
+    const lowerSearch = debouncedSearch.toLowerCase();
+    return allGroups.filter((group) => {
+      // Check if project title matches
+      const titleMatches = group.request.title.toLowerCase().includes(lowerSearch);
+      if (titleMatches) return true;
+      
+      // Check if any STAR name matches
+      const starMatches = group.assignments.some((assignment) => {
+        const displayName = getDisplayName(assignment.star).toLowerCase();
+        return displayName.includes(lowerSearch);
+      });
+      return starMatches;
+    });
+  }, [assignments, debouncedSearch]);
+  
   const totalCount = data?.total ?? 0;
 
   return (
@@ -478,9 +514,15 @@ export default function AdminApprovalsPage() {
             </Badge>
           )}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          STAR의 프로젝트 참여 신청을 승인하거나 거절할 수 있습니다.
-        </p>
+        <div className="mt-4 flex items-center gap-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="STAR 이름 또는 프로젝트 제목으로 검색"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="max-w-xs"
+          />
+        </div>
       </div>
 
       {/* Content */}
@@ -494,7 +536,19 @@ export default function AdminApprovalsPage() {
         </div>
       ) : assignments.length === 0 ? (
         <EmptyState />
-      ) : (
+      ) : groups.length === 0 && debouncedSearch.trim() ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-muted-foreground/25 bg-muted/30 px-6 py-16">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <Search className="h-8 w-8 text-muted-foreground/60" />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold text-foreground">
+            검색 결과가 없습니다
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            다른 검색어를 시도해보세요.
+          </p>
+        </div>
+) : (
         <div className="space-y-8">
           {groups.map((group) => (
             <section key={group.request.id} className="space-y-3">
