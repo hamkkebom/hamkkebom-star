@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { reorderItemsSchema } from "@/lib/validations/portfolio";
+export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request) {
   const user = await getAuthUser();

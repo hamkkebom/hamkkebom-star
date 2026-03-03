@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
     const requestUrl = new URL(request.url);

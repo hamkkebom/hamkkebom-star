@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { VideoStatus, VideoSubject } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+export const dynamic = "force-dynamic";
 
 const videoSubjects = new Set(Object.values(VideoSubject));
 

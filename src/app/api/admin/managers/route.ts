@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js"; // Use supabase-js directly for admin
 import { createClient as createServerClient } from "@/lib/supabase/server";
+export const dynamic = "force-dynamic";
 
 // Admin Client 생성 (Service Role Key 필요)
 // 주의: 이 키는 절대 클라이언트에 노출되면 안 됨.

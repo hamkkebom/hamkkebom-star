@@ -3,6 +3,7 @@ import { SettlementStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { maskIdNumber } from "@/lib/settlement-utils";
+export const dynamic = "force-dynamic";
 
 const settlementStatuses = new Set(Object.values(SettlementStatus));
 

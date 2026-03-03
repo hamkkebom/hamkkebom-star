@@ -89,12 +89,12 @@ export function NotificationBadge() {
   }
 
   const groupedNotifications = useMemo(() => {
-    if (!notifications) return {};
-    return notifications.reduce((acc, item) => {
+    if (!notifications) return {} as Partial<Record<NotificationType, NotificationItem[]>>;
+    return notifications.reduce<Partial<Record<NotificationType, NotificationItem[]>>>((acc, item) => {
       if (!acc[item.type]) acc[item.type] = [];
-      acc[item.type].push(item);
+      acc[item.type]!.push(item);
       return acc;
-    }, {} as Record<NotificationType, NotificationItem[]>);
+    }, {});
   }, [notifications]);
 
   const hasNotifications = notifications && notifications.length > 0;

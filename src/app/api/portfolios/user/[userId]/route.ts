@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ userId: string }> };
 

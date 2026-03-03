@@ -3,6 +3,7 @@ import { VideoStatus } from "@/generated/prisma/client";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
 import { prisma } from "@/lib/prisma";
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/videos/stream-token?uid=xxx

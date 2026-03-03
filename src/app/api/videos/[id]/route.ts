@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { getVideoStatus } from "@/lib/cloudflare/stream";
+export const dynamic = "force-dynamic";
 
 /**
  * duration이 없는 영상을 Cloudflare에서 자동으로 가져와 저장 (lazy sync)

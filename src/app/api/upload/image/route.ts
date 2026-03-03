@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getR2Config } from "@/lib/cloudflare/r2";
+export const dynamic = "force-dynamic";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];

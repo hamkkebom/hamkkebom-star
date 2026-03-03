@@ -10,6 +10,7 @@ import {
   generatePdfFilename,
 } from "@/lib/settlement-utils";
 import "@/lib/pdf-fonts";
+export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 

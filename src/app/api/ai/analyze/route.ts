@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { getDownloadUrl } from "@/lib/cloudflare/stream";
 import { analyzeVideo, isGeminiConfigured } from "@/lib/ai/gemini";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
     console.log("[AI Analyze] === POST /api/ai/analyze START ===");

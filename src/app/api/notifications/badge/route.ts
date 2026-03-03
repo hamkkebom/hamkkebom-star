@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { FeedbackStatus, SubmissionStatus, SettlementStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const user = await getAuthUser();

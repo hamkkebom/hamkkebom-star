@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AssignmentStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const user = await getAuthUser();

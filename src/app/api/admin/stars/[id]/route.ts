@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -74,7 +75,7 @@ export async function GET(_request: Request, { params }: Params) {
   // 최근 정산
   const recentSettlements = await prisma.settlement.findMany({
     where: { starId: id },
-    orderBy: [{ year: "desc" }, { month: "desc" }],
+    orderBy: [{ startDate: "desc" }],
     take: 6,
   });
 

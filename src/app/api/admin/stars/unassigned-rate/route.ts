@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { z } from "zod";
+export const dynamic = "force-dynamic";
 
 const unassignedRateSchema = z.object({
     baseRate: z.number().min(0, "단가는 0 이상이어야 합니다."),

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { SubmissionStatus, AssignmentStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 

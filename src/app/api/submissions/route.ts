@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { createSubmissionSchema } from "@/lib/validations/submission";
 import { triggerAiAnalysis } from "@/lib/ai/trigger";
+export const dynamic = "force-dynamic";
 
 type ApiError = {
   code: string;

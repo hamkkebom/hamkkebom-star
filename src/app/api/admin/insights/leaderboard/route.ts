@@ -21,7 +21,7 @@ export async function GET() {
         const starIds = earners.map(e => e.starId);
         const users = await prisma.user.findMany({
             where: { id: { in: starIds } },
-            select: { id: true, name: true, chineseName: true, image: true }
+            select: { id: true, name: true, chineseName: true, avatarUrl: true }
         });
 
         const topEarners = earners.map((e, index) => {
@@ -29,7 +29,7 @@ export async function GET() {
             return {
                 id: e.starId,
                 name: u?.chineseName || u?.name || "Unknown",
-                image: u?.image,
+                image: u?.avatarUrl,
                 amount: Number(e._sum.totalAmount || 0),
                 rank: index + 1
             };

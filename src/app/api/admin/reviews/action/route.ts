@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
+export const dynamic = "force-dynamic";
 
 // POST /api/admin/reviews/action
 // body: { submissionId, action: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES' | 'UNDO', feedback?: string }

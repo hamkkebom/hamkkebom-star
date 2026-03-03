@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { getSignedPlaybackToken, deleteVideo } from "@/lib/cloudflare/stream";
 import { extractR2Key, getPresignedGetUrl, deleteR2Object } from "@/lib/cloudflare/r2-upload";
+export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 

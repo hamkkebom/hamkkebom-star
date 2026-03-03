@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { adjustItemSchema } from "@/lib/validations/settlement";
 import { createAuditLog } from "@/lib/audit";
+export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string; itemId: string }> };
 

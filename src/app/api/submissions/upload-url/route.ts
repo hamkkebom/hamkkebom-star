@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { uploadUrlSchema } from "@/lib/validations/submission";
 import { createTusUploadUrl } from "@/lib/cloudflare/stream";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const user = await getAuthUser();

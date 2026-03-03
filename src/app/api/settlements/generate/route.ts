@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { generateSettlementSchema } from "@/lib/validations/settlement";
 import { createAuditLog } from "@/lib/audit";
+export const dynamic = "force-dynamic";
 
 type ApiError = {
   code: string;

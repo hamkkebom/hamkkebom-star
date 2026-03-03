@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { VideoStatus } from "@/generated/prisma/client";
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/stars — 공개 STAR 목록

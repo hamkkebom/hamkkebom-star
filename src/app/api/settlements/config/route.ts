@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { updateSettlementConfigSchema } from "@/lib/validations/settlement";
+export const dynamic = "force-dynamic";
 
 // GET /api/settlements/config — returns all settlement config settings
 // Requires authentication (any role)

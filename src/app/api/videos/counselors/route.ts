@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { VideoStatus, CounselorStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/videos/counselors

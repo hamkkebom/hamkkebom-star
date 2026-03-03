@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { getVideoStatus } from "@/lib/cloudflare/stream";
+export const dynamic = "force-dynamic";
 
 /**
  * POST /api/videos/sync

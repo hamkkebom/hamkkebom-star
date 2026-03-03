@@ -17,8 +17,8 @@ export async function createAuditLog(params: CreateAuditLogParams): Promise<void
         action: params.action,
         entityType: params.entityType,
         entityId: params.entityId,
-        changes: params.changes ?? undefined,
-        metadata: params.metadata ?? undefined,
+        changes: params.changes ? JSON.parse(JSON.stringify(params.changes)) : undefined,
+        metadata: params.metadata ? JSON.parse(JSON.stringify(params.metadata)) : undefined,
       },
     });
   } catch (error) {

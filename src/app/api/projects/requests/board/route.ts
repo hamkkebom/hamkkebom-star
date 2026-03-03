@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { RequestStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+export const dynamic = "force-dynamic";
 
 const requestStatuses = new Set(Object.values(RequestStatus));
 

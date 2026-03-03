@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth-helpers";
 import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
 import { createFeedbackSchema } from "@/lib/validations/feedback";
+export const dynamic = "force-dynamic";
 
 // Edit Feedback
 export async function PATCH(
