@@ -30,6 +30,7 @@ import {
   TrendingUp,
   Activity,
   BadgeDollarSign,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -104,6 +105,15 @@ const navGroups: NavGroup[] = [
       { href: "/admin/insights/financial", label: "재무 지표", icon: BadgeDollarSign },
     ],
   },
+  {
+    id: "monitoring",
+    label: "모니터링",
+    icon: ScrollText,
+    color: "rose",
+    children: [
+      { href: "/admin/logs", label: "활동 로그", icon: Activity },
+    ],
+  },
 ];
 
 const externalItems = [
@@ -146,6 +156,13 @@ const colorMap: Record<string, { bg: string; text: string; glow: string; dot: st
     glow: "shadow-[0_0_12px_rgba(245,158,11,0.3)]",
     dot: "bg-amber-500",
     line: "border-amber-500/20 dark:border-amber-400/15",
+  },
+  rose: {
+    bg: "bg-rose-500/8 dark:bg-rose-500/10",
+    text: "text-rose-600 dark:text-rose-400",
+    glow: "shadow-[0_0_12px_rgba(244,63,94,0.3)]",
+    dot: "bg-rose-500",
+    line: "border-rose-500/20 dark:border-rose-400/15",
   },
 };
 
