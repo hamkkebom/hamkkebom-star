@@ -213,19 +213,19 @@ function SwimlaneRow({ title, videos, page }: { title: string; videos: VideoRow[
 
   return (
     <div className="relative group w-full pt-2 pb-6 overflow-visible">
-      <h3 className="px-4 sm:px-6 lg:px-8 xl:px-[calc((100vw-1920px)/2+2rem)] text-lg sm:text-2xl font-bold mb-4 drop-shadow-md text-white">
+      <h3 className="px-4 sm:px-6 lg:px-8 xl:px-[calc((100vw-1920px)/2+2rem)] text-lg sm:text-2xl font-bold mb-4 drop-shadow-md text-foreground dark:text-white">
         {title}
       </h3>
 
       {/* Scroll Arrows */}
-      <div className={`absolute left-0 top-14 bottom-14 w-12 sm:w-24 z-20 bg-gradient-to-r from-[#050505] via-[#050505]/80 to-transparent pointer-events-none flex items-center shrink-0 transition-opacity duration-300 ${showLeft ? 'opacity-100' : 'opacity-0'}`}>
-        <button onClick={() => scroll("left")} className="pointer-events-auto w-10 h-10 sm:w-14 sm:h-14 ml-1 sm:ml-4 rounded-full bg-black/80 border border-white/20 hover:bg-white hover:text-black hover:scale-110 text-white backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+      <div className={`absolute left-0 top-14 bottom-14 w-12 sm:w-24 z-20 bg-gradient-to-r from-background via-background/80 dark:from-[#050505] dark:via-[#050505]/80 to-transparent pointer-events-none flex items-center shrink-0 transition-opacity duration-300 ${showLeft ? 'opacity-100' : 'opacity-0'}`}>
+        <button onClick={() => scroll("left")} className="pointer-events-auto w-10 h-10 sm:w-14 sm:h-14 ml-1 sm:ml-4 rounded-full bg-white/80 dark:bg-black/80 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:scale-110 text-black dark:text-white backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md dark:shadow-[0_0_30px_rgba(0,0,0,0.8)]">
           <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 -ml-1" />
         </button>
       </div>
 
-      <div className={`absolute right-0 top-14 bottom-14 w-16 sm:w-32 z-20 bg-gradient-to-l from-[#050505] via-[#050505]/80 to-transparent pointer-events-none flex items-center justify-end shrink-0 transition-opacity duration-300 ${showRight ? 'opacity-100' : 'opacity-0'}`}>
-        <button onClick={() => scroll("right")} className="pointer-events-auto w-10 h-10 sm:w-14 sm:h-14 mr-1 sm:mr-4 rounded-full bg-black/80 border border-white/20 hover:bg-white hover:text-black hover:scale-110 text-white backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+      <div className={`absolute right-0 top-14 bottom-14 w-16 sm:w-32 z-20 bg-gradient-to-l from-background via-background/80 dark:from-[#050505] dark:via-[#050505]/80 to-transparent pointer-events-none flex items-center justify-end shrink-0 transition-opacity duration-300 ${showRight ? 'opacity-100' : 'opacity-0'}`}>
+        <button onClick={() => scroll("right")} className="pointer-events-auto w-10 h-10 sm:w-14 sm:h-14 mr-1 sm:mr-4 rounded-full bg-white/80 dark:bg-black/80 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:scale-110 text-black dark:text-white backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md dark:shadow-[0_0_30px_rgba(0,0,0,0.8)]">
           <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 ml-1" />
         </button>
       </div>
@@ -565,7 +565,7 @@ export function VideosBrowser() {
       {/* 가장 최신 영상 1개를 히어로 배너로 사용 (데이터가 있을 때만) */}
       <div className="relative z-10 w-full pb-20 bg-background text-foreground transition-all duration-500">
         {displayData?.data && displayData.data.length > 0 && page === 1 && !hasActiveFilter ? (
-          <div className="relative w-full h-[75vh] min-h-[500px] max-h-[850px] overflow-hidden bg-[#050505] flex items-end">
+          <div className="relative w-full h-[75vh] min-h-[500px] max-h-[850px] overflow-hidden bg-background dark:bg-[#050505] flex items-end">
             <div
               className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-105"
               style={{
@@ -578,19 +578,19 @@ export function VideosBrowser() {
             <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent" />
 
             <div className="relative z-10 w-full max-w-[1920px] mx-auto px-4 sm:px-8 pb-12 sm:pb-20">
-              <div className="flex flex-col items-start gap-4 sm:gap-5 max-w-3xl p-6 sm:p-8 rounded-3xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-8 duration-700 relative">
+              <div className="flex flex-col items-start gap-4 sm:gap-5 max-w-3xl p-6 sm:p-8 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-8 duration-700 relative">
                 <div>
-                  <span className="inline-block bg-white/15 text-white border border-white/20 px-4 py-1.5 font-bold text-xs sm:text-sm tracking-widest uppercase rounded-full">
+                  <span className="inline-block bg-black/5 dark:bg-white/15 text-foreground dark:text-white border border-black/10 dark:border-white/20 px-4 py-1.5 font-bold text-xs sm:text-sm tracking-widest uppercase rounded-full">
                     {displayData.data[0].category?.name || "추천 영상"}
                   </span>
                 </div>
                 <div>
-                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white leading-[1.1] drop-shadow-2xl break-keep">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground dark:text-white leading-[1.1] drop-shadow-lg dark:drop-shadow-2xl break-keep">
                     {displayData.data[0].title}
                   </h1>
                 </div>
                 <div>
-                  <p className="text-white/80 text-sm sm:text-lg font-medium flex items-center gap-3 drop-shadow-md">
+                  <p className="text-foreground/80 dark:text-white/80 text-sm sm:text-lg font-medium flex items-center gap-3 drop-shadow-md">
                     <span className="flex items-center gap-2"><Film className="w-4 h-4 sm:w-5 sm:h-5" /> {displayData.data[0].owner.chineseName || displayData.data[0].owner.name}님의 작품</span>
                     <span>•</span>
                     <span>{new Date(displayData.data[0].createdAt).toLocaleDateString()}</span>
@@ -626,18 +626,18 @@ export function VideosBrowser() {
           </div>
         ) : (!isDefaultView && !filteredData?.data.length) || (isDefaultView && !latestData?.data.length && !popularData?.data.length) ? (
           <div className="mx-auto max-w-[1920px] px-4 sm:px-6 py-20">
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 py-20">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-900 text-3xl">
-                <Film className="h-8 w-8 text-white" />
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-black/10 dark:border-white/10 py-20">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900 text-3xl">
+                <Film className="h-8 w-8 text-foreground dark:text-white" />
               </div>
-              <h3 className="mb-1 text-lg font-semibold text-white">
+              <h3 className="mb-1 text-lg font-semibold text-foreground dark:text-white">
                 {activeSearch || hasActiveFilter ? "조건에 맞는 영상이 없습니다" : "영상이 없습니다"}
               </h3>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 {activeSearch || hasActiveFilter ? "다른 검색어나 필터 조합으로 시도해 보세요." : "아직 공개된 영상이 없습니다."}
               </p>
               {hasActiveFilter && (
-                <button onClick={resetFilters} className="mt-4 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black hover:bg-zinc-200">
+                <button onClick={resetFilters} className="mt-4 rounded-full bg-black text-white dark:bg-white px-5 py-2.5 text-sm font-bold dark:text-black hover:opacity-80 transition-opacity">
                   필터 초기화
                 </button>
               )}
@@ -647,7 +647,7 @@ export function VideosBrowser() {
           <div className="flex flex-col gap-6 sm:gap-10 pt-8">
             {!isDefaultView ? (
               <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground dark:text-white mb-6">
                   {hasActiveFilter ? "탐색 결과" : "검색 결과"}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
@@ -688,7 +688,7 @@ export function VideosBrowser() {
         {displayData && !isDefaultView && displayData.totalPages > 1 && (
           <div className="mt-12 flex flex-col items-center justify-center gap-4">
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)} className="text-white hover:bg-white/10 rounded-full px-6">
+              <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)} className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full px-6">
                 이전
               </Button>
               <div className="flex items-center gap-1">
@@ -702,14 +702,14 @@ export function VideosBrowser() {
                     <button
                       key={pageNum}
                       onClick={() => setPage(pageNum)}
-                      className={`h-9 min-w-9 rounded-full px-2 text-sm font-bold transition-colors ${pageNum === page ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.5)]" : "text-zinc-500 hover:text-white hover:bg-white/10"}`}
+                      className={`h-9 min-w-9 rounded-full px-2 text-sm font-bold transition-colors ${pageNum === page ? "bg-black text-white dark:bg-white dark:text-black shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(255,255,255,0.5)]" : "text-zinc-500 hover:text-foreground dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"}`}
                     >
                       {pageNum}
                     </button>
                   );
                 })}
               </div>
-              <Button variant="ghost" size="sm" disabled={page >= displayData.totalPages} onClick={() => setPage(page + 1)} className="text-white hover:bg-white/10 rounded-full px-6">
+              <Button variant="ghost" size="sm" disabled={page >= displayData.totalPages} onClick={() => setPage(page + 1)} className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full px-6">
                 다음
               </Button>
             </div>

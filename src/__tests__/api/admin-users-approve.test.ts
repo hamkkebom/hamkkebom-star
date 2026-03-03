@@ -100,7 +100,7 @@ describe("PATCH /api/admin/users/[id]/approve", () => {
     expect(json.error.code).toBe("NOT_FOUND");
   });
 
-  it("200 — 승인 성공", async () => {
+  it("200 — 광고 가능으로 승인", async () => {
     mockGetAuthUser.mockResolvedValue(adminUser);
     mockFindUnique.mockResolvedValue({ id: "target-user-id", isApproved: false });
     mockUserUpdate.mockResolvedValue({
@@ -108,13 +108,51 @@ describe("PATCH /api/admin/users/[id]/approve", () => {
       name: "이몽룡",
       email: "lee@test.com",
       isApproved: true,
+      adEligible: true,
+    });
+
+    const res = await PATCH(makeRequest({ approved: true, adEligible: true }), makeParams());
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.data.isApproved).toBe(true);
+    expect(json.data.adEligible).toBe(true);
+  });
+
+  it("200 — adEligible 없이 승인 (하위 호환)", async () => {
+    mockGetAuthUser.mockResolvedValue(adminUser);
+    mockFindUnique.mockResolvedValue({ id: "target-user-id", isApproved: false });
+    mockUserUpdate.mockResolvedValue({
+      id: "target-user-id",
+      name: "이몽룡",
+      email: "lee@test.com",
+      isApproved: true,
+      adEligible: false,
     });
 
     const res = await PATCH(makeRequest({ approved: true }), makeParams());
     const json = await res.json();
 
     expect(res.status).toBe(200);
-    expect(json.data.id).toBe("target-user-id");
     expect(json.data.isApproved).toBe(true);
+  });
+
+  it("200 — 반려 시 adEligible false", async () => {
+    mockGetAuthUser.mockResolvedValue(adminUser);
+    mockFindUnique.mockResolvedValue({ id: "target-user-id", isApproved: true });
+    mockUserUpdate.mockResolvedValue({
+      id: "target-user-id",
+      name: "이몽룡",
+      email: "lee@test.com",
+      isApproved: false,
+      adEligible: false,
+    });
+
+    const res = await PATCH(makeRequest({ approved: false }), makeParams());
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.data.isApproved).toBe(false);
+    expect(json.data.adEligible).toBe(false);
   });
 });

@@ -36,9 +36,12 @@ vi.mock("@/lib/validations/settlement", async () => {
   const { z } = await import("zod");
   return {
     generateSettlementSchema: z.object({
-      year: z.number().int().min(2020).max(2100),
-      month: z.number().int().min(1).max(12),
-    }),
+      startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    }).refine(
+      (data) => new Date(data.startDate) <= new Date(data.endDate),
+      { message: "시작일은 종료일보다 이전이어야 합니다.", path: ["startDate"] }
+    ),
   };
 });
 
@@ -67,7 +70,7 @@ describe("POST /api/settlements/generate", () => {
   it("401 — 비인증", async () => {
     mockGetAuthUser.mockResolvedValue(null);
 
-    const res = await POST(makeRequest({ year: 2026, month: 1 }));
+    const res = await POST(makeRequest({ startDate: "2026-01-01", endDate: "2026-01-31" }));
     const json = await res.json();
 
     expect(res.status).toBe(401);
@@ -77,7 +80,7 @@ describe("POST /api/settlements/generate", () => {
   it("403 — STAR 접근 불가", async () => {
     mockGetAuthUser.mockResolvedValue(starUser);
 
-    const res = await POST(makeRequest({ year: 2026, month: 1 }));
+    const res = await POST(makeRequest({ startDate: "2026-01-01", endDate: "2026-01-31" }));
     const json = await res.json();
 
     expect(res.status).toBe(403);
@@ -99,10 +102,10 @@ describe("POST /api/settlements/generate", () => {
     expect(json.error.code).toBe("BAD_REQUEST");
   });
 
-  it("400 — Zod 검증 실패 (월 범위 초과)", async () => {
+  it("400 — Zod 검증 실패 (잘못된 날짜 형식)", async () => {
     mockGetAuthUser.mockResolvedValue(adminUser);
 
-    const res = await POST(makeRequest({ year: 2026, month: 13 }));
+    const res = await POST(makeRequest({ startDate: "not-a-date", endDate: "2026-01-31" }));
     const json = await res.json();
 
     expect(res.status).toBe(400);
@@ -117,7 +120,7 @@ describe("POST /api/settlements/generate", () => {
       status: 409,
     });
 
-    const res = await POST(makeRequest({ year: 2026, month: 1 }));
+    const res = await POST(makeRequest({ startDate: "2026-01-01", endDate: "2026-01-31" }));
     const json = await res.json();
 
     expect(res.status).toBe(409);
@@ -130,8 +133,8 @@ describe("POST /api/settlements/generate", () => {
       {
         id: "settle-001",
         starId: "star-001",
-        year: 2026,
-        month: 1,
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
         status: "PENDING",
         totalAmount: 300000,
         itemCount: 3,
@@ -143,7 +146,7 @@ describe("POST /api/settlements/generate", () => {
       completedStars: [],
     });
 
-    const res = await POST(makeRequest({ year: 2026, month: 1 }));
+    const res = await POST(makeRequest({ startDate: "2026-01-01", endDate: "2026-01-31" }));
     const json = await res.json();
 
     expect(res.status).toBe(201);
@@ -156,7 +159,7 @@ describe("POST /api/settlements/generate", () => {
     mockGetAuthUser.mockResolvedValue(adminUser);
     mockTransaction.mockRejectedValue(new Error("Unknown error"));
 
-    const res = await POST(makeRequest({ year: 2026, month: 1 }));
+    const res = await POST(makeRequest({ startDate: "2026-01-01", endDate: "2026-01-31" }));
     const json = await res.json();
 
     expect(res.status).toBe(500);

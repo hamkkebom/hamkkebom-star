@@ -1,0 +1,308 @@
+﻿[dotenv@17.3.1] injecting env (1) from .env.local -- tip: ?∽툘 secrets for agents: https://dotenvx.com/as2
+?좑툘 ERROR: 媛뺥씗??(jjangna35@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 怨쎌슜??(changjak4042@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源?⑥썝 (kkknw@hanmail.net) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源蹂대씪 (usozukii@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源?뚯쁺 (demainlook@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源?좉꼍 (gooddair04@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源?덉넄 (1210yesol@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源?⑹닔 (ysmercury@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源?ㅼ꽍 (gkgk2102@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源吏誘?(1mediclip@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源吏? (kimpro.j37@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源吏? (kje010207@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源李ъ닔 (kim.cs@cacadew.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 源?꾩슦 (funtimes0522@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 臾몄긽??(moongsipapa@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 臾몄젙誘?(jjjgghh@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 諛뺢굔??(joeypark1129@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 諛뺤꽦??(lulury@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 諛뺤쥌李?(modoo@modooweb.co.kr) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 諛뺤＜??(keep.alive.box@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 諛뺤???(syfoot@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 諛⑹???(wlgns2776@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 諛깊븳??(gooddair04@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?ы쁽??(mavericx@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?묓쁽吏?(jini-hoya@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?꾩슜泥?(witheee@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?ㅼ쥌??(innovantjs@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?대떎??(salleeee.kr@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?대몢??(kt37031181@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?댁듅??(taeluckys@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?댁삁由?(gngplusofficial@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?댁슜二?(dydrkfl678@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?댁씤??(mkku057@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?댄삙??(lhw2010@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 李⑥?洹?(besteunkyu@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 理쒖꽍吏?(choisj8110@naver.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: 理쒖쥌??(k777007@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+?좑툘 ERROR: ?섏쑄??(hynpresident@gmail.com) ??
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\scripts\import-csv-users.ts:61:42
+
+  58 
+  59 try {
+  60     // ?대쫫+?대찓?쇰줈 癒쇱? 李얘퀬, ?놁쑝硫??대찓?쇰쭔?쇰줈 寃????61     let user = await prisma.user.findFirst(
+
+
+--- 寃곌낵 ---
+???낅뜲?댄듃: 0嫄???툘 ?ㅽ궢: 0嫄???誘몃컻寃? 0嫄??좑툘 ?먮윭: 38嫄?

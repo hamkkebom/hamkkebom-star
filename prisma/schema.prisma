@@ -21,6 +21,7 @@ model User {
   chineseName     String?
   externalId      String?             @unique
   isApproved      Boolean             @default(false)
+  adEligible      Boolean             @default(false)
   idNumber        String?
   bankName        String?
   bankAccount     String?
@@ -45,6 +46,7 @@ model User {
 
   // Reviewed Assignments Relation
   reviewedAssignments ProjectAssignment[] @relation("ReviewedAssignments")
+  auditLogs    AuditLog[] @relation("userAuditLogs")
   @@map("users")
 }
 
@@ -168,6 +170,7 @@ model Video {
   streamUid       String?             @unique
   r2Key           String?
   ownerId         String
+  viewCount       Int                 @default(0)
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   counselorId     String?
@@ -222,11 +225,29 @@ model VideoEventLog {
   @@map("video_event_logs")
 }
 
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  entityType String
+  entityId   String
+  changes    Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User @relation("userAuditLogs", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
 model Settlement {
   id          String           @id @default(cuid())
   starId      String
-  year        Int
-  month       Int
+  startDate   DateTime
+  endDate     DateTime
   totalAmount Decimal          @default(0) @db.Decimal(12, 2)
   status      SettlementStatus @default(PENDING)
   note        String?
@@ -236,7 +257,6 @@ model Settlement {
   items       SettlementItem[]
   star        User             @relation(fields: [starId], references: [id])
 
-  @@unique([starId, year, month])
   @@map("settlements")
 }
 

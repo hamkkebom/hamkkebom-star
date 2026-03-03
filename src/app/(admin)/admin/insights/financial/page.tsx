@@ -344,7 +344,7 @@ export default function FinancialInsightsPage() {
                 >
                     재무 지표 (Financial)
                 </motion.h1>
-                <motion.p
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.1 }}
@@ -352,10 +352,10 @@ export default function FinancialInsightsPage() {
                 >
                     정산 데이터와 수익 창출 퍼포먼스를 한눈에 파악하세요.
                     <span className="ml-3 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-[9px] font-black tracking-widest text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)] animate-pulse flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>
                         FINANCIAL TRACKING
                     </span>
-                </motion.p>
+                </motion.div>
             </div>
 
             {/* Zone A: Financial KPIs */}

@@ -241,14 +241,14 @@ export default function OperationalInsightsPage() {
                 >
                     운영 지표 (Operational)
                 </motion.h1>
-                <motion.p
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.1 }}
                     className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2 flex items-center"
                 >
                     플랫폼 내 프로젝트 생성 및 영상 처리 퍼포먼스를 점검하세요.
-                </motion.p>
+                </motion.div>
             </div>
 
             {/* Zone A: Kpi Metrics */}

@@ -106,7 +106,7 @@ export function VideoCard({
       style={{ perspective: 1200 }} // Needed for 3D perspective
     >
       <motion.div
-        className="relative overflow-hidden rounded-2xl bg-zinc-900 border border-white/5 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.08] hover:shadow-[0_0_50px_rgba(139,92,246,0.5)] hover:border-white/20 hover:z-50 will-change-transform"
+        className="relative overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/5 shadow-md dark:shadow-none transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.08] hover:shadow-[0_0_50px_rgba(139,92,246,0.3)] dark:hover:shadow-[0_0_50px_rgba(139,92,246,0.5)] hover:border-black/20 dark:hover:border-white/20 hover:z-50 will-change-transform"
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -181,16 +181,16 @@ export function VideoCard({
         </div>
 
         {/* Info - Pushed forward for 3D effect */}
-        <div className={`relative z-20 bg-gradient-to-t from-black via-zinc-900/90 to-zinc-900/0 ${compact ? "p-3" : "p-4"}`} style={{ transform: 'translateZ(15px)' }}>
-          <h3 className={`line-clamp-2 font-extrabold leading-snug tracking-tight text-white transition-colors group-hover:text-violet-400 ${compact ? "text-xs" : "text-base sm:text-lg"}`}>
+        <div className={`relative z-20 bg-gradient-to-t from-white via-white/95 to-white/0 dark:from-black dark:via-zinc-900/90 dark:to-zinc-900/0 ${compact ? "p-3" : "p-4"}`} style={{ transform: 'translateZ(15px)' }}>
+          <h3 className={`line-clamp-2 font-extrabold leading-snug tracking-tight text-foreground dark:text-white transition-colors group-hover:text-violet-600 dark:group-hover:text-violet-400 ${compact ? "text-xs" : "text-base sm:text-lg"}`}>
             {title}
           </h3>
 
           {/* Metadata container - slides up and fades in on hover */}
           <div className="overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] max-h-0 opacity-0 group-hover:max-h-[80px] group-hover:opacity-100 group-hover:mt-3">
-            <div className={`flex items-center gap-2 text-zinc-300 ${compact ? "text-[10px]" : "text-xs font-medium"}`}>
-              <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-2 py-1 backdrop-blur-md">
-                <User className="h-3.5 w-3.5 text-violet-300" />
+            <div className={`flex items-center gap-2 text-zinc-600 dark:text-zinc-300 ${compact ? "text-[10px]" : "text-xs font-medium"}`}>
+              <div className="flex items-center gap-1.5 bg-black/5 dark:bg-white/10 rounded-full px-2 py-1 backdrop-blur-md">
+                <User className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" />
                 <span className="truncate max-w-[120px]">{ownerName}</span>
               </div>
               {categoryName && (

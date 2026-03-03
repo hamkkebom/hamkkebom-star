@@ -73,8 +73,7 @@ export async function GET() {
       take: 5,
       select: {
         id: true,
-        year: true,
-        month: true,
+        startDate: true,
         totalAmount: true,
         status: true,
         updatedAt: true,
@@ -89,11 +88,12 @@ export async function GET() {
     };
 
     for (const s of settlements) {
+      const date = new Date(s.startDate);
       items.push({
         id: s.id,
         type: "settlement",
         title: `정산 ${settlementStatusLabels[s.status] ?? s.status}`,
-        description: `${s.year}년 ${String(s.month).padStart(2, "0")}월 정산`,
+        description: `${date.getFullYear()}년 ${String(date.getMonth() + 1).padStart(2, "0")}월 정산`,
         createdAt: s.updatedAt.toISOString(),
         link: `/stars/earnings`,
       });
@@ -182,8 +182,7 @@ export async function GET() {
       take: 10,
       select: {
         id: true,
-        year: true,
-        month: true,
+        startDate: true,
         totalAmount: true,
         createdAt: true,
         star: { select: { name: true } },
@@ -191,11 +190,12 @@ export async function GET() {
     });
 
     for (const s of settlements) {
+      const date = new Date(s.startDate);
       items.push({
         id: s.id,
         type: "settlement",
         title: `정산 확정 대기`,
-        description: `${s.star.name} • ${s.year}년 ${String(s.month).padStart(2, "0")}월`,
+        description: `${s.star.name} • ${date.getFullYear()}년 ${String(date.getMonth() + 1).padStart(2, "0")}월`,
         createdAt: s.createdAt.toISOString(),
         link: `/admin/settlements`,
       });
