@@ -3,6 +3,7 @@ import { z } from "zod";
 import { SubmissionStatus, AssignmentStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { createAuditLog } from "@/lib/audit";
 
 const bulkActionSchema = z.object({
   ids: z.array(z.string()).min(1, "최소 1개의 제출물 ID가 필요합니다.").max(50, "한 번에 최대 50개까지 처리할 수 있습니다."),
@@ -75,6 +76,14 @@ export async function POST(request: Request) {
       failed.push(id);
     }
   }
+
+  void createAuditLog({
+    actorId: user.id,
+    action: "BULK_ACTION_SUBMISSIONS",
+    entityType: "Submission",
+    entityId: "bulk",
+    metadata: { bulkAction: action, total: ids.length },
+  });
 
   // 6. 응답
   return NextResponse.json({

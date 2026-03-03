@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { createAuditLog } from "@/lib/audit";
 
 export async function PATCH(
   request: Request,
@@ -64,6 +65,14 @@ export async function PATCH(
       isApproved: true,
       adEligible: true,
     },
+  });
+
+  void createAuditLog({
+    actorId: user.id,
+    action: approved ? "APPROVE_USER" : "REVOKE_USER",
+    entityType: "User",
+    entityId: id,
+    changes: { isApproved: { from: !approved, to: approved } },
   });
 
   return NextResponse.json({ data: updated });

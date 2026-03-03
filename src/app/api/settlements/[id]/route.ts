@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { maskIdNumber } from "@/lib/settlement-utils";
+import { createAuditLog } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -21,7 +22,7 @@ export async function GET(_request: Request, { params }: Params) {
   const settlement = await prisma.settlement.findUnique({
     where: { id },
     include: {
-      star: { select: { id: true, name: true, email: true, phone: true, baseRate: true, idNumber: true, bankName: true, bankAccount: true } },
+      star: { select: { id: true, name: true, chineseName: true, email: true, phone: true, baseRate: true, idNumber: true, bankName: true, bankAccount: true, aiToolSupportFee: true } },
       items: {
         include: {
           submission: {
@@ -111,6 +112,13 @@ export async function DELETE(_request: Request, { params }: Params) {
   // 아이템 먼저 삭제 후 정산 삭제
   await prisma.settlementItem.deleteMany({ where: { settlementId: id } });
   await prisma.settlement.delete({ where: { id } });
+
+  void createAuditLog({
+    actorId: user.id,
+    action: "DELETE_SETTLEMENT",
+    entityType: "Settlement",
+    entityId: id,
+  });
 
   return NextResponse.json({ message: "정산이 삭제되었습니다." });
 }

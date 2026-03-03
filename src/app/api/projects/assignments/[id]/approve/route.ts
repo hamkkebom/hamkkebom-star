@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AssignmentStatus, RequestStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { createAuditLog } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -81,6 +82,13 @@ export async function POST(_request: Request, { params }: Params) {
       }
 
       return updated;
+    });
+
+    void createAuditLog({
+      actorId: user.id,
+      action: "APPROVE_ASSIGNMENT",
+      entityType: "ProjectAssignment",
+      entityId: id,
     });
 
     return NextResponse.json({ data: result }, { status: 200 });

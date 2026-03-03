@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
 import { createFeedbackSchema } from "@/lib/validations/feedback";
 
@@ -140,6 +141,8 @@ export async function DELETE(
 
             return { remainingCount };
         });
+
+        void createAuditLog({ actorId: user.id, action: "DELETE_FEEDBACK", entityType: "Feedback", entityId: id });
 
         return NextResponse.json({ success: true, remainingFeedbacks: result.remainingCount });
     } catch (error) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { SubmissionStatus, AssignmentStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { createAuditLog } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -83,6 +84,8 @@ export async function PATCH(_request: Request, { params }: Params) {
 
       return result;
     });
+
+    void createAuditLog({ actorId: user.id, action: "APPROVE_SUBMISSION", entityType: "Submission", entityId: id });
 
     return NextResponse.json({ data: updated });
   } catch (error) {

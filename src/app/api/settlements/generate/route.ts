@@ -3,6 +3,7 @@ import { Prisma, SettlementStatus, SubmissionStatus } from "@/generated/prisma/c
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { generateSettlementSchema } from "@/lib/validations/settlement";
+import { createAuditLog } from "@/lib/audit";
 
 type ApiError = {
   code: string;
@@ -142,6 +143,7 @@ export async function POST(request: Request) {
           id: true,
           name: true,
           baseRate: true,
+          aiToolSupportFee: true,
           grade: { select: { baseRate: true } },
         },
       });
@@ -201,22 +203,22 @@ export async function POST(request: Request) {
             return null;
           }
 
-           // Skip STARs with COMPLETED overlapping settlements
-           if (completedStarIds.has(starId)) {
-             completedStars.push({ id: star.id, name: star.name });
-             return null;
-           }
+          // Skip STARs with COMPLETED overlapping settlements
+          if (completedStarIds.has(starId)) {
+            completedStars.push({ id: star.id, name: star.name });
+            return null;
+          }
 
           const defaultRate = starBaseRate ? Number(starBaseRate) : 0;
 
-           const createdSettlement = await tx.settlement.create({
-             data: {
-               starId: star.id,
-               startDate,
-               endDate,
-               status: SettlementStatus.PENDING,
-             },
-           });
+          const createdSettlement = await tx.settlement.create({
+            data: {
+              starId: star.id,
+              startDate,
+              endDate,
+              status: SettlementStatus.PENDING,
+            },
+          });
 
           // 각 제출물마다 개별 단가 적용: 영상 단가 > STAR 기본 단가
           const itemsData = submissions.map((sub) => {
@@ -236,7 +238,8 @@ export async function POST(request: Request) {
           });
 
           // AI 툴 지원비 항목 추가
-          if (aiToolSupportFee > 0) {
+          const userAiToolSupportFee = star.aiToolSupportFee !== null ? Number(star.aiToolSupportFee) : aiToolSupportFee;
+          if (userAiToolSupportFee > 0) {
             await tx.settlementItem.create({
               data: {
                 settlementId: createdSettlement.id,
@@ -244,8 +247,8 @@ export async function POST(request: Request) {
                 starId: star.id,
                 itemType: "AI_TOOL_SUPPORT",
                 description: "AI 툴 지원비",
-                baseAmount: aiToolSupportFee,
-                finalAmount: aiToolSupportFee,
+                baseAmount: userAiToolSupportFee,
+                finalAmount: userAiToolSupportFee,
                 adjustedAmount: null,
               },
             });
@@ -275,6 +278,18 @@ export async function POST(request: Request) {
         skippedStars,
         completedStars,
       };
+    });
+
+    void createAuditLog({
+      actorId: user.id,
+      action: "GENERATE_SETTLEMENTS",
+      entityType: "Settlement",
+      entityId: "batch",
+      metadata: {
+        count: result.created.length,
+        startDate: startDateStr,
+        endDate: endDateStr,
+      },
     });
 
     return NextResponse.json(

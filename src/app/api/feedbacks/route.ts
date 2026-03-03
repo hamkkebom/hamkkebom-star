@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { createFeedbackSchema } from "@/lib/validations/feedback";
+import { createAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +92,8 @@ export async function POST(request: Request) {
 
       return created;
     });
+
+    void createAuditLog({ actorId: user.id, action: "CREATE_FEEDBACK", entityType: "Feedback", entityId: feedback.id });
 
     return NextResponse.json({ data: feedback }, { status: 201 });
   } catch (error) {

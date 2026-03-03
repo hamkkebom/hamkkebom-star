@@ -3,6 +3,7 @@ import { z } from "zod";
 import { AssignmentStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { createAuditLog } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -85,6 +86,13 @@ export async function POST(request: Request, { params }: Params) {
         star: { select: { id: true, name: true, email: true } },
         request: { select: { id: true, title: true } },
       },
+    });
+
+    void createAuditLog({
+      actorId: user.id,
+      action: "REJECT_ASSIGNMENT",
+      entityType: "ProjectAssignment",
+      entityId: id,
     });
 
     return NextResponse.json({ data: updated }, { status: 200 });

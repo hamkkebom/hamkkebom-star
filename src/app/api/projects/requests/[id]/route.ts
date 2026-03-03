@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { createAuditLog } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -87,6 +88,13 @@ export async function PATCH(request: Request, { params }: Params) {
       },
     });
 
+    void createAuditLog({
+      actorId: user.id,
+      action: "UPDATE_PROJECT_REQUEST",
+      entityType: "ProjectRequest",
+      entityId: id,
+    });
+
     return NextResponse.json({
       data: { ...updated, currentAssignees: updated._count.assignments },
     });
@@ -117,6 +125,14 @@ export async function DELETE(_request: Request, { params }: Params) {
 
   try {
     await prisma.projectRequest.delete({ where: { id } });
+
+    void createAuditLog({
+      actorId: user.id,
+      action: "DELETE_PROJECT_REQUEST",
+      entityType: "ProjectRequest",
+      entityId: id,
+    });
+
     return NextResponse.json({ data: { success: true } });
   } catch {
     return NextResponse.json(

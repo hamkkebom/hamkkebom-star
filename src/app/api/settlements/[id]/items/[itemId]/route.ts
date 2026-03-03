@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { adjustItemSchema } from "@/lib/validations/settlement";
+import { createAuditLog } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string; itemId: string }> };
 
@@ -103,6 +104,20 @@ export async function PATCH(request: Request, { params }: Params) {
     });
 
     return { updated, totalAmount };
+  });
+
+  void createAuditLog({
+    actorId: user.id,
+    action: "ADJUST_SETTLEMENT_ITEM",
+    entityType: "SettlementItem",
+    entityId: itemId,
+    metadata: {
+      settlementId: id,
+    },
+    changes: {
+      adjustedAmount: { from: item.adjustedAmount, to: adjustedAmount },
+      finalAmount: { from: item.finalAmount, to: adjustedAmount },
+    },
   });
 
   return NextResponse.json({

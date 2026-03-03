@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { createRequestSchema } from "@/lib/validations/project-request";
+import { createAuditLog } from "@/lib/audit";
 
 export async function POST(request: Request) {
   const user = await getAuthUser();
@@ -71,6 +72,13 @@ export async function POST(request: Request) {
         },
       },
     },
+  });
+
+  void createAuditLog({
+    actorId: user.id,
+    action: "CREATE_PROJECT_REQUEST",
+    entityType: "ProjectRequest",
+    entityId: created.id,
   });
 
   return NextResponse.json(

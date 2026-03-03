@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { SettlementStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { createAuditLog } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -32,6 +33,13 @@ export async function PATCH(_request: Request, { params }: Params) {
         star: { select: { id: true, name: true, email: true } },
         _count: { select: { items: true } },
       },
+    });
+
+    void createAuditLog({
+      actorId: user.id,
+      action: "COMPLETE_SETTLEMENT",
+      entityType: "Settlement",
+      entityId: id,
     });
 
     return NextResponse.json({ data: updated });
