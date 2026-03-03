@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Film,
-  Download,
+
   CheckCircle2,
   Pencil,
   Save,
@@ -56,12 +56,14 @@ export type SettlementDetail = {
   star: {
     id: string;
     name: string;
+    chineseName: string | null;
     email: string;
     phone: string | null;
     baseRate: number | null;
     idNumber: string | null;
     bankName: string | null;
     bankAccount: string | null;
+    aiToolSupportFee: number | null;
   };
   items: Array<{
     id: string;
@@ -139,6 +141,25 @@ export function SettlementDetailSheet({
     onError: (err) => toast.error(err instanceof Error ? err.message : "메모 저장에 실패했습니다."),
   });
 
+  const updateAiFeeMutation = useMutation({
+    mutationFn: async ({ userId, aiToolSupportFee }: { userId: string; aiToolSupportFee: number | null }) => {
+      const res = await fetch(`/api/admin/users/${userId}/ai-tool-fee`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aiToolSupportFee }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || "개인 지원비 설정에 실패했습니다.");
+      }
+    },
+    onSuccess: () => {
+      toast.success("AI 툴 개인 지원비가 저장되었습니다. 정산을 재생성하면 반영됩니다.");
+      onMutate();
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "개인 지원비 설정에 실패했습니다."),
+  });
+
   const updateVideoRateMutation = useMutation({
     mutationFn: async ({ videoId, customRate }: { videoId: string; customRate: number | null }) => {
       const res = await fetch(`/api/videos/${videoId}/rate`, {
@@ -181,15 +202,7 @@ export function SettlementDetailSheet({
   // Handlers
   // ---------------------------------------------------------------------------
 
-  const handlePdfDownload = useCallback((id: string) => {
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = `/api/settlements/${id}/pdf?download=true`;
-    document.body.appendChild(iframe);
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-    }, 30000);
-  }, []);
+
 
   const handleStartNoteEdit = useCallback(() => {
     setNoteValue(detail?.note ?? "");
@@ -228,7 +241,10 @@ export function SettlementDetailSheet({
                 <CardContent className="p-4 space-y-1.5 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">이름</span>
-                    <span className="font-medium">{detail.star.name}</span>
+                    <span className="font-medium">
+                      {detail.star.name}
+                      {detail.star.chineseName && <span className="text-muted-foreground text-xs ml-1.5 font-normal">({detail.star.chineseName})</span>}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">이메일</span>
@@ -258,6 +274,45 @@ export function SettlementDetailSheet({
                       <span className="tabular-nums">{formatKRW(Number(detail.star.baseRate))}</span>
                     </div>
                   )}
+                  {/* AI 툴 개인 지원비 설정 */}
+                  <div className="flex items-center justify-between pt-1.5 border-t border-dashed">
+                    <span className="text-muted-foreground">AI 툴 지원비</span>
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        placeholder="전역 설정 사용"
+                        defaultValue={detail.star.aiToolSupportFee !== null ? Number(detail.star.aiToolSupportFee) : ""}
+                        className="h-7 text-xs w-[120px] text-right tabular-nums"
+                        key={`ai-fee-${detail.star.id}-${detail.star.aiToolSupportFee}`}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const val = (e.target as HTMLInputElement).value;
+                            updateAiFeeMutation.mutate({
+                              userId: detail.star.id,
+                              aiToolSupportFee: val ? Number(val) : null,
+                            });
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2"
+                        onClick={(e) => {
+                          const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                          const val = input?.value;
+                          updateAiFeeMutation.mutate({
+                            userId: detail.star.id,
+                            aiToolSupportFee: val ? Number(val) : null,
+                          });
+                        }}
+                        disabled={updateAiFeeMutation.isPending}
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        저장
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -375,6 +430,45 @@ export function SettlementDetailSheet({
                                       });
                                     }}
                                     disabled={updateVideoRateMutation.isPending}
+                                  >
+                                    <Save className="h-3 w-3 mr-1" />
+                                    저장
+                                  </Button>
+                                </div>
+                              )}
+
+                              {/* AI 툴 개인별 지원비 설정 UI */}
+                              {item.itemType === "AI_TOOL_SUPPORT" && (
+                                <div className="mt-1.5 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                  <Input
+                                    type="number"
+                                    placeholder="개인 지원비 (비우면 전역 설정)"
+                                    defaultValue={detail.star.aiToolSupportFee !== null ? Number(detail.star.aiToolSupportFee) : ""}
+                                    className="h-7 text-xs w-[180px]"
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        const val = (e.target as HTMLInputElement).value;
+                                        updateAiFeeMutation.mutate({
+                                          userId: detail.star.id,
+                                          aiToolSupportFee: val ? Number(val) : null,
+                                        });
+                                      }
+                                    }}
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-xs px-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                                      const val = input?.value;
+                                      updateAiFeeMutation.mutate({
+                                        userId: detail.star.id,
+                                        aiToolSupportFee: val ? Number(val) : null,
+                                      });
+                                    }}
+                                    disabled={updateAiFeeMutation.isPending}
                                   >
                                     <Save className="h-3 w-3 mr-1" />
                                     저장
@@ -500,10 +594,6 @@ export function SettlementDetailSheet({
             {/* Actions */}
             <Separator />
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 gap-1.5" onClick={() => handlePdfDownload(detail.id)}>
-                <Download className="h-4 w-4" />
-                PDF 다운로드
-              </Button>
               {(detail.status === "PENDING" || detail.status === "PROCESSING") && (
                 <Button
                   className="flex-1 gap-1.5"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { downloadSettlementsExcel } from "@/lib/settlement-excel";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -184,6 +186,9 @@ export default function AdminSettlementsPage() {
 
   // Detail Sheet
   const [detailId, setDetailId] = useState<string | null>(null);
+
+  // Checkbox selection for Excel download
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Confetti
   const [showConfetti, setShowConfetti] = useState(false);
@@ -390,16 +395,8 @@ export default function AdminSettlementsPage() {
     setDetailId(id);
   }, []);
 
-  const handlePdfDownload = useCallback((id: string) => {
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = `/api/settlements/${id}/pdf?download=true`;
-    document.body.appendChild(iframe);
-    // 다운로드 시작 후 정리
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-    }, 30000);
-  }, []);
+
+
 
   const handleStartConfigEdit = useCallback((key: string, currentValue: string) => {
     setEditingKey(key);
@@ -429,6 +426,37 @@ export default function AdminSettlementsPage() {
       if (row) setCancelTarget(row);
     }
   }, [detail, rows]);
+
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleToggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === rows.length) return new Set();
+      return new Set(rows.map((r) => r.id));
+    });
+  }, [rows]);
+
+  const [excelDownloading, setExcelDownloading] = useState(false);
+  const handleExcelDownload = useCallback(async () => {
+    const ids = selectedIds.size > 0 ? Array.from(selectedIds) : rows.map((r) => r.id);
+    if (ids.length === 0) return;
+    setExcelDownloading(true);
+    try {
+      await downloadSettlementsExcel(ids);
+      toast.success(`${ids.length}건의 정산을 엑셀로 다운로드했습니다.`);
+    } catch {
+      toast.error("엑셀 다운로드에 실패했습니다.");
+    } finally {
+      setExcelDownloading(false);
+    }
+  }, [selectedIds, rows]);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -466,7 +494,7 @@ export default function AdminSettlementsPage() {
           {/* Stat Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 items-start">
             <StatCard title="총 정산액" value={totalSum} suffix="원" icon={DollarSign} iconColor="text-emerald-500" delay={0} />
-            
+
             {/* PENDING StatCard — clickable */}
             <div className="flex flex-col gap-2">
               <StatCard
@@ -584,14 +612,14 @@ export default function AdminSettlementsPage() {
                     const from = e.target.value ? new Date(e.target.value) : undefined;
                     setFilterDateRange(from ? { from, to: filterDateRange?.to } : undefined);
                   }}
-                   className="w-40"
-                 />
-                 <span className="text-muted-foreground">~</span>
-                 <Input
-                   type="date"
-                   placeholder="종료일"
-                   value={filterDateRange?.to?.toISOString().slice(0, 10) ?? ""}
-                   onChange={(e) => {
+                  className="w-40"
+                />
+                <span className="text-muted-foreground">~</span>
+                <Input
+                  type="date"
+                  placeholder="종료일"
+                  value={filterDateRange?.to?.toISOString().slice(0, 10) ?? ""}
+                  onChange={(e) => {
                     const to = e.target.value ? new Date(e.target.value) : undefined;
                     setFilterDateRange(prev => prev ? { from: prev.from, to } : undefined);
                   }}
@@ -610,7 +638,16 @@ export default function AdminSettlementsPage() {
                 </SelectContent>
               </Select>
 
-              <div className="ml-auto">
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleExcelDownload}
+                  disabled={excelDownloading || rows.length === 0}
+                  className="gap-1.5"
+                >
+                  <Download className="h-4 w-4" />
+                  {selectedIds.size > 0 ? `${selectedIds.size}건 엑셀` : "전체 엑셀"}
+                </Button>
                 <Button onClick={() => setGenerateOpen(true)} className="gap-1.5">
                   <Plus className="h-4 w-4" />
                   정산 생성
@@ -631,6 +668,12 @@ export default function AdminSettlementsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={rows.length > 0 && selectedIds.size === rows.length}
+                        onCheckedChange={handleToggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>연월</TableHead>
                     <TableHead>STAR</TableHead>
                     <TableHead className="text-center">항목</TableHead>
@@ -642,7 +685,7 @@ export default function AdminSettlementsPage() {
                 <TableBody>
                   {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-16 text-center text-muted-foreground">
+                      <TableCell colSpan={7} className="py-16 text-center text-muted-foreground">
                         <div className="flex flex-col items-center gap-2">
                           <FileText className="h-8 w-8 opacity-40" />
                           <p>정산 내역이 없습니다.</p>
@@ -661,6 +704,12 @@ export default function AdminSettlementsPage() {
                           className="group cursor-pointer border-b transition-colors hover:bg-muted/50"
                           onClick={() => handleOpenDetail(row.id)}
                         >
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedIds.has(row.id)}
+                              onCheckedChange={() => handleToggleSelect(row.id)}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium">
                             {formatDateRange(new Date(row.startDate), new Date(row.endDate))}
                           </TableCell>
@@ -684,9 +733,6 @@ export default function AdminSettlementsPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="sm" onClick={() => handlePdfDownload(row.id)} title="PDF 다운로드">
-                                <Download className="h-4 w-4" />
-                              </Button>
                               {(row.status === "PENDING" || row.status === "PROCESSING") && (
                                 <>
                                   <Button
@@ -856,7 +902,7 @@ export default function AdminSettlementsPage() {
 
       {/* ======================== Generate Dialog ======================== */}
       <Dialog open={generateOpen} onOpenChange={setGenerateOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>월별 정산 생성</DialogTitle>
             <DialogDescription>
