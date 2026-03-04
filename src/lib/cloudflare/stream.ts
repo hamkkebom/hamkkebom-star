@@ -175,6 +175,16 @@ export async function getSignedPlaybackUrl(uid: string): Promise<string> {
   return `https://customer-${ACCOUNT_ID || "mock"}.cloudflarestream.com/${uid}/manifest/video.m3u8`;
 }
 
+/**
+ * 서명된 다운로드 URL을 생성합니다.
+ * requireSignedURLs가 활성화된 영상도 다운로드 가능합니다.
+ */
+export async function getSignedDownloadUrl(uid: string): Promise<string | null> {
+  const token = await getSignedPlaybackToken(uid, true);
+  if (!token) return null;
+  return `https://videodelivery.net/${token}/downloads/default.mp4`;
+}
+
 // ---------------------------------------------------------------------------
 // 영상 다운로드 URL (AI 분석용)
 // ---------------------------------------------------------------------------

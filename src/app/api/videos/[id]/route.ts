@@ -23,40 +23,64 @@ async function lazySyncDuration(videoId: string, streamUid: string | null, hasDu
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
-  // 공개 영상(APPROVED/FINAL)은 인증 없이 조회 가능
-  const user = await getAuthUser().catch(() => null);
-  const { id } = await params;
+  try {
+    // 공개 영상(APPROVED/FINAL)은 인증 없이 조회 가능
+    const user = await getAuthUser().catch(() => null);
+    const { id } = await params;
 
-  const video = await prisma.video.findUnique({
-    where: { id },
-    include: {
-      owner: { select: { id: true, name: true, chineseName: true, email: true, avatarUrl: true } },
-      category: { select: { id: true, name: true, slug: true } },
-      counselor: { select: { id: true, displayName: true } },
-      technicalSpec: true,
-      eventLogs: { orderBy: { createdAt: "desc" }, take: 10 },
-    },
-  });
+    const video = await prisma.video.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { id: true, name: true, chineseName: true, email: true, avatarUrl: true } },
+        category: { select: { id: true, name: true, slug: true } },
+        counselor: { select: { id: true, displayName: true } },
+        technicalSpec: true,
+        eventLogs: { orderBy: { createdAt: "desc" }, take: 10 },
+        _count: { select: { likes: true } },
+        likes: {
+          where: { userId: user?.id ?? "none" },
+          select: { id: true }
+        },
+      },
+    });
 
-  if (!video) {
+    if (!video) {
+      return NextResponse.json(
+        { error: { code: "NOT_FOUND", message: "영상을 찾을 수 없습니다." } },
+        { status: 404 }
+      );
+    }
+
+    // 비공개 영상(DRAFT/PENDING)은 인증 필요
+    if (video.status !== "APPROVED" && video.status !== "FINAL" && !user) {
+      return NextResponse.json(
+        { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
+        { status: 401 }
+      );
+    }
+
+    // duration이 없으면 백그라운드에서 Cloudflare 동기화
+    lazySyncDuration(video.id, video.streamUid, !!video.technicalSpec?.duration).catch(() => { });
+
+    // 응답 데이터에 hasLiked 및 likeCount 추가 변환
+    const { likes, _count, ...restVideo } = video;
+    const hasLiked = user ? (likes?.length ?? 0) > 0 : false;
+    const likeCount = _count?.likes ?? 0;
+
+    return NextResponse.json({
+      data: {
+        ...restVideo,
+        hasLiked,
+        likeCount,
+      }
+    });
+  } catch (err) {
+    console.error("Failed to fetch video detail:", err);
     return NextResponse.json(
-      { error: { code: "NOT_FOUND", message: "영상을 찾을 수 없습니다." } },
-      { status: 404 }
+      { error: { code: "INTERNAL_ERROR", message: "영상 조회 중 오류가 발생했습니다." } },
+      { status: 500 }
     );
   }
-
-  // 비공개 영상(DRAFT/PENDING)은 인증 필요
-  if (video.status !== "APPROVED" && video.status !== "FINAL" && !user) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
-      { status: 401 }
-    );
-  }
-
-  // duration이 없으면 백그라운드에서 Cloudflare 동기화
-  lazySyncDuration(video.id, video.streamUid, !!video.technicalSpec?.duration).catch(() => { });
-
-  return NextResponse.json({ data: video });
 }
 
 export async function PATCH(request: Request, { params }: Params) {

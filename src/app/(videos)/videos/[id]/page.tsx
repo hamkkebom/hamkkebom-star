@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayer } from "@/components/video/video-player";
+import { LikeButton } from "@/components/video/like-button";
 import {
   ArrowLeft,
   Calendar,
   Clock,
+  Download,
   Film,
   HardDrive,
   Heart,
@@ -24,6 +26,8 @@ import {
   Tv,
   Video,
 } from "lucide-react";
+
+import { useAuth } from "@/hooks/use-auth";
 
 /* ─── Types ─── */
 type TechnicalSpec = {
@@ -52,6 +56,8 @@ type VideoDetail = {
   category: { id: string; name: string; slug: string } | null;
   counselor: { id: string; displayName: string } | null;
   technicalSpec: TechnicalSpec | null;
+  hasLiked?: boolean;
+  likeCount?: number;
 };
 
 /* ─── Config ─── */
@@ -98,6 +104,8 @@ function handleShare(title: string) {
 export default function VideoDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
 
   const { data, isLoading, error } = useQuery<{ data: VideoDetail }>({
     queryKey: ["video-detail", id],
@@ -165,8 +173,8 @@ export default function VideoDetailPage() {
             </Button>
           </div>
 
-          {/* Video Player */}
-          <div className="w-full max-h-[80vh] overflow-hidden flex items-center justify-center">
+          {/* Video Player — z-10으로 올려 iframe 컨트롤이 오버레이 위에 오도록 */}
+          <div className="relative z-10 w-full max-h-[80vh] overflow-hidden flex items-center justify-center">
             {isLoading ? (
               <Skeleton className="aspect-video w-full bg-white/5" />
             ) : video?.streamUid ? (
@@ -199,8 +207,8 @@ export default function VideoDetailPage() {
           </div>
         </div>
 
-        {/* Bottom gradient fade from player into content */}
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06060e] to-transparent" />
+        {/* Bottom gradient — z-0으로 플레이어 뒤에 배치하여 컨트롤 호버 방해 방지 */}
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-0 h-32 bg-gradient-to-t from-[#06060e] to-transparent" />
       </section>
 
       {/* ═══════════════ Content ═══════════════ */}
@@ -271,14 +279,27 @@ export default function VideoDetailPage() {
 
           {/* Action buttons — 항상 즉시 표시 */}
           <div className="flex shrink-0 items-center gap-2 pointer-events-auto">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full border border-white/10 text-white/50 hover:border-pink-500/30 hover:bg-pink-500/10 hover:text-pink-400"
-              title="좋아요"
-            >
-              <Heart className="h-4 w-4" />
-            </Button>
+            {isAdmin && video?.streamUid && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full gap-2 text-violet-300 border-violet-500/30 hover:bg-violet-500/20"
+                title="다운로드"
+                asChild
+              >
+                <a href={`/api/videos/${video.id}/download`} download>
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">영상 다운로드</span>
+                </a>
+              </Button>
+            )}
+            {video && (
+              <LikeButton
+                videoId={video.id}
+                initialLiked={video.hasLiked ?? false}
+                initialCount={video.likeCount ?? 0}
+              />
+            )}
             <Button
               variant="ghost"
               size="icon"

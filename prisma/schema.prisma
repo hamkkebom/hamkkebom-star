@@ -33,6 +33,7 @@ model User {
   settlements     Settlement[]
   submissions     Submission[]
   videos          Video[]
+  likedVideos     VideoLike[]
 
   // Grade Relation
   gradeId         String?
@@ -182,12 +183,28 @@ model Video {
   mediaPlacements MediaPlacement[]
   submissions     Submission[]
   eventLogs       VideoEventLog[]
+  likes           VideoLike[]
   technicalSpec   VideoTechnicalSpec?
   category        Category?           @relation(fields: [categoryId], references: [id])
   counselor       Counselor?          @relation(fields: [counselorId], references: [id])
   owner           User                @relation(fields: [ownerId], references: [id])
 
   @@map("videos")
+}
+
+model VideoLike {
+  id        String   @id @default(cuid())
+  userId    String
+  videoId   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([videoId])
+  @@index([userId])
+  @@map("video_likes")
 }
 
 model VideoTechnicalSpec {
