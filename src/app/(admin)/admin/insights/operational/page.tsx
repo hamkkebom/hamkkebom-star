@@ -1,21 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { startOfMonth, differenceInDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { Film, UserSquare2, Users, Clock, AlertCircle, TrendingUp, Zap, ServerCrash } from "lucide-react";
 import { InsightKpiCard } from "@/components/admin/insight-kpi-card";
 import { TrendAreaChart } from "@/components/admin/trend-area-chart";
 import { InsightPeriodToggle } from "@/components/admin/insight-period-toggle";
+import { DateRangePicker, type DateRange } from "@/components/admin/date-range-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 
-function OperationalKpiSection() {
+function OperationalKpiSection({ dateRange }: { dateRange: DateRange }) {
     const { data, isLoading } = useQuery({
-        queryKey: ['insights', 'operational', 'kpis'],
+        queryKey: ['insights', 'operational', 'kpis', dateRange.from.toISOString(), dateRange.to.toISOString()],
         queryFn: async () => {
-            const res = await fetch('/api/admin/insights/operational/kpis');
+            const res = await fetch(`/api/admin/insights/operational/kpis?from=${dateRange.from.toISOString()}&to=${dateRange.to.toISOString()}`);
             if (!res.ok) throw new Error("Failed to fetch KPIs");
             return res.json();
         },
@@ -47,10 +49,10 @@ function OperationalKpiSection() {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {data.map((kpi: any, index: number) => (
+            {data.map((kpi: { title: string; value: number; trend: number; icon: string; suffix?: string; prefix?: string }, index: number) => (
                 <InsightKpiCard
                     key={kpi.title}
-                    title={`${kpi.title} (30일)`}
+                    title={`${kpi.title} (${differenceInDays(dateRange.to, dateRange.from)}일)`}
                     value={kpi.value}
                     trend={kpi.trend}
                     icon={getIcon(kpi.icon)}
@@ -64,13 +66,13 @@ function OperationalKpiSection() {
     );
 }
 
-function OperationalTrendSection() {
+function OperationalTrendSection({ dateRange }: { dateRange: DateRange }) {
     const [period, setPeriod] = useState<"day" | "week" | "month">("month");
 
     const { data, isLoading } = useQuery({
-        queryKey: ['insights', 'operational', 'trends', period],
+        queryKey: ['insights', 'operational', 'trends', period, dateRange.from.toISOString(), dateRange.to.toISOString()],
         queryFn: async () => {
-            const res = await fetch(`/api/admin/insights/operational/trends?interval=${period}`);
+            const res = await fetch(`/api/admin/insights/operational/trends?from=${dateRange.from.toISOString()}&to=${dateRange.to.toISOString()}&interval=${period}`);
             if (!res.ok) throw new Error("Failed to fetch trends");
             return res.json();
         },
@@ -114,7 +116,7 @@ function OperationalTrendSection() {
                         >
                             {/* Reusing existing TrendAreaChart with mapping assuming it accepts 'submitted' and 'approved' / 'processed' keys */}
                             {/* For compatibility with existing TrendAreaChart which expects 'submitted' and 'approved' keys: */}
-                            <TrendAreaChart data={data?.map((d: any) => ({ date: d.date, submitted: d.submissions, approved: d.processed })) || []} />
+                            <TrendAreaChart data={data?.map((d: { date: string; submissions: number; processed: number }) => ({ date: d.date, submitted: d.submissions, approved: d.processed })) || []} />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -123,11 +125,11 @@ function OperationalTrendSection() {
     );
 }
 
-function OperationalSpeedLeaderboardSection() {
+function OperationalSpeedLeaderboardSection({ dateRange }: { dateRange: DateRange }) {
     const { data, isLoading } = useQuery({
-        queryKey: ['insights', 'operational', 'speed'],
+        queryKey: ['insights', 'operational', 'speed', dateRange.from.toISOString(), dateRange.to.toISOString()],
         queryFn: async () => {
-            const res = await fetch('/api/admin/insights/operational/speed-ranking');
+            const res = await fetch(`/api/admin/insights/operational/speed-ranking?from=${dateRange.from.toISOString()}&to=${dateRange.to.toISOString()}`);
             if (!res.ok) throw new Error("Failed to fetch speed ranking");
             return res.json();
         },
@@ -158,7 +160,7 @@ function OperationalSpeedLeaderboardSection() {
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-200/50 dark:divide-slate-800/50">
-                        {data?.map((star: any, index: number) => {
+                        {data?.map((star: { id: string; name: string; image?: string; avgTimeHours: number; totalFeedbacks: number }, index: number) => {
                             // Find Max for bar width. Since lower is better, we invert the logic. Data is already sorted asc (fastest first).
                             // Let's cap the visual max at something reasonable, say 72 hours (3 days).
                             const maxVisualHours = 48;
@@ -229,35 +231,47 @@ function OperationalSpeedLeaderboardSection() {
 }
 
 export default function OperationalInsightsPage() {
+    const [dateRange, setDateRange] = useState<DateRange>({
+        from: startOfMonth(new Date()),
+        to: new Date(),
+    });
+
     return (
         <div className="max-w-[1600px] mx-auto space-y-8 pb-10">
             {/* Header */}
             <div>
-                <motion.h1
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                    className="text-3xl md:text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-cyan-800 to-emerald-900 dark:from-white dark:via-cyan-200 dark:to-emerald-200 drop-shadow-sm pb-1"
-                >
-                    운영 지표 (Operational)
-                </motion.h1>
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2 flex items-center"
-                >
-                    플랫폼 내 프로젝트 생성 및 영상 처리 퍼포먼스를 점검하세요.
-                </motion.div>
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                        <motion.h1
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                            className="text-3xl md:text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-cyan-800 to-emerald-900 dark:from-white dark:via-cyan-200 dark:to-emerald-200 drop-shadow-sm pb-1"
+                        >
+                            운영 지표 (Operational)
+                        </motion.h1>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.1 }}
+                            className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2 flex items-center"
+                        >
+                            플랫폼 내 프로젝트 생성 및 영상 처리 퍼포먼스를 점검하세요.
+                        </motion.div>
+                    </div>
+                    <div className="flex items-center pt-1">
+                        <DateRangePicker dateRange={dateRange} onDateRangeChange={setDateRange} />
+                    </div>
+                </div>
             </div>
 
             {/* Zone A: Kpi Metrics */}
-            <OperationalKpiSection />
+            <OperationalKpiSection dateRange={dateRange} />
 
             {/* Zone B & C: Main Charts & Leaderboards */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <OperationalTrendSection />
-                <OperationalSpeedLeaderboardSection />
+                <OperationalTrendSection dateRange={dateRange} />
+                <OperationalSpeedLeaderboardSection dateRange={dateRange} />
             </div>
 
             {/* Actionable Insights Spacer if needed */}
