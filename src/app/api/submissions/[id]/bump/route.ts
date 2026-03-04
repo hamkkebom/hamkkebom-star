@@ -58,7 +58,17 @@ export async function POST(request: Request, { params }: Params) {
             return NextResponse.json({ error: { code: "BAD_REQUEST", message: "잘못된 요청입니다." } }, { status: 400 });
         }
 
-        const { streamUid, videoTitle, duration, thumbnailUrl } = body;
+        const {
+            streamUid,
+            duration,
+            thumbnailUrl,
+            versionTitle,
+            summaryFeedback,
+            lyrics,
+            categoryId,
+            videoSubject,
+            counselorId
+        } = body;
 
         if (!streamUid) {
             return NextResponse.json({ error: { code: "BAD_REQUEST", message: "새로운 영상(Stream UID)이 필요합니다." } }, { status: 400 });
@@ -94,13 +104,16 @@ export async function POST(request: Request, { params }: Params) {
 
         const newVideo = await prisma.video.create({
             data: {
-                title: videoTitle || source.versionTitle || `v${nextVersion} Update`,
+                title: versionTitle || source.versionTitle || `v${nextVersion} Update`,
+                description: summaryFeedback || null,
                 streamUid: streamUid,
                 thumbnailUrl: thumbnailUrl || source.thumbnailUrl,
                 ownerId: source.starId,
                 status: "DRAFT", // 버전 생성 직후는 DRAFT
-                lyrics: sourceVideo?.lyrics, // 가사 계승
-                categoryId: sourceVideo?.categoryId, // 카테고리 계승
+                lyrics: lyrics !== undefined ? lyrics : sourceVideo?.lyrics,
+                categoryId: categoryId !== undefined ? categoryId : sourceVideo?.categoryId,
+                videoSubject: videoSubject !== undefined ? videoSubject : sourceVideo?.videoSubject,
+                counselorId: counselorId !== undefined ? counselorId : sourceVideo?.counselorId,
                 technicalSpec: {
                     create: {
                         duration: duration || 0,
@@ -120,8 +133,8 @@ export async function POST(request: Request, { params }: Params) {
                 versionSlot: maxSlot + 1,
                 status: "PENDING",
 
-                versionTitle: source.versionTitle,
-                summaryFeedback: source.summaryFeedback,
+                versionTitle: versionTitle || source.versionTitle,
+                summaryFeedback: summaryFeedback || source.summaryFeedback,
 
                 videoId: newVideo.id,
                 streamUid: streamUid,

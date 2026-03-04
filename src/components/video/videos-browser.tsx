@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
+  Home,
+  LayoutGrid,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoCard } from "@/components/video/video-card";
@@ -271,6 +273,7 @@ export function VideosBrowser() {
 
   // URL ?page= 파라미터에서 페이지 직접 파생 (state 불필요)
   const page = Number(searchParams.get("page")) || 1;
+  const [viewMode, setViewMode] = useState<"home" | "grid">("home");
 
   const setPage = useCallback((newPage: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -311,7 +314,7 @@ export function VideosBrowser() {
   const buildEndpoint = useCallback(() => {
     const params = new URLSearchParams();
     params.set("page", String(page));
-    params.set("pageSize", "18");
+    params.set("pageSize", "20");
     params.set("sort", sort);
     if (categoryId) params.set("categoryId", categoryId);
     if (ownerId) params.set("ownerId", ownerId);
@@ -330,7 +333,8 @@ export function VideosBrowser() {
   }, [page, sort, categoryId, ownerId, counselorId, durationRange, activeSearch]);
 
   const hasActiveFilter = categoryId || ownerId || counselorId || durationRange !== "all" || activeSearch;
-  const isDefaultView = !hasActiveFilter;
+  const showGrid = hasActiveFilter || viewMode === "grid";
+  const isDefaultView = !showGrid;
 
   const { data: filteredData, isLoading: isFilteredLoading } = useQuery<VideosResponse>({
     queryKey: ["videos-browse", activeSearch, page, categoryId, ownerId, counselorId, durationRange, sort],
@@ -389,7 +393,7 @@ export function VideosBrowser() {
     setPage(1);
   };
 
-  const resetFilters = () => {
+  const resetFilters = (mode?: "home" | "grid") => {
     setCategoryId(null);
     setOwnerId(null);
     setCounselorId(null);
@@ -398,6 +402,7 @@ export function VideosBrowser() {
     setSearch("");
     setSort("latest");
     setPage(1);
+    if (mode) setViewMode(mode);
   };
 
   // ─── Labels for active state ───
@@ -449,6 +454,31 @@ export function VideosBrowser() {
 
             {/* Left: Quick Filters (Segmented) */}
             <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto">
+              <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
+                <button
+                  onClick={() => resetFilters("home")}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                      ${!showGrid
+                      ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                    }`}
+                >
+                  <Home className="w-4 h-4" />
+                  <span className="hidden sm:inline">홈</span>
+                </button>
+                <button
+                  onClick={() => { setViewMode("grid"); setPage(1); }}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                      ${showGrid
+                      ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                    }`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  <span className="hidden sm:inline">전체보기</span>
+                </button>
+              </div>
+              <div className="h-4 w-px bg-border mx-2 hidden sm:block" />
               <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
                 {(Object.entries(DURATION_RANGES) as [DurationRange, { label: string }][]).map(([key, val]) => (
                   <button
@@ -549,7 +579,7 @@ export function VideosBrowser() {
               {/* 필터 초기화 */}
               {hasActiveFilter && (
                 <button
-                  onClick={resetFilters}
+                  onClick={() => resetFilters("grid")}
                   className="flex items-center justify-center p-2 rounded-full border border-transparent hover:bg-destructive/10 text-destructive transition-colors"
                   title="필터 초기화"
                 >
@@ -564,7 +594,7 @@ export function VideosBrowser() {
       {/* ═══ V6 Enterprise Cinematic Hero Section (Netflix/Disney+ Style) ═══ */}
       {/* 가장 최신 영상 1개를 히어로 배너로 사용 (데이터가 있을 때만) */}
       <div className="relative z-10 w-full pb-20 bg-background text-foreground transition-all duration-500">
-        {displayData?.data && displayData.data.length > 0 && page === 1 && !hasActiveFilter ? (
+        {displayData?.data && displayData.data.length > 0 && page === 1 && !showGrid ? (
           <div className="relative w-full h-[75vh] min-h-[500px] max-h-[850px] overflow-hidden bg-background dark:bg-[#050505] flex items-end">
             <div
               className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-105"
@@ -637,7 +667,7 @@ export function VideosBrowser() {
                 {activeSearch || hasActiveFilter ? "다른 검색어나 필터 조합으로 시도해 보세요." : "아직 공개된 영상이 없습니다."}
               </p>
               {hasActiveFilter && (
-                <button onClick={resetFilters} className="mt-4 rounded-full bg-black text-white dark:bg-white px-5 py-2.5 text-sm font-bold dark:text-black hover:opacity-80 transition-opacity">
+                <button onClick={() => resetFilters("grid")} className="mt-4 rounded-full bg-black text-white dark:bg-white px-5 py-2.5 text-sm font-bold dark:text-black hover:opacity-80 transition-opacity">
                   필터 초기화
                 </button>
               )}
