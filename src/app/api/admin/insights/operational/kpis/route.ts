@@ -1,41 +1,85 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { startOfMonth, subMonths, endOfMonth } from "date-fns";
+import { startOfMonth } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
+        const { searchParams } = new URL(req.url);
+        const fromParam = searchParams.get("from");
+        const toParam = searchParams.get("to");
+
         const now = new Date();
-        const currentMonthStart = startOfMonth(now);
-        const lastMonthStart = subMonths(currentMonthStart, 1);
-        const lastMonthEnd = endOfMonth(lastMonthStart);
+        let from: Date;
+        let to: Date;
+
+        if (fromParam || toParam) {
+            const parsedFrom = fromParam ? new Date(fromParam) : null;
+            const parsedTo = toParam ? new Date(toParam) : null;
+
+            if (
+                (parsedFrom && isNaN(parsedFrom.getTime())) ||
+                (parsedTo && isNaN(parsedTo.getTime()))
+            ) {
+                return NextResponse.json(
+                    { error: { code: "BAD_REQUEST", message: "유효하지 않은 날짜 형식입니다." } },
+                    { status: 400 }
+                );
+            }
+
+            from = parsedFrom ?? startOfMonth(now);
+            to = parsedTo ?? now;
+
+            if (from >= to) {
+                return NextResponse.json(
+                    { error: { code: "BAD_REQUEST", message: "시작일은 종료일보다 이전이어야 합니다." } },
+                    { status: 400 }
+                );
+            }
+
+            const diffDays = (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24);
+            if (diffDays > 365) {
+                return NextResponse.json(
+                    { error: { code: "BAD_REQUEST", message: "최대 365일 범위까지 조회할 수 있습니다." } },
+                    { status: 400 }
+                );
+            }
+        } else {
+            from = startOfMonth(now);
+            to = now;
+        }
+
+        // Previous period: same duration, immediately before
+        const durationMs = to.getTime() - from.getTime();
+        const prevFrom = new Date(from.getTime() - durationMs);
+        const prevTo = new Date(from.getTime() - 1);
 
         // 1. 신규 프로젝트 (ProjectRequest) 수
         const currentProjects = await prisma.projectRequest.count({
-            where: { createdAt: { gte: currentMonthStart } },
+            where: { createdAt: { gte: from, lte: to } },
         });
-        const lastProjects = await prisma.projectRequest.count({
-            where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+        const prevProjects = await prisma.projectRequest.count({
+            where: { createdAt: { gte: prevFrom, lte: prevTo } },
         });
 
-        // 2. 처리된 영상 (Submission with APPROVED status)
+        // 2. 처리된 영상 (Submission with APPROVED or REJECTED status)
         const currentVideos = await prisma.submission.count({
             where: {
-                updatedAt: { gte: currentMonthStart },
+                updatedAt: { gte: from, lte: to },
                 status: { in: ["APPROVED", "REJECTED"] },
             },
         });
-        const lastVideos = await prisma.submission.count({
+        const prevVideos = await prisma.submission.count({
             where: {
-                updatedAt: { gte: lastMonthStart, lte: lastMonthEnd },
+                updatedAt: { gte: prevFrom, lte: prevTo },
                 status: { in: ["APPROVED", "REJECTED"] },
             },
         });
 
-        // 3. 평균 피드백 소요 시간 (Feedback createdAt - Submission createdAt)
+        // 3. 피드백 응답 시간 (Feedback createdAt - Submission createdAt)
         const recentFeedbacks = await prisma.feedback.findMany({
-            where: { createdAt: { gte: currentMonthStart } },
+            where: { createdAt: { gte: from, lte: to } },
             select: { createdAt: true, submission: { select: { createdAt: true } } },
             take: 200,
         });
@@ -49,36 +93,32 @@ export async function GET() {
             currentAvgTime = Number((totalHours / recentFeedbacks.length).toFixed(1));
         }
 
-        const lastFeedbacks = await prisma.feedback.findMany({
-            where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+        const prevFeedbacks = await prisma.feedback.findMany({
+            where: { createdAt: { gte: prevFrom, lte: prevTo } },
             select: { createdAt: true, submission: { select: { createdAt: true } } },
             take: 200,
         });
 
-        let lastAvgTime = 0;
-        if (lastFeedbacks.length > 0) {
-            const totalHours = lastFeedbacks.reduce((sum, fb) => {
+        let prevAvgTime = 0;
+        if (prevFeedbacks.length > 0) {
+            const totalHours = prevFeedbacks.reduce((sum, fb) => {
                 const diffMs = fb.createdAt.getTime() - fb.submission.createdAt.getTime();
                 return sum + diffMs / (1000 * 60 * 60);
             }, 0);
-            lastAvgTime = Number((totalHours / lastFeedbacks.length).toFixed(1));
+            prevAvgTime = Number((totalHours / prevFeedbacks.length).toFixed(1));
         }
 
-        // 4. 활동 STAR (Users who authored feedbacks this month)
+        // 4. 활동 STAR (STARs who submitted at least 1 submission in the period)
         const currentActiveStars = await prisma.user.count({
             where: {
                 role: "STAR",
-                feedbacks: {
-                    some: { createdAt: { gte: currentMonthStart } },
-                },
+                submissions: { some: { createdAt: { gte: from, lte: to } } },
             },
         });
-        const lastActiveStars = await prisma.user.count({
+        const prevActiveStars = await prisma.user.count({
             where: {
                 role: "STAR",
-                feedbacks: {
-                    some: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd } },
-                },
+                submissions: { some: { createdAt: { gte: prevFrom, lte: prevTo } } },
             },
         });
 
@@ -91,7 +131,7 @@ export async function GET() {
             {
                 title: "신규 프로젝트",
                 value: currentProjects,
-                trend: calculateTrend(currentProjects, lastProjects),
+                trend: calculateTrend(currentProjects, prevProjects),
                 prefix: "",
                 suffix: "건",
                 icon: "project",
@@ -99,23 +139,24 @@ export async function GET() {
             {
                 title: "처리된 영상",
                 value: currentVideos,
-                trend: calculateTrend(currentVideos, lastVideos),
+                trend: calculateTrend(currentVideos, prevVideos),
                 prefix: "",
                 suffix: "건",
                 icon: "video",
             },
             {
-                title: "평균 소요 시간",
+                title: "피드백 응답 시간",
                 value: currentAvgTime,
-                trend: calculateTrend(lastAvgTime, currentAvgTime), // Reversed: faster = positive
+                trend: calculateTrend(prevAvgTime, currentAvgTime), // Reversed: faster = positive
                 prefix: "",
                 suffix: "시간",
                 icon: "clock",
+                description: "제출물 업로드 후 피드백 작성까지 걸린 평균 시간",
             },
             {
                 title: "활동 STAR",
                 value: currentActiveStars,
-                trend: calculateTrend(currentActiveStars, lastActiveStars),
+                trend: calculateTrend(currentActiveStars, prevActiveStars),
                 prefix: "",
                 suffix: "명",
                 icon: "user",

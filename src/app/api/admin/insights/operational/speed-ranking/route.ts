@@ -4,14 +4,56 @@ import { startOfMonth } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
-        const startOfCurrentMonth = startOfMonth(new Date());
+        const { searchParams } = new URL(req.url);
+        const fromParam = searchParams.get("from");
+        const toParam = searchParams.get("to");
 
-        // Fetch feedbacks this month with submission creation time for turnaround calculation
+        const now = new Date();
+        let from: Date;
+        let to: Date;
+
+        if (fromParam || toParam) {
+            const parsedFrom = fromParam ? new Date(fromParam) : null;
+            const parsedTo = toParam ? new Date(toParam) : null;
+
+            if (
+                (parsedFrom && isNaN(parsedFrom.getTime())) ||
+                (parsedTo && isNaN(parsedTo.getTime()))
+            ) {
+                return NextResponse.json(
+                    { error: { code: "BAD_REQUEST", message: "유효하지 않은 날짜 형식입니다." } },
+                    { status: 400 }
+                );
+            }
+
+            from = parsedFrom ?? startOfMonth(now);
+            to = parsedTo ?? now;
+
+            if (from >= to) {
+                return NextResponse.json(
+                    { error: { code: "BAD_REQUEST", message: "시작일은 종료일보다 이전이어야 합니다." } },
+                    { status: 400 }
+                );
+            }
+
+            const diffDays = (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24);
+            if (diffDays > 365) {
+                return NextResponse.json(
+                    { error: { code: "BAD_REQUEST", message: "최대 365일 범위까지 조회할 수 있습니다." } },
+                    { status: 400 }
+                );
+            }
+        } else {
+            from = startOfMonth(now);
+            to = now;
+        }
+
+        // Fetch feedbacks in the period with submission creation time for turnaround calculation
         const completedFeedbacks = await prisma.feedback.findMany({
             where: {
-                createdAt: { gte: startOfCurrentMonth },
+                createdAt: { gte: from, lte: to },
             },
             include: {
                 author: {
