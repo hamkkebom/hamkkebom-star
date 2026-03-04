@@ -40,7 +40,6 @@ type UserRow = {
   phone: string | null;
   role: string;
   isApproved: boolean;
-  adEligible: boolean;
   createdAt: string;
   idNumber?: string | null;
   bankName?: string | null;
@@ -73,11 +72,7 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
-  const [approvalDialog, setApprovalDialog] = useState<{
-    open: boolean;
-    userId: string;
-    userName: string;
-  } | null>(null);
+
 
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const [showSensitive, setShowSensitive] = useState(false);
@@ -116,16 +111,14 @@ export default function AdminUsersPage() {
     mutationFn: async ({
       userId,
       approved,
-      adEligible,
     }: {
       userId: string;
       approved: boolean;
-      adEligible?: boolean;
     }) => {
       const res = await fetch(`/api/admin/users/${userId}/approve`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approved, adEligible }),
+        body: JSON.stringify({ approved }),
       });
       if (!res.ok) throw new Error((await res.json()).error?.message ?? "처리에 실패했습니다.");
       return res.json();
@@ -134,7 +127,7 @@ export default function AdminUsersPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       // 상세 뷰가 열려있고 대상 유저의 상태가 바뀌었다면 상세 정보도 갱신
       if (selectedUser?.id === variables.userId) {
-        setSelectedUser(prev => prev ? { ...prev, isApproved: variables.approved, adEligible: variables.adEligible ?? prev.adEligible } : null);
+        setSelectedUser(prev => prev ? { ...prev, isApproved: variables.approved } : null);
       }
       toast.success(
         variables.approved ? "사용자를 승인했습니다." : "사용자를 반려했습니다."
@@ -285,14 +278,9 @@ export default function AdminUsersPage() {
                       </TableCell>
                       <TableCell>
                         {row.isApproved ? (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 border-none shadow-none font-bold">
-                              승인됨
-                            </Badge>
-                            <Badge variant={row.adEligible ? "default" : "outline"} className={`text-xs ${row.adEligible ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-400 border-none shadow-none" : "text-muted-foreground"}`}>
-                              {row.adEligible ? "광고 가능" : "광고 불가"}
-                            </Badge>
-                          </div>
+                          <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 border-none shadow-none font-bold">
+                            승인됨
+                          </Badge>
                         ) : (
                           <Badge
                             variant="outline"
@@ -510,10 +498,9 @@ export default function AdminUsersPage() {
                       className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-14 rounded-xl shadow-lg shadow-emerald-600/20"
                       disabled={approveMutation.isPending}
                       onClick={() =>
-                        setApprovalDialog({
-                          open: true,
+                        approveMutation.mutate({
                           userId: selectedUser.id,
-                          userName: selectedUser.name,
+                          approved: true,
                         })
                       }
                     >
@@ -545,51 +532,6 @@ export default function AdminUsersPage() {
         </SheetContent>
       </Sheet>
 
-      {/* 승인 다이얼로그 */}
-      <Dialog open={approvalDialog?.open ?? false} onOpenChange={(open) => !open && setApprovalDialog(null)}>
-        <DialogContent className="max-w-sm rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl">승인 권한 설정</DialogTitle>
-            <DialogDescription>
-              {approvalDialog?.userName}님이 플랫폼에서 가질 권한을 선택하여 승인하세요.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-3 mt-4">
-            <Button
-              className="w-full justify-start gap-4 h-auto py-4 rounded-xl border border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-900/20"
-              variant="outline"
-              onClick={() => {
-                approveMutation.mutate({ userId: approvalDialog!.userId, approved: true, adEligible: true });
-                setApprovalDialog(null);
-              }}
-            >
-              <div className="bg-emerald-100 dark:bg-emerald-500/20 p-2 rounded-full">
-                <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-bold text-slate-800 dark:text-slate-200">광고 영상 제작 가능</p>
-                <p className="text-xs text-muted-foreground mt-0.5">광고 및 일반 영상 모두 제작</p>
-              </div>
-            </Button>
-            <Button
-              className="w-full justify-start gap-4 h-auto py-4 rounded-xl border border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50 dark:border-indigo-800 dark:hover:bg-indigo-900/20"
-              variant="outline"
-              onClick={() => {
-                approveMutation.mutate({ userId: approvalDialog!.userId, approved: true, adEligible: false });
-                setApprovalDialog(null);
-              }}
-            >
-              <div className="bg-indigo-100 dark:bg-indigo-500/20 p-2 rounded-full">
-                <CheckCircle2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-bold text-slate-800 dark:text-slate-200">광고 영상 제작 불가능</p>
-                <p className="text-xs text-muted-foreground mt-0.5">일반 리뷰 영상만 제작 가능</p>
-              </div>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

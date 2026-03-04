@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        const { submissionId, action, feedback } = await req.json();
+        const { submissionId, action, feedback, adEligible } = await req.json();
 
         if (!submissionId || !action) {
             return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -66,7 +66,10 @@ export async function POST(req: NextRequest) {
                 if (action === "APPROVE") {
                     await tx.video.update({
                         where: { id: updatedSubmission.videoId },
-                        data: { status: "APPROVED" }
+                        data: {
+                            status: "APPROVED",
+                            adEligible: adEligible === true
+                        }
                     });
                 } else if (action === "REJECT" || action === "UNDO") {
                     await tx.video.update({

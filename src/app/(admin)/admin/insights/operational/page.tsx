@@ -6,7 +6,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Film, UserSquare2, Users, Clock, AlertCircle, TrendingUp, Zap, ServerCrash } from "lucide-react";
 import { InsightKpiCard } from "@/components/admin/insight-kpi-card";
 import { TrendAreaChart } from "@/components/admin/trend-area-chart";
-import { InsightPeriodToggle } from "@/components/admin/insight-period-toggle";
 import { DateRangePicker, type DateRange } from "@/components/admin/date-range-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -49,15 +48,16 @@ function OperationalKpiSection({ dateRange }: { dateRange: DateRange }) {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {data.map((kpi: { title: string; value: number; trend: number; icon: string; suffix?: string; prefix?: string }, index: number) => (
+            {data.map((kpi: { title: string; value: number; trend: number; icon: string; suffix?: string; prefix?: string; description?: string }, index: number) => (
                 <InsightKpiCard
                     key={kpi.title}
-                    title={`${kpi.title} (${differenceInDays(dateRange.to, dateRange.from)}일)`}
+                    title={kpi.title}
                     value={kpi.value}
                     trend={kpi.trend}
                     icon={getIcon(kpi.icon)}
                     suffix={kpi.suffix}
                     prefix={kpi.prefix}
+                    description={kpi.description}
                     isCurrency={false}
                     delay={0.1 + (index * 0.1)}
                 />
@@ -67,12 +67,11 @@ function OperationalKpiSection({ dateRange }: { dateRange: DateRange }) {
 }
 
 function OperationalTrendSection({ dateRange }: { dateRange: DateRange }) {
-    const [period, setPeriod] = useState<"day" | "week" | "month">("month");
 
     const { data, isLoading } = useQuery({
-        queryKey: ['insights', 'operational', 'trends', period, dateRange.from.toISOString(), dateRange.to.toISOString()],
+        queryKey: ['insights', 'operational', 'trends', dateRange.from.toISOString(), dateRange.to.toISOString()],
         queryFn: async () => {
-            const res = await fetch(`/api/admin/insights/operational/trends?from=${dateRange.from.toISOString()}&to=${dateRange.to.toISOString()}&interval=${period}`);
+            const res = await fetch(`/api/admin/insights/operational/trends?from=${dateRange.from.toISOString()}&to=${dateRange.to.toISOString()}`);
             if (!res.ok) throw new Error("Failed to fetch trends");
             return res.json();
         },
@@ -91,7 +90,6 @@ function OperationalTrendSection({ dateRange }: { dateRange: DateRange }) {
                         접수된 영상 대비 처리된 영상 파도
                     </CardDescription>
                 </div>
-                <InsightPeriodToggle period={period} onChange={setPeriod} />
             </CardHeader>
             <CardContent className="h-[350px] p-4 pt-0 relative">
                 <AnimatePresence mode="wait">
@@ -107,7 +105,7 @@ function OperationalTrendSection({ dateRange }: { dateRange: DateRange }) {
                         </motion.div>
                     ) : (
                         <motion.div
-                            key={`chart-${period}`}
+                            key={`chart-trend`}
                             initial={{ opacity: 0, scaleY: 0.9, originY: 1 }}
                             animate={{ opacity: 1, scaleY: 1 }}
                             exit={{ opacity: 0 }}

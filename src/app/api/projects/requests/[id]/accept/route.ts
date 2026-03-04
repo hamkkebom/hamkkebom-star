@@ -65,7 +65,7 @@ export async function POST(_request: Request, { params }: Params) {
       action: "ACCEPT_PROJECT_REQUEST",
       entityType: "ProjectAssignment",
       entityId: result.id,
-      metadata: { requestId: id },
+      metadata: { requestId: id, targetName: user.name, targetTitle: result.request.title },
     });
 
     return NextResponse.json({ data: result }, { status: 201 });

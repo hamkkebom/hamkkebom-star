@@ -185,6 +185,7 @@ export function FeedbackWorkspace({
     // Action Modal
     const [actionModal, setActionModal] = useState<{ isOpen: boolean; type: ReviewAction | null }>({ isOpen: false, type: null });
     const [rejectReason, setRejectReason] = useState("");
+    const [adEligible, setAdEligible] = useState(false);
 
     // Edit State
     const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
@@ -341,11 +342,11 @@ export function FeedbackWorkspace({
     });
 
     const reviewMutation = useMutation({
-        mutationFn: async ({ id, action, feedback }: { id: string; action: ReviewAction | "UNDO"; feedback?: string }) => {
+        mutationFn: async ({ id, action, feedback, adEligible }: { id: string; action: ReviewAction | "UNDO"; feedback?: string; adEligible?: boolean }) => {
             const res = await fetch("/api/admin/reviews/action", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ submissionId: id, action, feedback })
+                body: JSON.stringify({ submissionId: id, action, feedback, adEligible })
             });
             if (!res.ok) throw new Error("처리 중 오류가 발생했습니다.");
             return res.json();
@@ -381,6 +382,7 @@ export function FeedbackWorkspace({
 
             setActionModal({ isOpen: false, type: null });
             setRejectReason("");
+            setAdEligible(false);
         },
         onError: (err) => toast.error(err instanceof Error ? err.message : "요청 실패")
     });
@@ -415,7 +417,8 @@ export function FeedbackWorkspace({
         reviewMutation.mutate({
             id: selectedId,
             action: actionModal.type,
-            feedback: actionModal.type === "APPROVE" ? undefined : rejectReason
+            feedback: actionModal.type === "APPROVE" ? undefined : rejectReason,
+            adEligible: actionModal.type === "APPROVE" ? adEligible : undefined,
         });
     };
 
@@ -448,6 +451,7 @@ export function FeedbackWorkspace({
         setFeedbackPriority("NORMAL");
         setIsTimeCaptured(false);
         setCapturedTime(null);
+        setAdEligible(false);
         setCurrentTime(0);
         setDuration(0);
         setSeekTo(undefined);
@@ -611,6 +615,11 @@ export function FeedbackWorkspace({
                                                                 <span className="flex items-center gap-0.5 text-[9px] text-indigo-400/60">
                                                                     <MessageSquare className="w-2.5 h-2.5" />
                                                                     {sub._count?.feedbacks}
+                                                                </span>
+                                                            )}
+                                                            {sub.status === "APPROVED" && sub.video && (
+                                                                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${(sub.video as any).adEligible ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-700/50 text-slate-500'}`}>
+                                                                    {(sub.video as any).adEligible ? "광고" : "일반"}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1223,9 +1232,39 @@ export function FeedbackWorkspace({
                                 />
                             </div>
                         )}
+                        {actionModal.type === "APPROVE" && (
+                            <div className="py-2 space-y-3">
+                                <Button
+                                    className="w-full justify-start gap-4 h-auto py-3.5 rounded-xl border border-indigo-500/30 hover:bg-slate-800/50 hover:border-indigo-500/50 transition-all text-left whitespace-normal h-auto"
+                                    variant="outline"
+                                    onClick={() => setAdEligible(true)}
+                                >
+                                    <div className={`p-1.5 rounded-full ${adEligible ? 'bg-indigo-500 shadow-lg shadow-indigo-500/40 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                                        <CheckCircle2 className="h-5 w-5" />
+                                    </div>
+                                    <div className="text-left flex-1 min-w-0">
+                                        <p className={`font-bold transition-colors ${adEligible ? 'text-indigo-400' : 'text-slate-300'}`}>광고 영상으로 전환/승인</p>
+                                        <p className="text-xs text-slate-500 mt-0.5 break-keep">이 제출물 품질이 우수하여 마케팅/광고 소재로 활용합니다.</p>
+                                    </div>
+                                </Button>
+                                <Button
+                                    className="w-full justify-start gap-4 h-auto py-3.5 rounded-xl border border-slate-700 hover:bg-slate-800/50 hover:border-slate-600 transition-all text-left whitespace-normal h-auto"
+                                    variant="outline"
+                                    onClick={() => setAdEligible(false)}
+                                >
+                                    <div className={`p-1.5 rounded-full ${!adEligible ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                                        <CheckCircle2 className="h-5 w-5" />
+                                    </div>
+                                    <div className="text-left flex-1 min-w-0">
+                                        <p className={`font-bold transition-colors ${!adEligible ? 'text-emerald-400' : 'text-slate-300'}`}>일반 리뷰 영상으로 승인</p>
+                                        <p className="text-xs text-slate-500 mt-0.5 break-keep">일반적인 리뷰 목적(광고 활용 제외)으로만 승인 상태로 바꿉니다.</p>
+                                    </div>
+                                </Button>
+                            </div>
+                        )}
 
                         <DialogFooter className="mt-3">
-                            <Button variant="ghost" onClick={() => { setActionModal({ isOpen: false, type: null }); setRejectReason(""); }} className="hover:bg-white/[0.05]">
+                            <Button variant="ghost" onClick={() => { setActionModal({ isOpen: false, type: null }); setRejectReason(""); setAdEligible(false); }} className="hover:bg-white/[0.05]">
                                 취소
                             </Button>
                             <Button

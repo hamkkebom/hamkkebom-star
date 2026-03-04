@@ -59,6 +59,7 @@ type VideoRow = {
   submissionId: string | null;
   owner: { id: string; name: string; chineseName?: string | null; email: string };
   category: { id: string; name: string; slug: string } | null;
+  adEligible: boolean;
 };
 
 type EditVideoData = {
@@ -443,9 +444,16 @@ export default function AdminVideosPage() {
                         <TableCell className="text-muted-foreground text-sm">{row.owner.name}</TableCell>
                         <TableCell>{row.category?.name ?? "-"}</TableCell>
                         <TableCell>
-                          <Badge variant={statusMap[row.status]?.variant ?? "secondary"}>
-                            {statusMap[row.status]?.label ?? row.status}
-                          </Badge>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge variant={statusMap[row.status]?.variant ?? "secondary"}>
+                              {statusMap[row.status]?.label ?? row.status}
+                            </Badge>
+                            {row.status === "APPROVED" && (
+                              <Badge className={row.adEligible ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400 border-none shadow-none text-xs" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border-none shadow-none text-xs"}>
+                                {row.adEligible ? "광고 가능" : "광고 불가"}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{formatDate(row.createdAt)}</TableCell>
                         <TableCell className="text-right pr-6 space-x-2 whitespace-nowrap">

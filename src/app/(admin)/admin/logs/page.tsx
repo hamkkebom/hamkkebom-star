@@ -190,7 +190,7 @@ export default function AdminLogsPage() {
 
   const stats = useMemo(() => {
     if (!logs.length) return { todayCount: 0, weekCount: 0, topActor: "없음", topAction: "없음" };
-    
+
     const now = new Date();
     const todayStr = now.toISOString().split("T")[0];
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -203,7 +203,7 @@ export default function AdminLogsPage() {
     logs.forEach((log: AuditLogEntry) => {
       const logDate = new Date(log.createdAt);
       const logDateStr = logDate.toISOString().split("T")[0];
-      
+
       if (logDateStr === todayStr) todayCount++;
       if (logDate >= weekAgo) weekCount++;
 
@@ -265,7 +265,7 @@ export default function AdminLogsPage() {
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" placeholder="시작일" />
           <span className="text-muted-foreground text-sm">~</span>
           <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" placeholder="종료일" />
-          
+
           <Select value={filterAction} onValueChange={setFilterAction}>
             <SelectTrigger className="w-[180px]"><SelectValue placeholder="액션 유형" /></SelectTrigger>
             <SelectContent>
@@ -290,7 +290,7 @@ export default function AdminLogsPage() {
               <SelectItem value="ADJUST_SETTLEMENT_ITEM">정산 항목 조정</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select value={filterEntityType} onValueChange={setFilterEntityType}>
             <SelectTrigger className="w-[140px]"><SelectValue placeholder="엔티티 유형" /></SelectTrigger>
             <SelectContent>
@@ -304,7 +304,7 @@ export default function AdminLogsPage() {
               <SelectItem value="SettlementItem">정산 항목</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Input
             placeholder="관리자 검색..."
             value={searchInput}
@@ -317,7 +317,7 @@ export default function AdminLogsPage() {
       <AnimatedCard delay={0.3} className="p-6">
         {isLoading ? (
           <div className="space-y-2">
-            {[1,2,3,4,5,6].map(i => (
+            {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="flex items-start gap-3 p-3">
                 <Skeleton className="mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0" />
                 <div className="flex-1 space-y-2">
@@ -336,7 +336,7 @@ export default function AdminLogsPage() {
         ) : (
           <div className="relative space-y-0.5">
             <div className="absolute left-[19px] top-2 bottom-2 w-px bg-border/50 z-0" />
-            
+
             {logs.map((log: AuditLogEntry, index: number) => (
               <motion.div
                 key={log.id}
@@ -349,23 +349,36 @@ export default function AdminLogsPage() {
                   "mt-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-background flex-shrink-0",
                   getActionColor(log.action)
                 )} />
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className="font-semibold text-sm">{log.actor.name}</span>
                     <GlowBadge label={getActionLabel(log.action)} variant={getActionVariant(log.action)} size="sm" />
                     <span className="text-xs text-muted-foreground ml-auto">
-                      {new Intl.DateTimeFormat("ko-KR", { 
+                      {new Intl.DateTimeFormat("ko-KR", {
                         year: "numeric", month: "2-digit", day: "2-digit",
                         hour: "2-digit", minute: "2-digit"
                       }).format(new Date(log.createdAt))}
                     </span>
                   </div>
-                  
-                  <p className="text-sm text-muted-foreground">
-                    {log.actor.name}님이 {getEntityLabel(log.entityType)} [{log.entityId.slice(0, 8)}...]을(를) {getActionVerb(log.action)}했습니다
+
+                  <p className="text-sm text-foreground/90">
+                    <span className="font-medium text-foreground">{log.actor.name}</span>님이{" "}
+                    {Boolean(log.metadata?.targetName) ? <span className="text-blue-500 font-medium">{String(log.metadata!.targetName)}</span> : null}
+                    {Boolean(log.metadata?.targetName) ? " 스타의 " : ""}
+                    {Boolean(log.metadata?.targetTitle) ? <span className="font-medium">"{String(log.metadata!.targetTitle)}"</span> : null}
+                    {Boolean(log.metadata?.targetTitle) ? " " : ""}
+                    <span className="text-muted-foreground">{getEntityLabel(log.entityType)} [{log.entityId.slice(0, 8)}...]</span>을(를){" "}
+                    <span className="font-medium">{getActionVerb(log.action)}</span>했습니다
                   </p>
-                  
+
+                  {Boolean(log.metadata?.reason) && (
+                    <div className="mt-1 flex items-start gap-1 p-2 rounded-md bg-destructive/10 border border-destructive/20 text-xs">
+                      <span className="font-semibold text-destructive whitespace-nowrap">사유:</span>
+                      <span className="text-destructive/90 break-words">{String(log.metadata!.reason)}</span>
+                    </div>
+                  )}
+
                   {log.changes && Object.keys(log.changes).length > 0 && (
                     <ExpandableChanges changes={log.changes} />
                   )}

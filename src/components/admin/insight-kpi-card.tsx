@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NumberTicker from "@/components/ui/number-ticker";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function InsightKpiCard({
     title,
@@ -12,6 +13,7 @@ export function InsightKpiCard({
     icon: Icon,
     prefix = "",
     suffix = "",
+    description,
     isCurrency = false,
     delay = 0
 }: {
@@ -21,6 +23,7 @@ export function InsightKpiCard({
     icon: React.ElementType;
     prefix?: string;
     suffix?: string;
+    description?: string;
     isCurrency?: boolean;
     delay?: number;
 }) {
@@ -57,7 +60,23 @@ export function InsightKpiCard({
             </div>
 
             <div className="relative mt-5 z-10 flex flex-col">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">{title}</span>
+                <div className="flex items-center gap-1 mb-1">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{title}</span>
+                    {description && (
+                        <TooltipProvider>
+                            <Tooltip delayDuration={300}>
+                                <TooltipTrigger asChild>
+                                    <div className="cursor-help p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+                                        <Info className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" />
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[200px] text-center bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 border-none shadow-xl">
+                                    <p>{description}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                </div>
                 <div className="flex items-baseline gap-1 font-black text-3xl xl:text-4xl tracking-tighter">
                     {prefix && <span className="text-xl xl:text-2xl text-slate-400 dark:text-slate-500">{prefix}</span>}
                     <NumberTicker

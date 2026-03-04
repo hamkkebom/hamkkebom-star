@@ -56,6 +56,7 @@ type SubmissionRow = {
   } | null;
   video: {
     title: string;
+    adEligible?: boolean;
   } | null;
   feedbacks?: Array<{
     id: string;
@@ -440,9 +441,16 @@ export default function AdminReviewsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={statusVariants[row.status] ?? "secondary"}>
-                            {statusLabels[row.status] ?? row.status}
-                          </Badge>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge variant={statusVariants[row.status] ?? "secondary"}>
+                              {statusLabels[row.status] ?? row.status}
+                            </Badge>
+                            {row.status === "APPROVED" && row.video && (
+                              <Badge className={row.video.adEligible ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400 border-none shadow-none text-xs" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border-none shadow-none text-xs"}>
+                                {row.video.adEligible ? "광고 가능" : "광고 불가"}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {(() => {

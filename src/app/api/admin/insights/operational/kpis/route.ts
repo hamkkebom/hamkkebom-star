@@ -135,6 +135,7 @@ export async function GET(req: Request) {
                 prefix: "",
                 suffix: "건",
                 icon: "project",
+                description: "현재 기간 동안 새롭게 접수된 프로젝트 요청 건수",
             },
             {
                 title: "처리된 영상",
@@ -143,6 +144,7 @@ export async function GET(req: Request) {
                 prefix: "",
                 suffix: "건",
                 icon: "video",
+                description: "현재 기간 동안 승인 또는 반려 처리 완료된 영상 건수",
             },
             {
                 title: "피드백 응답 시간",
@@ -151,7 +153,7 @@ export async function GET(req: Request) {
                 prefix: "",
                 suffix: "시간",
                 icon: "clock",
-                description: "제출물 업로드 후 피드백 작성까지 걸린 평균 시간",
+                description: "제출물 업로드 후 리뷰어가 피드백을 작성하기까지 걸린 평균 시간",
             },
             {
                 title: "활동 STAR",
@@ -160,6 +162,7 @@ export async function GET(req: Request) {
                 prefix: "",
                 suffix: "명",
                 icon: "user",
+                description: "현재 기간 동안 영상을 1건 이상 제출한 STAR 인원 수",
             },
         ];
 

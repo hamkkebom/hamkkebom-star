@@ -273,7 +273,19 @@ export function VideosBrowser() {
 
   // URL ?page= 파라미터에서 페이지 직접 파생 (state 불필요)
   const page = Number(searchParams.get("page")) || 1;
-  const [viewMode, setViewMode] = useState<"home" | "grid">("home");
+  // viewMode도 URL에서 파생 — 뒤로가기 시 전체보기 상태가 유지됨
+  const viewMode = (searchParams.get("view") === "grid" ? "grid" : "home") as "home" | "grid";
+
+  const setViewMode = useCallback((mode: "home" | "grid") => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (mode === "grid") {
+      params.set("view", "grid");
+    } else {
+      params.delete("view");
+    }
+    params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [searchParams, router, pathname]);
 
   const setPage = useCallback((newPage: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -401,8 +413,11 @@ export function VideosBrowser() {
     setActiveSearch("");
     setSearch("");
     setSort("latest");
-    setPage(1);
-    if (mode) setViewMode(mode);
+    if (mode) {
+      setViewMode(mode);
+    } else {
+      setPage(1);
+    }
   };
 
   // ─── Labels for active state ───
@@ -467,7 +482,7 @@ export function VideosBrowser() {
                   <span className="hidden sm:inline">홈</span>
                 </button>
                 <button
-                  onClick={() => { setViewMode("grid"); setPage(1); }}
+                  onClick={() => setViewMode("grid")}
                   className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
                       ${showGrid
                       ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"

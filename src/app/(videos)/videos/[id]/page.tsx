@@ -206,8 +206,8 @@ export default function VideoDetailPage() {
       {/* ═══════════════ Content ═══════════════ */}
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Title Row ── */}
-        <div className="-mt-12 relative z-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 flex-1 space-y-4">
+        <div className="-mt-12 relative z-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between pointer-events-none">
+          <div className="min-w-0 flex-1 space-y-4 pointer-events-auto">
             {isLoading ? (
               <>
                 <div className="flex flex-wrap items-center gap-2">
@@ -270,7 +270,7 @@ export default function VideoDetailPage() {
           </div>
 
           {/* Action buttons — 항상 즉시 표시 */}
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2 pointer-events-auto">
             <Button
               variant="ghost"
               size="icon"
@@ -406,13 +406,13 @@ export default function VideoDetailPage() {
 
         {/* ── Bottom Nav — 항상 즉시 표시 ── */}
         <div className="mt-16 border-t border-white/[0.06] pb-16 pt-8">
-          <Link
-            href="/"
+          <button
+            onClick={() => router.back()}
             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/60 transition-all hover:border-violet-500/20 hover:bg-violet-500/10 hover:text-violet-300"
           >
             <ArrowLeft className="h-4 w-4" />
-            영상 목록으로 돌아가기
-          </Link>
+            이전 페이지로 돌아가기
+          </button>
         </div>
       </div>
     </div>

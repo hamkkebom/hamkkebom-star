@@ -21,7 +21,6 @@ model User {
   chineseName     String?
   externalId      String?             @unique
   isApproved      Boolean             @default(false)
-  adEligible      Boolean             @default(false)
   idNumber        String?
   bankName        String?
   bankAccount     String?
@@ -167,6 +166,7 @@ model Video {
   description     String?
   categoryId      String?
   status          VideoStatus         @default(DRAFT)
+  adEligible      Boolean             @default(false)
   thumbnailUrl    String?
   streamUid       String?             @unique
   r2Key           String?

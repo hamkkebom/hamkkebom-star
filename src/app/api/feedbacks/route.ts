@@ -50,17 +50,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    const feedback = await prisma.$transaction(async (tx) => {
-      const sub = await tx.submission.findUnique({
+    const { created, sub } = await prisma.$transaction(async (tx) => {
+      const subInfo = await tx.submission.findUnique({
         where: { id: parsed.data.submissionId },
-        select: { id: true, status: true }
+        select: { id: true, status: true, versionTitle: true, star: { select: { name: true } } }
       });
 
-      if (!sub) {
+      if (!subInfo) {
         throw new Error("NOT_FOUND");
       }
 
-      const created = await tx.feedback.create({
+      const createdItem = await tx.feedback.create({
         data: {
           submissionId: parsed.data.submissionId,
           authorId: user.id,
@@ -83,19 +83,25 @@ export async function POST(request: Request) {
         },
       });
 
-      if (sub.status === "PENDING") {
+      if (subInfo.status === "PENDING") {
         await tx.submission.update({
-          where: { id: sub.id },
+          where: { id: subInfo.id },
           data: { status: "IN_REVIEW" }
         });
       }
 
-      return created;
+      return { created: createdItem, sub: subInfo };
     });
 
-    void createAuditLog({ actorId: user.id, action: "CREATE_FEEDBACK", entityType: "Feedback", entityId: feedback.id });
+    void createAuditLog({
+      actorId: user.id,
+      action: "CREATE_FEEDBACK",
+      entityType: "Feedback",
+      entityId: created.id,
+      metadata: { targetName: sub.star?.name, targetTitle: sub.versionTitle || "제출물", feedbackType: parsed.data.type }
+    });
 
-    return NextResponse.json({ data: feedback }, { status: 201 });
+    return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "NOT_FOUND") {
       return NextResponse.json(

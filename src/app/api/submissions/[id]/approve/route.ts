@@ -86,7 +86,13 @@ export async function PATCH(_request: Request, { params }: Params) {
       return result;
     });
 
-    void createAuditLog({ actorId: user.id, action: "APPROVE_SUBMISSION", entityType: "Submission", entityId: id });
+    void createAuditLog({
+      actorId: user.id,
+      action: "APPROVE_SUBMISSION",
+      entityType: "Submission",
+      entityId: id,
+      metadata: { targetName: updated.star?.name, targetTitle: updated.versionTitle || "제출물" }
+    });
 
     return NextResponse.json({ data: updated });
   } catch (error) {

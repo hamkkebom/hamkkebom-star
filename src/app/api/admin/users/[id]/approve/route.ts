@@ -26,7 +26,7 @@ export async function PATCH(
 
   const { id } = await params;
 
-  let body: { approved?: boolean; adEligible?: boolean };
+  let body: { approved?: boolean };
   try {
     body = await request.json();
   } catch {
@@ -43,7 +43,7 @@ export async function PATCH(
     );
   }
 
-  const { approved, adEligible } = body;
+  const { approved } = body;
 
   const targetUser = await prisma.user.findUnique({ where: { id } });
   if (!targetUser) {
@@ -57,14 +57,12 @@ export async function PATCH(
     where: { id },
     data: {
       isApproved: approved,
-      adEligible: approved ? (adEligible ?? false) : false,
     },
     select: {
       id: true,
       name: true,
       email: true,
       isApproved: true,
-      adEligible: true,
     },
   });
 

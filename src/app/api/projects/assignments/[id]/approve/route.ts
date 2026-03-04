@@ -90,6 +90,7 @@ export async function POST(_request: Request, { params }: Params) {
       action: "APPROVE_ASSIGNMENT",
       entityType: "ProjectAssignment",
       entityId: id,
+      metadata: { targetName: result.star?.name, targetTitle: result.request?.title },
     });
 
     return NextResponse.json({ data: result }, { status: 200 });
