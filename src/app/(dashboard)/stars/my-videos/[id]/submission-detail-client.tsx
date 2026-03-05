@@ -306,7 +306,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
             ) : streamUid ? (
               <div className="aspect-video w-full relative">
                 <VideoPlayer streamUid={streamUid} seekTo={seekTo} />
-                <AnnotationViewer annotation={activeAnnotation} isActive={!!activeAnnotation} />
+                <AnnotationViewer annotation={activeAnnotation as Parameters<typeof AnnotationViewer>[0]["annotation"]} isActive={!!activeAnnotation} />
               </div>
             ) : (
               <div className="aspect-video w-full flex flex-col items-center justify-center bg-gray-900 text-gray-500 gap-3">
