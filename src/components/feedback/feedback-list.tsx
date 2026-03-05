@@ -204,10 +204,10 @@ export function FeedbackList({ submissionId, onTimecodeClick, onFeedbacksChanged
       {data.map((feedback) => (
         <div key={feedback.id} className={`rounded-xl border bg-card p-4 relative group/item${feedback.status === "RESOLVED" ? " opacity-60" : ""}`}>
           {/* Header: Badges + Actions */}
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{typeLabels[feedback.type]}</Badge>
-              <Badge variant={priorityVariants[feedback.priority]}>
+          <div className="mb-2 flex items-start sm:items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <Badge variant="outline" className="text-[10px] sm:text-xs py-0 h-5 sm:h-6">{typeLabels[feedback.type]}</Badge>
+              <Badge variant={priorityVariants[feedback.priority]} className="text-[10px] sm:text-xs py-0 h-5 sm:h-6">
                 {priorityLabels[feedback.priority]}
               </Badge>
               {feedback.startTime !== null && (
@@ -232,9 +232,9 @@ export function FeedbackList({ submissionId, onTimecodeClick, onFeedbacksChanged
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 opacity-0 group-hover/item:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                  className="h-8 w-8 sm:h-7 sm:w-7 opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100 transition-opacity text-muted-foreground hover:text-foreground shrink-0"
                 >
-                  <MoreHorizontal className="h-4 w-4" />
+                  <MoreHorizontal className="h-4 w-4 sm:h-4 sm:w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

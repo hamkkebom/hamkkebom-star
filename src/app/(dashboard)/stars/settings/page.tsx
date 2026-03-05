@@ -239,6 +239,8 @@ export default function SettingsPage() {
             />
           </div>
           <Button
+            size="lg"
+            className="w-full sm:w-auto mt-2 font-bold active:scale-95 transition-all h-12 sm:h-auto"
             onClick={handleNameChange}
             disabled={changingName || !newName.trim() || newName.trim() === data?.name}
           >
@@ -272,6 +274,8 @@ export default function SettingsPage() {
             />
           </div>
           <Button
+            size="lg"
+            className="w-full sm:w-auto mt-2 font-bold active:scale-95 transition-all h-12 sm:h-auto"
             onClick={handleEmailChangeRequest}
             disabled={changingEmail || !newEmail.trim()}
           >
@@ -328,7 +332,12 @@ export default function SettingsPage() {
               placeholder="비밀번호를 다시 입력"
             />
           </div>
-          <Button onClick={handlePasswordChange} disabled={changingPassword}>
+          <Button
+            size="lg"
+            className="w-full sm:w-auto mt-2 font-bold active:scale-95 transition-all h-12 sm:h-auto"
+            onClick={handlePasswordChange}
+            disabled={changingPassword}
+          >
             {changingPassword ? "변경 중..." : "비밀번호 변경"}
           </Button>
         </CardContent>
@@ -344,7 +353,7 @@ export default function SettingsPage() {
           <p className="text-sm text-muted-foreground">
             계정 삭제를 원하시면 관리자에게 문의해 주세요.
           </p>
-          <Button variant="destructive" disabled>
+          <Button variant="destructive" size="lg" className="w-full sm:w-auto h-12 sm:h-auto font-bold" disabled>
             계정 삭제 요청 (관리자 문의)
           </Button>
         </CardContent>

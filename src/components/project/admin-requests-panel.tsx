@@ -3,6 +3,18 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  CalendarDays,
+  Users,
+  ChevronDown,
+  ChevronUp,
+  Tag,
+  Link as LinkIcon,
+  Pencil,
+  Trash2,
+  FileText
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -112,6 +124,11 @@ export function AdminRequestsPanel() {
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<AdminRequestRow | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const toggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-project-requests"],
@@ -221,65 +238,195 @@ export function AdminRequestsPanel() {
           {error instanceof Error ? error.message : "요청 목록을 불러오지 못했습니다."}
         </div>
       ) : (
-        <div className="rounded-xl border bg-card p-2">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>제목</TableHead>
-                <TableHead>상태</TableHead>
-                <TableHead>할당</TableHead>
-                <TableHead>마감일</TableHead>
-                <TableHead>수락 인원</TableHead>
-                <TableHead className="text-right">관리</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
+        <>
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-xl border bg-card p-2">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
-                    등록된 요청이 없습니다.
-                  </TableCell>
+                  <TableHead>제목</TableHead>
+                  <TableHead>상태</TableHead>
+                  <TableHead>할당</TableHead>
+                  <TableHead>마감일</TableHead>
+                  <TableHead>수락 인원</TableHead>
+                  <TableHead className="text-right">관리</TableHead>
                 </TableRow>
-              ) : (
-                rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="max-w-[320px] truncate font-medium">{row.title}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{statusLabel[row.status]}</Badge>
-                    </TableCell>
-                    <TableCell>{assignmentTypeLabel[row.assignmentType]}</TableCell>
-                    <TableCell>{formatDate(row.deadline)}</TableCell>
-                    <TableCell>
-                      {row.currentAssignees}/{row.maxAssignees}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setEditingRequest(row)}>
-                          수정
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={async () => {
-                            const confirmed = window.confirm("정말 이 요청을 삭제하시겠습니까?");
-                            if (!confirmed) {
-                              return;
-                            }
-
-                            await deleteMutation.mutateAsync(row.id);
-                          }}
-                          disabled={deleteMutation.isPending}
-                        >
-                          삭제
-                        </Button>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                      등록된 요청이 없습니다.
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ) : (
+                  rows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="max-w-[320px] truncate font-medium">{row.title}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{statusLabel[row.status]}</Badge>
+                      </TableCell>
+                      <TableCell>{assignmentTypeLabel[row.assignmentType]}</TableCell>
+                      <TableCell>{formatDate(row.deadline)}</TableCell>
+                      <TableCell>
+                        {row.currentAssignees}/{row.maxAssignees}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <Button variant="outline" size="sm" onClick={() => setEditingRequest(row)}>
+                            수정
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={async () => {
+                              const confirmed = window.confirm("정말 이 요청을 삭제하시겠습니까?");
+                              if (!confirmed) {
+                                return;
+                              }
+
+                              await deleteMutation.mutateAsync(row.id);
+                            }}
+                            disabled={deleteMutation.isPending}
+                          >
+                            삭제
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile Accordion Card View */}
+          <div className="block md:hidden space-y-4">
+            {rows.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed text-slate-500">
+                <FileText className="w-10 h-10 mb-3 opacity-30" />
+                <p>등록된 요청이 없습니다.</p>
+              </div>
+            ) : (
+              <AnimatePresence>
+                {rows.map((row) => {
+                  const isExpanded = expandedId === row.id;
+                  const progressPercentage = row.maxAssignees > 0
+                    ? Math.min(100, Math.round((row.currentAssignees / row.maxAssignees) * 100))
+                    : 0;
+
+                  return (
+                    <motion.div
+                      layout
+                      key={row.id}
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[20px] overflow-hidden shadow-sm flex flex-col"
+                      onClick={() => toggleExpand(row.id)}
+                    >
+                      {/* Card Header (Always Visible) */}
+                      <motion.div layout className="p-4 flex flex-col gap-3 active:bg-slate-50 dark:active:bg-slate-800/50 transition-colors">
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="font-bold text-slate-900 dark:text-white leading-tight flex-1">
+                            {row.title}
+                          </h3>
+                          <Badge
+                            variant={row.status === "OPEN" ? "default" : "secondary"}
+                            className="shrink-0"
+                          >
+                            {statusLabel[row.status]}
+                          </Badge>
+                        </div>
+
+                        {/* Progress Bar & Brief Stats */}
+                        <div className="w-full space-y-1.5">
+                          <div className="flex justify-between items-end text-xs font-medium">
+                            <span className="text-indigo-600 dark:text-indigo-400">
+                              {row.currentAssignees} / {row.maxAssignees}명
+                            </span>
+                            <span className="text-slate-500 flex items-center gap-1">
+                              <CalendarDays className="w-3.5 h-3.5" />
+                              {formatDate(row.deadline)}
+                            </span>
+                          </div>
+                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                              style={{ width: `${progressPercentage}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="w-full flex justify-center text-slate-400">
+                          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </div>
+                      </motion.div>
+
+                      {/* Card Body (Expanded) */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50"
+                          >
+                            <div className="p-4 space-y-4 text-sm">
+                              {/* Meta Info */}
+                              <div className="flex flex-col gap-2">
+                                <span className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                  <Tag className="w-4 h-4 shrink-0" />
+                                  <span className="truncate">
+                                    {row.categories.length > 0 ? row.categories.join(", ") : "카테고리 없음"}
+                                  </span>
+                                </span>
+                                {row.referenceUrls && row.referenceUrls.length > 0 && (
+                                  <span className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                    <LinkIcon className="w-4 h-4 shrink-0" />
+                                    <span className="truncate">
+                                      레퍼런스 {row.referenceUrls.length}개
+                                    </span>
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex gap-2 pt-2">
+                                <Button
+                                  variant="outline"
+                                  className="flex-1 h-10 gap-2 font-medium"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingRequest(row);
+                                  }}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                  수정
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  className="flex-1 h-10 gap-2 font-medium bg-rose-500 hover:bg-rose-600"
+                                  disabled={deleteMutation.isPending}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm("정말 이 요청을 삭제하시겠습니까? (되돌릴 수 없습니다)")) {
+                                      await deleteMutation.mutateAsync(row.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  삭제
+                                </Button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            )}
+          </div>
+        </>
       )}
 
       <Dialog open={Boolean(editingRequest)} onOpenChange={(open) => !open && setEditingRequest(null)}>

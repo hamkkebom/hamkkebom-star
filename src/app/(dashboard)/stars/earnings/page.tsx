@@ -205,15 +205,15 @@ export default function EarningsPage() {
                 {/* Row */}
                 <button
                   type="button"
-                  className="w-full text-left"
+                  className="w-full text-left active:scale-[0.98] transition-all duration-200"
                   onClick={() => handleToggle(settlement.id)}
                 >
-                  <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center justify-between p-4 sm:p-5">
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col">
-                         <p className="font-semibold">
-                           {formatDateRange(new Date(settlement.startDate), new Date(settlement.endDate))}
-                         </p>
+                        <p className="font-semibold">
+                          {formatDateRange(new Date(settlement.startDate), new Date(settlement.endDate))}
+                        </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           항목 {settlement._count.items}건
                           {settlement.paymentDate &&
@@ -309,14 +309,14 @@ export default function EarningsPage() {
                             {/* PDF Download */}
                             <Button
                               variant="outline"
-                              size="sm"
-                              className="gap-1.5"
+                              size="lg"
+                              className="w-full sm:w-auto mt-2 gap-2 rounded-xl font-bold select-none active:scale-95 transition-all text-xs sm:text-sm h-11 sm:h-auto"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handlePdfDownload(settlement.id);
                               }}
                             >
-                              <Download className="h-3.5 w-3.5" />
+                              <Download className="h-4 w-4" />
                               지급내역서 PDF 다운로드
                             </Button>
                           </>

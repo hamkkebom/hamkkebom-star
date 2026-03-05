@@ -31,10 +31,12 @@ import {
 import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { FeedbackList } from "@/components/feedback/feedback-list";
+import { SwipeableReviewDeck, type SwipeableItem } from "@/components/admin/swipeable-review-deck";
+import { VerticalShortsFeed } from "@/components/admin/vertical-shorts-feed";
 
-type SubmissionStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "REVISED";
+export type SubmissionStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "REVISED";
 
-type SubmissionRow = {
+export type SubmissionRow = {
   id: string;
   versionSlot: number;
   version: string;
@@ -56,6 +58,7 @@ type SubmissionRow = {
   } | null;
   video: {
     title: string;
+    streamUid?: string | null;
     adEligible?: boolean;
   } | null;
   feedbacks?: Array<{
@@ -299,6 +302,20 @@ export default function AdminReviewsPage() {
     setSelectedIds(newSet);
   };
 
+  const pendingRowsForDeck: SwipeableItem[] = selectableRows
+    .map(row => ({
+      id: row.id,
+      projectTitle: row.versionTitle || row.assignment?.request?.title || row.video?.title || `v${row.version.replace(/^v/i, "")}`,
+      subTitle: row.assignment?.request?.title && row.versionTitle ? row.assignment.request.title : undefined,
+      starName: row.star.chineseName || row.star.name,
+      starEmail: row.star.email,
+      version: row.version,
+      createdAt: formatDate(row.createdAt),
+      status: row.status,
+      streamUid: row.streamUid || row.video?.streamUid || undefined,
+    }))
+    .filter(item => !!item.streamUid);
+
 
   return (
     <div className="space-y-6">
@@ -374,116 +391,163 @@ export default function AdminReviewsPage() {
           {error instanceof Error ? error.message : "데이터를 불러오지 못했습니다."}
         </div>
       ) : (
-        <Card>
-          <CardContent className="p-2">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={isAllSelected}
-                      onCheckedChange={toggleSelectAll}
-                      disabled={selectableRows.length === 0}
-                    />
-                  </TableHead>
-                  <TableHead>프로젝트</TableHead>
-                  <TableHead>STAR</TableHead>
-                  <TableHead>버전</TableHead>
-                  <TableHead>상태</TableHead>
-                  <TableHead>피드백</TableHead>
-                  <TableHead>제출일</TableHead>
-                  <TableHead className="text-right">관리</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
-                      제출된 영상이 없습니다.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  rows.map((row) => {
-                    const projectTitle = row.versionTitle || row.assignment?.request?.title || row.video?.title || `v${row.version.replace(/^v/i, "")}`;
-                    const showSubtitle = row.assignment?.request?.title && row.versionTitle;
+        <>
+          {filter === "PENDING" && rows.length > 0 && (
+            <div className="block md:hidden mb-8">
+              <div className="mb-4 text-center">
+                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  Swipe to review
+                </span>
+                <p className="text-lg font-black text-slate-800 dark:text-slate-200 mt-1">
+                  모바일 스와이프 심사
+                </p>
+              </div>
+              <SwipeableReviewDeck
+                items={pendingRowsForDeck}
+                onApprove={(id) => approveMutation.mutate(id)}
+                onReject={(id) => {
+                  const sub = rows.find(r => r.id === id);
+                  if (sub) setSelectedSubmission(sub);
+                }}
+                onViewDetail={(id) => {
+                  const sub = rows.find(r => r.id === id);
+                  if (sub) setSelectedSubmission(sub);
+                }}
+              />
+            </div>
+          )}
 
-                    return (
-                      <TableRow key={row.id}>
-                        <TableCell>
-                          {["PENDING", "IN_REVIEW", "REVISED"].includes(row.status) ? (
-                            <Checkbox
-                              checked={selectedIds.has(row.id)}
-                              onCheckedChange={() => toggleSelect(row.id)}
-                            />
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="max-w-[200px] font-medium">
-                          <div className="truncate" title={projectTitle}>
-                            {projectTitle}
-                          </div>
-                          {showSubtitle && (
-                            <div className="text-xs text-muted-foreground truncate mt-0.5" title={row.assignment!.request.title}>
-                              {row.assignment!.request.title}
+          {filter !== "PENDING" && rows.length > 0 && (
+            <div className="block md:hidden mb-8">
+              <div className="mb-4">
+                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">
+                  Reels View
+                </span>
+                <p className="text-lg font-black text-slate-800 dark:text-slate-200 mt-0.5 pl-1">
+                  숏폼 모니터링 모드
+                </p>
+              </div>
+              <VerticalShortsFeed
+                items={rows}
+                onViewDetail={(id) => {
+                  const sub = rows.find(r => r.id === id);
+                  if (sub) setSelectedSubmission(sub);
+                }}
+              />
+            </div>
+          )}
+
+          <Card className={rows.length > 0 ? "hidden md:block" : ""}>
+            <CardContent className="p-2 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={toggleSelectAll}
+                        disabled={selectableRows.length === 0}
+                      />
+                    </TableHead>
+                    <TableHead>프로젝트</TableHead>
+                    <TableHead>STAR</TableHead>
+                    <TableHead>버전</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead>피드백</TableHead>
+                    <TableHead>제출일</TableHead>
+                    <TableHead className="text-right">관리</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
+                        제출된 영상이 없습니다.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    rows.map((row) => {
+                      const projectTitle = row.versionTitle || row.assignment?.request?.title || row.video?.title || `v${row.version.replace(/^v/i, "")}`;
+                      const showSubtitle = row.assignment?.request?.title && row.versionTitle;
+
+                      return (
+                        <TableRow key={row.id}>
+                          <TableCell>
+                            {["PENDING", "IN_REVIEW", "REVISED"].includes(row.status) ? (
+                              <Checkbox
+                                checked={selectedIds.has(row.id)}
+                                onCheckedChange={() => toggleSelect(row.id)}
+                              />
+                            ) : null}
+                          </TableCell>
+                          <TableCell className="max-w-[200px] font-medium">
+                            <div className="truncate" title={projectTitle}>
+                              {projectTitle}
                             </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Link
-                            href={`/admin/stars/${row.star.id}`}
-                            className="hover:underline text-primary"
-                          >
-                            {row.star.chineseName || row.star.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono text-xs font-semibold bg-slate-50 dark:bg-slate-900">
-                            v{row.version.replace(/^v/i, "")}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge variant={statusVariants[row.status] ?? "secondary"}>
-                              {statusLabels[row.status] ?? row.status}
-                            </Badge>
-                            {row.status === "APPROVED" && row.video && (
-                              <Badge className={row.video.adEligible ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400 border-none shadow-none text-xs" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border-none shadow-none text-xs"}>
-                                {row.video.adEligible ? "광고 가능" : "광고 불가"}
-                              </Badge>
+                            {showSubtitle && (
+                              <div className="text-xs text-muted-foreground truncate mt-0.5" title={row.assignment!.request.title}>
+                                {row.assignment!.request.title}
+                              </div>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {(() => {
-                            const feedbacks = row.feedbacks || [];
-                            const resolved = feedbacks.filter(f => f.status === "RESOLVED").length;
-                            const total = row._count.feedbacks;
-                            return total > 0 ? `${resolved}/${total} 해결` : "0건";
-                          })()}
-                        </TableCell>
-                        <TableCell>
-                          <div>{formatDate(row.createdAt)}</div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {formatDistanceToNow(new Date(row.createdAt), { addSuffix: true, locale: ko })}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Link href={`/admin/reviews/${row.id}`}>
-                            <Button
-                              variant="outline"
-                              size="sm"
+                          </TableCell>
+                          <TableCell>
+                            <Link
+                              href={`/admin/stars/${row.star.id}`}
+                              className="hover:underline text-primary"
                             >
-                              리뷰
-                            </Button>
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                              {row.star.chineseName || row.star.name}
+                            </Link>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="font-mono text-xs font-semibold bg-slate-50 dark:bg-slate-900">
+                              v{row.version.replace(/^v/i, "")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge variant={statusVariants[row.status] ?? "secondary"}>
+                                {statusLabels[row.status] ?? row.status}
+                              </Badge>
+                              {row.status === "APPROVED" && row.video && (
+                                <Badge className={row.video.adEligible ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400 border-none shadow-none text-xs" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border-none shadow-none text-xs"}>
+                                  {row.video.adEligible ? "광고 가능" : "광고 불가"}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const feedbacks = row.feedbacks || [];
+                              const resolved = feedbacks.filter(f => f.status === "RESOLVED").length;
+                              const total = row._count.feedbacks;
+                              return total > 0 ? `${resolved}/${total} 해결` : "0건";
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            <div>{formatDate(row.createdAt)}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {formatDistanceToNow(new Date(row.createdAt), { addSuffix: true, locale: ko })}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Link href={`/admin/reviews/${row.id}`}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                              >
+                                리뷰
+                              </Button>
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Pagination Controls */}

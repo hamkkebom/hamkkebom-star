@@ -271,6 +271,7 @@ export async function GET(request: Request) {
         video: {
           select: {
             title: true,
+            streamUid: true,
           },
         },
         feedbacks: {

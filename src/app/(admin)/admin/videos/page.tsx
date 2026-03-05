@@ -45,6 +45,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
@@ -231,6 +237,7 @@ export default function AdminVideosPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<{ id: string; title: string } | null>(null);
+  const [selectedMobileVideo, setSelectedMobileVideo] = useState<VideoRow | null>(null);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [editVideo, setEditVideo] = useState<EditVideoData | null>(null);
 
@@ -400,94 +407,137 @@ export default function AdminVideosPage() {
               {[1, 2, 3].map((i) => <Skeleton key={`vid-sk-${i}`} className="h-12 w-full" />)}
             </div>
           ) : (
-            <div className="space-y-4 pt-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="pl-6 w-[52px]">썸네일</TableHead>
-                    <TableHead>제목</TableHead>
-                    <TableHead>소유자 (한글 이름)</TableHead>
-                    <TableHead>소유자 (닉네임)</TableHead>
-                    <TableHead>카테고리</TableHead>
-                    <TableHead>상태</TableHead>
-                    <TableHead>등록일</TableHead>
-                    <TableHead className="text-right pr-6">관리</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.length === 0 ? (
+            <>
+              {/* Mobile Video Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 md:hidden">
+                {rows.length === 0 ? (
+                  <div className="col-span-2 sm:col-span-3 py-12 text-center text-muted-foreground">
+                    조건에 맞는 영상이 없습니다.
+                  </div>
+                ) : (
+                  rows.map((row) => (
+                    <div
+                      key={row.id}
+                      className="group relative aspect-square rounded-2xl overflow-hidden bg-muted/30 border border-border/50 shadow-sm active:scale-95 transition-transform"
+                      onClick={() => setSelectedMobileVideo(row)}
+                    >
+                      {row.signedThumbnailUrl ? (
+                        <Image src={row.signedThumbnailUrl} alt={row.title} fill className="object-cover transition-transform group-hover:scale-105" sizes="(max-width: 768px) 50vw, 33vw" />
+                      ) : (
+                        <div className="flex items-center justify-center h-full w-full bg-slate-100/50 dark:bg-slate-800/50">
+                          <Film className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+
+                      {/* Badges Floating */}
+                      <div className="absolute top-2 left-2 flex flex-col gap-1 pointer-events-none">
+                        <Badge variant={statusMap[row.status]?.variant ?? "secondary"} className="text-[9px] px-1.5 py-0 h-4 border-none shadow-md backdrop-blur-md bg-background/80 text-foreground">
+                          {statusMap[row.status]?.label ?? row.status}
+                        </Badge>
+                        {row.adEligible && <Badge className="text-[9px] bg-indigo-500/90 text-white px-1.5 py-0 h-4 border-none shadow-md backdrop-blur-md">AD</Badge>}
+                      </div>
+
+                      {/* Info Overlay */}
+                      <div className="absolute bottom-3 left-3 right-3 pointer-events-none">
+                        <p className="text-white text-xs font-bold leading-tight line-clamp-2 drop-shadow-md mb-1">{row.title}</p>
+                        <p className="text-white/80 text-[10px] drop-shadow-sm truncate">{row.owner.chineseName || row.owner.name}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block space-y-4 pt-4">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
-                        조건에 맞는 영상이 없습니다.
-                      </TableCell>
+                      <TableHead className="pl-6 w-[52px]">썸네일</TableHead>
+                      <TableHead>제목</TableHead>
+                      <TableHead>소유자 (한글 이름)</TableHead>
+                      <TableHead>소유자 (닉네임)</TableHead>
+                      <TableHead>카테고리</TableHead>
+                      <TableHead>상태</TableHead>
+                      <TableHead>등록일</TableHead>
+                      <TableHead className="text-right pr-6">관리</TableHead>
                     </TableRow>
-                  ) : (
-                    rows.map((row) => (
-                      <TableRow key={row.id} className={isFetching ? "opacity-50 transition-opacity" : "transition-opacity"}>
-                        <TableCell className="pl-6 w-[52px]">
-                          {row.signedThumbnailUrl ? (
-                            <Image
-                              src={row.signedThumbnailUrl}
-                              width={40}
-                              height={23}
-                              className="rounded aspect-video object-cover"
-                              sizes="40px"
-                              alt=""
-                              unoptimized
-                            />
-                          ) : (
-                            <Film className="h-5 w-5 text-muted-foreground" />
-                          )}
-                        </TableCell>
-                        <TableCell className="max-w-[250px] truncate font-medium">{row.title}</TableCell>
-                        <TableCell>{row.owner.chineseName || "-"}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{row.owner.name}</TableCell>
-                        <TableCell>{row.category?.name ?? "-"}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge variant={statusMap[row.status]?.variant ?? "secondary"}>
-                              {statusMap[row.status]?.label ?? row.status}
-                            </Badge>
-                            {row.status === "APPROVED" && (
-                              <Badge className={row.adEligible ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400 border-none shadow-none text-xs" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border-none shadow-none text-xs"}>
-                                {row.adEligible ? "광고 가능" : "광고 불가"}
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatDate(row.createdAt)}</TableCell>
-                        <TableCell className="text-right pr-6 space-x-2 whitespace-nowrap">
-                          <Button variant="ghost" size="icon" onClick={() => setEditVideo({ id: row.id, title: row.title, description: "", categoryId: row.category?.id ?? "", videoSubject: "OTHER" })}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedVideo({ id: row.id, title: row.title });
-                              setModalOpen(true);
-                            }}
-                            className="bg-primary/10 text-primary hover:bg-primary/20 transition-colors border-transparent"
-                          >
-                            <Share2 className="w-3.5 h-3.5 mr-1" /> 매체 등록
-                          </Button>
-                          {row.submissionId ? (
-                            <Button variant="outline" size="sm" asChild>
-                              <Link href={`/admin/reviews/${row.submissionId}`}>
-                                상세보기
-                              </Link>
-                            </Button>
-                          ) : (
-                            <Button variant="outline" size="sm" disabled title="제출된 피드백 기록이 없습니다.">
-                              상세보기
-                            </Button>
-                          )}
+                  </TableHeader>
+                  <TableBody>
+                    {rows.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
+                          조건에 맞는 영상이 없습니다.
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      rows.map((row) => (
+                        <TableRow key={row.id} className={isFetching ? "opacity-50 transition-opacity" : "transition-opacity"}>
+                          <TableCell className="pl-6 w-[52px]">
+                            {row.signedThumbnailUrl ? (
+                              <Image
+                                src={row.signedThumbnailUrl}
+                                width={40}
+                                height={23}
+                                className="rounded aspect-video object-cover"
+                                sizes="40px"
+                                alt=""
+                                unoptimized
+                              />
+                            ) : (
+                              <Film className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </TableCell>
+                          <TableCell className="max-w-[250px] truncate font-medium">{row.title}</TableCell>
+                          <TableCell>{row.owner.chineseName || "-"}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{row.owner.name}</TableCell>
+                          <TableCell>{row.category?.name ?? "-"}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge variant={statusMap[row.status]?.variant ?? "secondary"}>
+                                {statusMap[row.status]?.label ?? row.status}
+                              </Badge>
+                              {row.status === "APPROVED" && (
+                                <Badge className={row.adEligible ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400 border-none shadow-none text-xs" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border-none shadow-none text-xs"}>
+                                  {row.adEligible ? "광고 가능" : "광고 불가"}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{formatDate(row.createdAt)}</TableCell>
+                          <TableCell className="text-right pr-6 space-x-2 whitespace-nowrap">
+                            <Button variant="ghost" size="icon" onClick={() => setEditVideo({ id: row.id, title: row.title, description: "", categoryId: row.category?.id ?? "", videoSubject: "OTHER" })}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedVideo({ id: row.id, title: row.title });
+                                setModalOpen(true);
+                              }}
+                              className="bg-primary/10 text-primary hover:bg-primary/20 transition-colors border-transparent"
+                            >
+                              <Share2 className="w-3.5 h-3.5 mr-1" /> 매체 등록
+                            </Button>
+                            {row.submissionId ? (
+                              <Button variant="outline" size="sm" asChild>
+                                <Link href={`/admin/reviews/${row.submissionId}`}>
+                                  상세보기
+                                </Link>
+                              </Button>
+                            ) : (
+                              <Button variant="outline" size="sm" disabled title="제출된 피드백 기록이 없습니다.">
+                                상세보기
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
 
               {/* Pagination UI */}
               {totalPages > 1 && (
@@ -544,7 +594,7 @@ export default function AdminVideosPage() {
                   </div>
                 </div>
               )}
-            </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -563,6 +613,75 @@ export default function AdminVideosPage() {
         onClose={() => setEditVideo(null)}
         categories={categories}
       />
+
+      {/* Mobile Video Detail Sheet */}
+      <Sheet open={!!selectedMobileVideo} onOpenChange={(open) => !open && setSelectedMobileVideo(null)}>
+        <SheetContent side="bottom" className="rounded-t-[32px] p-6 pt-8 max-h-[85vh] bg-background">
+          {selectedMobileVideo && (
+            <div className="flex flex-col">
+              <SheetHeader className="mb-6 text-left">
+                <SheetTitle className="text-2xl font-black leading-tight pr-8">{selectedMobileVideo.title}</SheetTitle>
+              </SheetHeader>
+
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/40 mb-6 border border-border/50">
+                {selectedMobileVideo.signedThumbnailUrl ? (
+                  <Image src={selectedMobileVideo.signedThumbnailUrl} width={72} height={72} className="rounded-xl aspect-square object-cover shadow-sm bg-black/10" alt="" />
+                ) : (
+                  <div className="w-[72px] h-[72px] rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                    <Film className="w-8 h-8 text-slate-400" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-bold truncate text-foreground">{selectedMobileVideo.owner.chineseName || selectedMobileVideo.owner.name}</p>
+                  <p className="text-sm text-muted-foreground font-medium mb-1.5">{selectedMobileVideo.category?.name ?? "미분류"}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant={statusMap[selectedMobileVideo.status]?.variant ?? "secondary"} className="px-2 border-border/40">
+                      {statusMap[selectedMobileVideo.status]?.label ?? selectedMobileVideo.status}
+                    </Badge>
+                    {selectedMobileVideo.adEligible && <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400 border-none px-2 shadow-none">광고 가능</Badge>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <Button
+                  variant="outline"
+                  className="h-14 rounded-2xl text-foreground font-bold border-border/60 hover:bg-muted"
+                  onClick={() => {
+                    setEditVideo({ id: selectedMobileVideo.id, title: selectedMobileVideo.title, description: "", categoryId: selectedMobileVideo.category?.id ?? "", videoSubject: "OTHER" });
+                    setSelectedMobileVideo(null);
+                  }}
+                >
+                  <Pencil className="w-4 h-4 mr-2 text-muted-foreground" /> 정보 수정
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-14 rounded-2xl text-foreground font-bold border-border/60 hover:bg-muted"
+                  onClick={() => {
+                    setSelectedVideo({ id: selectedMobileVideo.id, title: selectedMobileVideo.title });
+                    setModalOpen(true);
+                    setSelectedMobileVideo(null);
+                  }}
+                >
+                  <Share2 className="w-4 h-4 mr-2 text-muted-foreground" /> 매체 등록
+                </Button>
+              </div>
+
+              <Button
+                className="w-full h-16 rounded-2xl font-black text-lg bg-indigo-500 hover:bg-indigo-600 text-white shadow-xl shadow-indigo-500/20 active:scale-[0.98] transition-all"
+                disabled={!selectedMobileVideo.submissionId}
+                onClick={() => {
+                  if (selectedMobileVideo.submissionId) {
+                    window.location.href = `/admin/reviews/${selectedMobileVideo.submissionId}`;
+                  }
+                }}
+              >
+                {selectedMobileVideo.submissionId ? "상세 피드백 스튜디오 보기" : "피드백 기록 없음"}
+              </Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

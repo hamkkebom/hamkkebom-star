@@ -33,6 +33,7 @@ import {
   AvatarFallback,
 } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
+import { ProjectSwipeDeck } from "@/components/admin/project-swipe-deck";
 
 // --- Types ---
 
@@ -478,18 +479,18 @@ export default function AdminApprovalsPage() {
 
   // Group assignments by request
   const assignments = useMemo(() => data?.data ?? [], [data?.data]);
-  
+
   // Filter groups by search term (STAR name or project title)
   const groups = useMemo(() => {
     const allGroups = groupByRequest(assignments);
     if (!debouncedSearch.trim()) return allGroups;
-    
+
     const lowerSearch = debouncedSearch.toLowerCase();
     return allGroups.filter((group) => {
       // Check if project title matches
       const titleMatches = group.request.title.toLowerCase().includes(lowerSearch);
       if (titleMatches) return true;
-      
+
       // Check if any STAR name matches
       const starMatches = group.assignments.some((assignment) => {
         const displayName = getDisplayName(assignment.star).toLowerCase();
@@ -498,7 +499,11 @@ export default function AdminApprovalsPage() {
       return starMatches;
     });
   }, [assignments, debouncedSearch]);
-  
+
+  const filteredAssignments = useMemo(() => {
+    return groups.flatMap(g => g.assignments);
+  }, [groups]);
+
   const totalCount = data?.total ?? 0;
 
   return (
@@ -548,68 +553,81 @@ export default function AdminApprovalsPage() {
             다른 검색어를 시도해보세요.
           </p>
         </div>
-) : (
-        <div className="space-y-8">
-          {groups.map((group) => (
-            <section key={group.request.id} className="space-y-3">
-              {/* Project Group Header */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                <h2 className="text-base font-semibold truncate max-w-md">
-                  {group.request.title}
-                </h2>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="gap-1 text-xs">
-                    <Users className="h-3 w-3" />
-                    {group.request._count.assignments}/{group.request.maxAssignees}명 승인됨
-                  </Badge>
-                  <Badge variant="outline" className="gap-1 text-xs">
-                    <CalendarDays className="h-3 w-3" />
-                    {formatDate(group.request.deadline)}
-                  </Badge>
-                  {group.request.categories.length > 0 && (
-                    <div className="hidden sm:flex items-center gap-1">
-                      {group.request.categories.slice(0, 3).map((cat) => (
-                        <Badge
-                          key={cat}
-                          variant="secondary"
-                          className="text-[10px] px-1.5"
-                        >
-                          {cat}
-                        </Badge>
-                      ))}
-                      {group.request.categories.length > 3 && (
-                        <span className="text-[10px] text-muted-foreground">
-                          +{group.request.categories.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+      ) : (
+        <>
+          {/* Mobile Swipe Deck */}
+          <div className="block md:hidden">
+            <ProjectSwipeDeck
+              assignments={filteredAssignments}
+              onApprove={handleApprove}
+              onReject={handleRejectOpen}
+              onViewDetail={() => { }}
+            />
+          </div>
 
-              {/* Star Cards Grid */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {group.assignments.map((assignment) => (
-                  <AssignmentCard
-                    key={assignment.id}
-                    assignment={assignment}
-                    isHiding={hidingIds.has(assignment.id)}
-                    onApprove={handleApprove}
-                    onReject={handleRejectOpen}
-                    isApproving={
-                      approveMutation.isPending &&
-                      approveMutation.variables === assignment.id
-                    }
-                    isRejecting={
-                      rejectMutation.isPending &&
-                      rejectMutation.variables?.id === assignment.id
-                    }
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+          {/* Desktop Grouped Grid */}
+          <div className="hidden md:block space-y-8">
+            {groups.map((group) => (
+              <section key={group.request.id} className="space-y-3">
+                {/* Project Group Header */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  <h2 className="text-base font-semibold truncate max-w-md">
+                    {group.request.title}
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="gap-1 text-xs">
+                      <Users className="h-3 w-3" />
+                      {group.request._count.assignments}/{group.request.maxAssignees}명 승인됨
+                    </Badge>
+                    <Badge variant="outline" className="gap-1 text-xs">
+                      <CalendarDays className="h-3 w-3" />
+                      {formatDate(group.request.deadline)}
+                    </Badge>
+                    {group.request.categories.length > 0 && (
+                      <div className="hidden sm:flex items-center gap-1">
+                        {group.request.categories.slice(0, 3).map((cat) => (
+                          <Badge
+                            key={cat}
+                            variant="secondary"
+                            className="text-[10px] px-1.5"
+                          >
+                            {cat}
+                          </Badge>
+                        ))}
+                        {group.request.categories.length > 3 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            +{group.request.categories.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Star Cards Grid */}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.assignments.map((assignment) => (
+                    <AssignmentCard
+                      key={assignment.id}
+                      assignment={assignment}
+                      isHiding={hidingIds.has(assignment.id)}
+                      onApprove={handleApprove}
+                      onReject={handleRejectOpen}
+                      isApproving={
+                        approveMutation.isPending &&
+                        approveMutation.variables === assignment.id
+                      }
+                      isRejecting={
+                        rejectMutation.isPending &&
+                        rejectMutation.variables?.id === assignment.id
+                      }
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Reject Dialog */}

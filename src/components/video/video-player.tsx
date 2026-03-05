@@ -15,6 +15,16 @@ interface VideoPlayerProps {
   onDurationChange?: (duration: number) => void;
   /** 외부에서 특정 시점으로 이동할 때 사용 */
   seekTo?: number;
+  /** 자동 재생 여부 */
+  autoPlay?: boolean;
+  /** 음소거 여부 */
+  muted?: boolean;
+  /** 반복 재생 여부 */
+  loop?: boolean;
+  /** 컨트롤 패널 표시 여부 */
+  controls?: boolean;
+  /** 커스텀 클래스 */
+  className?: string;
 }
 
 type StreamTokenResponse = {
@@ -31,6 +41,11 @@ export const VideoPlayer = memo(function VideoPlayer({
   onTimeUpdate,
   onDurationChange,
   seekTo,
+  autoPlay = false,
+  muted = false,
+  loop = false,
+  controls = true,
+  className
 }: VideoPlayerProps) {
   const streamRef = useRef<StreamPlayerApi>(undefined);
   const [state, setState] = useState<{
@@ -45,6 +60,12 @@ export const VideoPlayer = memo(function VideoPlayer({
       return;
     }
 
+    // Basic UID validation - reject obviously invalid UIDs (mock, test, etc.)
+    if (streamUid.startsWith("mock-") || streamUid.startsWith("test-") || streamUid.length < 10) {
+      setState({ playbackSrc: null, loading: false, error: "테스트 영상 (Cloudflare에 존재하지 않음)" });
+      return;
+    }
+
     const uid = streamUid;
     let cancelled = false;
 
@@ -55,7 +76,7 @@ export const VideoPlayer = memo(function VideoPlayer({
 
         const json = (await res.json()) as StreamTokenResponse;
         const token = json.data.token;
-        if (!token) throw new Error("토큰 발급 실패");
+        if (!token) throw new Error("영상을 찾을 수 없습니다.");
 
         if (!cancelled) {
           setState({ playbackSrc: token, loading: false, error: null });
@@ -102,18 +123,24 @@ export const VideoPlayer = memo(function VideoPlayer({
 
   if (error || !playbackSrc) {
     return (
-      <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-muted text-muted-foreground">
-        <p className="text-sm">{error || "영상을 불러올 수 없습니다."}</p>
+      <div className={className || "flex aspect-video w-full items-center justify-center rounded-xl bg-muted text-muted-foreground"}>
+        <div className="flex flex-col items-center justify-center h-full gap-2 p-4">
+          <svg className="w-8 h-8 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9A2.25 2.25 0 0013.5 5.25h-9A2.25 2.25 0 002.25 7.5v9A2.25 2.25 0 004.5 18.75z" /></svg>
+          <p className="text-xs text-center opacity-60">{error || "영상을 불러올 수 없습니다."}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-h-[80vh] overflow-hidden rounded-xl bg-black [&>stream]:!max-h-[80vh] [&_iframe]:!max-h-[80vh]">
+    <div className={className || "mx-auto w-full max-h-[80vh] rounded-xl bg-black [&>stream]:!max-h-[80vh] [&_iframe]:!max-h-[80vh]"}>
       <Stream
         src={playbackSrc}
         streamRef={streamRef}
-        controls
+        controls={controls}
+        autoplay={autoPlay}
+        muted={muted}
+        loop={loop}
         responsive
         onTimeUpdate={() => {
           if (streamRef.current) {

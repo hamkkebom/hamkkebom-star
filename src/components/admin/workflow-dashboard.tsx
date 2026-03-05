@@ -34,6 +34,7 @@ import {
 
 // --- Types ---
 type SubmissionStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "REVISED";
+type ExtendedStatus = SubmissionStatus | "AD_ELIGIBLE" | "AD_INELIGIBLE";
 
 // --- Config ---
 const NODE_WIDTH = 280;
@@ -41,7 +42,7 @@ const NODE_HEIGHT = 160;
 
 const DAGRE_RANK_DIR = "LR"; // Left to Right
 
-const STATUS_CONFIG: Record<SubmissionStatus, {
+const STATUS_CONFIG: Record<ExtendedStatus, {
     label: string;
     description: string;
     color: string;
@@ -65,6 +66,18 @@ const STATUS_CONFIG: Record<SubmissionStatus, {
         color: "from-emerald-500 to-green-500",
         icon: CheckCircle2,
     },
+    AD_ELIGIBLE: {
+        label: "광고 가능 (Ad Eligible)",
+        description: "광고가 송출될 수 있는 승인된 영상",
+        color: "from-indigo-500 to-blue-600",
+        icon: CheckCircle2,
+    },
+    AD_INELIGIBLE: {
+        label: "광고 불가 (Ad Ineligible)",
+        description: "광고 송출이 제한된 승인된 영상",
+        color: "from-slate-600 to-slate-800",
+        icon: XCircle,
+    },
     REJECTED: {
         label: "반려됨 (Rejected)",
         description: "수정 요청됨 (재제출 필요)",
@@ -86,7 +99,7 @@ const CustomNode = ({ data }: { data: any }) => {
     const [isHovered, setIsHovered] = React.useState(false);
 
     // Map status to filter parameter for reviews page
-    const getFilterForStatus = (status: SubmissionStatus): string => {
+    const getFilterForStatus = (status: ExtendedStatus): string => {
         switch (status) {
             case "PENDING":
             case "REVISED":
@@ -94,6 +107,8 @@ const CustomNode = ({ data }: { data: any }) => {
             case "IN_REVIEW":
                 return "IN_REVIEW";
             case "APPROVED":
+            case "AD_ELIGIBLE":
+            case "AD_INELIGIBLE":
             case "REJECTED":
                 return "COMPLETED";
             default:
@@ -206,18 +221,20 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 };
 
 // --- Main Inner Component (Using Provider) ---
-const LayoutFlow = ({ counts }: { counts: Record<SubmissionStatus, number> }) => {
+const LayoutFlow = ({ counts, adEligibleCount, adIneligibleCount }: { counts: Record<SubmissionStatus, number>, adEligibleCount?: number, adIneligibleCount?: number }) => {
     const { fitView } = useReactFlow();
 
     // Define Nodes & Edges (Data Driven)
     const initialData = useMemo(() => {
-        const nodes: Node[] = (Object.keys(STATUS_CONFIG) as SubmissionStatus[]).map((status) => ({
+        const nodes: Node[] = (Object.keys(STATUS_CONFIG) as ExtendedStatus[]).map((status) => ({
             id: status,
             type: 'custom',
             data: {
                 status,
                 ...STATUS_CONFIG[status],
-                count: counts[status] || 0
+                count: status === "AD_ELIGIBLE" ? (adEligibleCount || 0) :
+                    status === "AD_INELIGIBLE" ? (adIneligibleCount || 0) :
+                        counts[status as SubmissionStatus] || 0
             },
             position: { x: 0, y: 0 }, // Initial position, will be calculated by dagre
         }));
@@ -226,13 +243,15 @@ const LayoutFlow = ({ counts }: { counts: Record<SubmissionStatus, number> }) =>
             { id: 'e-pending-review', source: 'PENDING', target: 'IN_REVIEW', label: 'Feedback', animated: true, style: { stroke: '#3b82f6' } },
             { id: 'e-review-approved', source: 'IN_REVIEW', target: 'APPROVED', label: 'Approve', animated: true, style: { stroke: '#10b981' } },
             { id: 'e-review-rejected', source: 'IN_REVIEW', target: 'REJECTED', label: 'Reject', animated: true, style: { stroke: '#ef4444' } },
+            { id: 'e-approved-ad-eligible', source: 'APPROVED', target: 'AD_ELIGIBLE', label: '광고 가능', animated: true, style: { stroke: '#4f46e5' } },
+            { id: 'e-approved-ad-ineligible', source: 'APPROVED', target: 'AD_INELIGIBLE', label: '광고 불가', animated: true, style: { stroke: '#475569' } },
             { id: 'e-rejected-revised', source: 'REJECTED', target: 'REVISED', label: 'Wait Upload', animated: true, style: { stroke: '#a855f7' } },
             { id: 'e-revised-pending', source: 'REVISED', target: 'PENDING', label: 'Re-submit', animated: true, style: { stroke: '#f59e0b' } },
             { id: 'e-pending-approved', source: 'PENDING', target: 'APPROVED', label: 'Direct Pass', animated: true, style: { stroke: '#10b981', strokeDasharray: 5 } },
         ];
 
         return getLayoutedElements(nodes, edges);
-    }, [counts]);
+    }, [counts, adEligibleCount, adIneligibleCount]);
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialData.nodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialData.edges);
@@ -276,11 +295,11 @@ const LayoutFlow = ({ counts }: { counts: Record<SubmissionStatus, number> }) =>
 }
 
 // --- Main Export Component ---
-export function WorkflowDashboard({ counts }: { counts: Record<SubmissionStatus, number> }) {
+export function WorkflowDashboard({ counts, adEligibleCount, adIneligibleCount }: { counts: Record<SubmissionStatus, number>, adEligibleCount?: number, adIneligibleCount?: number }) {
     return (
-        <div className="h-[800px] w-full overflow-hidden rounded-3xl border border-slate-800 shadow-2xl">
+        <div className="h-[500px] sm:h-[600px] md:h-[800px] w-full overflow-hidden rounded-2xl md:rounded-3xl border border-slate-800 shadow-2xl">
             <ReactFlowProvider>
-                <LayoutFlow counts={counts} />
+                <LayoutFlow counts={counts} adEligibleCount={adEligibleCount} adIneligibleCount={adIneligibleCount} />
             </ReactFlowProvider>
         </div>
     );

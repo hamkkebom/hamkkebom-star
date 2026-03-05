@@ -252,6 +252,70 @@ function DropZone({
     );
 }
 
+function MobileDropDock({ activeStar }: { activeStar: StarUser | null }) {
+    const { setNodeRef: setMyZoneRef, isOver: isMyOver } = useDroppable({ id: 'my-zone-mobile' });
+    const { setNodeRef: setUnassignedRef, isOver: isUnassignedOver } = useDroppable({ id: 'unassigned-mobile' });
+
+    if (!activeStar) return null;
+
+    const isMyStar = activeStar.managerId === "CURRENT_USER_ID_PLACEHOLDER";
+
+    return (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 h-[280px] pointer-events-none z-[100] flex items-end justify-center pb-8 overflow-hidden">
+            {/* Background ripple on active */}
+            <AnimatePresence>
+                {(isMyOver || isUnassignedOver) && (
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 2, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className={cn(
+                            "absolute bottom-[-100px] w-[500px] h-[500px] rounded-full blur-3xl pointer-events-none -translate-x-1/2",
+                            isMyOver ? "bg-green-500/30" : "bg-red-500/30",
+                        )}
+                        style={{ left: "50%" }}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {activeStar && (
+                    <motion.div
+                        initial={{ y: 150, opacity: 0, scale: 0.8 }}
+                        animate={{ y: 0, opacity: 1, scale: 1 }}
+                        exit={{ y: 150, opacity: 0, scale: 0.8 }}
+                        className="pointer-events-auto flex items-end justify-center w-full px-6 relative z-10"
+                    >
+                        {!isMyStar ? (
+                            <div
+                                ref={setMyZoneRef}
+                                className={cn(
+                                    "w-40 h-40 rounded-full flex flex-col items-center justify-center border-[6px] shadow-[0_20px_60px_rgba(34,197,94,0.4)] backdrop-blur-3xl transition-all duration-300",
+                                    isMyOver ? "bg-green-500 border-white scale-[1.15]" : "bg-green-900/90 border-green-500/80"
+                                )}
+                            >
+                                <CheckCircle2 className={cn("w-12 h-12 mb-1.5 transition-all duration-300", isMyOver ? "text-white scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "text-green-300")} />
+                                <span className={cn("font-black text-sm tracking-tight", isMyOver ? "text-white" : "text-green-200")}>내 담당 가져오기</span>
+                            </div>
+                        ) : (
+                            <div
+                                ref={setUnassignedRef}
+                                className={cn(
+                                    "w-40 h-40 rounded-full flex flex-col items-center justify-center border-[6px] shadow-[0_20px_60px_rgba(239,68,68,0.4)] backdrop-blur-3xl transition-all duration-300",
+                                    isUnassignedOver ? "bg-red-500 border-white scale-[1.15]" : "bg-zinc-900/90 border-red-500/80"
+                                )}
+                            >
+                                <UserX className={cn("w-12 h-12 mb-1.5 transition-all duration-300", isUnassignedOver ? "text-white scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "text-zinc-400")} />
+                                <span className={cn("font-black text-sm tracking-tight", isUnassignedOver ? "text-white" : "text-zinc-300")}>담당 해제</span>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
 
 // --- Main Page Component ---
 
@@ -319,10 +383,10 @@ export default function AssignmentPage() {
         // Determine intended managerId based on drop zone
         let newManagerId: string | null = null; // Default to 'unassigned'
 
-        if (targetZone === 'my-zone') {
+        if (targetZone === 'my-zone' || targetZone === 'my-zone-mobile') {
             if (!currentUser) return;
             newManagerId = currentUser.id;
-        } else if (targetZone === 'unassigned-zone') {
+        } else if (targetZone === 'unassigned-zone' || targetZone === 'unassigned-mobile') {
             newManagerId = null;
         } else {
             return; // Invalid zone
@@ -460,6 +524,9 @@ export default function AssignmentPage() {
 
                 </div>
             </div>
+
+            {/* Mobile Drop Dial / Pincher UI */}
+            <MobileDropDock activeStar={activeStar || null} />
 
             <DragOverlay dropAnimation={{ duration: 150, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
                 {activeStar ? (

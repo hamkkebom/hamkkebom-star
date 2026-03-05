@@ -222,10 +222,10 @@ export function UploadPageClient({
 
   return (
     <div className="space-y-8 pb-20">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-2 sm:gap-4 md:flex-row md:items-center md:justify-between px-2 sm:px-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">프로젝트 찾기 & 제출</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">프로젝트 찾기 & 제출</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             원하는 프로젝트를 찾아보고 작업한 영상을 제출하세요.
           </p>
         </div>
@@ -243,60 +243,60 @@ export function UploadPageClient({
 
           {/* Title Section */}
           <div className="md:w-1/3 flex flex-col gap-2 text-center md:text-left">
-            <div className="inline-flex items-center justify-center md:justify-start gap-2 text-xs font-bold tracking-wider text-indigo-500 uppercase">
-              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+            <div className="inline-flex items-center justify-center md:justify-start gap-2 text-[10px] sm:text-xs font-bold tracking-wider text-indigo-500 uppercase">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-indigo-500 animate-pulse"></span>
               Star Workflow Guide
             </div>
-            <h3 className="text-xl md:text-2xl font-bold text-zinc-800 dark:text-zinc-100 leading-tight">
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-zinc-800 dark:text-zinc-100 leading-tight">
               효율적인 <br className="hidden md:block" />
               <span className="text-indigo-600 dark:text-indigo-400">프로젝트 관리</span>의 시작
             </h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mt-1">
+            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mt-1">
               스타님을 위한 최적화된 워크플로우입니다. <br />
               간단한 3단계로 작업을 시작하고 완료하세요.
             </p>
           </div>
 
           {/* Workflow Steps */}
-          <div className="md:w-2/3 w-full grid grid-cols-1 sm:grid-cols-3 gap-4 relative">
+          <div className="md:w-2/3 w-full grid grid-cols-3 gap-2 sm:gap-4 relative">
 
             {/* Connecting Line (Desktop) */}
             <div className="hidden sm:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-800 to-transparent -translate-y-1/2 z-0"></div>
 
             {/* Step 1 */}
-            <div className="relative z-10 flex flex-col items-center text-center gap-3 group/step">
-              <div className="w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 shadow-sm flex items-center justify-center text-zinc-400 group-hover/step:text-indigo-500 group-hover/step:border-indigo-100 transition-all duration-300">
-                <Search className="h-5 w-5" />
+            <div className="relative z-10 flex flex-col items-center text-center gap-2 sm:gap-3 group/step">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 shadow-sm flex items-center justify-center text-zinc-400 group-hover/step:text-indigo-500 group-hover/step:border-indigo-100 transition-all duration-300">
+                <Search className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <h4 className="font-bold text-sm text-zinc-700 dark:text-zinc-200">탐색 (Explore)</h4>
-                <p className="text-xs text-zinc-500 mt-1">
+                <h4 className="font-bold text-xs sm:text-sm text-zinc-700 dark:text-zinc-200">탐색 (Explore)</h4>
+                <p className="hidden sm:block text-[10px] sm:text-xs text-zinc-500 mt-1">
                   &apos;프로젝트 찾기&apos; 탭에서<br />새로운 의뢰 확인
                 </p>
               </div>
             </div>
 
             {/* Step 2 */}
-            <div className="relative z-10 flex flex-col items-center text-center gap-3 group/step">
-              <div className="w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 shadow-sm flex items-center justify-center text-zinc-400 group-hover/step:text-indigo-500 group-hover/step:border-indigo-100 transition-all duration-300">
-                <CheckCircle2 className="h-5 w-5" />
+            <div className="relative z-10 flex flex-col items-center text-center gap-2 sm:gap-3 group/step">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 shadow-sm flex items-center justify-center text-zinc-400 group-hover/step:text-indigo-500 group-hover/step:border-indigo-100 transition-all duration-300">
+                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <h4 className="font-bold text-sm text-zinc-700 dark:text-zinc-200">수락 (Accept)</h4>
-                <p className="text-xs text-zinc-500 mt-1">
+                <h4 className="font-bold text-xs sm:text-sm text-zinc-700 dark:text-zinc-200">수락 (Accept)</h4>
+                <p className="hidden sm:block text-[10px] sm:text-xs text-zinc-500 mt-1">
                   [지원하기] 클릭 시<br />즉시 내 작업으로 이동
                 </p>
               </div>
             </div>
 
             {/* Step 3 */}
-            <div className="relative z-10 flex flex-col items-center text-center gap-3 group/step">
-              <div className="w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 shadow-sm flex items-center justify-center text-zinc-400 group-hover/step:text-indigo-500 group-hover/step:border-indigo-100 transition-all duration-300">
-                <FolderOpen className="h-5 w-5" />
+            <div className="relative z-10 flex flex-col items-center text-center gap-2 sm:gap-3 group/step">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 shadow-sm flex items-center justify-center text-zinc-400 group-hover/step:text-indigo-500 group-hover/step:border-indigo-100 transition-all duration-300">
+                <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <h4 className="font-bold text-sm text-zinc-700 dark:text-zinc-200">제출 (Submit)</h4>
-                <p className="text-xs text-zinc-500 mt-1">
+                <h4 className="font-bold text-xs sm:text-sm text-zinc-700 dark:text-zinc-200">제출 (Submit)</h4>
+                <p className="hidden sm:block text-[10px] sm:text-xs text-zinc-500 mt-1">
                   작업물 업로드 및<br />피드백 관리
                 </p>
               </div>
@@ -306,22 +306,26 @@ export function UploadPageClient({
         </div>
       </div>
 
-      <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "my-projects" | "explore")} className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
-          <TabsList className="h-10 w-full sm:w-auto grid grid-cols-2 sm:flex">
-            <TabsTrigger value="my-projects" className="gap-2 px-6">
-              <FolderOpen className="h-4 w-4" />
+      <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "my-projects" | "explore")} className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b pb-4 px-2 sm:px-0">
+          <TabsList className="h-10 w-full sm:w-auto grid grid-cols-2">
+            <TabsTrigger value="my-projects" className="gap-1.5 sm:gap-2 px-2 sm:px-6 text-xs sm:text-sm">
+              <FolderOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               프로젝트 제출
-              <Badge className="ml-1 px-1.5 h-5 min-w-[1.25rem]">{assignments.length}</Badge>
+              <Badge className="ml-0.5 sm:ml-1 px-1 sm:px-1.5 h-4 sm:h-5 min-w-[1.25rem] text-[10px] sm:text-xs">
+                {assignments.length}
+              </Badge>
             </TabsTrigger>
-            <TabsTrigger value="explore" className="gap-2 px-6">
-              <Sparkles className="h-4 w-4" />
+            <TabsTrigger value="explore" className="gap-1.5 sm:gap-2 px-2 sm:px-6 text-xs sm:text-sm">
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               프로젝트 찾기
-              <Badge variant="secondary" className="ml-1 px-1.5 h-5 min-w-[1.25rem]">{openRequests.length}</Badge>
+              <Badge variant="secondary" className="ml-0.5 sm:ml-1 px-1 sm:px-1.5 h-4 sm:h-5 min-w-[1.25rem] text-[10px] sm:text-xs">
+                {openRequests.length}
+              </Badge>
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
             <div className="relative flex-1 sm:w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -381,7 +385,7 @@ export function UploadPageClient({
               </Button>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 px-2 sm:px-0">
               {filteredAssignments.map((assignment) => {
                 const statusInfo = statusMap[assignment.status] || { label: assignment.status, variant: "secondary" };
                 const isSelected = selectedAssignmentId === assignment.id;
@@ -393,35 +397,35 @@ export function UploadPageClient({
                     key={assignment.id}
                     onClick={() => setSelectedAssignmentId(prev => prev === assignment.id ? null : assignment.id)}
                     className={cn(
-                      "group relative cursor-pointer rounded-xl border bg-card p-5 transition-all duration-300 hover:shadow-md",
+                      "group relative cursor-pointer rounded-[1rem] sm:rounded-xl border bg-card p-4 sm:p-5 transition-all duration-300 active:scale-[0.98]",
                       isSelected
-                        ? "border-primary ring-1 ring-primary shadow-lg scale-[1.02]"
-                        : "hover:border-primary/50 hover:-translate-y-1"
+                        ? "border-primary ring-2 ring-primary/50 shadow-lg scale-[1.02] active:scale-100"
+                        : "hover:border-primary/50 hover:shadow-md hover:-translate-y-1"
                     )}
                   >
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start justify-between mb-2">
                       <Badge variant={statusInfo.variant} className={cn("capitalize shadow-sm", statusInfo.className)}>
                         {statusInfo.label}
                       </Badge>
                       {isSelected && (
-                        <div className="absolute top-4 right-4 text-primary animate-scale-in">
-                          <CheckCircle2 className="h-6 w-6 fill-primary/10" />
+                        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 text-primary animate-scale-in">
+                          <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 fill-primary/10" />
                         </div>
                       )}
                     </div>
 
-                    <h3 className={cn("font-bold leading-tight mb-2 line-clamp-2", isSelected ? "text-primary" : "text-card-foreground")}>
+                    <h3 className={cn("font-bold text-[15px] sm:text-base leading-snug mb-2 line-clamp-2 pr-6", isSelected ? "text-primary" : "text-foreground")}>
                       {assignment.requestTitle}
                     </h3>
 
-                    <div className="flex flex-wrap gap-1.5 mb-4">
+                    <div className="flex flex-wrap gap-1.5 mb-3">
                       {assignment.categories.slice(0, 3).map(cat => (
-                        <span key={cat} className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+                        <span key={cat} className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium border border-border/50">
                           {cat}
                         </span>
                       ))}
                       {assignment.categories.length > 3 && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/50">
                           +{assignment.categories.length - 3}
                         </span>
                       )}
@@ -432,7 +436,7 @@ export function UploadPageClient({
                         <Clock className="h-3.5 w-3.5" />
                         {dDay < 0 ? "마감됨" : dDay === 0 ? "오늘 마감" : `D-${dDay}`}
                       </div>
-                      <div className="flex items-center gap-1 ml-auto">
+                      <div className="flex items-center gap-1 ml-auto font-medium">
                         <CalendarDays className="h-3.5 w-3.5" />
                         {format(new Date(assignment.deadline), "MM.dd", { locale: ko })}
                       </div>
@@ -517,26 +521,26 @@ export function UploadPageClient({
                   </div>
 
                   {/* 입력 폼 */}
-                  <div className="grid gap-6 md:grid-cols-12">
-                    <div className="md:col-span-8 space-y-4">
+                  <div className="grid gap-5 md:grid-cols-12 md:gap-6">
+                    <div className="md:col-span-8 space-y-5">
                       <div className="space-y-2">
-                        <Label className="text-base">영상 제목 <span className="text-destructive">*</span></Label>
+                        <Label className="text-base font-bold">영상 제목 <span className="text-destructive">*</span></Label>
                         <Input
-                          placeholder="예: 1차 편집본, 수정 요청 반영 버전 등"
+                          placeholder="예: 1차 편집본, 수정 요청 반영 버전"
                           value={versionTitle}
                           onChange={(e) => setVersionTitle(e.target.value)}
-                          className="h-12 text-lg"
+                          className="h-12 text-base sm:text-lg rounded-xl shadow-sm"
                           maxLength={100}
                         />
                       </div>
 
 
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div className="space-y-2">
-                          <Label>카테고리</Label>
+                          <Label className="font-bold">카테고리</Label>
                           <select
-                            className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex h-12 w-full rounded-xl border border-input bg-background/50 backdrop-blur-sm px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shadow-sm transition-shadow hover:shadow-md"
                             value={categoryId}
                             onChange={(e) => setCategoryId(e.target.value)}
                           >
@@ -548,10 +552,10 @@ export function UploadPageClient({
                         </div>
 
                         <div className="space-y-2">
-                          <Label>제작의도 / 설명</Label>
+                          <Label className="font-bold">제작의도 / 설명</Label>
                           <Textarea
-                            placeholder="이 영상의 제작 의도나 시청 포인트를 적어주세요."
-                            className="h-12 min-h-[48px] resize-none py-3"
+                            placeholder="이 영상의 제작 의도를 적어주세요."
+                            className="h-12 min-h-[48px] resize-none py-3 rounded-xl shadow-sm"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             maxLength={2000}
@@ -559,22 +563,22 @@ export function UploadPageClient({
                         </div>
                       </div>
 
-                      <div className="space-y-2 mt-4">
-                        <Label>가사 (Lyrics)</Label>
+                      <div className="space-y-2">
+                        <Label className="font-bold">가사 (Lyrics)</Label>
                         <Textarea
                           placeholder="노래 가사가 있다면 입력해주세요."
                           value={lyrics}
                           onChange={(e) => setLyrics(e.target.value)}
-                          className="min-h-[200px] bg-muted/20 font-mono text-sm leading-relaxed"
+                          className="min-h-[160px] sm:min-h-[200px] bg-muted/10 font-mono text-xs sm:text-sm leading-relaxed rounded-xl shadow-inner border-border/50"
                         />
                       </div>
 
                       {/* 추가 메타데이터 (VideoSubject, Counselor, ExternalId) */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/20 p-4 rounded-xl border border-border/50 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-muted/20 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-border/50">
                         <div className="space-y-2">
-                          <Label>영상 주제</Label>
+                          <Label className="font-bold">영상 주제</Label>
                           <select
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-sm"
                             value={videoSubject}
                             onChange={(e) => setVideoSubject(e.target.value as VideoSubject)}
                           >
@@ -586,9 +590,9 @@ export function UploadPageClient({
 
                         {videoSubject === "COUNSELOR" && (
                           <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                            <Label>관련 상담사</Label>
+                            <Label className="font-bold">관련 상담사</Label>
                             <select
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-sm"
                               value={counselorId}
                               onChange={(e) => setCounselorId(e.target.value)}
                             >
@@ -606,33 +610,37 @@ export function UploadPageClient({
                       </div>
                     </div>
 
-                    <div className="md:col-span-4 space-y-4">
+                    <div className="md:col-span-4 space-y-5">
                       {/* 썸네일 업로드 영역 */}
                       <div className="space-y-2">
-                        <Label>썸네일 이미지</Label>
-                        <NanoFileUpload
-                          key={resetKey}
-                          onFileSelect={setThumbnailFile}
-                          accept={{ "image/*": [".png", ".jpg", ".jpeg", ".webp"] }}
-                          label="썸네일 찾기"
-                        />
+                        <Label className="font-bold">썸네일 이미지</Label>
+                        <div className="transform transition-transform active:scale-[0.98]">
+                          <NanoFileUpload
+                            key={resetKey}
+                            onFileSelect={setThumbnailFile}
+                            accept={{ "image/*": [".png", ".jpg", ".jpeg", ".webp"] }}
+                            label="썸네일 찾기"
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
-                        <Label>버전 정보</Label>
-                        <div className="rounded-lg border bg-card p-4 text-center">
-                          <p className="text-xs text-muted-foreground mb-2">이번 업로드 버전</p>
-                          <span className="text-2xl font-bold text-primary">v1.0</span>
-                          <p className="text-xs text-muted-foreground mt-2">버전 업은 상세 페이지에서 가능해요!</p>
+                        <Label className="font-bold">버전 정보</Label>
+                        <div className="rounded-xl border bg-card p-5 text-center shadow-sm">
+                          <p className="text-xs text-muted-foreground mb-1">이번 업로드 버전</p>
+                          <span className="text-3xl font-black text-primary drop-shadow-sm">v1.0</span>
+                          <p className="text-[10px] text-muted-foreground mt-2 bg-muted/50 inline-block px-2 py-1 rounded-full">
+                            이후 버전업은 상세 페이지에서 가능
+                          </p>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* 업로드 영역 */}
-                  <div className="pt-4 border-t">
+                  <div className="pt-6 border-t border-border/50">
                     {versionTitle.trim().length > 0 ? (
-                      <div className="animate-slide-up">
-                        <Label className="mb-3 block text-base">파일 업로드</Label>
+                      <div className="animate-slide-up bg-card rounded-2xl p-1 shadow-sm border border-border/80">
+                        <Label className="mb-4 block text-base font-bold px-2 py-2">파일 업로드 준비완료 🚀</Label>
                         <UploadDropzone
                           assignmentId={selectedAssignment.id}
                           versionSlot={0}
@@ -657,9 +665,15 @@ export function UploadPageClient({
                         />
                       </div>
                     ) : (
-                      <div className="rounded-xl border border-dashed bg-muted/20 px-4 py-10 text-center transition-colors hover:bg-muted/40">
-                        <p className="font-medium text-muted-foreground">
-                          제목을 입력하면 업로더가 활성화됩니다
+                      <div className="rounded-2xl border-2 border-dashed border-border/60 bg-muted/10 px-4 py-12 text-center transition-all">
+                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                          <AlertCircle className="w-6 h-6 text-muted-foreground/50" />
+                        </div>
+                        <p className="font-bold text-muted-foreground text-sm sm:text-base">
+                          영상의 제목을 먼저 입력해주세요!
+                        </p>
+                        <p className="text-xs sm:text-sm text-muted-foreground/60 mt-1">
+                          제목을 입력하면 파일 업로드 창이 열려요.
                         </p>
                       </div>
                     )}
@@ -684,7 +698,7 @@ export function UploadPageClient({
               <p className="text-muted-foreground mt-2">새로운 프로젝트가 올라올 때까지 조금만 기다려주세요!</p>
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 px-2 sm:px-0">
               {filteredOpenRequests.map((req) => {
                 const now = new Date();
                 const deadlineDate = new Date(req.deadline);
@@ -705,10 +719,10 @@ export function UploadPageClient({
                   <div
                     key={req.id}
                     className={cn(
-                      "group relative flex flex-col rounded-2xl border bg-card transition-all duration-300 overflow-hidden",
+                      "group relative flex flex-col rounded-[1rem] sm:rounded-2xl border bg-card transition-all duration-300 overflow-hidden",
                       isClosed
                         ? "opacity-60 bg-muted/20 border-border/50 grayscale-[0.5]"
-                        : "hover:shadow-xl hover:-translate-y-1 hover:border-primary/50",
+                        : "hover:shadow-xl hover:-translate-y-1 hover:border-primary/50 active:scale-[0.98]",
                       isUrgent && !isClosed && "ring-1 ring-destructive/20 border-destructive/20",
                       isPendingApproval && "ring-1 ring-amber-200 border-amber-200 bg-amber-500/5",
                       isRejected && "opacity-60 grayscale-[0.3]",
@@ -716,7 +730,7 @@ export function UploadPageClient({
                     )}
                   >
                     {/* 상단 뱃지 영역 */}
-                    <div className="p-5 pb-3 flex justify-between items-start z-10">
+                    <div className="p-4 sm:p-5 pb-3 flex justify-between items-start z-10">
                       <div className="flex gap-2">
                         {isPendingApproval ? (
                           <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 font-bold shadow-sm">
@@ -747,7 +761,7 @@ export function UploadPageClient({
                       </div>
 
                       <div className={cn(
-                        "text-xs font-bold px-2 py-1 rounded-md",
+                        "text-[10px] sm:text-xs font-bold px-2 py-1 rounded-md",
                         dDay < 0
                           ? "bg-muted text-muted-foreground"
                           : isUrgent
@@ -759,9 +773,9 @@ export function UploadPageClient({
                     </div>
 
                     {/* 컨텐츠 영역 */}
-                    <div className="px-5 space-y-3 mb-4">
+                    <div className="px-4 sm:px-5 space-y-3 mb-4">
                       <h3 className={cn(
-                        "font-bold text-lg leading-snug line-clamp-2 transition-colors",
+                        "font-bold text-[15px] sm:text-lg leading-snug line-clamp-2 transition-colors",
                         !isClosed && "group-hover:text-primary"
                       )}>
                         {req.title}
@@ -769,7 +783,7 @@ export function UploadPageClient({
 
                       <div className="flex flex-wrap gap-1.5">
                         {req.categories.slice(0, 3).map(cat => (
-                          <span key={cat} className="text-[10px] px-2 py-0.5 rounded-full bg-muted/80 text-muted-foreground font-medium border border-border/50">
+                          <span key={cat} className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full bg-muted/80 text-muted-foreground font-medium border border-border/50">
                             {cat}
                           </span>
                         ))}
@@ -777,7 +791,7 @@ export function UploadPageClient({
 
                       {/* 모집 현황 프로그레스 */}
                       <div className="space-y-1.5 pt-1">
-                        <div className="flex justify-between text-xs text-muted-foreground">
+                        <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground">
                           <span className={cn(isFull && "text-destructive font-bold")}>
                             {isFull ? "정원 마감" : `${req.currentCount}명 참여`}
                           </span>
@@ -791,37 +805,37 @@ export function UploadPageClient({
                     </div>
 
                     {/* 하단 액션 영역 */}
-                    <div className="mt-auto p-4 border-t bg-muted/20 flex items-center justify-between gap-3 group-hover:bg-muted/40 transition-colors">
+                    <div className="mt-auto p-3 sm:p-4 border-t bg-muted/20 flex items-center justify-between gap-3 group-hover:bg-muted/40 transition-colors">
                       <div className="flex flex-col">
-                        <span className="text-[10px] text-muted-foreground">마감일</span>
-                        <span className="text-xs font-medium">
+                        <span className="text-[9px] sm:text-[10px] text-muted-foreground">마감일</span>
+                        <span className="text-[11px] sm:text-xs font-medium">
                           {format(new Date(req.deadline), "yyyy.MM.dd")}
                         </span>
                       </div>
 
                       {isPendingApproval ? (
-                        <Button size="sm" variant="outline" disabled className="rounded-full opacity-70 border-amber-200 text-amber-600">
-                          <Clock className="h-3.5 w-3.5 mr-1.5" />
+                        <Button size="sm" variant="outline" disabled className="rounded-full h-8 sm:h-9 opacity-70 border-amber-200 text-amber-600 active:scale-95">
+                          <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
                           승인 대기 중
                         </Button>
                       ) : isRejected ? (
-                        <Button size="sm" variant="outline" disabled className="rounded-full opacity-50">
+                        <Button size="sm" variant="outline" disabled className="rounded-full h-8 sm:h-9 opacity-50 active:scale-95">
                           거절됨
                         </Button>
                       ) : isMyProject ? (
                         <Button
                           size="sm"
-                          className="rounded-full px-5 font-bold shadow-sm"
+                          className="rounded-full px-4 sm:px-5 h-8 sm:h-9 font-bold shadow-sm active:scale-95 transition-transform"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleGoToMyProject(req.id);
                           }}
                         >
                           작업하기
-                          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                          <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 ml-1 sm:ml-1.5" />
                         </Button>
                       ) : isClosed ? (
-                        <Button size="sm" variant="outline" disabled className="rounded-full opacity-50">
+                        <Button size="sm" variant="outline" disabled className="rounded-full h-8 sm:h-9 opacity-50 active:scale-95">
                           신청불가
                         </Button>
                       ) : (
@@ -829,7 +843,7 @@ export function UploadPageClient({
                           size="sm"
                           variant="default"
                           className={cn(
-                            "rounded-full px-5 font-bold shadow-sm transition-all",
+                            "rounded-full px-4 sm:px-5 h-8 sm:h-9 font-bold shadow-sm transition-all active:scale-95",
                             isUrgent ? "bg-destructive hover:bg-destructive/90 text-white" : ""
                           )}
                           disabled={applyMutation.isPending}
@@ -839,7 +853,7 @@ export function UploadPageClient({
                           }}
                         >
                           {applyMutation.isPending ? "신청중..." : "지원하기"}
-                          {!applyMutation.isPending && <ArrowRight className="h-3.5 w-3.5 ml-1.5" />}
+                          {!applyMutation.isPending && <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 ml-1 sm:ml-1.5" />}
                         </Button>
                       )}
                     </div>

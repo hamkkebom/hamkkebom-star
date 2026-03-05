@@ -31,6 +31,7 @@ import {
   Eye, EyeOff, Building
 } from "lucide-react";
 import { maskIdNumber } from "@/lib/settlement-utils";
+import { UserSwipeDeck, SwipeableUser } from "@/components/admin/user-swipe-deck";
 
 type UserRow = {
   id: string;
@@ -159,7 +160,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* 요약 카드 (클릭 필터) */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
         <Card
           className={`cursor-pointer transition-all duration-200 hover:shadow-md ${filter === "all" ? "ring-2 ring-primary border-transparent" : ""}`}
           onClick={() => handleFilterChange("all")}
@@ -219,7 +220,7 @@ export default function AdminUsersPage() {
         />
       </div>
 
-      {/* 테이블 */}
+      {/* 데스크톱/모바일 컨텐츠 분기 */}
       {isLoading ? (
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -227,135 +228,193 @@ export default function AdminUsersPage() {
           ))}
         </div>
       ) : (
-        <Card className="overflow-hidden shadow-sm border-slate-200 dark:border-slate-800">
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
-                <TableRow>
-                  <TableHead className="pl-6 font-semibold">이름(한글)</TableHead>
-                  <TableHead className="font-semibold">이름(중문)</TableHead>
-                  <TableHead className="font-semibold">이메일</TableHead>
-                  <TableHead className="font-semibold">역할</TableHead>
-                  <TableHead className="font-semibold">상태</TableHead>
-                  <TableHead className="font-semibold">가입일</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+        <>
+          {/* 모바일 스와이프 덱 (대기 상태일 때만 표시) */}
+          <div className="block md:hidden">
+            {filter === "pending" ? (
+              <UserSwipeDeck
+                users={rows.map(r => ({ ...r, createdAt: formatDate(r.createdAt) } as SwipeableUser))}
+                onApprove={(id) => approveMutation.mutate({ userId: id, approved: true })}
+                onReject={() => toast.info("모바일에서는 상세 보기 후 권한을 관리하세요.")} // For safety, we can just reject or ask for detail
+                onViewDetail={(u) => {
+                  const matched = rows.find(r => r.id === u.id);
+                  if (matched) handleRowClick(matched);
+                }}
+              />
+            ) : (
+              // 리스트 뷰 (모바일 명함형 리스트)
+              <div className="flex flex-col gap-3 mt-4">
                 {rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="py-16 text-center text-muted-foreground bg-slate-50/20 dark:bg-slate-900/10"
-                    >
-                      {search
-                        ? "검색 결과가 없습니다."
-                        : "가입한 사용자가 없습니다."}
-                    </TableCell>
-                  </TableRow>
+                  <div className="py-16 text-center text-muted-foreground bg-slate-50/20 dark:bg-slate-900/10 rounded-2xl border border-dashed">
+                    {search ? "검색 결과가 없습니다." : "가입한 사용자가 없습니다."}
+                  </div>
                 ) : (
                   rows.map((row) => (
-                    <TableRow
+                    <div
                       key={row.id}
-                      className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 group"
                       onClick={() => handleRowClick(row)}
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-4 active:scale-95 transition-transform"
                     >
-                      <TableCell className="pl-6 font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">
-                        {row.name}
-                      </TableCell>
-                      <TableCell className="text-slate-600 dark:text-slate-400 font-medium">
-                        {row.chineseName ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-slate-500 dark:text-slate-400">
-                        {row.email}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={row.role === "ADMIN" ? "default" : "secondary"}
-                          className={row.role === "ADMIN" ? "bg-slate-800" : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"}
-                        >
-                          {row.role === "ADMIN" ? "관리자" : row.role === "STAR" ? "STAR" : row.role}
+                      <Avatar className="h-12 w-12 border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800">
+                        <AvatarImage src={row.avatarUrl || ""} />
+                        <AvatarFallback className="text-xs font-bold bg-slate-200 dark:bg-slate-700">{row.name.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-bold text-slate-900 dark:text-white truncate">{row.name}</h3>
+                          {row.isApproved && <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{row.email}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <Badge className={
+                          row.isApproved
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-none shadow-none text-[10px]"
+                            : "bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400 border-none shadow-none text-[10px]"
+                        }>
+                          {row.isApproved ? "승인됨" : "대기중"}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {row.isApproved ? (
-                          <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 border-none shadow-none font-bold">
-                            승인됨
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800 font-bold"
-                          >
-                            대기중
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground font-medium">
-                        {formatDate(row.createdAt)}
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   ))
                 )}
-              </TableBody>
-            </Table>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{page}</span> / {totalPages} 페이지
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="h-8 px-2 lg:px-3"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1 hidden lg:block" />
-                    이전
-                  </Button>
-
-                  <div className="flex items-center gap-1 mx-2">
-                    {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-                      // 간단한 페이지네이션 표시 로직
-                      let pNum = page;
-                      if (totalPages <= 5) pNum = i + 1;
-                      else if (page <= 3) pNum = i + 1;
-                      else if (page >= totalPages - 2) pNum = totalPages - 4 + i;
-                      else pNum = page - 2 + i;
-
-                      return (
-                        <button
-                          key={pNum}
-                          onClick={() => setPage(pNum)}
-                          className={`w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium transition-colors ${page === pNum
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                            }`}
-                        >
-                          {pNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="h-8 px-2 lg:px-3"
-                  >
-                    다음
-                    <ChevronRight className="h-4 w-4 ml-1 hidden lg:block" />
-                  </Button>
-                </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* 데스크톱 테이블 뷰 */}
+          <div className="hidden md:block">
+            <Card className="overflow-hidden shadow-sm border-slate-200 dark:border-slate-800">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
+                    <TableRow>
+                      <TableHead className="pl-6 font-semibold">이름(한글)</TableHead>
+                      <TableHead className="font-semibold">이름(중문)</TableHead>
+                      <TableHead className="font-semibold">이메일</TableHead>
+                      <TableHead className="font-semibold">역할</TableHead>
+                      <TableHead className="font-semibold">상태</TableHead>
+                      <TableHead className="font-semibold">가입일</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="py-16 text-center text-muted-foreground bg-slate-50/20 dark:bg-slate-900/10"
+                        >
+                          {search
+                            ? "검색 결과가 없습니다."
+                            : "가입한 사용자가 없습니다."}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      rows.map((row) => (
+                        <TableRow
+                          key={row.id}
+                          className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 group active:bg-slate-100 dark:active:bg-slate-800"
+                          onClick={() => handleRowClick(row)}
+                        >
+                          <TableCell className="pl-6 font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">
+                            {row.name}
+                          </TableCell>
+                          <TableCell className="text-slate-600 dark:text-slate-400 font-medium">
+                            {row.chineseName ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-slate-500 dark:text-slate-400">
+                            {row.email}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={row.role === "ADMIN" ? "default" : "secondary"}
+                              className={row.role === "ADMIN" ? "bg-slate-800" : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"}
+                            >
+                              {row.role === "ADMIN" ? "관리자" : row.role === "STAR" ? "STAR" : row.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {row.isApproved ? (
+                              <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 border-none shadow-none font-bold">
+                                승인됨
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800 font-bold"
+                              >
+                                대기중
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground font-medium">
+                            {formatDate(row.createdAt)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">{page}</span> / {totalPages} 페이지
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="h-8 px-2 lg:px-3"
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1 hidden lg:block" />
+                        이전
+                      </Button>
+
+                      <div className="flex items-center gap-1 mx-2">
+                        {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                          // 간단한 페이지네이션 표시 로직
+                          let pNum = page;
+                          if (totalPages <= 5) pNum = i + 1;
+                          else if (page <= 3) pNum = i + 1;
+                          else if (page >= totalPages - 2) pNum = totalPages - 4 + i;
+                          else pNum = page - 2 + i;
+
+                          return (
+                            <button
+                              key={pNum}
+                              onClick={() => setPage(pNum)}
+                              className={`w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium transition-colors ${page === pNum
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                }`}
+                            >
+                              {pNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="h-8 px-2 lg:px-3"
+                      >
+                        다음
+                        <ChevronRight className="h-4 w-4 ml-1 hidden lg:block" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </>
       )}
 
       {/* 프리미엄 계정 상세 뷰 (Sheet) */}
@@ -495,7 +554,7 @@ export default function AdminUsersPage() {
                   {!selectedUser.isApproved ? (
                     <Button
                       size="lg"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-14 rounded-xl shadow-lg shadow-emerald-600/20"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all text-white font-bold h-14 rounded-xl shadow-lg shadow-emerald-600/20"
                       disabled={approveMutation.isPending}
                       onClick={() =>
                         approveMutation.mutate({
@@ -511,7 +570,7 @@ export default function AdminUsersPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 font-bold h-14 rounded-xl dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                      className="w-full border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 font-bold h-14 rounded-xl dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30 active:scale-[0.98] transition-all"
                       disabled={approveMutation.isPending}
                       onClick={() =>
                         approveMutation.mutate({

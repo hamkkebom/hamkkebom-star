@@ -235,11 +235,13 @@ export default function AdminSettingsPage() {
                             onChange={(e) => setNewName(e.target.value)}
                             placeholder="홍길동"
                             disabled={changingName}
+                            className="h-12 sm:h-10 text-base sm:text-sm"
                         />
                     </div>
                     <Button
                         onClick={handleNameChange}
                         disabled={changingName || !newName.trim() || newName.trim() === data?.name}
+                        className="w-full sm:w-auto h-12 sm:h-10 active:scale-[0.98] transition-transform"
                     >
                         {changingName ? "변경 중..." : "이름 변경"}
                     </Button>
@@ -268,11 +270,13 @@ export default function AdminSettingsPage() {
                             disabled={changingEmail}
                             readOnly={isEmailInputReadOnly}
                             onFocus={() => setIsEmailInputReadOnly(false)}
+                            className="h-12 sm:h-10 text-base sm:text-sm"
                         />
                     </div>
                     <Button
                         onClick={handleEmailChangeRequest}
                         disabled={changingEmail || !newEmail.trim()}
+                        className="w-full sm:w-auto h-12 sm:h-10 active:scale-[0.98] transition-transform"
                     >
                         {changingEmail ? "요청 중..." : "이메일 변경"}
                     </Button>
@@ -315,6 +319,7 @@ export default function AdminSettingsPage() {
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                             placeholder="6자 이상"
+                            className="h-12 sm:h-10 text-base sm:text-sm"
                         />
                     </div>
                     <div className="space-y-2">
@@ -325,9 +330,14 @@ export default function AdminSettingsPage() {
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="비밀번호를 다시 입력"
+                            className="h-12 sm:h-10 text-base sm:text-sm"
                         />
                     </div>
-                    <Button onClick={handlePasswordChange} disabled={changingPassword}>
+                    <Button
+                        onClick={handlePasswordChange}
+                        disabled={changingPassword}
+                        className="w-full sm:w-auto h-12 sm:h-10 active:scale-[0.98] transition-transform"
+                    >
                         {changingPassword ? "변경 중..." : "비밀번호 변경"}
                     </Button>
                 </CardContent>
@@ -343,7 +353,7 @@ export default function AdminSettingsPage() {
                     <p className="text-sm text-muted-foreground">
                         계정 삭제를 원하시면 관리자에게 문의해 주세요.
                     </p>
-                    <Button variant="destructive" disabled>
+                    <Button variant="destructive" disabled className="w-full sm:w-auto h-12 sm:h-10 text-sm">
                         계정 삭제 요청 (관리자 문의)
                     </Button>
                 </CardContent>

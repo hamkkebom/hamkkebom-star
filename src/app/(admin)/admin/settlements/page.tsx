@@ -656,7 +656,7 @@ export default function AdminSettlementsPage() {
             </div>
           </AnimatedCard>
 
-          {/* Table */}
+          {/* Table (Desktop & Mobile view) */}
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4].map((i) => (
@@ -664,106 +664,189 @@ export default function AdminSettlementsPage() {
               ))}
             </div>
           ) : (
-            <AnimatedCard delay={0.2}>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10">
-                      <Checkbox
-                        checked={rows.length > 0 && selectedIds.size === rows.length}
-                        onCheckedChange={handleToggleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead>연월</TableHead>
-                    <TableHead>STAR</TableHead>
-                    <TableHead className="text-center">항목</TableHead>
-                    <TableHead className="text-right">총액</TableHead>
-                    <TableHead className="text-center">상태</TableHead>
-                    <TableHead className="text-right">관리</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="py-16 text-center text-muted-foreground">
-                        <div className="flex flex-col items-center gap-2">
-                          <FileText className="h-8 w-8 opacity-40" />
-                          <p>정산 내역이 없습니다.</p>
-                          <p className="text-xs">상단에서 정산을 생성해주세요.</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    <AnimatePresence>
-                      {rows.map((row, index) => (
-                        <motion.tr
-                          key={row.id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.03, duration: 0.2 }}
-                          className="group cursor-pointer border-b transition-colors hover:bg-muted/50"
-                          onClick={() => handleOpenDetail(row.id)}
-                        >
-                          <TableCell onClick={(e) => e.stopPropagation()}>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <AnimatedCard delay={0.2}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={rows.length > 0 && selectedIds.size === rows.length}
+                            onCheckedChange={handleToggleSelectAll}
+                          />
+                        </TableHead>
+                        <TableHead>연월</TableHead>
+                        <TableHead>STAR</TableHead>
+                        <TableHead className="text-center">항목</TableHead>
+                        <TableHead className="text-right">총액</TableHead>
+                        <TableHead className="text-center">상태</TableHead>
+                        <TableHead className="text-right">관리</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="py-16 text-center text-muted-foreground">
+                            <div className="flex flex-col items-center gap-2">
+                              <FileText className="h-8 w-8 opacity-40" />
+                              <p>정산 내역이 없습니다.</p>
+                              <p className="text-xs">상단에서 정산을 생성해주세요.</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        <AnimatePresence>
+                          {rows.map((row, index) => (
+                            <motion.tr
+                              key={row.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.03, duration: 0.2 }}
+                              className="group cursor-pointer border-b transition-colors hover:bg-muted/50"
+                              onClick={() => handleOpenDetail(row.id)}
+                            >
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <Checkbox
+                                  checked={selectedIds.has(row.id)}
+                                  onCheckedChange={() => handleToggleSelect(row.id)}
+                                />
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {formatDateRange(new Date(row.startDate), new Date(row.endDate))}
+                              </TableCell>
+                              <TableCell>{getStarDisplayName(row.star)}</TableCell>
+                              <TableCell className="text-center">{row._count.items}건</TableCell>
+                              <TableCell className="text-right tabular-nums">
+                                {Number(row.totalAmount) === 0 ? (
+                                  <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                    0원
+                                  </span>
+                                ) : (
+                                  formatAmount(Number(row.totalAmount))
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <GlowBadge
+                                  label={STATUS_GLOW_MAP[row.status]?.label ?? row.status}
+                                  variant={STATUS_GLOW_MAP[row.status]?.variant ?? "pending"}
+                                />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                  {(row.status === "PENDING" || row.status === "PROCESSING") && (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setConfirmTarget(row)}
+                                        disabled={completeMutation.isPending}
+                                      >
+                                        확정
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setDeleteTarget(row)}
+                                        disabled={deleteMutation.isPending}
+                                        className="text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              </TableCell>
+                            </motion.tr>
+                          ))}
+                        </AnimatePresence>
+                      )}
+                    </TableBody>
+                  </Table>
+                </AnimatedCard>
+              </div>
+
+              {/* Mobile Receipt-style Card List */}
+              <div className="block md:hidden space-y-3 mt-4">
+                {rows.length === 0 ? (
+                  <div className="py-16 text-center text-muted-foreground bg-slate-50/20 dark:bg-slate-900/10 rounded-2xl border border-dashed flex flex-col items-center">
+                    <FileText className="h-8 w-8 opacity-40 mb-2" />
+                    <p>정산 내역이 없습니다.</p>
+                  </div>
+                ) : (
+                  <AnimatePresence>
+                    {rows.map((row, index) => (
+                      <motion.div
+                        key={row.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03, duration: 0.2 }}
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col gap-3 active:scale-[0.98] transition-all shadow-sm"
+                        onClick={() => handleOpenDetail(row.id)}
+                      >
+                        {/* Header */}
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                          <div className="flex items-center gap-2">
                             <Checkbox
                               checked={selectedIds.has(row.id)}
                               onCheckedChange={() => handleToggleSelect(row.id)}
+                              onClick={(e) => e.stopPropagation()}
                             />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {formatDateRange(new Date(row.startDate), new Date(row.endDate))}
-                          </TableCell>
-                          <TableCell>{getStarDisplayName(row.star)}</TableCell>
-                          <TableCell className="text-center">{row._count.items}건</TableCell>
-                          <TableCell className="text-right tabular-nums">
+                            <div>
+                              <h3 className="font-bold text-slate-900 dark:text-white leading-tight">{getStarDisplayName(row.star)}</h3>
+                              <p className="text-[10px] text-slate-500">{formatDateRange(new Date(row.startDate), new Date(row.endDate))}</p>
+                            </div>
+                          </div>
+                          <GlowBadge
+                            label={STATUS_GLOW_MAP[row.status]?.label ?? row.status}
+                            variant={STATUS_GLOW_MAP[row.status]?.variant ?? "pending"}
+                          />
+                        </div>
+
+                        {/* Body */}
+                        <div className="flex justify-between items-center text-sm pt-1">
+                          <div className="text-slate-500">
+                            총 {row._count.items}건 항목
+                          </div>
+                          <div className="font-bold text-lg tracking-tight">
                             {Number(row.totalAmount) === 0 ? (
-                              <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                                <AlertTriangle className="h-3.5 w-3.5" />
-                                0원
-                              </span>
+                              <span className="text-amber-600 flex items-center gap-1 text-sm"><AlertTriangle className="w-3.5 h-3.5" /> 0원</span>
                             ) : (
                               formatAmount(Number(row.totalAmount))
                             )}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <GlowBadge
-                              label={STATUS_GLOW_MAP[row.status]?.label ?? row.status}
-                              variant={STATUS_GLOW_MAP[row.status]?.variant ?? "pending"}
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                              {(row.status === "PENDING" || row.status === "PROCESSING") && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setConfirmTarget(row)}
-                                    disabled={completeMutation.isPending}
-                                  >
-                                    확정
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setDeleteTarget(row)}
-                                    disabled={deleteMutation.isPending}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
-                              <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
-                          </TableCell>
-                        </motion.tr>
-                      ))}
-                    </AnimatePresence>
-                  )}
-                </TableBody>
-              </Table>
-            </AnimatedCard>
+                          </div>
+                        </div>
+
+                        {/* Footer / Actions */}
+                        {(row.status === "PENDING" || row.status === "PROCESSING") && (
+                          <div className="flex items-center gap-2 mt-2 pt-3 border-t border-slate-50 dark:border-slate-800">
+                            <Button
+                              variant="default"
+                              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10"
+                              onClick={(e) => { e.stopPropagation(); setConfirmTarget(row); }}
+                              disabled={completeMutation.isPending}
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-1.5" /> 확정 승인
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="border-rose-200 text-rose-600 h-10 px-3"
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget(row); }}
+                              disabled={deleteMutation.isPending}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                )}
+              </div>
+            </>
           )}
         </TabsContent>
 

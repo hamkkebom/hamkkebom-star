@@ -284,16 +284,16 @@ export function VideoManagerClient({
             <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/15 dark:bg-primary/10 blur-[120px] rounded-full -translate-y-1/2 pointer-events-none -z-10" />
 
             {/* 1. Floating Header — 항상 즉시 표시 */}
-            <header className="sticky top-4 z-50 mx-4 sm:mx-6 mb-8">
-                <div className="bg-background/80 backdrop-blur-2xl border border-border rounded-full px-4 py-3 flex items-center justify-between shadow-xl transition-all">
-                    <div className="flex items-center gap-3">
+            <header className="sticky top-2 sm:top-4 z-50 mx-2 sm:mx-6 mb-4 sm:mb-8 transition-all">
+                <div className="bg-background/80 backdrop-blur-2xl border border-border rounded-full px-3 py-2 sm:px-4 sm:py-3 flex items-center justify-between shadow-lg sm:shadow-xl transition-all">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="rounded-full w-10 h-10 hover:bg-muted transition-all hover:scale-105"
+                            className="rounded-full w-9 h-9 sm:w-10 sm:h-10 hover:bg-muted active:scale-95 transition-all hover:scale-105"
                             onClick={() => router.push("/stars/my-videos")}
                         >
-                            <ArrowLeft className="w-5 h-5" />
+                            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                         </Button>
                         {isLoading ? (
                             <div className="space-y-1">
@@ -315,14 +315,15 @@ export function VideoManagerClient({
                         ) : null}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                         {/* Version Bump Button — 데이터 로드 후 최신 버전에서만 노출 */}
                         {!isLoading && data && isLatestVersion && (
                             <Dialog open={showBumpModal} onOpenChange={setShowBumpModal}>
                                 <DialogTrigger asChild>
-                                    <Button className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 gap-2 shadow-lg shadow-indigo-500/20 border border-indigo-400/30 animate-pulse-subtle">
-                                        <Sparkles className="w-4 h-4 text-yellow-300" />
-                                        <span>다음 버전 업데이트</span>
+                                    <Button className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 sm:px-4 h-9 sm:h-10 gap-1.5 shadow-lg shadow-indigo-500/20 border border-indigo-400/30 animate-pulse-subtle active:scale-95 transition-transform">
+                                        <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-300" />
+                                        <span className="hidden sm:inline">다음 버전 업데이트</span>
+                                        <span className="sm:hidden text-xs">업데이트</span>
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-2xl bg-background/95 backdrop-blur-xl border-white/20 max-h-[90vh] overflow-y-auto">
@@ -394,7 +395,7 @@ export function VideoManagerClient({
                         {/* History Sheet Trigger */}
                         <Sheet>
                             <SheetTrigger asChild>
-                                <Button variant="outline" className="rounded-full h-10 px-4 gap-2">
+                                <Button variant="outline" className="rounded-full h-9 w-9 sm:w-auto sm:h-10 sm:px-4 p-0 sm:gap-2 active:scale-95 transition-transform">
                                     <History className="w-4 h-4" />
                                     <span className="hidden sm:inline">버전 히스토리</span>
                                 </Button>
@@ -424,12 +425,12 @@ export function VideoManagerClient({
             </header>
 
             {/* 2. Hero Cinema Section */}
-            <section className="px-4 sm:px-6 lg:px-12 mb-12">
+            <section className="px-2 sm:px-4 lg:px-12 mb-8 sm:mb-12">
                 <div className="relative w-full max-w-6xl mx-auto group">
                     {/* Dynamic Glow */}
-                    <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-60 dark:group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
+                    <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 rounded-[2rem] sm:rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-60 dark:group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
 
-                    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl ring-1 ring-border bg-muted dark:bg-black transform transition-transform duration-700 hover:scale-[1.005]">
+                    <div className="relative rounded-[1rem] sm:rounded-[2rem] overflow-hidden shadow-2xl ring-1 ring-border bg-muted dark:bg-black transform transition-transform duration-700 hover:scale-[1.005]">
                         {isLoading ? (
                             <Skeleton className="aspect-video w-full" />
                         ) : streamUid ? (
@@ -455,10 +456,10 @@ export function VideoManagerClient({
             </section>
 
             {/* 3. Info Section: Metadata + Asset Card */}
-            <section className="px-4 sm:px-6 lg:px-12 max-w-5xl mx-auto">
+            <section className="px-3 sm:px-6 lg:px-12 max-w-5xl mx-auto">
                 {isLoading ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 bg-card/80 backdrop-blur-lg border border-border rounded-3xl p-8 shadow-lg">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                        <div className="lg:col-span-2 bg-card/80 backdrop-blur-lg border border-border rounded-[1.5rem] sm:rounded-3xl p-5 sm:p-8 shadow-lg">
                             <Skeleton className="h-8 w-48 mb-4" />
                             <Skeleton className="h-12 w-full mb-4" />
                             <Skeleton className="h-32 w-full" />
@@ -469,9 +470,9 @@ export function VideoManagerClient({
                         </div>
                     </div>
                 ) : data ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                         {/* Left 2/3: Creator Notes */}
-                        <div className="lg:col-span-2 bg-card/80 backdrop-blur-lg border border-border rounded-3xl p-8 shadow-lg relative overflow-hidden transition-colors">
+                        <div className="lg:col-span-2 bg-card/80 backdrop-blur-lg border border-border rounded-[1.5rem] sm:rounded-3xl p-5 sm:p-8 shadow-lg relative overflow-hidden transition-colors">
                             <div className="absolute top-0 right-0 p-6 opacity-[0.08] pointer-events-none">
                                 <Sparkles className="w-28 h-28 transform rotate-12" />
                             </div>

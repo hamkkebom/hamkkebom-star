@@ -3,7 +3,15 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ScrollText, Activity, Calendar, User, Zap } from "lucide-react";
+import { ChevronDown, ScrollText, Activity, Calendar, User, Zap, Filter } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
 
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -225,42 +233,43 @@ export default function AdminLogsPage() {
         <p className="text-muted-foreground mt-2">시스템 내 모든 관리자 및 주요 활동 내역을 확인합니다.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <AnimatedCard delay={0.05} className="p-5 flex flex-col gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <AnimatedCard delay={0.05} className="p-4 md:p-5 flex flex-col gap-1 md:gap-2">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Activity className="w-4 h-4" />
-            <span className="text-sm font-medium">오늘 활동</span>
+            <span className="text-xs md:text-sm font-medium">오늘 활동</span>
           </div>
-          <div className="text-2xl font-bold">
+          <div className="text-xl md:text-2xl font-bold">
             <NumberTicker value={stats.todayCount} />
           </div>
         </AnimatedCard>
-        <AnimatedCard delay={0.1} className="p-5 flex flex-col gap-2">
+        <AnimatedCard delay={0.1} className="p-4 md:p-5 flex flex-col gap-1 md:gap-2">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="w-4 h-4" />
-            <span className="text-sm font-medium">이번 주 활동</span>
+            <span className="text-xs md:text-sm font-medium">이번 주 활동</span>
           </div>
-          <div className="text-2xl font-bold">
+          <div className="text-xl md:text-2xl font-bold">
             <NumberTicker value={stats.weekCount} />
           </div>
         </AnimatedCard>
-        <AnimatedCard delay={0.15} className="p-5 flex flex-col gap-2">
+        <AnimatedCard delay={0.15} className="p-4 md:p-5 flex flex-col gap-1 md:gap-2">
           <div className="flex items-center gap-2 text-muted-foreground">
             <User className="w-4 h-4" />
-            <span className="text-sm font-medium">가장 활발한 관리자</span>
+            <span className="text-xs md:text-sm font-medium">가장 활발한 관리자</span>
           </div>
-          <div className="text-2xl font-bold truncate">{stats.topActor}</div>
+          <div className="text-xl md:text-2xl font-bold truncate">{stats.topActor}</div>
         </AnimatedCard>
-        <AnimatedCard delay={0.2} className="p-5 flex flex-col gap-2">
+        <AnimatedCard delay={0.2} className="p-4 md:p-5 flex flex-col gap-1 md:gap-2">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Zap className="w-4 h-4" />
-            <span className="text-sm font-medium">가장 많은 액션</span>
+            <span className="text-xs md:text-sm font-medium">가장 많은 액션</span>
           </div>
-          <div className="text-2xl font-bold truncate">{stats.topAction}</div>
+          <div className="text-xl md:text-2xl font-bold truncate">{stats.topAction}</div>
         </AnimatedCard>
       </div>
 
-      <AnimatedCard delay={0.25}>
+      {/* Desktop Filters */}
+      <AnimatedCard delay={0.25} className="hidden md:block">
         <div className="flex flex-wrap items-center gap-3 p-4">
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" placeholder="시작일" />
           <span className="text-muted-foreground text-sm">~</span>
@@ -314,7 +323,86 @@ export default function AdminLogsPage() {
         </div>
       </AnimatedCard>
 
-      <AnimatedCard delay={0.3} className="p-6">
+      {/* Mobile Filters UI */}
+      <div className="md:hidden flex items-center justify-between mt-4 mb-2 px-1">
+        <h2 className="text-lg font-bold">로그 타임라인</h2>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="rounded-2xl h-10 px-4 shadow-sm border-border/60">
+              <Filter className="w-4 h-4 mr-2 text-muted-foreground" /> 필터
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="rounded-t-[32px] p-6 pt-8 bg-background max-h-[85vh] overflow-y-auto">
+            <SheetHeader className="mb-6 text-left">
+              <SheetTitle className="text-2xl font-black">로그 필터링</SheetTitle>
+            </SheetHeader>
+            <div className="flex flex-col gap-5">
+              <div className="space-y-2.5">
+                <Label className="text-xs font-bold text-muted-foreground ml-1">날짜 검색</Label>
+                <div className="flex items-center gap-2">
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="flex-1 h-14 rounded-2xl" />
+                  <span className="text-muted-foreground">~</span>
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="flex-1 h-14 rounded-2xl" />
+                </div>
+              </div>
+              <div className="space-y-2.5">
+                <Label className="text-xs font-bold text-muted-foreground ml-1">액션 유형</Label>
+                <Select value={filterAction} onValueChange={setFilterAction}>
+                  <SelectTrigger className="w-full h-14 rounded-2xl text-base"><SelectValue placeholder="액션 유형" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">전체</SelectItem>
+                    <SelectItem value="APPROVE_USER">사용자 승인</SelectItem>
+                    <SelectItem value="REVOKE_USER">사용자 취소</SelectItem>
+                    <SelectItem value="CREATE_PROJECT_REQUEST">제작요청 생성</SelectItem>
+                    <SelectItem value="UPDATE_PROJECT_REQUEST">제작요청 수정</SelectItem>
+                    <SelectItem value="DELETE_PROJECT_REQUEST">제작요청 삭제</SelectItem>
+                    <SelectItem value="ACCEPT_PROJECT_REQUEST">제작요청 수락</SelectItem>
+                    <SelectItem value="APPROVE_ASSIGNMENT">배정 승인</SelectItem>
+                    <SelectItem value="REJECT_ASSIGNMENT">배정 거절</SelectItem>
+                    <SelectItem value="APPROVE_SUBMISSION">제출물 승인</SelectItem>
+                    <SelectItem value="REJECT_SUBMISSION">제출물 거절</SelectItem>
+                    <SelectItem value="BULK_ACTION_SUBMISSIONS">제출물 일괄처리</SelectItem>
+                    <SelectItem value="CREATE_FEEDBACK">피드백 생성</SelectItem>
+                    <SelectItem value="DELETE_FEEDBACK">피드백 삭제</SelectItem>
+                    <SelectItem value="GENERATE_SETTLEMENTS">정산 생성</SelectItem>
+                    <SelectItem value="COMPLETE_SETTLEMENT">정산 확정</SelectItem>
+                    <SelectItem value="CANCEL_SETTLEMENT">정산 취소</SelectItem>
+                    <SelectItem value="DELETE_SETTLEMENT">정산 삭제</SelectItem>
+                    <SelectItem value="ADJUST_SETTLEMENT_ITEM">정산 항목 조정</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2.5">
+                <Label className="text-xs font-bold text-muted-foreground ml-1">엔티티 유형</Label>
+                <Select value={filterEntityType} onValueChange={setFilterEntityType}>
+                  <SelectTrigger className="w-full h-14 rounded-2xl text-base"><SelectValue placeholder="엔티티 유형" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">전체</SelectItem>
+                    <SelectItem value="User">사용자</SelectItem>
+                    <SelectItem value="ProjectRequest">제작요청</SelectItem>
+                    <SelectItem value="ProjectAssignment">배정</SelectItem>
+                    <SelectItem value="Submission">제출물</SelectItem>
+                    <SelectItem value="Feedback">피드백</SelectItem>
+                    <SelectItem value="Settlement">정산</SelectItem>
+                    <SelectItem value="SettlementItem">정산 항목</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2.5">
+                <Label className="text-xs font-bold text-muted-foreground ml-1">관리자명 검색</Label>
+                <Input
+                  placeholder="이름으로 검색..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full h-14 rounded-2xl text-base"
+                />
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      <AnimatedCard delay={0.3} className="p-4 md:p-6">
         {isLoading ? (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5, 6].map(i => (

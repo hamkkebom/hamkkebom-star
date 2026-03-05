@@ -42,6 +42,7 @@ export async function GET(_req: NextRequest) {
                 name: true,
                 avatarUrl: true,
                 createdAt: true,
+                isApproved: true,
                 _count: {
                     select: { managedStars: true },
                 },
@@ -109,6 +110,41 @@ export async function POST(req: NextRequest) {
 
     } catch (err) {
         console.error("Create Admin API Error:", err);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
+
+export async function PATCH(req: NextRequest) {
+    try {
+        const supabase = await createServerClient();
+        const { data: { user }, error } = await supabase.auth.getUser();
+
+        if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const requester = await prisma.user.findUnique({
+            where: { authId: user.id },
+            select: { role: true },
+        });
+
+        if (!requester || requester.role !== "ADMIN") {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const body = await req.json();
+        const { id, isApproved } = body;
+
+        if (!id || typeof isApproved !== "boolean") {
+            return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+        }
+
+        const updatedAdmin = await prisma.user.update({
+            where: { id },
+            data: { isApproved },
+        });
+
+        return NextResponse.json({ data: updatedAdmin });
+    } catch (err) {
+        console.error("Update Admin API Error:", err);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

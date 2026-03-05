@@ -26,9 +26,9 @@ function FinancialKpiSection() {
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:gap-6 md:pb-0 md:px-0 md:mx-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-40 rounded-3xl bg-slate-200/50 dark:bg-slate-800/50" />
+                    <Skeleton key={i} className="w-[85vw] sm:w-[300px] md:w-auto shrink-0 h-40 rounded-3xl bg-slate-200/50 dark:bg-slate-800/50" />
                 ))}
             </div>
         );
@@ -47,19 +47,20 @@ function FinancialKpiSection() {
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-4 -mx-4 px-4 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:snap-none md:gap-6 md:pb-0 md:px-0 md:mx-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {data.map((kpi: any, index: number) => (
-                <InsightKpiCard
-                    key={kpi.title}
-                    title={`${kpi.title} (30일)`}
-                    value={kpi.value}
-                    trend={kpi.trend}
-                    icon={getIcon(kpi.icon)}
-                    suffix={kpi.suffix}
-                    prefix={kpi.prefix}
-                    isCurrency={kpi.isCurrency}
-                    delay={0.1 + (index * 0.1)}
-                />
+                <div key={kpi.title} className="w-[85vw] sm:w-[300px] shrink-0 snap-center md:w-auto md:shrink">
+                    <InsightKpiCard
+                        title={`${kpi.title} (30일)`}
+                        value={kpi.value}
+                        trend={kpi.trend}
+                        icon={getIcon(kpi.icon)}
+                        suffix={kpi.suffix}
+                        prefix={kpi.prefix}
+                        isCurrency={kpi.isCurrency}
+                        delay={0.1 + (index * 0.1)}
+                    />
+                </div>
             ))}
         </div>
     );

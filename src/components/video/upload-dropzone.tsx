@@ -246,21 +246,27 @@ export function UploadDropzone({
   if (status === "uploaded" || status === "done") {
     return (
       <>
-        <Card>
-          <CardContent className="space-y-4 py-6">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{fileName}</p>
-                <p className="text-xs text-green-600">업로드 완료</p>
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardContent className="space-y-5 p-0 sm:py-6">
+            <div className="flex items-center justify-between bg-muted/30 p-4 sm:p-5 rounded-2xl border border-border/50">
+              <div className="min-w-0 flex-1 flex flex-col gap-1">
+                <p className="truncate text-sm sm:text-base font-bold">{fileName}</p>
+                <p className="text-[10px] sm:text-xs text-green-600 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                  영상이 성공적으로 준비되었습니다
+                </p>
               </div>
-              <span className="text-sm font-semibold text-green-600">✓</span>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-500/10 flex items-center justify-center shrink-0 ml-3">
+                <span className="text-sm sm:text-base font-bold text-green-600">✓</span>
+              </div>
             </div>
             <Button
-              className="w-full"
+              size="lg"
+              className="w-full h-12 sm:h-14 text-base sm:text-lg rounded-xl sm:rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95 transition-all"
               onClick={handleSubmit}
               disabled={status === "done"}
             >
-              {status === "done" ? "제출 완료" : "제출하기"}
+              {status === "done" ? "제출 완료 🎉" : "이 영상으로 제출하기 🚀"}
             </Button>
           </CardContent>
         </Card>
@@ -285,21 +291,24 @@ export function UploadDropzone({
 
   return (
     <Card
-      className="cursor-pointer border-2 border-dashed transition-colors hover:border-primary/60"
+      className="cursor-pointer border-2 border-dashed bg-card/50 hover:bg-muted/20 transition-all duration-300 hover:border-primary/60 active:scale-[0.98] rounded-2xl sm:rounded-3xl overflow-hidden group"
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
     >
-      <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
-        <div className="rounded-full bg-muted p-4">
+      <CardContent className="flex flex-col items-center justify-center gap-4 py-16 sm:py-20 relative px-4">
+        {/* Hover Glow */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+        <div className="rounded-full bg-primary/10 p-5 sm:p-6 text-primary group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300 shadow-sm relative">
           <svg
             aria-hidden="true"
             xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8 text-muted-foreground"
+            className="h-8 w-8 sm:h-10 sm:w-10"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            strokeWidth={1.5}
+            strokeWidth={2}
           >
             <path
               strokeLinecap="round"
@@ -308,13 +317,16 @@ export function UploadDropzone({
             />
           </svg>
         </div>
-        <div className="text-center">
-          <p className="text-sm font-medium">
-            영상 파일을 드래그하거나 클릭하여 선택하세요
+        <div className="text-center space-y-2 z-10">
+          <p className="text-base sm:text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+            눌러서 영상 파일 선택하기
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            MP4, MOV, WebM 등 • 최대 5GB
+          <p className="text-xs sm:text-sm text-muted-foreground/80 font-medium">
+            또는 이 영역으로 파일을 드래그하세요
           </p>
+        </div>
+        <div className="mt-2 text-[10px] sm:text-xs text-muted-foreground/60 font-semibold bg-muted/40 px-3 py-1.5 rounded-full z-10">
+          MP4, MOV, WebM 등 • 최대 5GB
         </div>
         <input
           ref={inputRef}

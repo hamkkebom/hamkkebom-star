@@ -13,157 +13,161 @@ import {
 
 export default function SettlementGuidePage() {
     return (
-        <div className="flex-1 overflow-y-auto bg-background p-6 lg:p-10 scroll-smooth">
-            <div className="max-w-4xl mx-auto space-y-12 pb-20">
+        <div className="flex-1 bg-background relative md:p-6 lg:p-10 h-[calc(100vh-64px)] md:h-auto overflow-hidden md:overflow-visible">
+            <div className="max-w-4xl mx-auto h-full md:pb-20">
 
-                {/* Header */}
-                <div className="space-y-4">
-                    <div className="inline-flex items-center justify-center rounded-3xl bg-amber-500/10 px-4 py-1.5 border border-amber-500/20">
-                        <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">관리자 가이드</span>
-                    </div>
-                    <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl lg:text-5xl text-foreground mt-2">
-                        정산 관리 시스템 완벽 가이드
-                    </h1>
-                    <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-3xl">
-                        함케봄스타의 정산 시스템은 승인된 영상 제출물을 기준으로 자동으로 계산되며,
-                        관리자가 예외 단가를 유연하게 제어할 수 있도록 설계되었습니다.
-                        아래 가이드를 따라 안전하고 정확하게 정산을 처리해보세요.
-                    </p>
-                </div>
+                {/* Mobile E-Book Wrapper */}
+                <div className="flex flex-row overflow-x-auto overflow-y-hidden snap-x snap-mandatory h-full w-full md:flex-col md:overflow-visible md:snap-none md:h-auto md:space-y-16 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
-                {/* Section 1: 단가 우선순위 */}
-                <section className="space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-900/30">
-                            <span className="font-bold text-violet-600 dark:text-violet-400 text-lg">1</span>
+                    {/* Page 1: Intro */}
+                    <div className="w-[100vw] md:w-auto shrink-0 snap-center h-full flex flex-col justify-center p-8 md:p-0 md:block max-h-screen overflow-y-auto [&::-webkit-scrollbar]:hidden pb-24 md:pb-0">
+                        <div className="space-y-6 md:space-y-4 max-w-lg mx-auto md:max-w-none text-center md:text-left">
+                            <div className="inline-flex items-center justify-center rounded-3xl bg-amber-500/10 px-4 py-1.5 border border-amber-500/20">
+                                <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">관리자 가이드</span>
+                            </div>
+                            <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl text-foreground mt-2 leading-tight">
+                                정산 관리 시스템<br className="md:hidden" /> 완벽 가이드
+                            </h1>
+                            <p className="text-lg text-muted-foreground leading-relaxed md:max-w-3xl">
+                                함케봄스타의 정산 시스템은 승인된 영상 제출물을 기준으로 자동으로 계산되며,
+                                관리자가 예외 단가를 유연하게 제어할 수 있도록 설계되었습니다.
+                                스와이프하여 가이드를 확인해보세요.
+                            </p>
+                            <div className="md:hidden mt-8 flex justify-center text-muted-foreground animate-bounce">
+                                <span className="text-sm font-bold flex items-center gap-2">스와이프하여 넘기기 <span className="text-lg">→</span></span>
+                            </div>
                         </div>
-                        <h2 className="text-xl md:text-2xl font-bold tracking-tight">단가 적용 우선순위</h2>
                     </div>
-                    <div className="pl-0 md:pl-12 space-y-4">
-                        <p className="text-sm md:text-base text-muted-foreground">
-                            정산 시 금액은 자동으로 계산됩니다. 시스템은 총 3가지 단가를 확인하며, <strong className="text-foreground">가장 높은 우선순위의 단가 1개만 적용</strong>합니다.
-                        </p>
 
-                        <div className="grid gap-4 sm:grid-cols-3">
-                            <div className="rounded-2xl border bg-card p-5 space-y-3 relative overflow-hidden group">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-amber-500" />
-                                <div className="flex justify-between items-start">
-                                    <h3 className="font-bold text-lg">1. 영상 개별 단가</h3>
-                                    <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                                        최우선
-                                    </span>
+                    {/* Page 2: Priority */}
+                    <div className="w-[100vw] md:w-auto shrink-0 snap-center h-full flex flex-col justify-center p-8 md:p-0 md:block max-h-screen overflow-y-auto [&::-webkit-scrollbar]:hidden pb-24 md:pb-0">
+                        <section className="space-y-6 max-w-lg mx-auto md:max-w-none">
+                            <div className="flex items-center gap-3 justify-center md:justify-start">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-900/30">
+                                    <span className="font-bold text-violet-600 dark:text-violet-400 text-lg">1</span>
                                 </div>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    특정 영상(작품)에만 특별히 적용하는 단가입니다. 정산 상세 창에서 관리자가 직접 입력합니다.
-                                </p>
+                                <h2 className="text-2xl font-bold tracking-tight">단가 적용 우선순위</h2>
                             </div>
+                            <div className="md:pl-12 space-y-4">
+                                <p className="text-base text-muted-foreground text-center md:text-left">
+                                    시스템은 총 3가지 단가를 확인하며, <strong className="text-foreground">가장 높은 우선순위의 단가 1개만 적용</strong>합니다.
+                                </p>
 
-                            <div className="rounded-2xl border bg-card p-5 space-y-3 relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-violet-400/50" />
-                                <h3 className="font-bold text-lg text-muted-foreground/80">2. STAR 개인 단가</h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    특정 STAR에게만 고정적으로 적용하는 단가입니다. STAR 단가 관리 페이지에서 설정합니다.
-                                </p>
-                            </div>
+                                <div className="grid gap-4 md:grid-cols-3">
+                                    <div className="rounded-2xl border bg-card p-5 space-y-3 relative overflow-hidden group shadow-md hover:shadow-lg transition-all">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-amber-500" />
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="font-bold text-lg">1. 영상 개별 단가</h3>
+                                            <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                                최우선
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                            정산 상세 창에서 관리자가 직접 입력하는 특별 예외 단가입니다.
+                                        </p>
+                                    </div>
 
-                            <div className="rounded-2xl border bg-card p-5 space-y-3 relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-cyan-400/50" />
-                                <h3 className="font-bold text-lg text-muted-foreground/80">3. 등급 기본 단가</h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    STAR가 속한 등급(A, B, C 등)에 적용되는 일괄 기본 단가입니다.
-                                </p>
+                                    <div className="rounded-2xl border bg-card p-5 space-y-3 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-violet-400/50" />
+                                        <h3 className="font-bold text-lg text-muted-foreground/80">2. STAR 개인 단가</h3>
+                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                            특정 STAR 지정 고정 단가 (설정: STAR 단가 관리)
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-2xl border bg-card p-5 space-y-3 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-cyan-400/50" />
+                                        <h3 className="font-bold text-lg text-muted-foreground/80">3. 등급 기본 단가</h3>
+                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                            STAR 등급(A, B, C)에 따른 일괄 기본 적용 단가
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </section>
                     </div>
-                </section>
 
-                {/* Section 2: 플로우 */}
-                <section className="space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">2</span>
-                        </div>
-                        <h2 className="text-xl md:text-2xl font-bold tracking-tight">전체 정산 진행 사이클</h2>
+                    {/* Page 3: Flow Step 1 */}
+                    <div className="w-[100vw] md:w-auto shrink-0 snap-center h-full flex flex-col justify-center p-8 md:p-0 md:block max-h-screen overflow-y-auto [&::-webkit-scrollbar]:hidden pb-24 md:pb-0">
+                        <section className="space-y-6 max-w-lg mx-auto md:max-w-none">
+                            <div className="flex items-center gap-3 justify-center md:justify-start">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
+                                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">2</span>
+                                </div>
+                                <h2 className="text-2xl font-bold tracking-tight">전체 정산 진행 사이클</h2>
+                            </div>
+
+                            <div className="md:pl-12">
+                                <div className="overflow-hidden rounded-3xl border bg-card shadow-lg">
+                                    <div className="relative aspect-[4/3] md:aspect-[2/1] w-full bg-slate-100 dark:bg-slate-900">
+                                        <Image
+                                            src="/images/admin-guide/settlement_flow_1.png"
+                                            alt="정산 생성 화면 예시"
+                                            fill
+                                            className="object-cover opacity-90 transition-opacity hover:opacity-100"
+                                        />
+                                    </div>
+                                    <div className="p-6 md:p-8 space-y-4">
+                                        <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400">1단계: 정산 생성</h3>
+                                        <p className="text-lg text-muted-foreground leading-relaxed">
+                                            가장 먼저 시작일과 종료일을 선택해 일괄 정산을 내립니다. <strong className="text-foreground">승인된 결과물만</strong> 반영됩니다.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
                     </div>
 
-                    <div className="pl-0 md:pl-12 space-y-6 md:space-y-8">
-                        <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                            <div className="relative aspect-[16/10] md:aspect-[2/1] w-full bg-muted/30">
-                                <Image
-                                    src="/images/admin-guide/settlement_flow_1.png"
-                                    alt="정산 생성 화면 예시"
-                                    fill
-                                    className="object-cover opacity-90 transition-opacity hover:opacity-100"
-                                />
-                            </div>
-                            <div className="p-6">
-                                <h3 className="text-xl font-bold mb-2">1단계: 기간 지정 정산 생성</h3>
-                                <p className="text-muted-foreground mb-4">
-                                    매월 초, 지난달 작업물에 대한 정산을 일괄 생성합니다.
-                                    <strong className="text-foreground"> 피드백 완료(승인)된 제출물만</strong> 대상이 됩니다.
-                                </p>
-                                <ul className="space-y-2 text-sm text-muted-foreground">
-                                    <li className="flex items-start gap-2">
-                                        <MousePointerClick className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-                                        <span><strong className="text-foreground">수행 방법:</strong> 우측 상단의 <strong className="text-purple-500">정산 생성</strong> 버튼 클릭 &gt; 시작일과 종료일을 선택 &gt; 확인</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <Info className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
-                                        <span><strong className="text-foreground">안전한 재생성:</strong> 이미 "확정(COMPLETED)"된 건은 건드리지 않으며, 진행 중인 건만 최신 정보(단가, 새로운 승인 내역)를 반영해 새로고침합니다.</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                            <div className="relative aspect-[16/10] md:aspect-[2/1] w-full bg-muted/30">
-                                <Image
-                                    src="/images/admin-guide/custom_rate_1.png"
-                                    alt="정산 상세 및 영상 단가 설정 UI 예시"
-                                    fill
-                                    className="object-cover opacity-90 transition-opacity hover:opacity-100"
-                                />
-                            </div>
-                            <div className="p-6">
-                                <h3 className="text-xl font-bold mb-2">2단계: 예외 단가(영상 단가) 조정</h3>
-                                <p className="text-muted-foreground mb-4">
-                                    유독 작업 난이도가 높았거나 수고비가 추가되어야 하는 경우, 해당 영상에만 예외 단가를 적용합니다.
-                                </p>
-                                <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 p-4 border border-amber-200 dark:border-amber-900/50 space-y-3">
-                                    <h4 className="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                                        <Lightbulb className="h-4 w-4" />
-                                        영상 개별 단가 적용 방법
-                                    </h4>
-                                    <ol className="list-decimal list-inside space-y-1.5 text-sm text-amber-700 dark:text-amber-400">
-                                        <li>목록에서 정산 카드를 클릭하여 <strong>상세 보기</strong> 창 오픈</li>
-                                        <li>정산 항목에서 <strong className="text-amber-600 dark:text-amber-300">영상 단가 뱃지</strong> 또는 빈 칸이 있는 입력 필드 확인</li>
-                                        <li>예외로 적용할 <strong>금액(숫자만) 입력 후 [저장]</strong> 클릭 (예: 80,000)</li>
-                                        <li>상세 창을 닫고, 메인 화면 우측 상단의 <strong>[정산 생성]</strong> 버튼을 다시 한 번 클릭!</li>
-                                    </ol>
-                                    <p className="text-xs mt-2 text-amber-600/80 dark:text-amber-500 font-medium">
-                                        * 영상 단가를 지우고 빈 칸으로 저장한 뒤 다시 "정산 생성"을 누르면 기본 단가로 복구됩니다.
+                    {/* Page 4: Flow Step 2 */}
+                    <div className="w-[100vw] md:w-auto shrink-0 snap-center h-full flex flex-col justify-center p-8 md:p-0 md:block max-h-screen overflow-y-auto [&::-webkit-scrollbar]:hidden pb-24 md:pb-0">
+                        <section className="space-y-6 md:mt-0 max-w-lg mx-auto md:max-w-none md:pl-12">
+                            <div className="overflow-hidden rounded-3xl border bg-card shadow-lg">
+                                <div className="relative aspect-[4/3] md:aspect-[2/1] w-full bg-slate-100 dark:bg-slate-900">
+                                    <Image
+                                        src="/images/admin-guide/custom_rate_1.png"
+                                        alt="정산 상세 및 영상 단가 설정 UI 예시"
+                                        fill
+                                        className="object-cover opacity-90 transition-opacity hover:opacity-100"
+                                    />
+                                </div>
+                                <div className="p-6 md:p-8 space-y-4">
+                                    <h3 className="text-2xl font-black text-amber-500">2단계: 영상 개별 단가 조정</h3>
+                                    <p className="text-lg text-muted-foreground">
+                                        작업 난이도가 높았던 영상에 추가 금액이 있나요? 목록을 눌러 상세 정보를 연 뒤 개별 단가를 입력하세요.
                                     </p>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="rounded-2xl border bg-card shadow-sm p-5 md:p-6">
-                            <h3 className="text-lg md:text-xl font-bold flex items-center gap-2 mb-3">
-                                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                                3단계: 정산 확정
-                            </h3>
-                            <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4">
-                                금액 검토가 완료되었다면 상태를 '확정'으로 변경합니다.
-                                확정된 정산은 <strong className="text-foreground">잠금 처리</strong>되어 어떠한 이유로도(단가 변경, 재생성 등) 금액이 변동되지 않습니다.
-                            </p>
-                            <div className="flex items-center gap-2 text-sm font-medium bg-muted p-3 rounded-lg">
-                                <AlertTriangle className="h-4 w-4 text-orange-500" />
-                                확정 후에는 삭제할 수 없으며, PDF 다운로드를 통해 재무 부서에 전달할 수 있습니다.
-                            </div>
-                        </div>
-
+                        </section>
                     </div>
-                </section>
+
+                    {/* Page 5: Flow Step 3 */}
+                    <div className="w-[100vw] md:w-auto shrink-0 snap-center h-full flex flex-col justify-center p-8 md:p-0 md:block max-h-screen overflow-y-auto [&::-webkit-scrollbar]:hidden pb-24 md:pb-0">
+                        <section className="space-y-6 md:mt-0 max-w-lg mx-auto md:max-w-none md:pl-12">
+                            <div className="rounded-3xl border bg-card shadow-lg p-8 md:p-10 flex flex-col items-center md:items-start text-center md:text-left space-y-6 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 dark:bg-rose-500/20 rounded-bl-[100px]" />
+                                <CheckCircle2 className="h-16 w-16 text-rose-500" />
+                                <div className="space-y-4 z-10 w-full">
+                                    <h3 className="text-3xl font-black text-rose-600 dark:text-rose-400">3단계: 정산 확정</h3>
+                                    <p className="text-lg text-muted-foreground leading-relaxed">
+                                        금액 검토가 완료되었다면 목록에서 상태를 <strong className="text-foreground">확정 (Completed)</strong>으로 바꿉니다. 확정된 내역은 잠금 처리되어 단가를 임의로 바꿀 수 없습니다.
+                                    </p>
+                                    <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 p-4 border border-amber-200 dark:border-amber-900/50 flex gap-3 text-left">
+                                        <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400 shrink-0" />
+                                        <p className="text-sm text-amber-800 dark:text-amber-300">
+                                            확정 이후에는 Excel 다운로드 기능을 이용하여 재무 부서에 전달하거나 보관할 수 있습니다.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                </div>
+
+                {/* Mobile E-Book Page Indicator */}
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 md:hidden z-10 bg-slate-900/40 dark:bg-white/10 backdrop-blur-xl px-4 py-2 rounded-full pointer-events-none shadow-xl border border-white/10">
+                    <span className="text-xs font-bold text-white tracking-widest uppercase">Swipe to read</span>
+                </div>
 
             </div>
         </div>

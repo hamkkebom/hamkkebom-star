@@ -125,16 +125,16 @@ const ProjectCard = memo(function ProjectCard({ sub, index }: { sub: MySubmissio
             </div>
 
             {/* Status Indicators (Corner) */}
-            <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex flex-col items-end gap-1.5 sm:gap-2">
               {hasAi && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-500/90 dark:bg-violet-500/80 backdrop-blur text-white text-[10px] font-bold shadow-lg border border-white/10 animate-in fade-in zoom-in duration-300">
-                  <Sparkles className="w-3 h-3 text-yellow-300 fill-yellow-300/50" />
+                <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-violet-500/90 dark:bg-violet-500/80 backdrop-blur text-white text-[9px] sm:text-[10px] font-bold shadow-lg border border-white/10 animate-in fade-in zoom-in duration-300">
+                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-300 fill-yellow-300/50" />
                   AI 분석 완료
                 </div>
               )}
               {feedbackCount > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/90 dark:bg-blue-500/80 backdrop-blur text-white text-[10px] font-bold shadow-lg border border-white/10 animate-in fade-in zoom-in duration-300 delay-100">
-                  <MessageCircleHeart className="w-3 h-3 text-white" />
+                <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-500/90 dark:bg-blue-500/80 backdrop-blur text-white text-[9px] sm:text-[10px] font-bold shadow-lg border border-white/10 animate-in fade-in zoom-in duration-300 delay-100">
+                  <MessageCircleHeart className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                   피드백 {feedbackCount}개
                 </div>
               )}
@@ -155,32 +155,32 @@ const ProjectCard = memo(function ProjectCard({ sub, index }: { sub: MySubmissio
           </div>
 
           {/* Content Body */}
-          <div className="p-5 space-y-4">
+          <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
             {/* AI Insight Summary */}
-            <div className="relative p-3.5 rounded-2xl bg-zinc-50 dark:bg-white/[0.03] border border-zinc-100 dark:border-white/[0.05] group-hover:bg-zinc-100 dark:group-hover:bg-white/[0.06] transition-colors">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="relative p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-white/[0.03] border border-zinc-100 dark:border-white/[0.05] group-hover:bg-zinc-100 dark:group-hover:bg-white/[0.06] transition-colors">
+              <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
                 <div className="p-1 rounded bg-violet-100 dark:bg-violet-500/10 border border-transparent dark:border-violet-500/20">
-                  <Sparkles className="w-3 h-3 text-violet-600 dark:text-violet-400" />
+                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-violet-600 dark:text-violet-400" />
                 </div>
-                <span className="text-xs font-bold text-violet-600 dark:text-violet-300">AI 요약</span>
+                <span className="text-[10px] sm:text-xs font-bold text-violet-600 dark:text-violet-300">AI 요약</span>
               </div>
-              <p className="text-xs leading-relaxed text-muted-foreground dark:text-zinc-400 line-clamp-2 min-h-[2.5rem]">
+              <p className="text-[11px] sm:text-xs leading-relaxed text-muted-foreground dark:text-zinc-400 line-clamp-2 min-h-[2.5rem]">
                 {hasAi ? sub.aiAnalysis!.summary : "아직 AI 분석 결과가 없습니다. 분석을 시작해보세요!"}
               </p>
             </div>
 
             {/* Action Footer */}
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between pt-1 sm:pt-2">
               <div className="flex -space-x-2 overflow-hidden">
                 {/* Mock Avatars */}
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-slate-800 border border-white dark:border-black flex items-center justify-center text-[8px] text-zinc-500 dark:text-slate-500">
+                  <div key={i} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-zinc-100 dark:bg-slate-800 border border-white dark:border-black flex items-center justify-center text-[7px] sm:text-[8px] text-zinc-500 dark:text-slate-500">
                     User
                   </div>
                 ))}
               </div>
-              <div className="flex items-center gap-1 text-xs font-bold text-muted-foreground group-hover:text-foreground dark:group-hover:text-white transition-colors">
-                상세보기 <div className="w-4 h-4 rounded-full bg-zinc-200 dark:bg-white/10 flex items-center justify-center ml-1"><Play className="w-2 h-2 fill-current" /></div>
+              <div className="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-muted-foreground group-hover:text-foreground dark:group-hover:text-white transition-colors">
+                상세보기 <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-zinc-200 dark:bg-white/10 flex items-center justify-center ml-1"><Play className="w-2 h-2 sm:w-2 sm:h-2 fill-current" /></div>
               </div>
             </div>
           </div>
@@ -204,33 +204,33 @@ export default function FeedbackPage() {
     <div className="min-h-screen space-y-10 pb-32">
 
       {/* Header */}
-      <div className="relative space-y-6 pt-6">
+      <div className="relative space-y-4 sm:space-y-6 pt-4 sm:pt-6">
         <div className="space-y-2">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-2 text-violet-500 dark:text-violet-400 font-bold"
           >
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-400/10 text-sm">✨</span>
-            <span>크리에이터 스튜디오</span>
+            <span className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-violet-100 dark:bg-violet-400/10 text-xs sm:text-sm">✨</span>
+            <span className="text-xs sm:text-sm">크리에이터 스튜디오</span>
           </motion.div>
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <h1 className="text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-500 dark:from-white dark:via-white dark:to-gray-500">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-500 dark:from-white dark:via-white dark:to-gray-500">
               피드백 <span className="text-violet-600 dark:text-violet-500">Inbox.</span>
             </h1>
 
             {/* Search */}
             <div className="relative group w-full md:w-auto">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-xl blur opacity-20 group-hover:opacity-60 transition duration-500" />
-              <div className="relative flex items-center bg-background dark:bg-black rounded-xl p-1 border border-border dark:border-white/10">
-                <Search className="w-4 h-4 text-muted-foreground ml-3" />
+              <div className="relative flex items-center bg-background dark:bg-black rounded-xl p-1 border border-border dark:border-white/10 w-full sm:w-auto">
+                <Search className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground ml-3 shrink-0" />
                 <input
                   type="text"
                   placeholder="프로젝트 검색..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm p-2 w-[200px] text-foreground dark:text-white placeholder:text-muted-foreground/50"
+                  className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm p-2.5 sm:p-2 w-full sm:w-[200px] md:w-[240px] text-foreground dark:text-white placeholder:text-muted-foreground/50 h-10 sm:h-auto"
                 />
               </div>
             </div>
@@ -238,41 +238,43 @@ export default function FeedbackPage() {
         </div>
 
         {/* Filter Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-border dark:border-white/5 pb-6">
-          <div className="flex p-1 bg-zinc-100 dark:bg-black/20 backdrop-blur-xl rounded-full border border-zinc-200 dark:border-white/10 w-fit">
-            {[
-              { id: "ALL", label: "전체 보기", icon: Zap },
-              { id: "AI_DONE", label: "AI 분석 완료", icon: Sparkles },
-              { id: "HAS_FEEDBACK", label: "피드백 있음", icon: MessageCircleHeart },
-            ].map((f) => {
-              const isActive = filter === f.id;
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
-                  className={cn(
-                    "relative px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2",
-                    isActive ? "text-white shadow-lg" : "text-muted-foreground hover:text-foreground hover:bg-zinc-200 dark:hover:text-white dark:hover:bg-white/5"
-                  )}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeFilterBg"
-                      className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-full"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-1.5">
-                    <f.icon className={cn("w-4 h-4", isActive && "animate-pulse")} />
-                    {f.label}
-                  </span>
-                </button>
-              );
-            })}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border dark:border-white/5 pb-4 sm:pb-6 relative z-10">
+          <div className="w-[calc(100vw-32px)] sm:w-auto overflow-x-auto pb-2 -mb-2 scrollbar-hide">
+            <div className="flex p-1 sm:p-1.5 bg-zinc-100 dark:bg-black/20 backdrop-blur-xl rounded-full border border-zinc-200 dark:border-white/10 w-max shrink-0">
+              {[
+                { id: "ALL", label: "전체 보기", icon: Zap },
+                { id: "AI_DONE", label: "AI 분석 완료", icon: Sparkles },
+                { id: "HAS_FEEDBACK", label: "피드백 있음", icon: MessageCircleHeart },
+              ].map((f) => {
+                const isActive = filter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setFilter(f.id)}
+                    className={cn(
+                      "relative px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 select-none active:scale-95",
+                      isActive ? "text-white shadow-lg" : "text-muted-foreground hover:text-foreground hover:bg-zinc-200 dark:hover:text-white dark:hover:bg-white/5"
+                    )}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeFilterBg"
+                        className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-full"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
+                      <f.icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isActive && "animate-pulse")} />
+                      {f.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-            <Filter className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-2 text-[11px] sm:text-xs text-muted-foreground font-medium self-end sm:self-auto shrink-0 mt-2 sm:mt-0">
+            <Filter className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             {submissions?.length ?? 0}개의 프로젝트
           </div>
         </div>

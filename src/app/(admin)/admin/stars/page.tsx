@@ -10,6 +10,10 @@ import {
   useDraggable,
   useDroppable,
   closestCorners,
+  useSensor,
+  useSensors,
+  MouseSensor,
+  TouchSensor,
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
@@ -135,8 +139,9 @@ const StarCard = memo(function StarCard({
       animate={{ opacity: isDragging && !overlay ? 0.5 : 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className={cn(
-        "group rounded-lg border bg-card p-3 cursor-grab active:cursor-grabbing transition-shadow",
-        overlay && "rotate-2 scale-105 shadow-2xl ring-2 ring-primary"
+        "group rounded-lg border bg-card p-3 cursor-grab md:hover:border-primary/50 transition-shadow",
+        isDragging && !overlay && "opacity-50",
+        overlay && "rotate-2 scale-105 shadow-2xl ring-2 ring-primary bg-white dark:bg-slate-900 z-50 pointer-events-none"
       )}
     >
       <div className="flex items-center gap-3">
@@ -704,6 +709,10 @@ export default function AdminStarsPage() {
   });
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
+    // Haptic feedback on drag start (mobile K-casual feel)
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
     const { star, fromGradeId } = event.active.data.current as {
       star: Star;
       fromGradeId: string;
@@ -792,6 +801,16 @@ export default function AdminStarsPage() {
     }));
   }, [grades, debouncedSearch]);
 
+  // Setup sensors for DND (optimized for mobile scrolling vs dragging)
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 10 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    })
+  );
+
   const filteredUnassigned = useMemo(() => {
     if (!debouncedSearch.trim()) return unassigned;
     const searchLower = debouncedSearch.toLowerCase();
@@ -847,6 +866,7 @@ export default function AdminStarsPage() {
         </div>
       ) : (
         <DndContext
+          sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}

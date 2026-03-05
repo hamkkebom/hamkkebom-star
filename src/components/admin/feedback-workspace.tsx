@@ -196,6 +196,9 @@ export function FeedbackWorkspace({
     // Download State
     const [isDownloading, setIsDownloading] = useState(false);
 
+    // Mobile Sheet State
+    const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+
     useEffect(() => { setSubmissions(initialSubmissions); }, [initialSubmissions]);
 
     // Set initial selected ID if provided
@@ -455,6 +458,7 @@ export function FeedbackWorkspace({
         setCurrentTime(0);
         setDuration(0);
         setSeekTo(undefined);
+        setIsMobileSheetOpen(false); // Close sheet on new selection
     };
 
     const handleDownload = async () => {
@@ -485,17 +489,17 @@ export function FeedbackWorkspace({
 
     return (
         <TooltipProvider>
-            <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-slate-50 dark:bg-[#080810] text-slate-800 dark:text-slate-200 font-sans selection:bg-indigo-500/30">
+            <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] w-full overflow-hidden bg-slate-50 dark:bg-[#080810] text-slate-800 dark:text-slate-200 font-sans selection:bg-indigo-500/30">
 
                 {/* ================================================================
                     LEFT PANEL: QUEUE
                    ================================================================ */}
                 {!isStandalone && (
-                    <motion.div
-                        initial={{ width: 380, opacity: 0 }}
-                        animate={{ width: selectedId ? 320 : 380, opacity: 1 }}
-                        transition={{ duration: 0.4, type: "spring", stiffness: 120, damping: 20 }}
-                        className="flex flex-col border-r border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0c0c14] relative z-20"
+                    <div
+                        className={cn(
+                            "flex flex-col border-r border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0c0c14] relative z-20 shrink-0 h-full",
+                            selectedId ? "hidden lg:flex w-[320px]" : "w-full lg:w-[380px]"
+                        )}
                     >
                         {/* Header */}
                         <div className="p-5 pb-2">
@@ -636,13 +640,16 @@ export function FeedbackWorkspace({
                                 </AnimatePresence>
                             </div>
                         </ScrollArea>
-                    </motion.div>
+                    </div>
                 )}
 
                 {/* ================================================================
                     CENTER: VIDEO STAGE
                    ================================================================ */}
-                <div className="flex-1 flex flex-col relative bg-black">
+                <div className={cn(
+                    "flex flex-col relative bg-black shrink-0 lg:flex-1",
+                    !selectedId ? "hidden lg:flex" : "h-full w-full flex-1"
+                )}>
                     <AnimatePresence mode="wait">
                         {selectedSubmission ? (
                             <motion.div
@@ -651,7 +658,7 @@ export function FeedbackWorkspace({
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.3 }}
-                                className="flex flex-1 overflow-hidden"
+                                className="flex flex-1 flex-col overflow-hidden"
                             >
                                 {/* Video Area */}
                                 <div className="flex-1 flex flex-col relative">
@@ -759,8 +766,8 @@ export function FeedbackWorkspace({
                                     </div>
 
                                     {/* Video Player */}
-                                    <div className="flex-1 bg-black relative flex items-center justify-center p-4">
-                                        <div className="relative w-full h-full max-h-[calc(100vh-14rem)] aspect-video shadow-2xl rounded-xl overflow-hidden ring-1 ring-white/[0.08] bg-[#050508]">
+                                    <div className="flex-1 bg-black relative flex items-center justify-center lg:p-4">
+                                        <div className="relative w-full h-full lg:max-h-[calc(100vh-14rem)] lg:aspect-video shadow-2xl lg:rounded-xl overflow-hidden lg:ring-1 lg:ring-white/[0.08] bg-[#050508]">
                                             {streamUid ? (
                                                 <VideoPlayer
                                                     streamUid={streamUid}
@@ -795,17 +802,39 @@ export function FeedbackWorkspace({
                                 </div>
 
                                 {/* ================================================================
-                                    RIGHT PANEL: FEEDBACK COMPOSER + HISTORY
+                                    RIGHT PANEL: FEEDBACK COMPOSER + HISTORY 
+                                    (Desktop: flex-col right panel | Mobile: Bottom sheet overlay)
                                    ================================================================ */}
-                                <div className="w-[400px] border-l border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0c0c14] flex flex-col relative z-20">
-                                    <Tabs defaultValue="compose" className="flex flex-col h-full">
-                                        <div className="px-4 pt-3 pb-1">
+                                <div className={cn(
+                                    "w-full lg:w-[400px] border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0c0c14] flex flex-col z-50 shrink-0 transition-transform duration-300",
+                                    "lg:relative lg:h-full lg:translate-y-0",
+                                    "fixed bottom-[calc(env(safe-area-inset-bottom,20px)+64px)] lg:bottom-auto left-0 right-0 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] lg:shadow-none h-[75vh]",
+                                    isMobileSheetOpen ? "translate-y-0" : "translate-y-full"
+                                )}>
+                                    {/* Drag handle for mobile */}
+                                    <div
+                                        className="lg:hidden w-full flex justify-center pt-3 pb-2 cursor-pointer active:bg-white/5 transition-colors rounded-t-3xl"
+                                        onClick={() => setIsMobileSheetOpen(false)}
+                                    >
+                                        <div className="w-12 h-1.5 bg-slate-300 dark:bg-white/10 rounded-full" />
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="lg:hidden absolute top-2 right-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10"
+                                        onClick={() => setIsMobileSheetOpen(false)}
+                                    >
+                                        <X className="w-4 h-4 text-slate-500" />
+                                    </Button>
+
+                                    <Tabs defaultValue="compose" className="flex flex-col h-full min-h-0">
+                                        <div className="px-4 pt-1 lg:pt-3 pb-1">
                                             <TabsList className="w-full bg-slate-100 dark:bg-white/[0.04] h-8">
                                                 <TabsTrigger value="compose" className="flex-1 text-xs text-slate-500 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-300 dark:data-[state=active]:shadow-none">
-                                                    ✏️ 피드백 작성
+                                                    ✏️ 작성
                                                 </TabsTrigger>
                                                 <TabsTrigger value="history" className="flex-1 text-xs text-slate-500 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-300 dark:data-[state=active]:shadow-none">
-                                                    📋 피드백 ({feedbacksRaw.length})
+                                                    📋 내역 ({feedbacksRaw.length})
                                                 </TabsTrigger>
                                                 <TabsTrigger value="info" className="flex-1 text-xs text-slate-500 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-300 dark:data-[state=active]:shadow-none">
                                                     ℹ️ 정보
@@ -1201,6 +1230,27 @@ export function FeedbackWorkspace({
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    {/* Mobile FAB to trigger sheet */}
+                    {!isMobileSheetOpen && selectedId && (
+                        <div className="lg:hidden absolute bottom-[calc(env(safe-area-inset-bottom,20px)+80px)] right-4 z-40">
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                    size="lg"
+                                    className="rounded-full shadow-[0_8px_30px_rgba(99,102,241,0.5)] bg-indigo-600 hover:bg-indigo-500 text-white h-14 px-6 ring-2 ring-white/10 flex items-center gap-2"
+                                    onClick={() => setIsMobileSheetOpen(true)}
+                                >
+                                    <MessageSquare className="w-5 h-5" />
+                                    <span className="font-bold">심사 / 피드백</span>
+                                    {feedbacksRaw.length > 0 && (
+                                        <Badge className="ml-1.5 bg-white/20 hover:bg-white/20 text-white border-0 px-1.5 py-0.5 h-auto flex items-center justify-center font-mono text-[11px]">
+                                            {feedbacksRaw.length}
+                                        </Badge>
+                                    )}
+                                </Button>
+                            </motion.div>
+                        </div>
+                    )}
                 </div>
 
                 {/* ================================================================

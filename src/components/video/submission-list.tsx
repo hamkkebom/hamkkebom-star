@@ -249,9 +249,10 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
             placeholder="영상 제목 또는 프로젝트명으로 검색"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="max-w-sm"
+            className="max-w-sm rounded-[12px] bg-muted/50 focus-visible:ring-violet-500/50"
           />
-          <div className="flex flex-wrap gap-1.5">
+          {/* Mobile-friendly horizontally scrollable filters */}
+          <div className="flex overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 scrollbar-hide gap-1.5 snap-x">
             {statusFilters.map((f) => {
               const isActive = statusFilter === f.value;
               return (
@@ -260,10 +261,10 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
                   type="button"
                   onClick={() => setStatusFilter(f.value)}
                   className={cn(
-                    "rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 border",
+                    "whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 border snap-start shrink-0",
                     isActive
-                      ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
-                      : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground hover:bg-accent"
+                      ? "bg-violet-600 text-white border-violet-600 shadow-[0_4px_12px_-4px_rgba(124,58,237,0.5)] scale-[1.02]"
+                      : "bg-background text-muted-foreground border-border hover:border-violet-500/50 hover:text-foreground active:bg-accent"
                   )}
                 >
                   {f.label}
@@ -285,12 +286,12 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredData.map((submission) => (
             <div
               key={submission.id}
               onClick={() => router.push(`/stars/my-videos/${submission.id}`)}
-              className="group relative cursor-pointer flex flex-col overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+              className="group relative cursor-pointer flex flex-col overflow-hidden rounded-[20px] sm:rounded-2xl border bg-card transition-all duration-300 hover:shadow-xl hover:-translate-y-1 active:scale-[0.98]"
             >
               {/* 썸네일 영역 */}
               <div className="relative aspect-video w-full overflow-hidden bg-muted">
@@ -341,28 +342,28 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
 
                 {/* 삭제 메뉴 (우측 상단 - 대기중일 때만) */}
                 {submission.status === "PENDING" && (
-                  <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute top-2 right-2 z-20 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-full bg-black/20 hover:bg-black/40 text-white"
+                          className="h-10 w-10 sm:h-8 sm:w-8 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm"
                         >
-                          <MoreVertical className="h-4 w-4" />
+                          <MoreVertical className="h-5 w-5 sm:h-4 sm:w-4" />
                           <span className="sr-only">메뉴 열기</span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="rounded-xl">
                         <DropdownMenuItem
-                          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer py-3"
                           onClick={(e) => {
                             e.stopPropagation();
                             setDeleteId(submission.id);
                           }}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          <span>삭제하기</span>
+                          <Trash2 className="mr-2 h-5 w-5" />
+                          <span className="font-semibold">삭제하기</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -371,7 +372,7 @@ export function SubmissionList({ limit }: { limit?: number } = {}) {
 
                 {/* 영상 길이 (우측 하단) */}
                 {submission.duration && (
-                  <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
+                  <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded-sm font-medium border border-white/10">
                     {formatDuration(submission.duration)}
                   </div>
                 )}

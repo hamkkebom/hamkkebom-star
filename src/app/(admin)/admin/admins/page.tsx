@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 // --- Types ---
@@ -32,6 +33,7 @@ type AdminUser = {
     name: string;
     avatarUrl: string | null;
     createdAt: string;
+    isApproved: boolean;
     _count: {
         managedStars: number;
     };
@@ -47,7 +49,17 @@ type CreateAdminForm = z.infer<typeof createAdminSchema>;
 
 // --- Components ---
 
-function AdminCard({ admin, isMe, onDelete }: { admin: AdminUser; isMe: boolean; onDelete: (id: string) => void }) {
+function AdminCard({
+    admin,
+    isMe,
+    onDelete,
+    onToggleActive
+}: {
+    admin: AdminUser;
+    isMe: boolean;
+    onDelete: (id: string) => void;
+    onToggleActive: (id: string, isApproved: boolean) => void;
+}) {
     return (
         <motion.div
             layout
@@ -77,6 +89,26 @@ function AdminCard({ admin, isMe, onDelete }: { admin: AdminUser; isMe: boolean;
 
                 <h3 className="mb-1 text-lg font-bold text-foreground">{admin.name}</h3>
                 <p className="mb-4 text-xs font-medium text-muted-foreground">{admin.email}</p>
+
+                {/* Status Toggle */}
+                {!isMe && (
+                    <div className="mb-4 flex w-full items-center justify-between rounded-2xl bg-muted/40 px-4 py-3 border border-border/40">
+                        <span className="text-xs font-bold text-foreground/80">계정 활성화</span>
+                        <div className="flex items-center gap-3">
+                            <span className={cn("text-[10px] font-black tracking-wider", admin.isApproved ? "text-emerald-500" : "text-muted-foreground")}>
+                                {admin.isApproved ? "ACTIVE" : "INACTIVE"}
+                            </span>
+                            <Switch
+                                checked={admin.isApproved}
+                                onCheckedChange={(checked) => {
+                                    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
+                                    onToggleActive(admin.id, checked);
+                                }}
+                                className="data-[state=checked]:bg-emerald-500 shadow-sm"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* Stats */}
                 <div className="mb-6 flex w-full justify-center gap-4 border-y border-border/50 py-3 dark:border-white/5">
@@ -372,6 +404,22 @@ export default function AdminsPage() {
         }
     });
 
+    const updateActiveMutation = useMutation({
+        mutationFn: async ({ id, isApproved }: { id: string, isApproved: boolean }) => {
+            const res = await fetch("/api/admin/managers", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, isApproved }),
+            });
+            if (!res.ok) throw new Error("상태 업데이트 실패");
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admins"] });
+        },
+        onError: (err) => toast.error(err.message)
+    });
+
     // 3. Delete Mutation
     const deleteMutation = useMutation({
         mutationFn: async ({ id, password }: { id: string, password: string }) => {
@@ -424,9 +472,9 @@ export default function AdminsPage() {
     );
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] flex-col gap-8 p-8 max-w-[1600px] mx-auto">
+        <div className="flex min-h-[calc(100dvh-4rem)] md:h-[calc(100vh-4rem)] flex-col gap-6 p-4 md:p-8 max-w-[1600px] mx-auto overflow-y-auto w-full pb-24 md:pb-8">
             {/* Header */}
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                     <h1 className="flex items-center gap-3 text-3xl font-black tracking-tight text-foreground">
                         <UserCog className="h-8 w-8 text-indigo-500" />
@@ -459,11 +507,11 @@ export default function AdminsPage() {
 
             {/* Grid */}
             {isLoading ? (
-                <div className="flex h-64 items-center justify-center">
+                <div className="flex h-64 w-full items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-indigo-500/50" />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full">
                     <AnimatePresence mode="popLayout">
                         {filteredAdmins.map((admin) => (
                             <AdminCard
@@ -476,6 +524,9 @@ export default function AdminsPage() {
                                         adminId: id,
                                         adminName: admin.name
                                     });
+                                }}
+                                onToggleActive={(id, isApproved) => {
+                                    updateActiveMutation.mutate({ id, isApproved });
                                 }}
                             />
                         ))}
