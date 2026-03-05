@@ -18,12 +18,25 @@ const navItems = [
     { href: "/stars/dashboard", label: "대시보드", icon: LayoutDashboard },
     { href: "/stars/my-videos", label: "내 영상", icon: Clapperboard },
     { href: "/stars/upload", label: "새 작업", icon: Rocket, isSpecial: true },
-    { href: "/stars/feedback", label: "피드백", icon: MessageCircleHeart },
+    { href: "/stars/feedback", label: "피드백", icon: MessageCircleHeart, hasBadge: true },
     { href: "/stars/settings", label: "내 정보", icon: User },
 ];
 
 export function BottomNavStar() {
     const pathname = usePathname();
+
+    // 미확인 피드백 카운트 폴링
+    const { data: badgeData } = useQuery({
+        queryKey: ["star-unread-feedbacks"],
+        queryFn: async () => {
+            const res = await fetch("/api/stars/unread-feedbacks");
+            if (!res.ok) throw new Error("Failed");
+            const json = await res.json();
+            return json.data;
+        },
+        refetchInterval: 30000,
+    });
+    const unreadCount = badgeData?.unreadCount ?? 0;
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
@@ -91,6 +104,20 @@ export function BottomNavStar() {
                                                 layoutId="star-nav-indicator"
                                                 className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(124,58,237,0.6)]"
                                             />
+                                        )}
+                                        {/* 🔴 미확인 피드백 뱃지 */}
+                                        {item.hasBadge && unreadCount > 0 && (
+                                            <motion.div
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: [1, 1.15, 1] }}
+                                                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                                                className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1 bg-rose-500 rounded-full flex items-center justify-center text-[9px] font-black text-white border-2 border-background shadow-[0_0_10px_rgba(244,63,94,0.5)]"
+                                            >
+                                                <span className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-30" />
+                                                <span className="relative z-10">
+                                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                                </span>
+                                            </motion.div>
                                         )}
                                     </div>
                                     <span

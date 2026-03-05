@@ -23,6 +23,7 @@ type FeedbackItem = {
   type: FeedbackType;
   priority: FeedbackPriority;
   content: string;
+  annotation: any;
   startTime: number | null;
   endTime: number | null;
   status: string;
@@ -37,7 +38,7 @@ type FeedbackItem = {
 
 interface FeedbackListProps {
   submissionId: string;
-  onTimecodeClick?: (time: number) => void;
+  onTimecodeClick?: (time: number, annotation?: any) => void;
   onFeedbacksChanged?: () => void;
 }
 
@@ -216,13 +217,19 @@ export function FeedbackList({ submissionId, onTimecodeClick, onFeedbacksChanged
                   className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-primary hover:bg-muted/80"
                   onClick={() => {
                     if (feedback.startTime !== null) {
-                      onTimecodeClick?.(feedback.startTime);
+                      onTimecodeClick?.(feedback.startTime, feedback.annotation);
                     }
                   }}
                 >
                   ⏱ {formatTimecode(feedback.startTime)}
                   {feedback.endTime !== null && ` → ${formatTimecode(feedback.endTime)}`}
                 </button>
+              )}
+              {/* 추가된 붓 아이콘(어노테이션 인디케이터) */}
+              {feedback.annotation && (
+                <Badge variant="secondary" className="text-[10px] sm:text-xs py-0 h-5 sm:h-6 gap-1 bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20">
+                  🎨 드로잉
+                </Badge>
               )}
             </div>
 

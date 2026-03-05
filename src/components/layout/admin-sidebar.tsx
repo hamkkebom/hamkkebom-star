@@ -43,11 +43,13 @@ function SidebarGroup({
   isOpen,
   onToggle,
   pathname,
+  pendingCounts,
 }: {
   group: NavGroup;
   isOpen: boolean;
   onToggle: () => void;
   pathname: string;
+  pendingCounts?: Record<string, number>;
 }) {
   const colors = colorMap[group.color];
   const hasActiveChild = group.children.some((c) => pathname === c.href || pathname.startsWith(c.href + "/"));
@@ -104,6 +106,13 @@ function SidebarGroup({
         >
           {group.label}
         </span>
+
+        {/* 그룹 레벨 승인 대기 뱃지 */}
+        {group.id === "project" && (pendingCounts?.pendingApprovals ?? 0) > 0 && (
+          <span className="mr-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-500 text-white shadow-sm animate-pulse">
+            {pendingCounts!.pendingApprovals}
+          </span>
+        )}
 
         {/* Chevron */}
         <motion.span
@@ -190,7 +199,13 @@ function SidebarGroup({
                             isActive ? colors.text : "text-muted-foreground/70",
                           )}
                         />
-                        <span>{child.label}</span>
+                        <span className="flex-1">{child.label}</span>
+                        {/* 승인 대기 뱃지 */}
+                        {child.href === "/admin/approvals" && (pendingCounts?.pendingApprovals ?? 0) > 0 && (
+                          <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/15 text-rose-500 border border-rose-500/20 shadow-[0_0_6px_rgba(244,63,94,0.25)] animate-pulse">
+                            {pendingCounts!.pendingApprovals}
+                          </span>
+                        )}
                       </Link>
                     </motion.div>
                   );
@@ -241,6 +256,17 @@ export function AdminSidebar() {
       const json = (await res.json()) as { data: { name: string; email: string; avatarUrl?: string | null } };
       return json.data;
     },
+  });
+
+  const { data: badgeData } = useQuery({
+    queryKey: ["admin-pending-counts"],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications/badge");
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data as Record<string, number>;
+    },
+    refetchInterval: 30000,
   });
 
   async function handleLogout() {
@@ -309,6 +335,7 @@ export function AdminSidebar() {
               isOpen={openGroupId === group.id}
               onToggle={() => handleToggle(group.id)}
               pathname={pathname}
+              pendingCounts={badgeData ?? undefined}
             />
           ))}
         </div>

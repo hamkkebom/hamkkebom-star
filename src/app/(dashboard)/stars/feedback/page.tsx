@@ -13,13 +13,24 @@ import {
   Zap,
   Play,
   Sparkles,
-  Search
+  Search,
+  Brush,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // --- Types ---
+type LatestFeedback = {
+  content: string;
+  type: string;
+  priority: string;
+  status: string;
+  annotation: unknown;
+  author: { name: string };
+};
+
 type MySubmission = {
   id: string;
   versionTitle: string | null;
@@ -44,6 +55,8 @@ type MySubmission = {
     status: string;
     scores: Record<string, number>;
   } | null;
+  latestFeedback: LatestFeedback | null;
+  unreadFeedbackCount: number;
   createdAt: string;
 };
 
@@ -62,6 +75,21 @@ function formatDate(dateString: string) {
   });
 }
 
+const typeLabels: Record<string, string> = {
+  GENERAL: "일반",
+  SUBTITLE: "자막",
+  BGM: "BGM",
+  CUT_EDIT: "컷편집",
+  COLOR_GRADE: "색보정",
+};
+
+const priorityColors: Record<string, string> = {
+  URGENT: "text-rose-400",
+  HIGH: "text-amber-400",
+  NORMAL: "text-blue-400",
+  LOW: "text-slate-400",
+};
+
 // --- Data Fetching ---
 function fetchSubmissions(filter: string = "ALL"): Promise<MySubmission[]> {
   const query = filter !== "ALL" ? `&filter=${filter}` : "";
@@ -78,8 +106,10 @@ function fetchSubmissions(filter: string = "ALL"): Promise<MySubmission[]> {
 // --- Components ---
 
 const ProjectCard = memo(function ProjectCard({ sub, index }: { sub: MySubmission; index: number }) {
-  const hasAi = sub.aiAnalysis?.status === "DONE";
   const feedbackCount = sub._count?.feedbacks ?? 0;
+  const unread = sub.unreadFeedbackCount ?? 0;
+  const latest = sub.latestFeedback;
+  const hasDrawing = latest?.annotation != null;
 
   return (
     <motion.div
@@ -92,10 +122,20 @@ const ProjectCard = memo(function ProjectCard({ sub, index }: { sub: MySubmissio
       className="group relative w-full"
     >
       <Link href={`/stars/feedback/${sub.id}`} className="block h-full">
-        <div className="relative h-full overflow-hidden rounded-[2rem] bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/5 shadow-xl dark:shadow-2xl backdrop-blur-md transition-all duration-500 hover:border-violet-500/30 hover:shadow-[0_20px_40px_-10px_rgba(124,58,237,0.2)] dark:hover:shadow-[0_20px_40px_-10px_rgba(124,58,237,0.3)]">
+        <div className={cn(
+          "relative h-full overflow-hidden rounded-[2rem] bg-white dark:bg-black/40 border shadow-xl dark:shadow-2xl backdrop-blur-md transition-all duration-500 hover:shadow-[0_20px_40px_-10px_rgba(124,58,237,0.2)] dark:hover:shadow-[0_20px_40px_-10px_rgba(124,58,237,0.3)]",
+          unread > 0
+            ? "border-rose-500/40 hover:border-rose-500/60 dark:border-rose-500/30 dark:hover:border-rose-500/50"
+            : "border-zinc-200 dark:border-white/5 hover:border-violet-500/30"
+        )}>
 
-          {/* Active Border Glow */}
-          <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          {/* Active Border Glow — 미확인이 있으면 rose glow */}
+          <div className={cn(
+            "absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r transition-opacity duration-500",
+            unread > 0
+              ? "from-transparent via-rose-500 to-transparent opacity-70 group-hover:opacity-100"
+              : "from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100"
+          )} />
 
           {/* Thumbnail Header */}
           <div className="relative aspect-[16/10] overflow-hidden">
@@ -117,25 +157,30 @@ const ProjectCard = memo(function ProjectCard({ sub, index }: { sub: MySubmissio
             {/* Overlay Gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 dark:from-black/90 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
 
-            {/* Floating Badges */}
+            {/* 좌상단 뱃지 */}
             <div className="absolute top-4 left-4 flex gap-2">
               <Badge className="bg-black/30 dark:bg-white/10 hover:bg-black/40 dark:hover:bg-white/20 backdrop-blur-md border-white/10 text-white shadow-lg">
                 {sub.version.startsWith("v") ? sub.version : `v${sub.version}`}
               </Badge>
             </div>
 
-            {/* Status Indicators (Corner) */}
+            {/* 🔴 우상단: 미확인 피드백 카운트 (초강조) */}
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex flex-col items-end gap-1.5 sm:gap-2">
-              {hasAi && (
-                <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-violet-500/90 dark:bg-violet-500/80 backdrop-blur text-white text-[9px] sm:text-[10px] font-bold shadow-lg border border-white/10 animate-in fade-in zoom-in duration-300">
-                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-300 fill-yellow-300/50" />
-                  AI 분석 완료
-                </div>
+              {unread > 0 && (
+                <motion.div
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: [1, 1.08, 1] }}
+                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/90 backdrop-blur text-white text-[10px] sm:text-xs font-black shadow-[0_0_15px_rgba(244,63,94,0.5)] border border-white/20"
+                >
+                  <Bell className="w-3 h-3 animate-bounce" />
+                  미확인 {unread}건
+                </motion.div>
               )}
-              {feedbackCount > 0 && (
-                <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-500/90 dark:bg-blue-500/80 backdrop-blur text-white text-[9px] sm:text-[10px] font-bold shadow-lg border border-white/10 animate-in fade-in zoom-in duration-300 delay-100">
-                  <MessageCircleHeart className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
-                  피드백 {feedbackCount}개
+              {feedbackCount > 0 && unread === 0 && (
+                <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-emerald-500/80 backdrop-blur text-white text-[9px] sm:text-[10px] font-bold shadow-lg border border-white/10">
+                  <MessageCircleHeart className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  모두 확인 ✓
                 </div>
               )}
             </div>
@@ -154,33 +199,104 @@ const ProjectCard = memo(function ProjectCard({ sub, index }: { sub: MySubmissio
             </div>
           </div>
 
-          {/* Content Body */}
+          {/* Content Body — 관리자 피드백 중심 */}
           <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-            {/* AI Insight Summary */}
-            <div className="relative p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-white/[0.03] border border-zinc-100 dark:border-white/[0.05] group-hover:bg-zinc-100 dark:group-hover:bg-white/[0.06] transition-colors">
-              <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                <div className="p-1 rounded bg-violet-100 dark:bg-violet-500/10 border border-transparent dark:border-violet-500/20">
-                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-violet-600 dark:text-violet-400" />
+            {/* 피드백 요약 영역 */}
+            <div className={cn(
+              "relative p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border transition-colors",
+              unread > 0
+                ? "bg-rose-500/5 dark:bg-rose-500/[0.03] border-rose-500/20 group-hover:bg-rose-500/10 dark:group-hover:bg-rose-500/[0.06]"
+                : feedbackCount > 0
+                  ? "bg-blue-500/5 dark:bg-white/[0.03] border-blue-500/10 dark:border-white/[0.05] group-hover:bg-blue-500/10 dark:group-hover:bg-white/[0.06]"
+                  : "bg-zinc-50 dark:bg-white/[0.03] border-zinc-100 dark:border-white/[0.05] group-hover:bg-zinc-100 dark:group-hover:bg-white/[0.06]"
+            )}>
+              {feedbackCount > 0 ? (
+                <>
+                  {/* 피드백 통계 */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "p-1 rounded border",
+                        unread > 0
+                          ? "bg-rose-500/10 dark:bg-rose-500/10 border-rose-500/20"
+                          : "bg-blue-100 dark:bg-blue-500/10 border-transparent dark:border-blue-500/20"
+                      )}>
+                        <MessageCircleHeart className={cn(
+                          "w-3 h-3",
+                          unread > 0 ? "text-rose-500" : "text-blue-600 dark:text-blue-400"
+                        )} />
+                      </div>
+                      <span className={cn(
+                        "text-[10px] sm:text-xs font-bold",
+                        unread > 0 ? "text-rose-500" : "text-blue-600 dark:text-blue-300"
+                      )}>
+                        관리자 피드백 {feedbackCount}건
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {unread > 0 && (
+                        <span className="text-[9px] sm:text-[10px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded-full border border-rose-500/20 animate-pulse">
+                          🔴 미확인 {unread}
+                        </span>
+                      )}
+                      {hasDrawing && (
+                        <span className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full border border-indigo-500/20">
+                          <Brush className="w-2.5 h-2.5" /> 드로잉
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 최근 피드백 미리보기 */}
+                  {latest && (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn("text-[9px] font-bold", priorityColors[latest.priority] ?? "text-slate-400")}>
+                          [{typeLabels[latest.type] ?? latest.type}]
+                        </span>
+                        <span className="text-[9px] text-muted-foreground/70 font-medium">
+                          {latest.author.name}
+                        </span>
+                      </div>
+                      <p className="text-[11px] sm:text-xs leading-relaxed text-muted-foreground dark:text-zinc-400 line-clamp-2">
+                        &ldquo;{latest.content}&rdquo;
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="p-1 rounded bg-zinc-100 dark:bg-white/5 border border-transparent dark:border-white/10">
+                    <MessageCircleHeart className="w-3 h-3 text-zinc-400 dark:text-zinc-500" />
+                  </div>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground/60 font-medium">
+                    아직 피드백이 없습니다
+                  </span>
                 </div>
-                <span className="text-[10px] sm:text-xs font-bold text-violet-600 dark:text-violet-300">AI 요약</span>
-              </div>
-              <p className="text-[11px] sm:text-xs leading-relaxed text-muted-foreground dark:text-zinc-400 line-clamp-2 min-h-[2.5rem]">
-                {hasAi ? sub.aiAnalysis!.summary : "아직 AI 분석 결과가 없습니다. 분석을 시작해보세요!"}
-              </p>
+              )}
             </div>
 
             {/* Action Footer */}
             <div className="flex items-center justify-between pt-1 sm:pt-2">
-              <div className="flex -space-x-2 overflow-hidden">
-                {/* Mock Avatars */}
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-zinc-100 dark:bg-slate-800 border border-white dark:border-black flex items-center justify-center text-[7px] sm:text-[8px] text-zinc-500 dark:text-slate-500">
-                    User
+              <div className="flex items-center gap-2">
+                {/* 피드백 상태 서머리 */}
+                {feedbackCount > 0 && (
+                  <div className="flex items-center gap-1 text-[10px] font-medium">
+                    <span className="text-emerald-500">{feedbackCount - unread} 확인</span>
+                    {unread > 0 && (
+                      <>
+                        <span className="text-muted-foreground/30">/</span>
+                        <span className="text-rose-500 font-bold">{unread} 대기</span>
+                      </>
+                    )}
                   </div>
-                ))}
+                )}
               </div>
               <div className="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-muted-foreground group-hover:text-foreground dark:group-hover:text-white transition-colors">
-                상세보기 <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-zinc-200 dark:bg-white/10 flex items-center justify-center ml-1"><Play className="w-2 h-2 sm:w-2 sm:h-2 fill-current" /></div>
+                {unread > 0 ? "지금 확인하기" : "상세보기"}
+                <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-zinc-200 dark:bg-white/10 flex items-center justify-center ml-1">
+                  <Play className="w-2 h-2 sm:w-2 sm:h-2 fill-current" />
+                </div>
               </div>
             </div>
           </div>
@@ -200,6 +316,9 @@ export default function FeedbackPage() {
     queryFn: () => fetchSubmissions(filter),
   });
 
+  // 미확인 피드백 총합
+  const totalUnread = submissions?.reduce((sum, s) => sum + (s.unreadFeedbackCount ?? 0), 0) ?? 0;
+
   return (
     <div className="min-h-screen space-y-10 pb-32">
 
@@ -216,9 +335,21 @@ export default function FeedbackPage() {
           </motion.div>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-500 dark:from-white dark:via-white dark:to-gray-500">
-              피드백 <span className="text-violet-600 dark:text-violet-500">Inbox.</span>
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-500 dark:from-white dark:via-white dark:to-gray-500">
+                피드백 <span className="text-violet-600 dark:text-violet-500">Inbox.</span>
+              </h1>
+              {totalUnread > 0 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-rose-500 text-white text-xs sm:text-sm font-black shadow-[0_0_15px_rgba(244,63,94,0.4)]"
+                >
+                  <Bell className="w-3.5 h-3.5 animate-bounce" />
+                  {totalUnread}건 미확인
+                </motion.div>
+              )}
+            </div>
 
             {/* Search */}
             <div className="relative group w-full md:w-auto">
@@ -243,8 +374,9 @@ export default function FeedbackPage() {
             <div className="flex p-1 sm:p-1.5 bg-zinc-100 dark:bg-black/20 backdrop-blur-xl rounded-full border border-zinc-200 dark:border-white/10 w-max shrink-0">
               {[
                 { id: "ALL", label: "전체 보기", icon: Zap },
-                { id: "AI_DONE", label: "AI 분석 완료", icon: Sparkles },
+                { id: "UNREAD", label: "미확인 있음", icon: Bell },
                 { id: "HAS_FEEDBACK", label: "피드백 있음", icon: MessageCircleHeart },
+                { id: "AI_DONE", label: "AI 분석", icon: Sparkles },
               ].map((f) => {
                 const isActive = filter === f.id;
                 return (
@@ -259,13 +391,23 @@ export default function FeedbackPage() {
                     {isActive && (
                       <motion.div
                         layoutId="activeFilterBg"
-                        className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-full"
+                        className={cn(
+                          "absolute inset-0 rounded-full",
+                          f.id === "UNREAD"
+                            ? "bg-gradient-to-r from-rose-600 to-rose-500"
+                            : "bg-gradient-to-r from-violet-600 to-fuchsia-600"
+                        )}
                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
                       <f.icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isActive && "animate-pulse")} />
                       {f.label}
+                      {f.id === "UNREAD" && totalUnread > 0 && !isActive && (
+                        <span className="ml-0.5 min-w-4 h-4 px-1 text-[9px] font-black bg-rose-500 text-white rounded-full inline-flex items-center justify-center">
+                          {totalUnread}
+                        </span>
+                      )}
                     </span>
                   </button>
                 );
@@ -311,6 +453,12 @@ export default function FeedbackPage() {
                   vTitle.toLowerCase().includes(q) ||
                   ver.toLowerCase().includes(q)
                 );
+              })
+              .sort((a, b) => {
+                // 미확인 피드백이 있는 것을 위로
+                if (a.unreadFeedbackCount > 0 && b.unreadFeedbackCount === 0) return -1;
+                if (a.unreadFeedbackCount === 0 && b.unreadFeedbackCount > 0) return 1;
+                return 0;
               })
               .map((sub, idx) => (
                 <ProjectCard key={sub.id} sub={sub} index={idx} />

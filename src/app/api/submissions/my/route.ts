@@ -57,6 +57,8 @@ export async function GET(request: Request) {
     where.aiAnalysis = { status: "DONE" };
   } else if (filter === "HAS_FEEDBACK") {
     where.feedbacks = { some: {} };
+  } else if (filter === "UNREAD") {
+    where.feedbacks = { some: { status: "PENDING" } };
   }
 
   const [rows, total] = await Promise.all([
@@ -90,6 +92,19 @@ export async function GET(request: Request) {
             summary: true,
             status: true,
             scores: true,
+          },
+        },
+        // 최근 피드백 1건 + 미확인 카운트용 데이터
+        feedbacks: {
+          take: 1,
+          orderBy: { createdAt: "desc" },
+          select: {
+            content: true,
+            type: true,
+            priority: true,
+            status: true,
+            annotation: true,
+            author: { select: { name: true } },
           },
         },
       },
@@ -149,8 +164,27 @@ export async function GET(request: Request) {
     })
   );
 
+  // 각 제출물별 미확인(PENDING) 피드백 카운트 집계
+  const submissionIds = rowsWithThumbnails.map((r) => r.id);
+  const pendingCounts = await prisma.feedback.groupBy({
+    by: ["submissionId"],
+    where: {
+      submissionId: { in: submissionIds },
+      status: "PENDING",
+    },
+    _count: { id: true },
+  });
+  const pendingMap = new Map(pendingCounts.map((p) => [p.submissionId, p._count.id]));
+
+  const finalRows = rowsWithThumbnails.map((row) => ({
+    ...row,
+    latestFeedback: row.feedbacks?.[0] ?? null,
+    unreadFeedbackCount: pendingMap.get(row.id) ?? 0,
+    feedbacks: undefined, // 원본 배열은 응답에서 제거
+  }));
+
   return NextResponse.json({
-    data: rowsWithThumbnails,
+    data: finalRows,
     total,
     page,
     pageSize,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
@@ -9,9 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayer } from "@/components/video/video-player";
-import { FeedbackList } from "@/components/feedback/feedback-list";
 import { AiTodoList } from "@/components/feedback/ai-todo-list";
 import { AiInsightsPanel } from "@/components/feedback/ai-insights-panel";
+import { AnnotationViewer } from "@/components/star/annotation-viewer";
+import { FeedbackTimeline } from "@/components/star/feedback-timeline";
+import { SceneStoryboard } from "@/components/star/scene-storyboard";
+import { FeedbackDetailCards } from "@/components/star/feedback-detail-card";
+import { useFeedbackViewStore, type FeedbackViewFeedback } from "@/store/feedback-view-store";
 import {
   type LucideIcon,
   ArrowLeft,
@@ -177,10 +181,32 @@ function DetailThumbnail({ src, alt }: { src: string | null | undefined; alt: st
 export function SubmissionDetailClient({ submissionId }: { submissionId: string }) {
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
 
+  // Zustand 스토어
+  const activeAnnotation = useFeedbackViewStore((s) => s.activeAnnotation);
+  const setFeedbacks = useFeedbackViewStore((s) => s.setFeedbacks);
+  const setSelectedFeedbackId = useFeedbackViewStore((s) => s.setSelectedFeedbackId);
+
   const { data: submission, isLoading, isError, error } = useQuery({
     queryKey: ["submission-detail", submissionId],
     queryFn: () => fetchSubmission(submissionId),
   });
+
+  // 피드백 데이터 로드 및 스토어 동기화
+  const { data: feedbackData } = useQuery({
+    queryKey: ["feedbacks-scene", submissionId],
+    queryFn: async () => {
+      const res = await fetch(`/api/feedbacks?submissionId=${submissionId}`, { cache: "no-store" });
+      if (!res.ok) throw new Error("피드백 로드 실패");
+      return res.json();
+    },
+    enabled: !!submissionId,
+  });
+
+  useEffect(() => {
+    if (feedbackData?.data) {
+      setFeedbacks(feedbackData.data as FeedbackViewFeedback[]);
+    }
+  }, [feedbackData, setFeedbacks]);
 
   if (!isLoading && isError) {
     return (
@@ -265,175 +291,141 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
         </div>
       </div>
 
-      {/* [Phase 4] Evolution Timeline (Mock) */}
-      <div className="relative pt-6 pb-2 px-2">
-        <div className="absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-primary/50 via-muted to-muted -z-10 rounded-full" />
-        <div className="flex justify-between relative z-0">
-          {['v0.5 초안', 'v0.9 프리믹싱', 'v1.0 최종'].map((step, i) => {
-            const isActive = i === 2; // Mock active state
-            return (
-              <div key={step} className="flex flex-col items-center gap-2">
-                <div className={cn(
-                  "w-4 h-4 rounded-full border-2 transition-all duration-500",
-                  isActive ? "bg-primary border-primary scale-125 shadow-[0_0_15px_rgba(124,58,237,0.5)]" : "bg-background border-muted-foreground/30"
-                )} />
-                <span className={cn(
-                  "text-xs font-medium transition-colors",
-                  isActive ? "text-primary font-bold" : "text-muted-foreground"
-                )}>{step}</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
 
       {/* Main Grid Layout - Cinema Focus View */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* ═══ Scene-First Feedback Layout ═══ */}
+      <div className="space-y-6">
 
-        {/* Left Column: Cinema Player & Feedback (8 cols) */}
-        <div className="lg:col-span-8 space-y-8">
+        {/* ── 영상 + 어노테이션 + 타임라인 ── */}
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
 
-          {/* Cinema Player Container */}
-          <div className="relative group">
-            {/* Glow Effect */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
-
-            <div
-              className="relative rounded-[1.8rem] overflow-hidden bg-black ring-1 ring-white/10 shadow-2xl transition-all duration-500"
-            >
-              {/* Cinema Mode Header (Overlay) */}
-              <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/80 to-transparent z-10 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <Badge variant="secondary" className="bg-black/50 backdrop-blur text-white border-white/10">
-                  Cinema Mode
-                </Badge>
+          <div className="relative rounded-[1.8rem] overflow-hidden bg-black ring-1 ring-white/10 shadow-2xl">
+            {isLoading ? (
+              <Skeleton className="aspect-video w-full" />
+            ) : streamUid ? (
+              <div className="aspect-video w-full relative">
+                <VideoPlayer streamUid={streamUid} seekTo={seekTo} />
+                <AnnotationViewer annotation={activeAnnotation} isActive={!!activeAnnotation} />
               </div>
+            ) : (
+              <div className="aspect-video w-full flex flex-col items-center justify-center bg-gray-900 text-gray-500 gap-3">
+                <AlertCircle className="w-10 h-10 opacity-20" />
+                <p className="text-sm font-medium">영상을 불러올 수 없습니다.</p>
+              </div>
+            )}
 
-              {isLoading ? (
-                <Skeleton className="aspect-video w-full" />
-              ) : streamUid ? (
-                <div className="aspect-video w-full">
-                  <VideoPlayer
-                    streamUid={streamUid}
-                    seekTo={seekTo}
-                  />
-                </div>
-              ) : (
-                <div className="aspect-video w-full flex flex-col items-center justify-center bg-gray-900 text-gray-500 gap-3">
-                  <AlertCircle className="w-10 h-10 opacity-20" />
-                  <p className="text-sm font-medium">영상을 불러올 수 없습니다.</p>
-                </div>
-              )}
-            </div>
+            {/* 타임라인 마커 바 */}
+            {!isLoading && (
+              <div className="px-4 pb-3 bg-gradient-to-t from-black/60 to-transparent">
+                <FeedbackTimeline onSeek={(t) => setSeekTo(t)} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── 장면별 스토리보드 갤러리 ── */}
+        {!isLoading && (
+          <SceneStoryboard onSceneClick={(t) => setSeekTo(t)} />
+        )}
+
+        {/* ── 메인 그리드: 피드백 상세 + 사이드바 ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+          {/* Left: 피드백 상세 카드 */}
+          <div className="lg:col-span-8 space-y-6">
+            {isLoading ? (
+              <>
+                <Skeleton className="h-32 w-full rounded-xl" />
+                <Skeleton className="h-48 w-full rounded-xl" />
+              </>
+            ) : submission ? (
+              <>
+                {/* 제작 설명 (Memo) */}
+                {submission.summaryFeedback && (
+                  <Card className="border-0 bg-secondary/30 backdrop-blur-sm ring-1 ring-border/50 shadow-sm">
+                    <CardHeader className="pb-2 flex flex-row items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-primary" />
+                      <CardTitle className="text-sm font-bold">제작 설명 / 메모</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground/90">
+                        {submission.summaryFeedback}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Scene-First 피드백 상세 카드 리스트 */}
+                <FeedbackDetailCards
+                  onTimecodeClick={(t) => setSeekTo(t)}
+                />
+              </>
+            ) : null}
           </div>
 
-          {isLoading ? (
-            <>
-              <Skeleton className="h-32 w-full rounded-xl" />
-              <Skeleton className="h-48 w-full rounded-xl" />
-            </>
-          ) : submission ? (
-            <>
-              {/* [Phase 5] AI Insights Panel */}
-              <AiInsightsPanel submissionId={submission.id} />
-
-              {/* 제작 설명 (Memo) */}
-              {submission.summaryFeedback && (
-                <Card className="border-0 bg-secondary/30 backdrop-blur-sm ring-1 ring-border/50 shadow-sm">
-                  <CardHeader className="pb-2 flex flex-row items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-primary" />
-                    <CardTitle className="text-sm font-bold">제작 설명 / 메모</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground/90">
-                      {submission.summaryFeedback}
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Feedback List Container */}
-              <div className="space-y-4 pt-4">
-                <div className="flex items-center justify-between border-b pb-2 border-border/50">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-indigo-500" />
-                    피드백 리스트
-                  </h2>
-                  <Badge variant="outline" className="text-xs font-mono">
-                    Total: {submission._count.feedbacks}
-                  </Badge>
+          {/* Right: AI 보조 + 메타데이터 */}
+          <div className="lg:col-span-4 space-y-6 sticky top-6">
+            {isLoading ? (
+              <>
+                <Skeleton className="h-40 w-full rounded-xl" />
+                <Skeleton className="aspect-video w-full rounded-2xl" />
+              </>
+            ) : submission ? (
+              <>
+                {/* AI Insights (접은 상태로 보조) */}
+                <div className="space-y-3">
+                  <details className="group">
+                    <summary className="flex items-center gap-2 cursor-pointer text-sm font-bold text-slate-400 hover:text-slate-200 transition-colors">
+                      <span className="text-lg">🤖</span>
+                      AI가 발견한 개선점
+                      <span className="text-[10px] bg-violet-500/10 text-violet-300 px-2 py-0.5 rounded-full group-open:hidden">펼치기</span>
+                    </summary>
+                    <div className="mt-3 space-y-4">
+                      <AiInsightsPanel submissionId={submission.id} />
+                      <AiTodoList submissionId={submission.id} />
+                    </div>
+                  </details>
                 </div>
-                <FeedbackList
-                  submissionId={submission.id}
-                  onTimecodeClick={(time) => setSeekTo(time)}
-                />
-              </div>
-            </>
-          ) : null}
+
+                {/* Info Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Card className="col-span-2 bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-blue-500/10 text-blue-500">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">재생 시간</p>
+                        <p className="text-sm font-bold">{(submission.duration || submission.video?.technicalSpec?.duration) ? formatDuration(submission.duration || submission.video?.technicalSpec?.duration || 0) : "-"}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
+                    <CardContent className="p-4 flex flex-col gap-1">
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        제출일
+                      </p>
+                      <p className="text-xs font-medium truncate">{formatDate(submission.createdAt)}</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
+                    <CardContent className="p-4 flex flex-col gap-1">
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        버전
+                      </p>
+                      <p className="text-xs font-medium">{submission.version}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
-
-        {/* Right Column: AI To-Do & Metadata (4 cols) */}
-        <div className="lg:col-span-4 space-y-6 sticky top-6">
-          {isLoading ? (
-            <>
-              <Skeleton className="h-40 w-full rounded-xl" />
-              <Skeleton className="aspect-video w-full rounded-2xl" />
-              <div className="grid grid-cols-2 gap-3">
-                <Skeleton className="col-span-2 h-20 rounded-xl" />
-                <Skeleton className="h-16 rounded-xl" />
-                <Skeleton className="h-16 rounded-xl" />
-              </div>
-            </>
-          ) : submission ? (
-            <>
-              {/* [Phase 2] AI To-Do List */}
-              <AiTodoList submissionId={submission.id} />
-
-              {/* Thumbnail Preview Card */}
-              <div className="group relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-black/20 hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer">
-                <DetailThumbnail
-                  src={submission.signedThumbnailUrl || submission.thumbnailUrl}
-                  alt={submission.versionTitle || "영상 썸네일"}
-                />
-              </div>
-
-              {/* Info Cards Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <Card className="col-span-2 bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
-                  <CardContent className="p-4 flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-blue-500/10 text-blue-500">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">재생 시간</p>
-                      <p className="text-sm font-bold">{(submission.duration || submission.video?.technicalSpec?.duration) ? formatDuration(submission.duration || submission.video?.technicalSpec?.duration || 0) : "-"}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
-                  <CardContent className="p-4 flex flex-col gap-1">
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      제출일
-                    </p>
-                    <p className="text-xs font-medium truncate">{formatDate(submission.createdAt)}</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-card/50 backdrop-blur-sm border-white/5 shadow-sm hover:bg-card/80 transition-colors">
-                  <CardContent className="p-4 flex flex-col gap-1">
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" />
-                      버전
-                    </p>
-                    <p className="text-xs font-medium">{submission.version}</p>
-                  </CardContent>
-                </Card>
-              </div>
-            </>
-          ) : null}
-        </div>
-
       </div>
     </div>
   );

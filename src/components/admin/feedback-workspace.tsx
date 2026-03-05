@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -10,7 +10,7 @@ import {
     Search, Filter, Command, User,
     Maximize2, Settings, AlertTriangle,
     Zap, Type, Music, Scissors, Palette, Tag, Flag,
-    ChevronLeft, Edit2, Trash2, MoreHorizontal, Download
+    ChevronLeft, Edit2, Trash2, MoreHorizontal, Download, Brush
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,6 +38,9 @@ import confetti from "canvas-confetti";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
+import { useCanvasStore } from "@/store/canvas-store";
+import { AnnotationCanvas } from "@/components/admin/annotation-canvas";
+import { DrawingPreview } from "@/components/admin/drawing-preview";
 
 // Dynamic imports
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,6 +94,7 @@ type FeedbackItem = {
     content: string;
     startTime: number | null;
     endTime: number | null;
+    annotation?: any;
     status: string;
     createdAt: string;
     author: {
@@ -180,6 +184,7 @@ export function FeedbackWorkspace({
     const [feedbackType, setFeedbackType] = useState<FeedbackType>("GENERAL");
     const [feedbackPriority, setFeedbackPriority] = useState<FeedbackPriority>("NORMAL");
     const [capturedTime, setCapturedTime] = useState<number | null>(null);
+    const [capturedEndTime, setCapturedEndTime] = useState<number | null>(null);
     const [isTimeCaptured, setIsTimeCaptured] = useState(false);
 
     // Action Modal
@@ -198,6 +203,48 @@ export function FeedbackWorkspace({
 
     // Mobile Sheet State
     const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+
+    // Canvas State — 개별 셀렉터로 분리 (React 19 useSyncExternalStore 무한 루프 방지)
+    const isCanvasActive = useCanvasStore((s) => s.isActive);
+    const toggleCanvas = useCanvasStore((s) => s.toggleCanvas);
+    const setCanvasTool = useCanvasStore((s) => s.setTool);
+    const clearCanvas = useCanvasStore((s) => s.clearCanvas);
+    const drawingObjects = useCanvasStore((s) => s.drawingObjects);
+    const loadDrawing = useCanvasStore((s) => s.loadDrawing);
+    const hasDrawingAttached = useCanvasStore((s) => s.hasDrawingAttached);
+    const attachedTimecode = useCanvasStore((s) => s.attachedTimecode);
+    const detachDrawing = useCanvasStore((s) => s.detachDrawing);
+    const sourceSize = useCanvasStore((s) => s.sourceSize);
+    const videoContainerRef = useRef<HTMLDivElement>(null);
+
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+
+            const key = e.key.toLowerCase();
+            if (key === 'c') {
+                e.preventDefault();
+                setIsTimeCaptured(true);
+                setCapturedTime(currentTime);
+                toast.info(`⏱ 시점이 캡처되었습니다.`);
+            } else if (key === 'd') {
+                e.preventDefault();
+                toggleCanvas();
+            } else if (isCanvasActive) {
+                switch (key) {
+                    case 'v': e.preventDefault(); setCanvasTool('select'); break;
+                    case 'p': e.preventDefault(); setCanvasTool('pen'); break;
+                    case 'r': e.preventDefault(); setCanvasTool('rect'); break;
+                    case 'a': e.preventDefault(); setCanvasTool('arrow'); break;
+                    case 't': e.preventDefault(); setCanvasTool('text'); break;
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isCanvasActive, toggleCanvas, setCanvasTool, currentTime]);
 
     useEffect(() => { setSubmissions(initialSubmissions); }, [initialSubmissions]);
 
@@ -250,7 +297,11 @@ export function FeedbackWorkspace({
                     type: feedbackType,
                     priority: feedbackPriority,
                     content: feedbackText.trim(),
-                    ...(isTimeCaptured && capturedTime !== null ? { startTime: capturedTime } : {}),
+                    ...(isTimeCaptured && capturedTime !== null ? {
+                        startTime: capturedTime,
+                        endTime: capturedEndTime ?? (capturedTime + 3),
+                    } : {}),
+                    annotation: drawingObjects.length > 0 ? { strokes: drawingObjects, sourceSize: sourceSize ?? undefined } : undefined,
                 }),
             });
             if (!res.ok) {
@@ -263,6 +314,9 @@ export function FeedbackWorkspace({
             setFeedbackText("");
             setIsTimeCaptured(false);
             setCapturedTime(null);
+            setCapturedEndTime(null);
+            clearCanvas();
+            detachDrawing();
 
             // 등록에 성공하면 현재 선택된 영상의 status를 프론트엔드 레벨에서 IN_REVIEW 상태로 만듦
             if (selectedId) {
@@ -658,7 +712,7 @@ export function FeedbackWorkspace({
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.3 }}
-                                className="flex flex-1 flex-col overflow-hidden"
+                                className="flex flex-1 flex-col lg:flex-row overflow-hidden"
                             >
                                 {/* Video Area */}
                                 <div className="flex-1 flex flex-col relative">
@@ -766,15 +820,25 @@ export function FeedbackWorkspace({
                                     </div>
 
                                     {/* Video Player */}
-                                    <div className="flex-1 bg-black relative flex items-center justify-center lg:p-4">
+                                    <div className="flex-1 bg-black relative flex items-center justify-center lg:p-4" ref={videoContainerRef}>
                                         <div className="relative w-full h-full lg:max-h-[calc(100vh-14rem)] lg:aspect-video shadow-2xl lg:rounded-xl overflow-hidden lg:ring-1 lg:ring-white/[0.08] bg-[#050508]">
                                             {streamUid ? (
-                                                <VideoPlayer
-                                                    streamUid={streamUid}
-                                                    onTimeUpdate={(t: number) => setCurrentTime(t)}
-                                                    onDurationChange={(d: number) => setDuration(d)}
-                                                    seekTo={seekTo}
-                                                />
+                                                <>
+                                                    <VideoPlayer
+                                                        streamUid={streamUid}
+                                                        onTimeUpdate={(t: number) => setCurrentTime(t)}
+                                                        onDurationChange={(d: number) => setDuration(d)}
+                                                        seekTo={seekTo}
+                                                    />
+                                                    <AnnotationCanvas
+                                                        videoRef={videoContainerRef as any}
+                                                        currentTime={currentTime}
+                                                        onSave={(strokes, time) => {
+                                                            setIsTimeCaptured(true);
+                                                            setCapturedTime(time);
+                                                        }}
+                                                    />
+                                                </>
                                             ) : (
                                                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-700 gap-3">
                                                     <FileVideo className="w-12 h-12 opacity-30" />
@@ -782,6 +846,18 @@ export function FeedbackWorkspace({
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* Canvas Toggle FAB */}
+                                        {streamUid && !isCanvasActive && (
+                                            <Button
+                                                variant="secondary"
+                                                size="icon"
+                                                className="absolute right-6 bottom-6 lg:right-10 lg:bottom-10 z-20 rounded-full shadow-lg w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 text-white"
+                                                onClick={toggleCanvas}
+                                            >
+                                                <Brush className="w-5 h-5" />
+                                            </Button>
+                                        )}
                                     </div>
 
                                     {/* Timeline Bar */}
@@ -807,9 +883,9 @@ export function FeedbackWorkspace({
                                    ================================================================ */}
                                 <div className={cn(
                                     "w-full lg:w-[400px] border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0c0c14] flex flex-col z-50 shrink-0 transition-transform duration-300",
-                                    "lg:relative lg:h-full lg:translate-y-0",
-                                    "fixed bottom-[calc(env(safe-area-inset-bottom,20px)+64px)] lg:bottom-auto left-0 right-0 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] lg:shadow-none h-[75vh]",
-                                    isMobileSheetOpen ? "translate-y-0" : "translate-y-full"
+                                    "lg:relative lg:h-full lg:translate-y-0 lg:rounded-none lg:shadow-none lg:bottom-auto lg:left-auto lg:right-auto",
+                                    "fixed bottom-[calc(env(safe-area-inset-bottom,20px)+64px)] left-0 right-0 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] h-[75vh] lg:h-auto",
+                                    isMobileSheetOpen ? "translate-y-0" : "translate-y-full lg:translate-y-0"
                                 )}>
                                     {/* Drag handle for mobile */}
                                     <div
@@ -907,6 +983,40 @@ export function FeedbackWorkspace({
 
                                                     <Separator className="bg-white/[0.06]" />
 
+                                                    {/* Drawing Attachment Preview */}
+                                                    {hasDrawingAttached && drawingObjects.length > 0 && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, height: 0 }}
+                                                            animate={{ opacity: 1, height: "auto" }}
+                                                            exit={{ opacity: 0, height: 0 }}
+                                                            className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 overflow-hidden"
+                                                        >
+                                                            <div className="p-3">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Brush className="w-3.5 h-3.5 text-indigo-400" />
+                                                                        <span className="text-[11px] font-bold text-indigo-300">드로잉 첨부됨</span>
+                                                                        <Badge className="text-[9px] h-4 bg-indigo-500/20 text-indigo-300 border-indigo-500/30">{drawingObjects.length}개</Badge>
+                                                                        {attachedTimecode !== null && (
+                                                                            <Badge className="text-[9px] h-4 bg-violet-500/20 text-violet-300 border-violet-500/30">⏱ {formatTime(attachedTimecode)}</Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex gap-1">
+                                                                        <Button variant="ghost" size="icon" className="w-6 h-6 text-slate-500 hover:text-indigo-400" onClick={() => loadDrawing(drawingObjects)}>
+                                                                            <Edit2 className="w-3 h-3" />
+                                                                        </Button>
+                                                                        <Button variant="ghost" size="icon" className="w-6 h-6 text-slate-500 hover:text-red-400" onClick={detachDrawing}>
+                                                                            <X className="w-3 h-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="relative w-full h-20 bg-black/30 rounded-lg overflow-hidden">
+                                                                    <DrawingPreview strokes={drawingObjects} />
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+
                                                     {/* Timecode Capture */}
                                                     <div className="space-y-2">
                                                         <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -980,6 +1090,11 @@ export function FeedbackWorkspace({
                                                             ⏱ {formatTime(capturedTime)}
                                                         </Badge>
                                                     )}
+                                                    {hasDrawingAttached && (
+                                                        <Badge className="text-[9px] h-5 border-indigo-500/20 bg-indigo-500/10 text-indigo-300">
+                                                            🎨 드로잉
+                                                        </Badge>
+                                                    )}
                                                 </div>
                                                 <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
                                                     <Button
@@ -1041,12 +1156,18 @@ export function FeedbackWorkspace({
                                                                                 </span>
                                                                                 {fb.startTime !== null && (
                                                                                     <button
-                                                                                        onClick={() => setSeekTo(fb.startTime!)}
+                                                                                        onClick={() => {
+                                                                                            setSeekTo(fb.startTime!);
+                                                                                            if (fb.annotation) {
+                                                                                                loadDrawing(typeof fb.annotation === 'string' ? JSON.parse(fb.annotation) : fb.annotation);
+                                                                                            }
+                                                                                        }}
                                                                                         className="text-[9px] font-mono bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/20 hover:bg-indigo-500/25 transition-colors flex items-center gap-0.5"
                                                                                     >
                                                                                         <Play className="w-2 h-2 fill-current" />
                                                                                         {formatTime(fb.startTime)}
                                                                                         {fb.endTime !== null && ` → ${formatTime(fb.endTime)}`}
+                                                                                        {fb.annotation && <Brush className="w-2 h-2 ml-0.5" />}
                                                                                     </button>
                                                                                 )}
                                                                             </div>

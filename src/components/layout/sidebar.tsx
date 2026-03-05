@@ -3,17 +3,20 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { type LucideIcon,
+import {
+  type LucideIcon,
   LayoutDashboard,
-  Clapperboard, // More vibrant than Film
+  Clapperboard,
   Rocket,
-  MessageCircleHeart, // Friendlier than MessageSquare
+  MessageCircleHeart,
   Wallet,
   Settings,
   LogOut,
   Sparkles,
   User,
+  Bell,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
@@ -42,6 +45,19 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+
+  // 미확인 피드백 카운트
+  const { data: unreadData } = useQuery({
+    queryKey: ["star-unread-feedbacks"],
+    queryFn: async () => {
+      const res = await fetch("/api/stars/unread-feedbacks");
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data;
+    },
+    refetchInterval: 30000,
+  });
+  const unreadCount = unreadData?.unreadCount ?? 0;
 
   const { data: userData } = useQuery({
     queryKey: ["sidebar-user"],
@@ -120,9 +136,21 @@ export function Sidebar() {
                 !isSpecial && "ml-1" // Adjust spacing for standard items with indicator
               )} />
 
-              <span className={cn("relative z-10 transition-colors duration-300", isSpecial && "font-bold tracking-tight")}>
+              <span className={cn("relative z-10 transition-colors duration-300 flex-1", isSpecial && "font-bold tracking-tight")}>
                 {item.label}
               </span>
+
+              {/* 🔴 미확인 피드백 뱃지 */}
+              {item.href === "/stars/feedback" && unreadCount > 0 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="relative z-10 min-w-[20px] h-5 px-1.5 bg-rose-500 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-[0_0_8px_rgba(244,63,94,0.4)]"
+                >
+                  <span className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-25" />
+                  <span className="relative">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                </motion.div>
+              )}
 
               {isSpecial && (
                 <Sparkles className={cn(

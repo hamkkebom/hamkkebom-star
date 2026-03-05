@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import {
     LayoutDashboard,
@@ -10,6 +11,7 @@ import {
     Settings,
     Menu,
     ChevronRight,
+    LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -19,7 +21,8 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
-import { navGroups, colorMap } from "@/lib/admin-nav";
+import { navGroups, colorMap, externalItems } from "@/lib/admin-nav";
+import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
     { id: "home", href: "/admin", label: "홈", icon: LayoutDashboard, exact: true },
@@ -31,6 +34,27 @@ const navItems = [
 
 export function BottomNavAdmin() {
     const pathname = usePathname();
+    const router = useRouter();
+    const supabase = createClient();
+
+    async function handleLogout() {
+        await supabase.auth.signOut();
+        router.push("/auth/login");
+    }
+
+    const { data: counts } = useQuery({
+        queryKey: ["admin-pending-counts"],
+        queryFn: async () => {
+            const res = await fetch("/api/notifications/badge");
+            if (!res.ok) throw new Error("Failed to fetch");
+            const json = await res.json();
+            return json.data;
+        },
+        refetchInterval: 30000,
+    });
+
+    const projectApprovalsCount = counts?.pendingApprovals || 0;
+    const hasAnyPending = projectApprovalsCount > 0;
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
@@ -48,8 +72,18 @@ export function BottomNavAdmin() {
                                             whileTap={{ scale: 0.9 }}
                                             className="flex flex-col items-center justify-center gap-1 w-full"
                                         >
-                                            <div className="p-1.5 rounded-xl transition-colors text-muted-foreground">
+                                            <div className="relative p-1.5 rounded-xl transition-colors text-muted-foreground">
                                                 <item.icon className="h-[22px] w-[22px]" />
+                                                {/* 빨간 알림 점 (1단계 유도) */}
+                                                {hasAnyPending && (
+                                                    <motion.div
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-background"
+                                                    >
+                                                        <span className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-75" />
+                                                    </motion.div>
+                                                )}
                                             </div>
                                             <span className="text-[10px] tracking-tight mt-0.5 transition-all duration-300 text-muted-foreground font-medium">
                                                 {item.label}
@@ -88,7 +122,19 @@ export function BottomNavAdmin() {
                                                                             <child.icon className="h-4 w-4" />
                                                                             <span className="text-sm">{child.label}</span>
                                                                         </div>
-                                                                        <ChevronRight className="h-4 w-4 opacity-30" />
+                                                                        <div className="flex items-center gap-2">
+                                                                            {/* 프로젝트 승인 뱃지 (2단계 유도) */}
+                                                                            {child.href === "/admin/approvals" && projectApprovalsCount > 0 && (
+                                                                                <motion.div
+                                                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                                                    animate={{ opacity: 1, scale: 1 }}
+                                                                                    className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.3)]"
+                                                                                >
+                                                                                    {projectApprovalsCount}건 대기
+                                                                                </motion.div>
+                                                                            )}
+                                                                            <ChevronRight className="h-4 w-4 opacity-30" />
+                                                                        </div>
                                                                     </Link>
                                                                 </SheetTrigger>
                                                             );
@@ -97,6 +143,31 @@ export function BottomNavAdmin() {
                                                 </div>
                                             );
                                         })}
+
+                                        <div className="my-4 h-px bg-border/50" />
+
+                                        {/* 외부 링크 및 로그아웃 */}
+                                        <div className="space-y-1">
+                                            {externalItems.map((item) => (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    className="flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
+                                                >
+                                                    <item.icon className="h-4 w-4" />
+                                                    <span>{item.label}</span>
+                                                </Link>
+                                            ))}
+
+                                            <button
+                                                type="button"
+                                                onClick={handleLogout}
+                                                className="flex w-full items-center gap-3 p-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                            >
+                                                <LogOut className="h-4 w-4" />
+                                                <span>로그아웃</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </SheetContent>
                             </Sheet>
