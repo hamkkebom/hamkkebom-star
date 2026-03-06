@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
@@ -207,6 +207,28 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
       setFeedbacks(feedbackData.data as FeedbackViewFeedback[]);
     }
   }, [feedbackData, setFeedbacks]);
+
+  // 피드백 상세 페이지 진입 시 미확인 피드백 읽음 처리
+  const queryClient = useQueryClient();
+  const markedRef = useRef(false);
+  useEffect(() => {
+    if (!submissionId || markedRef.current) return;
+    markedRef.current = true;
+    fetch("/api/stars/feedbacks/mark-seen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ submissionId }),
+    })
+      .then((res) => {
+        if (res.ok) {
+          // 네비게이션 벗지 카운트 갱신
+          queryClient.invalidateQueries({ queryKey: ["star-unread-feedbacks"] });
+          queryClient.invalidateQueries({ queryKey: ["notifications-badge"] });
+          queryClient.invalidateQueries({ queryKey: ["submissions-my"] });
+        }
+      })
+      .catch(() => { });
+  }, [submissionId, queryClient]);
 
   if (!isLoading && isError) {
     return (

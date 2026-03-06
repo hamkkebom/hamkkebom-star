@@ -82,18 +82,27 @@ const FILTERS = [
 // ============================================================
 //  ANIMATED THUMBNAIL CARD
 // ============================================================
-function ThumbnailPreview({ sub }: { sub: Submission }) {
-    const staticThumb = getStaticThumb(sub);
+export function ThumbnailPreview({
+    thumbnailUrl,
+    videoTitle,
+    version,
+    status
+}: {
+    thumbnailUrl: string | null;
+    videoTitle: string;
+    version?: string;
+    status?: string;
+}) {
     const [thumbError, setThumbError] = useState(false);
 
     return (
         <div
-            className="relative aspect-video overflow-hidden bg-slate-200 dark:bg-black rounded-t-2xl"
+            className="relative w-full h-full overflow-hidden bg-slate-200 dark:bg-black rounded-t-2xl"
         >
-            {staticThumb && !thumbError ? (
+            {thumbnailUrl && !thumbError ? (
                 <Image
-                    src={staticThumb}
-                    alt={sub.video?.title || "영상 썸네일"}
+                    src={thumbnailUrl}
+                    alt={videoTitle || "영상 썸네일"}
                     fill
                     unoptimized
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -126,11 +135,13 @@ function ThumbnailPreview({ sub }: { sub: Submission }) {
             </div>
 
             {/* Version chip */}
-            <div className="absolute bottom-3 right-3 z-10">
-                <Badge className="bg-black/60 text-white/90 border-white/10 backdrop-blur-xl font-mono text-[10px] px-2 py-0.5">
-                    v{sub.version.replace(/^v/i, "")}
-                </Badge>
-            </div>
+            {version && (
+                <div className="absolute bottom-3 right-3 z-10">
+                    <Badge className="bg-black/60 text-white/90 border-white/10 backdrop-blur-xl font-mono text-[10px] px-2 py-0.5">
+                        v{version.replace(/^v/i, "")}
+                    </Badge>
+                </div>
+            )}
         </div>
     );
 }
@@ -513,7 +524,11 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
 
                                                             {/* Thumbnail Layer - slightly shorter aspect ratio for compact look */}
                                                             <div className="aspect-[16/10] shrink-0">
-                                                                <ThumbnailPreview sub={sub} />
+                                                                <ThumbnailPreview
+                                                                    thumbnailUrl={getStaticThumb(sub)}
+                                                                    videoTitle={sub.video?.title || sub.assignment?.request?.title || sub.versionTitle || ""}
+                                                                    version={sub.version}
+                                                                />
                                                             </div>
 
                                                             {/* Content Layer - Compact Padding */}

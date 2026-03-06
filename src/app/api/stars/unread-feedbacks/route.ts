@@ -25,13 +25,13 @@ export async function GET() {
         );
     }
 
-    // 스타의 모든 제출물에 달린 PENDING 피드백 개수
+    // 스타의 모든 제출물에 달린 미확인(seenByStarAt이 null) 피드백 개수
     const unreadCount = await prisma.feedback.count({
         where: {
             submission: {
                 starId: user.id,
             },
-            status: "PENDING",
+            seenByStarAt: null,
         },
     });
 

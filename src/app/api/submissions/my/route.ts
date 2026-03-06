@@ -58,7 +58,7 @@ export async function GET(request: Request) {
   } else if (filter === "HAS_FEEDBACK") {
     where.feedbacks = { some: {} };
   } else if (filter === "UNREAD") {
-    where.feedbacks = { some: { status: "PENDING" } };
+    where.feedbacks = { some: { seenByStarAt: null } };
   }
 
   const [rows, total] = await Promise.all([
@@ -164,13 +164,13 @@ export async function GET(request: Request) {
     })
   );
 
-  // 각 제출물별 미확인(PENDING) 피드백 카운트 집계
+  // 각 제출물별 미확인(seenByStarAt이 null) 피드백 카운트 집계
   const submissionIds = rowsWithThumbnails.map((r) => r.id);
   const pendingCounts = await prisma.feedback.groupBy({
     by: ["submissionId"],
     where: {
       submissionId: { in: submissionIds },
-      status: "PENDING",
+      seenByStarAt: null,
     },
     _count: { id: true },
   });

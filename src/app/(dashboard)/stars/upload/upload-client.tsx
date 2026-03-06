@@ -613,15 +613,21 @@ export function UploadPageClient({
                     <div className="md:col-span-4 space-y-5">
                       {/* 썸네일 업로드 영역 */}
                       <div className="space-y-2">
-                        <Label className="font-bold">썸네일 이미지</Label>
+                        <Label className="font-bold">썸네일 이미지 <span className="text-destructive">*</span></Label>
                         <div className="transform transition-transform active:scale-[0.98]">
                           <NanoFileUpload
                             key={resetKey}
                             onFileSelect={setThumbnailFile}
                             accept={{ "image/*": [".png", ".jpg", ".jpeg", ".webp"] }}
-                            label="썸네일 찾기"
+                            label="썸네일 찾기 (필수)"
                           />
                         </div>
+                        {!thumbnailFile && (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            영상 제출 시 썸네일 이미지가 반드시 필요합니다.
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label className="font-bold">버전 정보</Label>
@@ -638,7 +644,7 @@ export function UploadPageClient({
 
                   {/* 업로드 영역 */}
                   <div className="pt-6 border-t border-border/50">
-                    {versionTitle.trim().length > 0 ? (
+                    {versionTitle.trim().length > 0 && thumbnailFile ? (
                       <div className="animate-slide-up bg-card rounded-2xl p-1 shadow-sm border border-border/80">
                         <Label className="mb-4 block text-base font-bold px-2 py-2">파일 업로드 준비완료 🚀</Label>
                         <UploadDropzone
@@ -669,12 +675,25 @@ export function UploadPageClient({
                         <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
                           <AlertCircle className="w-6 h-6 text-muted-foreground/50" />
                         </div>
-                        <p className="font-bold text-muted-foreground text-sm sm:text-base">
-                          영상의 제목을 먼저 입력해주세요!
-                        </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground/60 mt-1">
-                          제목을 입력하면 파일 업로드 창이 열려요.
-                        </p>
+                        {!versionTitle.trim() ? (
+                          <>
+                            <p className="font-bold text-muted-foreground text-sm sm:text-base">
+                              영상의 제목을 먼저 입력해주세요!
+                            </p>
+                            <p className="text-xs sm:text-sm text-muted-foreground/60 mt-1">
+                              제목을 입력하면 파일 업로드 창이 열려요.
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-bold text-amber-600 dark:text-amber-400 text-sm sm:text-base">
+                              썸네일 이미지를 등록해주세요!
+                            </p>
+                            <p className="text-xs sm:text-sm text-muted-foreground/60 mt-1">
+                              썸네일 이미지를 업로드하면 파일 업로드 창이 열려요.
+                            </p>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

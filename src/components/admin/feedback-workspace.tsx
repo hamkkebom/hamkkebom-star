@@ -10,12 +10,14 @@ import {
     Search, Filter, Command, User,
     Maximize2, Settings, AlertTriangle,
     Zap, Type, Music, Scissors, Palette, Tag, Flag,
-    ChevronLeft, Edit2, Trash2, MoreHorizontal, Download, Brush
+    ChevronLeft, Edit2, Trash2, MoreHorizontal, Download, Brush,
+    ImageIcon, ZoomIn, ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ThumbnailPreview } from "./feedback-dashboard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -63,6 +65,7 @@ type Submission = {
     status: string;
     createdAt: string;
     streamUid?: string;
+    signedThumbnailUrl?: string | null;
     video: {
         id: string;
         title: string;
@@ -633,13 +636,10 @@ export function FeedbackWorkspace({
                                                 <div className="flex gap-3">
                                                     {/* Thumbnail */}
                                                     <div className="relative w-20 aspect-video rounded-lg overflow-hidden bg-black shrink-0 ring-1 ring-white/[0.08]">
-                                                        {sub.video?.thumbnailUrl ? (
-                                                            <img src={sub.video.thumbnailUrl} alt="" className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
-                                                        ) : (
-                                                            <div className="flex h-full w-full items-center justify-center bg-slate-900/50">
-                                                                <FileVideo className="h-4 w-4 text-slate-700" />
-                                                            </div>
-                                                        )}
+                                                        <ThumbnailPreview
+                                                            thumbnailUrl={sub.video?.thumbnailUrl || null}
+                                                            videoTitle={sub.video?.title || sub.assignment?.request.title || sub.versionTitle || "제목 없음"}
+                                                        />
                                                         {sub.status === "IN_REVIEW" && (
                                                             <div className="absolute top-1 left-1">
                                                                 <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
@@ -911,6 +911,9 @@ export function FeedbackWorkspace({
                                                 </TabsTrigger>
                                                 <TabsTrigger value="history" className="flex-1 text-xs text-slate-500 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-300 dark:data-[state=active]:shadow-none">
                                                     📋 내역 ({feedbacksRaw.length})
+                                                </TabsTrigger>
+                                                <TabsTrigger value="thumbnail" className="flex-1 text-xs text-slate-500 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-300 dark:data-[state=active]:shadow-none">
+                                                    🖼️ 썸네일
                                                 </TabsTrigger>
                                                 <TabsTrigger value="info" className="flex-1 text-xs text-slate-500 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-500/20 dark:data-[state=active]:text-indigo-300 dark:data-[state=active]:shadow-none">
                                                     ℹ️ 정보
@@ -1323,6 +1326,59 @@ export function FeedbackWorkspace({
                                                 </div>
                                             </ScrollArea>
                                         </TabsContent>
+
+                                        {/* ======== TAB: THUMBNAIL ======== */}
+                                        <TabsContent value="thumbnail" className="flex-1 p-4 mt-0">
+                                            <ScrollArea className="h-full">
+                                                <div className="space-y-4">
+                                                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                        <ImageIcon className="w-3 h-3 text-indigo-400" /> 스타 등록 썸네일
+                                                    </label>
+
+                                                    {(selectedSubmission.signedThumbnailUrl || selectedSubmission.video?.thumbnailUrl) ? (
+                                                        <div className="space-y-3">
+                                                            {/* 썸네일 메인 프리뷰 */}
+                                                            <div className="relative group aspect-video w-full rounded-xl overflow-hidden bg-black ring-1 ring-white/[0.08] shadow-lg">
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img
+                                                                    src={selectedSubmission.signedThumbnailUrl || selectedSubmission.video?.thumbnailUrl || ""}
+                                                                    alt={selectedSubmission.video?.title || "등록 썸네일"}
+                                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                                />
+                                                                {/* 호버 시 원본 보기 */}
+                                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                    <a
+                                                                        href={selectedSubmission.signedThumbnailUrl || selectedSubmission.video?.thumbnailUrl || ""}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="flex items-center gap-2 bg-white/20 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-white/30 transition-colors"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        <ZoomIn className="w-4 h-4" />
+                                                                        원본 보기
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 상태 메시지 */}
+                                                            <div className="flex items-center gap-2 text-[11px] p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                                                <span className="text-emerald-300">스타가 등록한 썸네일이 확인되었습니다.</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                                                            <div className="w-20 h-20 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-5">
+                                                                <ImageIcon className="w-10 h-10 text-slate-700" />
+                                                            </div>
+                                                            <p className="text-sm font-medium text-slate-400 mb-1">등록된 썸네일이 없습니다</p>
+                                                            <p className="text-[11px] text-slate-600 max-w-[240px] leading-relaxed">스타가 영상 제출 시 썸네일을 등록하지 않았습니다.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </ScrollArea>
+                                        </TabsContent>
+
                                     </Tabs>
                                 </div>
                             </motion.div>

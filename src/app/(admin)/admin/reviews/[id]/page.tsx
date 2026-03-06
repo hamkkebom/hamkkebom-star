@@ -6,6 +6,7 @@ import { ko } from "date-fns/locale/ko";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { FeedbackList } from "@/components/feedback/feedback-list";
+import { ThumbnailPreview } from "@/components/admin/feedback-dashboard";
 import {
   ArrowLeft,
   ArrowRightLeft,
@@ -34,7 +36,12 @@ import {
   Loader2,
   Search,
   Clock,
+  ImageIcon,
+  Play,
+  ExternalLink,
+  ZoomIn,
 } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useMemo, useState } from "react";
 
 type Feedback = {
@@ -58,12 +65,13 @@ type SubmissionDetail = {
   status: string;
   summaryFeedback: string | null;
   createdAt: string;
+  signedThumbnailUrl?: string | null;
   assignmentId: string | null;
   star: { id: string; name: string; email: string; avatarUrl: string | null };
   assignment: {
     request: { id: string; title: string; deadline: string };
   } | null;
-  video: { id: string; title: string; streamUid: string | null } | null;
+  video: { id: string; title: string; streamUid: string | null; thumbnailUrl?: string | null } | null;
   feedbacks: Feedback[];
   _count: { feedbacks: number };
 };
@@ -299,19 +307,30 @@ export default function ReviewDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">
-            {sub.versionTitle || `v${sub.version.replace(/^v/i, "")}`}
+
+        {/* Thumbnail Preview 추가 */}
+        <div className="relative w-24 aspect-video shrink-0 rounded-md overflow-hidden bg-black/5 ring-1 ring-slate-200 dark:ring-white/[0.08]">
+          <ThumbnailPreview
+            thumbnailUrl={sub.signedThumbnailUrl || sub.video?.thumbnailUrl || null}
+            videoTitle={sub.video?.title || sub.assignment?.request.title || sub.versionTitle || "제목 없음"}
+          />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold truncate">
+            {sub.video?.title || sub.assignment?.request.title || sub.versionTitle || `v${sub.version.replace(/^v/i, "")}`}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {sub.star.name} · {sub.assignment?.request.title || "직접 제출"}
+          <p className="text-sm text-muted-foreground truncate flex items-center gap-2">
+            <span>{sub.star.name}</span>
+            <span className="text-slate-300 dark:text-slate-600">|</span>
+            <span>{sub.versionTitle || `v${sub.version.replace(/^v/i, "")}`}</span>
           </p>
         </div>
-        <Badge className={statusColors[sub.status] || ""}>
+        <Badge className={cn("shrink-0", statusColors[sub.status] || "")}>
           {statusLabels[sub.status] || sub.status}
         </Badge>
       </div>
@@ -345,6 +364,57 @@ export default function ReviewDetailPage() {
         </Button>
       )}
 
+      {/* ========== 스타 등록 썸네일 관리 ========== */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-indigo-500" />
+            스타 등록 썸네일
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(sub.signedThumbnailUrl || sub.video?.thumbnailUrl) ? (
+            <div className="space-y-3">
+              {/* 썸네일 메인 프리뷰 */}
+              <div className="relative group aspect-video w-full max-w-lg rounded-xl overflow-hidden bg-black ring-1 ring-slate-200 dark:ring-white/[0.08] shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={sub.signedThumbnailUrl || sub.video?.thumbnailUrl || ""}
+                  alt={sub.video?.title || "등록 썸네일"}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                {/* 호버 시 확대 아이콘 */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <a
+                    href={sub.signedThumbnailUrl || sub.video?.thumbnailUrl || ""}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-white/20 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-white/30 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                    원본 보기
+                  </a>
+                </div>
+              </div>
+              {/* 썸네일 정보 */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                <span>스타가 등록한 썸네일이 확인되었습니다.</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] flex items-center justify-center mb-4">
+                <ImageIcon className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">등록된 썸네일이 없습니다</p>
+              <p className="text-xs text-muted-foreground/60">스타가 영상 제출 시 썸네일을 등록하지 않았습니다.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* 버전 이력 */}
       {versionSiblings.length > 0 && (
         <Card>
@@ -366,8 +436,8 @@ export default function ReviewDetailPage() {
                     <div className="flex flex-col items-center">
                       <div
                         className={`w-3 h-3 rounded-full shrink-0 mt-1.5 ${isCurrent
-                            ? "bg-primary ring-2 ring-primary/30"
-                            : "bg-muted border-2 border-muted-foreground/30"
+                          ? "bg-primary ring-2 ring-primary/30"
+                          : "bg-muted border-2 border-muted-foreground/30"
                           }`}
                       />
                       {!isLast && !isOnly && (
@@ -377,8 +447,8 @@ export default function ReviewDetailPage() {
                     {/* Content */}
                     <div
                       className={`flex-1 pb-4 ${isCurrent
-                          ? ""
-                          : "cursor-pointer hover:bg-accent/50 rounded-lg"
+                        ? ""
+                        : "cursor-pointer hover:bg-accent/50 rounded-lg"
                         } p-3 -mt-1`}
                       onClick={
                         isCurrent
@@ -646,14 +716,14 @@ export default function ReviewDetailPage() {
                       type="button"
                       onClick={() => setSelectedStarId(star.id)}
                       className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${selectedStarId === star.id
-                          ? "bg-primary/10 ring-1 ring-primary"
-                          : "hover:bg-muted"
+                        ? "bg-primary/10 ring-1 ring-primary"
+                        : "hover:bg-muted"
                         }`}
                     >
                       <div
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium ${selectedStarId === star.id
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
                           }`}
                       >
                         {star.name.charAt(0)}
@@ -680,8 +750,8 @@ export default function ReviewDetailPage() {
                       </div>
                       <div
                         className={`h-4 w-4 shrink-0 rounded-full border-2 ${selectedStarId === star.id
-                            ? "border-primary bg-primary"
-                            : "border-muted-foreground/30"
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground/30"
                           }`}
                       >
                         {selectedStarId === star.id && (

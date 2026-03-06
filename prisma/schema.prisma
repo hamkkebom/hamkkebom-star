@@ -153,6 +153,7 @@ model Feedback {
   annotation   Json?
   authorId     String
   submissionId String
+  seenByStarAt DateTime?
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   author       User             @relation("AuthoredFeedbacks", fields: [authorId], references: [id])

@@ -15,13 +15,13 @@ export async function GET() {
   }
 
   if (user.role === "STAR") {
-    // Count pending feedbacks for this STAR
+    // Count unseen feedbacks for this STAR
     const unreadFeedbacks = await prisma.feedback.count({
       where: {
         submission: {
           starId: user.id,
         },
-        status: FeedbackStatus.PENDING,
+        seenByStarAt: null,
       },
     });
 
