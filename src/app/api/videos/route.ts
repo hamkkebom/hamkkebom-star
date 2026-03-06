@@ -166,7 +166,7 @@ export async function GET(request: Request) {
           },
         },
         submissions: {
-          select: { id: true },
+          select: { id: true, thumbnailUrl: true },
           orderBy: { createdAt: "desc" },
           take: 1,
         },
@@ -194,8 +194,19 @@ export async function GET(request: Request) {
       if (cached) {
         finalThumbnailUrl = cached;
       } else {
-        // 1순위: R2 URL → presigned GET URL
-        if (row.thumbnailUrl) {
+        // 1순위: 최신 Submission.thumbnailUrl (스타가 직접 업로드한 썸네일)
+        const subThumbUrl = row.submissions?.[0]?.thumbnailUrl;
+        if (subThumbUrl) {
+          const r2Key = extractR2Key(subThumbUrl);
+          if (r2Key) {
+            try {
+              finalThumbnailUrl = await getPresignedGetUrl(r2Key);
+            } catch { /* R2 실패 시 fallback */ }
+          }
+        }
+
+        // 2순위: Video.thumbnailUrl (R2 URL)
+        if (!finalThumbnailUrl && row.thumbnailUrl) {
           const r2Key = extractR2Key(row.thumbnailUrl);
           if (r2Key) {
             try {
@@ -204,7 +215,7 @@ export async function GET(request: Request) {
           }
         }
 
-        // 2순위: Cloudflare Stream 서명 썸네일
+        // 3순위: Cloudflare Stream 자동 생성 썸네일
         if (!finalThumbnailUrl && row.streamUid) {
           try {
             const token = await getSignedPlaybackToken(row.streamUid);

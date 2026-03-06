@@ -115,15 +115,14 @@ export async function GET(request: Request) {
     prisma.submission.count({ where }),
   ]);
 
-  // 각 submission의 썸네일 URL 생성 (우선순위: R2 presigned → Stream signed)
+  // 각 submission의 썸네일 URL 생성 (우선순위: 스타 업로드 → Video → Stream)
   const rowsWithThumbnails = await Promise.all(
     rows.map(async (row) => {
       let finalThumbnailUrl: string | null = null;
 
-      // 1순위: Video.thumbnailUrl이 R2 URL이면 → presigned GET URL
-      const videoThumbUrl = row.video?.thumbnailUrl;
-      if (videoThumbUrl) {
-        const r2Key = extractR2Key(videoThumbUrl);
+      // 1순위: Submission.thumbnailUrl (스타가 직접 업로드한 썸네일)
+      if (row.thumbnailUrl) {
+        const r2Key = extractR2Key(row.thumbnailUrl);
         if (r2Key) {
           try {
             finalThumbnailUrl = await getPresignedGetUrl(r2Key);
@@ -133,19 +132,22 @@ export async function GET(request: Request) {
         }
       }
 
-      // 2순위: Submission.thumbnailUrl이 R2 URL이면 → presigned GET URL
-      if (!finalThumbnailUrl && row.thumbnailUrl) {
-        const r2Key = extractR2Key(row.thumbnailUrl);
-        if (r2Key) {
-          try {
-            finalThumbnailUrl = await getPresignedGetUrl(r2Key);
-          } catch {
-            // ignore
+      // 2순위: Video.thumbnailUrl (승인 후 Video에 복사된 URL)
+      if (!finalThumbnailUrl) {
+        const videoThumbUrl = row.video?.thumbnailUrl;
+        if (videoThumbUrl) {
+          const r2Key = extractR2Key(videoThumbUrl);
+          if (r2Key) {
+            try {
+              finalThumbnailUrl = await getPresignedGetUrl(r2Key);
+            } catch {
+              // ignore
+            }
           }
         }
       }
 
-      // 3순위: Cloudflare Stream 서명 썸네일
+      // 3순위: Cloudflare Stream 자동 생성 썸네일
       if (!finalThumbnailUrl) {
         const uid = row.streamUid || row.video?.streamUid;
         if (uid) {
