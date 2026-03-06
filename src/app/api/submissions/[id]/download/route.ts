@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
-import { getDownloadUrl, getSignedPlaybackToken } from "@/lib/cloudflare/stream";
+import { getSignedDownloadUrl } from "@/lib/cloudflare/stream";
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
 /**
  * GET /api/submissions/[id]/download
- * 제출물 영상의 mp4 다운로드 URL을 서명된 토큰과 함께 반환합니다.
+ * 제출물 영상을 서버사이드 프록시로 다운로드합니다.
  * ADMIN만 사용 가능.
  */
 export async function GET(_request: Request, { params }: Params) {
@@ -54,30 +54,57 @@ export async function GET(_request: Request, { params }: Params) {
     );
   }
 
-  // 1) 다운로드 URL 획득 (다운로드 기능 활성화)
-  const downloadUrl = await getDownloadUrl(streamUid);
-  if (!downloadUrl) {
+  try {
+    // 서명된 다운로드 URL 생성 (videodelivery.net 사용)
+    const downloadUrl = await getSignedDownloadUrl(streamUid);
+    if (!downloadUrl) {
+      return NextResponse.json(
+        { error: { code: "INTERNAL_ERROR", message: "다운로드 URL 생성에 실패했습니다." } },
+        { status: 500 }
+      );
+    }
+
+    // Cloudflare에서 영상을 가져와서 프록시로 전달 (파일명 지정)
+    const cfResponse = await fetch(downloadUrl);
+    if (!cfResponse.ok) {
+      console.error(`[Download] CF 응답 실패: ${cfResponse.status} for uid=${streamUid}`);
+      return NextResponse.json(
+        { error: { code: "DOWNLOAD_FAILED", message: `다운로드 실패 (${cfResponse.status})` } },
+        { status: cfResponse.status }
+      );
+    }
+
+    // 파일명에서 특수문자 제거하고 안전한 이름으로 변환
+    const title = submission.versionTitle || submission.video?.title || `영상_v${submission.version}`;
+    const safeTitle = title
+      .replace(/[\\/:*?"<>|]/g, "_")
+      .trim();
+    const filename = `${safeTitle}.mp4`;
+
+    // Content-Disposition 헤더로 파일명 지정
+    const headers = new Headers();
+    headers.set("Content-Type", "video/mp4");
+    headers.set(
+      "Content-Disposition",
+      `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+    );
+
+    // Content-Length가 있으면 전달
+    const contentLength = cfResponse.headers.get("content-length");
+    if (contentLength) {
+      headers.set("Content-Length", contentLength);
+    }
+
+    return new Response(cfResponse.body, {
+      status: 200,
+      headers,
+    });
+
+  } catch (error) {
+    console.error("Failed to download submission video:", error);
     return NextResponse.json(
-      { error: { code: "INTERNAL_ERROR", message: "다운로드 URL 생성에 실패했습니다." } },
+      { error: { code: "INTERNAL_ERROR", message: "내부 서버 오류" } },
       { status: 500 }
     );
   }
-
-  // 2) 서명된 토큰 발급 (requireSignedURLs 설정 때문에 필요)
-  // 다운로드를 위해서는 downloadable: true 옵션이 포함된 토큰이어야 함
-  const signedToken = await getSignedPlaybackToken(streamUid, true);
-
-  // 3) 서명된 토큰이 있으면 다운로드 URL의 UID 부분을 토큰으로 교체
-  let finalUrl = downloadUrl;
-  if (signedToken) {
-    // downloadUrl 형태: https://customer-xxx.cloudflarestream.com/{uid}/downloads/default.mp4
-    // 서명된 URL: https://customer-xxx.cloudflarestream.com/{token}/downloads/default.mp4
-    finalUrl = downloadUrl.replace(streamUid, signedToken);
-  }
-
-  const filename = submission.versionTitle || submission.video?.title || `영상_v${submission.version}`;
-
-  return NextResponse.json({
-    data: { downloadUrl: finalUrl, filename },
-  });
 }

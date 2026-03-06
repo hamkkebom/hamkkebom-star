@@ -522,17 +522,10 @@ export function FeedbackWorkspace({
         if (!selectedId) return;
         setIsDownloading(true);
         try {
-            const res = await fetch(`/api/submissions/${selectedId}/download`);
-            if (!res.ok) {
-                const err = (await res.json()) as { error?: { message?: string } };
-                throw new Error(err.error?.message ?? "다운로드에 실패했습니다.");
-            }
-            const { data: dlData } = (await res.json()) as { data: { downloadUrl: string; filename: string } };
+            // 서버사이드 프록시 — API가 직접 mp4 파일을 반환합니다
             const a = document.createElement("a");
-            a.href = dlData.downloadUrl;
-            a.download = `${dlData.filename}.mp4`;
-            a.target = "_blank";
-            a.rel = "noopener noreferrer";
+            a.href = `/api/submissions/${selectedId}/download`;
+            a.download = "";
             a.click();
             toast.success("다운로드가 시작되었습니다.");
         } catch (err) {
