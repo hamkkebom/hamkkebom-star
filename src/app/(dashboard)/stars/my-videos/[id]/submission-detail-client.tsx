@@ -179,7 +179,8 @@ function DetailThumbnail({ src, alt }: { src: string | null | undefined; alt: st
 }
 
 export function SubmissionDetailClient({ submissionId }: { submissionId: string }) {
-  const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
+  const [seekTo, setSeekTo] = useState<{ time: number; nonce: number } | undefined>(undefined);
+  const triggerSeek = (t: number) => setSeekTo({ time: t, nonce: Date.now() });
 
   // Zustand 스토어
   const activeAnnotation = useFeedbackViewStore((s) => s.activeAnnotation);
@@ -327,7 +328,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
               <Skeleton className="aspect-video w-full" />
             ) : streamUid ? (
               <div className="aspect-video w-full relative">
-                <VideoPlayer streamUid={streamUid} seekTo={seekTo} />
+                <VideoPlayer streamUid={streamUid} seekTo={seekTo?.time} seekNonce={seekTo?.nonce} />
                 <AnnotationViewer annotation={activeAnnotation as Parameters<typeof AnnotationViewer>[0]["annotation"]} isActive={!!activeAnnotation} />
               </div>
             ) : (
@@ -340,7 +341,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
             {/* 타임라인 마커 바 */}
             {!isLoading && (
               <div className="px-4 pb-3 bg-gradient-to-t from-black/60 to-transparent">
-                <FeedbackTimeline onSeek={(t) => setSeekTo(t)} />
+                <FeedbackTimeline onSeek={(t) => triggerSeek(t)} />
               </div>
             )}
           </div>
@@ -348,7 +349,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
 
         {/* ── 장면별 스토리보드 갤러리 ── */}
         {!isLoading && (
-          <SceneStoryboard onSceneClick={(t) => setSeekTo(t)} />
+          <SceneStoryboard onSceneClick={(t) => triggerSeek(t)} />
         )}
 
         {/* ── 메인 그리드: 피드백 상세 + 사이드바 ── */}
@@ -380,7 +381,7 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
 
                 {/* Scene-First 피드백 상세 카드 리스트 */}
                 <FeedbackDetailCards
-                  onTimecodeClick={(t) => setSeekTo(t)}
+                  onTimecodeClick={(t) => triggerSeek(t)}
                 />
               </>
             ) : null}

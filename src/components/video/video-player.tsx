@@ -15,6 +15,8 @@ interface VideoPlayerProps {
   onDurationChange?: (duration: number) => void;
   /** 외부에서 특정 시점으로 이동할 때 사용 */
   seekTo?: number;
+  /** seekTo를 같은 값으로 다시 호출할 때도 강제 seek하기 위한 nonce */
+  seekNonce?: number;
   /** 자동 재생 여부 */
   autoPlay?: boolean;
   /** 음소거 여부 */
@@ -41,6 +43,7 @@ export const VideoPlayer = memo(function VideoPlayer({
   onTimeUpdate,
   onDurationChange,
   seekTo,
+  seekNonce,
   autoPlay = false,
   muted = false,
   loop = false,
@@ -103,7 +106,7 @@ export const VideoPlayer = memo(function VideoPlayer({
     if (seekTo !== undefined && Number.isFinite(seekTo) && streamRef.current) {
       streamRef.current.currentTime = seekTo;
     }
-  }, [seekTo]);
+  }, [seekTo, seekNonce]);
 
   const { playbackSrc, loading, error } = state;
 

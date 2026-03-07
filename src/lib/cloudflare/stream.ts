@@ -176,13 +176,23 @@ export async function getSignedPlaybackUrl(uid: string): Promise<string> {
 }
 
 /**
- * 서명된 다운로드 URL을 생성합니다.
- * requireSignedURLs가 활성화된 영상도 다운로드 가능합니다.
+ * 서명된 다운로드 URL을 생성합니다 (videodelivery.net 도메인).
+ * 최근 영상에서 작동합니다.
  */
 export async function getSignedDownloadUrl(uid: string): Promise<string | null> {
   const token = await getSignedPlaybackToken(uid, true);
   if (!token) return null;
   return `https://videodelivery.net/${token}/downloads/default.mp4`;
+}
+
+/**
+ * 서명된 다운로드 URL을 생성합니다 (customer 서브도메인).
+ * requireSignedURLs가 활성화된 옛날 영상에서 필요할 수 있습니다.
+ */
+export async function getSignedDownloadUrlCustomerDomain(uid: string): Promise<string | null> {
+  const token = await getSignedPlaybackToken(uid, true);
+  if (!token) return null;
+  return `https://customer-${ACCOUNT_ID}.cloudflarestream.com/${token}/downloads/default.mp4`;
 }
 
 // ---------------------------------------------------------------------------

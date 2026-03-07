@@ -877,7 +877,7 @@ export function FeedbackWorkspace({
                                 <div className={cn(
                                     "w-full lg:w-[400px] border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0c0c14] flex flex-col z-50 shrink-0 transition-transform duration-300",
                                     "lg:relative lg:h-full lg:translate-y-0 lg:rounded-none lg:shadow-none lg:bottom-auto lg:left-auto lg:right-auto",
-                                    "fixed bottom-[calc(env(safe-area-inset-bottom,20px)+64px)] left-0 right-0 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] h-[75vh] lg:h-auto",
+                                    "fixed bottom-[calc(env(safe-area-inset-bottom,20px)+64px)] left-0 right-0 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] h-[75vh]",
                                     isMobileSheetOpen ? "translate-y-0" : "translate-y-full lg:translate-y-0"
                                 )}>
                                     {/* Drag handle for mobile */}
@@ -915,8 +915,8 @@ export function FeedbackWorkspace({
                                         </div>
 
                                         {/* ======== TAB: COMPOSE ======== */}
-                                        <TabsContent value="compose" className="flex-1 flex flex-col min-h-0 mt-0">
-                                            <ScrollArea className="flex-1">
+                                        <TabsContent value="compose" className="flex-1 flex flex-col min-h-0 overflow-hidden mt-0">
+                                            <ScrollArea className="flex-1 min-h-0">
                                                 <div className="p-4 space-y-5">
                                                     {/* Feedback Type Selector — Chip Style */}
                                                     <div className="space-y-2">
@@ -1072,7 +1072,7 @@ export function FeedbackWorkspace({
                                             </ScrollArea>
 
                                             {/* Submit Bar */}
-                                            <div className="p-4 border-t border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0a0a12]">
+                                            <div className="p-4 border-t border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0a0a12] shrink-0">
                                                 <div className="flex items-center gap-2 mb-3">
                                                     {/* Summary of current form state */}
                                                     <Badge className={cn("text-[9px] h-5 border", TYPE_COLORS[feedbackType])}>

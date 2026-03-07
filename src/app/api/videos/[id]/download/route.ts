@@ -1,9 +1,39 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
-import { getSignedDownloadUrl } from "@/lib/cloudflare/stream";
+import { getSignedDownloadUrl, getSignedDownloadUrlCustomerDomain, getDownloadUrl } from "@/lib/cloudflare/stream";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * 여러 URL을 순서대로 시도하여, 실제 비디오 파일을 반환하는 첫 번째 URL을 사용합니다.
+ * JSON/HTML 에러 응답을 받으면 다음 URL로 넘어갑니다.
+ */
+async function tryFetchVideo(urls: (string | null)[]): Promise<Response | null> {
+    for (const url of urls) {
+        if (!url) continue;
+        try {
+            const res = await fetch(url);
+            if (!res.ok) {
+                console.log(`[Download] URL failed (${res.status}): ${url.slice(0, 80)}...`);
+                continue;
+            }
+            const ct = res.headers.get("content-type") || "";
+            // 실제 비디오 파일인지 확인 (json, html, text/plain 등 에러 응답 걸러내기)
+            if (!ct.includes("video/") && !ct.includes("octet-stream")) {
+                const body = await res.text();
+                console.log(`[Download] URL returned non-video ct=${ct}: ${body.slice(0, 200)}`);
+                continue;
+            }
+            // 실제 비디오 파일!
+            return res;
+        } catch (err) {
+            console.error(`[Download] Fetch error for ${url.slice(0, 80)}:`, err);
+            continue;
+        }
+    }
+    return null;
+}
 
 export async function GET(
     request: Request,
@@ -12,7 +42,6 @@ export async function GET(
     try {
         const user = await getAuthUser();
 
-        // 관리자(ADMIN) 권한 확인
         if (!user || user.role !== "ADMIN") {
             return NextResponse.json(
                 { error: "관리자 권한이 필요합니다." },
@@ -34,32 +63,31 @@ export async function GET(
             );
         }
 
-        // 서명된 다운로드 URL 생성
-        const downloadUrl = await getSignedDownloadUrl(video.streamUid);
+        const uid = video.streamUid;
 
-        if (!downloadUrl) {
+        // 다운로드 활성화 (비활성화 상태면 자동 활성화) — 이 URL이 옛날 영상에서 유일하게 작동
+        const enabledUrl = await getDownloadUrl(uid);
+
+        // 서명된 다운로드 URL 생성 (두 가지 도메인) — 최근 영상에서 작동
+        const signedUrl = await getSignedDownloadUrl(uid);
+        const customerUrl = await getSignedDownloadUrlCustomerDomain(uid);
+
+        // 순서: 1) CF API 직접 URL (옛날 영상) → 2) videodelivery.net signed → 3) customer domain signed
+        const videoResponse = await tryFetchVideo([enabledUrl, signedUrl, customerUrl]);
+
+        if (!videoResponse) {
             return NextResponse.json(
-                { error: "다운로드 토큰 발급 실패. Cloudflare Stream 설정을 확인해주세요." },
-                { status: 500 }
+                { error: "영상 다운로드에 실패했습니다. 잠시 후 다시 시도해주세요." },
+                { status: 503 }
             );
         }
 
-        // Cloudflare에서 영상을 가져와서 프록시로 전달 (파일명 지정)
-        const cfResponse = await fetch(downloadUrl);
-        if (!cfResponse.ok) {
-            return NextResponse.json(
-                { error: `다운로드 실패 (${cfResponse.status})` },
-                { status: cfResponse.status }
-            );
-        }
-
-        // 파일명에서 특수문자 제거하고 안전한 이름으로 변환
+        // 파일명 생성
         const safeTitle = (video.title || "video")
             .replace(/[\\/:*?"<>|]/g, "_")
             .trim();
         const filename = `${safeTitle}.mp4`;
 
-        // Content-Disposition 헤더로 파일명 지정
         const headers = new Headers();
         headers.set("Content-Type", "video/mp4");
         headers.set(
@@ -67,16 +95,12 @@ export async function GET(
             `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
         );
 
-        // Content-Length가 있으면 전달
-        const contentLength = cfResponse.headers.get("content-length");
+        const contentLength = videoResponse.headers.get("content-length");
         if (contentLength) {
             headers.set("Content-Length", contentLength);
         }
 
-        return new Response(cfResponse.body, {
-            status: 200,
-            headers,
-        });
+        return new Response(videoResponse.body, { status: 200, headers });
 
     } catch (error) {
         console.error("Failed to download video:", error);
