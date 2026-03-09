@@ -18,15 +18,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "함케봄스타 — 영상 제작 관리",
-    template: "%s | 함케봄스타",
+    default: "별들에게 물어봐 — 영상 제작 관리",
+    template: "%s | 별들에게 물어봐",
   },
   description: "STAR와 관리자를 위한 영상 제작 관리 플랫폼",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "함케봄스타",
+    title: "별들에게 물어봐",
     startupImage: [
       { url: "/splash/apple-splash-1290x2796.png", media: "(device-width: 390px)" },
       { url: "/splash/apple-splash-1170x2532.png", media: "(device-width: 390px)" },

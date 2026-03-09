@@ -29,7 +29,7 @@ export default function SettlementGuidePage() {
                                 정산 관리 시스템<br className="md:hidden" /> 완벽 가이드
                             </h1>
                             <p className="text-lg text-muted-foreground leading-relaxed md:max-w-3xl">
-                                함케봄스타의 정산 시스템은 승인된 영상 제출물을 기준으로 자동으로 계산되며,
+                                별들에게 물어봐의 정산 시스템은 승인된 영상 제출물을 기준으로 자동으로 계산되며,
                                 관리자가 예외 단가를 유연하게 제어할 수 있도록 설계되었습니다.
                                 스와이프하여 가이드를 확인해보세요.
                             </p>

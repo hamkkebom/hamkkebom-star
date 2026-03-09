@@ -1,6 +1,6 @@
 {
-    "name": "함케봄스타 - 영상 제작 관리",
-    "short_name": "함케봄스타",
+    "name": "별들에게 물어봐 - 영상 제작 관리",
+    "short_name": "별들에게 물어봐",
     "description": "STAR와 관리자를 위한 영상 제작 관리 플랫폼",
     "start_url": "/stars/dashboard",
     "display": "standalone",

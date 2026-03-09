@@ -25,7 +25,7 @@ import {
 import {
   User, Mail, Phone, Banknote, Shield,
   CheckCircle2, Sparkles, X,
-  Building2, CreditCard, Save,
+  Building2, CreditCard, Save, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -146,6 +146,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Name change
   const [newName, setNewName] = useState("");
@@ -446,6 +447,42 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* ===== 로그아웃 ===== */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+        <Card className="border-orange-500/20 dark:border-orange-500/10">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <LogOut className="w-4 h-4 text-orange-500" />
+              로그아웃
+            </CardTitle>
+            <CardDescription>
+              현재 기기에서 로그아웃합니다. 다시 이메일/비밀번호로 로그인할 수 있습니다.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full sm:w-auto h-12 sm:h-auto font-bold border-orange-500/30 text-orange-600 hover:bg-orange-500/10 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 active:scale-95 transition-all gap-2"
+              onClick={async () => {
+                setLoggingOut(true);
+                try {
+                  await supabase.auth.signOut();
+                  router.push("/auth/login");
+                } catch {
+                  toast.error("로그아웃에 실패했습니다.");
+                  setLoggingOut(false);
+                }
+              }}
+              disabled={loggingOut}
+            >
+              <LogOut className="w-4 h-4" />
+              {loggingOut ? "로그아웃 중..." : "로그아웃"}
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* ===== 위험 구역 ===== */}
       <Card className="border-destructive/40">

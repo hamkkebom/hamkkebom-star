@@ -33,8 +33,8 @@ export default function InstallAppPage() {
 
     useEffect(() => {
         const ua = navigator.userAgent;
-        const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
-        const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone;
+        const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !("MSStream" in window);
+        const isStandalone = window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as unknown as Record<string, unknown>).standalone);
         setIsIOS(isIOSDevice);
         setIsInstalled(isStandalone);
         setIsOnline(navigator.onLine);
@@ -143,7 +143,7 @@ export default function InstallAppPage() {
                     앱 설치
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                    함케봄스타를 앱처럼 설치하고 더 빠르게 사용하세요
+                    별들에게 물어봐를 앱처럼 설치하고 더 빠르게 사용하세요
                 </p>
             </div>
 
@@ -172,7 +172,7 @@ export default function InstallAppPage() {
                 <CardContent>
                     {isInstalled ? (
                         <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                            ✅ 설치 완료 — 홈 화면에서 함케봄스타 아이콘을 확인하세요!
+                            ✅ 설치 완료 — 홈 화면에서 별들에게 물어봐 아이콘을 확인하세요!
                         </p>
                     ) : deferredPrompt ? (
                         <Button

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -74,14 +75,13 @@ const DURATION_RANGES: Record<DurationRange, { label: string; min?: number; max?
 };
 
 /* ───── Dropdown Component ───── */
-/* ───── Dropdown Component ───── */
 function FilterDropdown({
   label,
   icon: Icon,
   isActive,
   children,
   onClear,
-  align = "right", // align prop added for better positioning
+  align = "right",
 }: {
   label: string;
   icon: React.ElementType;
@@ -91,29 +91,43 @@ function FilterDropdown({
   align?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; right: number }>({ top: 0, left: 0, right: 0 });
+
+  // 드롭다운 위치 계산 (버튼 기준 fixed)
+  useLayoutEffect(() => {
+    if (open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setMenuPos({
+        top: rect.bottom + 8,
+        left: rect.left,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [open]);
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    // Add scroll listener to close on outside scroll
-    function handleScroll(e: Event) {
-      // If the scroll happened inside the dropdown, don't close it
-      if (ref.current && ref.current.contains(e.target as Node)) return;
+    if (!open) return;
+    function handleClick(e: MouseEvent | TouchEvent) {
+      const target = e.target as Node;
+      if (btnRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
       setOpen(false);
     }
-    window.addEventListener("scroll", handleScroll, { capture: true });
+    // mousedown + touchstart 둘 다 처리 → 모바일/데스크톱 호환
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("touchstart", handleClick, { passive: true });
     return () => {
       document.removeEventListener("mousedown", handleClick);
-      window.removeEventListener("scroll", handleScroll, { capture: true });
-    }
-  }, []);
+      document.removeEventListener("touchstart", handleClick);
+    };
+  }, [open]);
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
+        ref={btnRef}
         onClick={() => setOpen((o) => !o)}
         className={`group flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium whitespace-nowrap transition-all duration-300
           ${isActive
@@ -138,18 +152,27 @@ function FilterDropdown({
         )}
       </button>
 
-      {open && (
-        <div className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} z-50 mt-2 min-w-[320px] max-h-[400px] overflow-y-auto rounded-2xl border border-black/5 bg-background/95 backdrop-blur-xl p-3 shadow-2xl animate-in fade-in-0 zoom-in-95 slide-in-from-top-2
-          [&::-webkit-scrollbar]:w-1.5
-          [&::-webkit-scrollbar-track]:bg-transparent
-          [&::-webkit-scrollbar-thumb]:bg-black/10
-          [&::-webkit-scrollbar-thumb]:rounded-full
-          dark:[&::-webkit-scrollbar-thumb]:bg-white/10
-          hover:[&::-webkit-scrollbar-thumb]:bg-black/20
-          dark:hover:[&::-webkit-scrollbar-thumb]:bg-white/20`}
+      {open && typeof document !== "undefined" && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[9999] min-w-[280px] sm:min-w-[320px] max-w-[calc(100vw-16px)] max-h-[60vh] overflow-y-auto rounded-2xl border border-black/5 bg-background/95 backdrop-blur-xl p-3 shadow-2xl animate-in fade-in-0 zoom-in-95 slide-in-from-top-2
+            [&::-webkit-scrollbar]:w-1.5
+            [&::-webkit-scrollbar-track]:bg-transparent
+            [&::-webkit-scrollbar-thumb]:bg-black/10
+            [&::-webkit-scrollbar-thumb]:rounded-full
+            dark:[&::-webkit-scrollbar-thumb]:bg-white/10
+            hover:[&::-webkit-scrollbar-thumb]:bg-black/20
+            dark:hover:[&::-webkit-scrollbar-thumb]:bg-white/20"
+          style={{
+            top: menuPos.top,
+            ...(align === "right"
+              ? { right: Math.max(8, menuPos.right) }
+              : { left: Math.max(8, menuPos.left) }),
+          }}
         >
           {children}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -384,7 +407,7 @@ export function VideosBrowser() {
   const randomCategoryId = categories.length > 0 ? categories[0].id : "";
   const randomCategoryName = categories.length > 0 ? categories[0].name : "추천";
 
-  const { data: catData, isLoading: isCatLoading } = useQuery<VideosResponse>({
+  const { data: catData } = useQuery<VideosResponse>({
     queryKey: ["videos-browse-cat", randomCategoryId],
     queryFn: async () => {
       const res = await fetch(`/api/videos?sort=popular&categoryId=${randomCategoryId}&pageSize=20`);
@@ -535,7 +558,7 @@ export function VideosBrowser() {
             </div>
 
             {/* Right: Detailed Filters (Dropdowns) */}
-            <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-2 flex-wrap overflow-visible pb-1 w-full sm:w-auto justify-end">
 
               {/* Category Dropdown (Grid) */}
               <FilterDropdown label={catLabel} icon={Film} isActive={!!categoryId} onClear={() => { setCategoryId(null); setPage(1); }} align="right">

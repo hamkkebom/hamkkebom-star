@@ -45,7 +45,7 @@ export default function GuidePage() {
                 </Link>
                 <div>
                     <h1 className="text-xl font-bold">📖 사용 가이드</h1>
-                    <p className="text-xs text-muted-foreground">함케봄스타 사용법을 알아보세요</p>
+                    <p className="text-xs text-muted-foreground">별들에게 물어봐 사용법을 알아보세요</p>
                 </div>
             </div>
 
