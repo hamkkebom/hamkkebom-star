@@ -5,13 +5,20 @@ import webpush from "web-push";
 
 export const dynamic = "force-dynamic";
 
-// VAPID 설정
-if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_SUBJECT) {
-    webpush.setVapidDetails(
-        process.env.VAPID_SUBJECT,
-        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-        process.env.VAPID_PRIVATE_KEY
-    );
+// VAPID 설정 (lazy initialization - 빌드 타임에 실행되지 않도록)
+let vapidInitialized = false;
+
+function ensureVapidConfigured() {
+    if (vapidInitialized) return true;
+    const privateKey = process.env.VAPID_PRIVATE_KEY;
+    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const subject = process.env.VAPID_SUBJECT;
+    if (privateKey && publicKey && subject) {
+        webpush.setVapidDetails(subject, publicKey, privateKey);
+        vapidInitialized = true;
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -33,6 +40,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (!ensureVapidConfigured()) {
+        return NextResponse.json(
+            { error: "VAPID 키가 설정되지 않았습니다." },
+            { status: 500 }
+        );
+    }
+
     try {
         const { userId, userIds, role, title, body: notifBody, url } = await request.json();
 
@@ -44,7 +58,8 @@ export async function POST(request: Request) {
         }
 
         // 대상 구독 조회
-        let whereClause: any = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const whereClause: Record<string, any> = {};
         if (userId) {
             whereClause.userId = userId;
         } else if (userIds && Array.isArray(userIds)) {
@@ -92,10 +107,11 @@ export async function POST(request: Request) {
                         payload
                     );
                     sent++;
-                } catch (error: any) {
+                } catch (error: unknown) {
                     failed++;
                     // 410 Gone 또는 404 → 구독 만료됨 → 삭제
-                    if (error?.statusCode === 410 || error?.statusCode === 404) {
+                    const webPushError = error as { statusCode?: number };
+                    if (webPushError?.statusCode === 410 || webPushError?.statusCode === 404) {
                         failedIds.push(sub.id);
                     }
                 }
