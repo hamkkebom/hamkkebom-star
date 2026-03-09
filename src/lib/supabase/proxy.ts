@@ -8,29 +8,46 @@ import { NextResponse, type NextRequest } from "next/server";
  */
 function getAuthIdFromCookies(request: NextRequest): string | null {
   // Supabase는 sb-{ref}-auth-token 으로 쿠키 저장
-  // 쿠키 이름은 sb-{project_ref}-auth-token 또는 직접 base64 조각
+  // 4KB 초과 시 .0, .1 등으로 청크 분할됨
   const cookies = request.cookies.getAll();
-  const authCookie = cookies.find((c) => c.name.includes("auth-token"));
 
-  if (!authCookie?.value) return null;
+  // 청크가 아닌 단일 쿠키 먼저 확인
+  const singleCookie = cookies.find(
+    (c) => c.name.includes("auth-token") && !c.name.match(/\.\d+$/)
+  );
+
+  let rawValue: string | null = null;
+
+  if (singleCookie?.value) {
+    rawValue = singleCookie.value;
+  } else {
+    // 청크 분할된 쿠키 결합 (sb-xxx-auth-token.0, .1, .2, ...)
+    const chunkCookies = cookies
+      .filter((c) => c.name.includes("auth-token") && c.name.match(/\.\d+$/))
+      .sort((a, b) => {
+        const aNum = parseInt(a.name.match(/\.(\d+)$/)?.[1] ?? "0");
+        const bNum = parseInt(b.name.match(/\.(\d+)$/)?.[1] ?? "0");
+        return aNum - bNum;
+      });
+
+    if (chunkCookies.length > 0) {
+      rawValue = chunkCookies.map((c) => c.value).join("");
+    }
+  }
+
+  if (!rawValue) return null;
 
   try {
-    // Supabase의 auth-token 쿠키는 base64url 인코딩된 JSON
-    // 형식: base64url(JSON({access_token, ...}))  또는 직접 JSON
     let parsed: { access_token?: string } | null = null;
 
-    const val = authCookie.value;
-    // base64url 디코딩 시도
-    if (val.startsWith("base64-")) {
-      const decoded = Buffer.from(val.slice(7), "base64").toString("utf-8");
+    if (rawValue.startsWith("base64-")) {
+      const decoded = Buffer.from(rawValue.slice(7), "base64").toString("utf-8");
       parsed = JSON.parse(decoded);
     } else {
-      // JSON 직접 파싱 시도
       try {
-        parsed = JSON.parse(val);
+        parsed = JSON.parse(rawValue);
       } catch {
-        // URL 인코딩된 경우
-        parsed = JSON.parse(decodeURIComponent(val));
+        parsed = JSON.parse(decodeURIComponent(rawValue));
       }
     }
 
@@ -67,7 +84,10 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/stars/profile/") ||
     publicPrefixes.some((prefix) => pathname.startsWith(prefix));
 
-  if (!authId && !isPublicRoute) {
+  // API 경로는 미들웨어에서 리다이렉트하지 않음 (API가 자체적으로 401 반환)
+  const isApiRoute = pathname.startsWith("/api/");
+
+  if (!authId && !isPublicRoute && !isApiRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
