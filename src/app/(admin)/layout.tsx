@@ -1,6 +1,8 @@
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { Header } from "@/components/layout/header";
 import { BottomNavAdmin } from "@/components/layout/bottom-nav-admin";
+import { OfflineBanner } from "@/components/pwa/offline-banner";
+import { UpdatePrompt } from "@/components/pwa/update-prompt";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 
@@ -30,6 +32,8 @@ export default async function AdminLayout({
           {children}
         </main>
         <BottomNavAdmin />
+        <OfflineBanner />
+        <UpdatePrompt />
       </div>
     </div>
   );

@@ -77,6 +77,7 @@ export default function AdminUsersPage() {
 
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const [showSensitive, setShowSensitive] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
   // 검색이나 필터 변경 시 페이지 초기화
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,14 +113,16 @@ export default function AdminUsersPage() {
     mutationFn: async ({
       userId,
       approved,
+      rejectionReason,
     }: {
       userId: string;
       approved: boolean;
+      rejectionReason?: string;
     }) => {
       const res = await fetch(`/api/admin/users/${userId}/approve`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approved }),
+        body: JSON.stringify({ approved, rejectionReason }),
       });
       if (!res.ok) throw new Error((await res.json()).error?.message ?? "처리에 실패했습니다.");
       return res.json();
@@ -567,21 +570,35 @@ export default function AdminUsersPage() {
                       {selectedUser.name}님 계정 승인하기
                     </Button>
                   ) : (
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="w-full border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 font-bold h-14 rounded-xl dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30 active:scale-[0.98] transition-all"
-                      disabled={approveMutation.isPending}
-                      onClick={() =>
-                        approveMutation.mutate({
-                          userId: selectedUser.id,
-                          approved: false,
-                        })
-                      }
-                    >
-                      <XCircle className="mr-2 h-5 w-5" />
-                      가입 승인 취소 (반려)
-                    </Button>
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400">반려 사유 (선택)</label>
+                        <textarea
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/40 bg-white dark:bg-slate-900"
+                          rows={2}
+                          placeholder="반려 사유를 입력하세요..."
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="w-full border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 font-bold h-14 rounded-xl dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30 active:scale-[0.98] transition-all"
+                        disabled={approveMutation.isPending}
+                        onClick={() => {
+                          approveMutation.mutate({
+                            userId: selectedUser.id,
+                            approved: false,
+                            rejectionReason: rejectReason.trim() || undefined,
+                          });
+                          setRejectReason("");
+                        }}
+                      >
+                        <XCircle className="mr-2 h-5 w-5" />
+                        가입 승인 취소 (반려)
+                      </Button>
+                    </div>
                   )}
                 </div>
 

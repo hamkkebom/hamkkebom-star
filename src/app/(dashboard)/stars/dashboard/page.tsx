@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,38 +10,50 @@ import {
   Clock,
   Zap,
   Layers,
-  LayoutGrid
+  LayoutGrid,
+  Briefcase,
+  Bell,
+  Wallet,
+  AlertTriangle,
+  FileCheck,
+  ArrowRight,
+  BarChart3,
+  Eye,
+  TrendingUp,
+  Target,
+  Settings2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 
 // --- Types ---
-type MySubmission = {
-  id: string;
-  versionTitle: string | null;
-  version: string;
-  duration: number | null;
-  signedThumbnailUrl: string | null;
-  assignment: {
-    request: {
-      title: string;
-    } | null;
-  } | null;
-  _count: {
-    feedbacks: number;
-  } | null;
-  video: {
-    title: string | null;
-    streamUid: string | null;
-    thumbnailUrl: string | null;
-  } | null;
-  aiAnalysis: {
-    padding?: boolean;
-    status: string;
-    summary: string;
-  } | null;
-  createdAt: string;
+import type { MySubmissionDashboard as MySubmission } from "@/types/shared";
+
+type DashboardStats = {
+  activeProjects: number;
+  unreadFeedbackCount: number;
+  latestSettlement: { id: string; amount: number; status: string; period: string } | null;
+  upcomingDeadlines: { assignmentId: string; requestId: string; title: string; deadline: string; daysLeft: number }[];
+  submissionCounts: { pending: number; inReview: number; approved: number; rejected: number; revised: number };
 };
 
 // --- Utilities ---
@@ -243,11 +255,84 @@ export default function StarDashboardPage() {
     queryFn: fetchSubmissions,
   });
 
+  // KPI 데이터
+  const { data: stats } = useQuery({
+    queryKey: ["star-dashboard-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/submissions/my/stats", { cache: "no-store" });
+      if (!res.ok) throw new Error("stats fetch failed");
+      return res.json().then((r: { data: DashboardStats }) => r.data);
+    },
+    refetchInterval: 60_000,
+  });
+
   const submissions = data?.data;
   const totalCount = data?.total ?? 0;
 
   // Dopamine-driven animated counter
   const animatedCount = useCounter(totalCount);
+
+  const kpiCards = useMemo(() => {
+    if (!stats) return [];
+    return [
+      { icon: Briefcase, label: "진행 중", value: stats.activeProjects, color: "text-violet-400", bg: "bg-violet-500/10", href: "/stars/project-board" },
+      { icon: Bell, label: "미확인 피드백", value: stats.unreadFeedbackCount, color: "text-rose-400", bg: "bg-rose-500/10", href: "/stars/feedback", pulse: stats.unreadFeedbackCount > 0 },
+      { icon: FileCheck, label: "승인됨", value: stats.submissionCounts.approved, color: "text-emerald-400", bg: "bg-emerald-500/10", href: "/stars/my-videos" },
+      { icon: Wallet, label: "최근 정산", value: stats.latestSettlement ? `${Math.round(stats.latestSettlement.amount / 10000)}만원` : "-", color: "text-amber-400", bg: "bg-amber-500/10", href: "/stars/earnings" },
+    ];
+  }, [stats]);
+
+  // 영상 통계 트렌드
+  type VideoStatMonth = { month: string; submitted: number; approved: number; feedbacks: number };
+  type VideoStatSummary = { totalViews: number; approvalRate: number; totalSubmissions: number };
+
+  const { data: videoStats } = useQuery({
+    queryKey: ["video-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/stars/video-stats", { cache: "no-store" });
+      if (!res.ok) return null;
+      return (await res.json()) as { data: VideoStatMonth[]; summary: VideoStatSummary };
+    },
+  });
+
+  // 목표 달성률
+  type GoalData = {
+    goal: { submissions: number; approvals: number; earnings: number };
+    actual: { submissions: number; approvals: number; earnings: number };
+    progress: { submissions: number; approvals: number; earnings: number };
+    overallProgress: number;
+    month: string;
+  };
+
+  const { data: goalData } = useQuery({
+    queryKey: ["star-goals"],
+    queryFn: async () => {
+      const res = await fetch("/api/stars/goals", { cache: "no-store" });
+      if (!res.ok) return null;
+      return (await res.json()).data as GoalData;
+    },
+  });
+
+  const [isGoalEditOpen, setIsGoalEditOpen] = useState(false);
+  const [editGoal, setEditGoal] = useState({ submissions: 4, approvals: 3, earnings: 500000 });
+
+  const goalMutation = useMutation({
+    mutationFn: async (goal: { submissions: number; approvals: number; earnings: number }) => {
+      const res = await fetch("/api/stars/goals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(goal),
+      });
+      if (!res.ok) throw new Error();
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["star-goals"] });
+      setIsGoalEditOpen(false);
+    },
+  });
+
+  const queryClient = useQueryClient();
 
   return (
     <div className={cn(
@@ -310,6 +395,162 @@ export default function StarDashboardPage() {
         </p>
       </div>
 
+      {/* 2.5 KPI Cards */}
+      {kpiCards.length > 0 && (
+        <div className="relative z-20 mb-6">
+          <div className={cn(
+            "grid gap-3",
+            isMobile ? "grid-cols-2" : "grid-cols-4"
+          )}>
+            {kpiCards.map((card, i) => (
+              <motion.div
+                key={card.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08, duration: 0.4 }}
+              >
+                <Link href={card.href}>
+                  <div className={cn(
+                    "relative p-4 rounded-2xl border border-white/[0.06] bg-white/[0.03] dark:bg-white/[0.02] backdrop-blur-sm",
+                    "hover:bg-white/[0.06] hover:border-white/10 transition-all duration-300 group cursor-pointer",
+                    "hover:shadow-[0_0_20px_rgba(139,92,246,0.1)]",
+                    card.pulse && "border-rose-500/30 bg-rose-500/5"
+                  )}>
+                    <div className="flex items-center gap-3">
+                      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", card.bg)}>
+                        <card.icon className={cn("w-4.5 h-4.5", card.color)} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{card.label}</p>
+                        <p className={cn("text-xl font-black tracking-tight", card.pulse && "text-rose-400")}>
+                          {card.value}
+                        </p>
+                      </div>
+                    </div>
+                    {card.pulse && (
+                      <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                    )}
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 2.6 목표 달성률 */}
+      {goalData && (
+        <div className="relative z-20 mb-6">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="bg-white/[0.03] dark:bg-white/[0.02] border-white/[0.06] backdrop-blur-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Target className="w-4 h-4 text-violet-500" />
+                    이달의 목표
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => {
+                      if (goalData) setEditGoal(goalData.goal);
+                      setIsGoalEditOpen(true);
+                    }}
+                  >
+                    <Settings2 className="w-3.5 h-3.5" />
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-6">
+                  {/* 원형 전체 진행률 */}
+                  <div className="relative w-20 h-20 shrink-0">
+                    <svg className="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
+                      <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted/20" />
+                      <circle
+                        cx="18" cy="18" r="16" fill="none"
+                        stroke="url(#goalGrad)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeDasharray={`${goalData.overallProgress} ${100 - goalData.overallProgress}`}
+                        className="transition-all duration-700"
+                      />
+                      <defs>
+                        <linearGradient id="goalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#8b5cf6" />
+                          <stop offset="100%" stopColor="#ec4899" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-lg font-black">{goalData.overallProgress}%</span>
+                    </div>
+                  </div>
+                  {/* 항목별 프로그레스 바 */}
+                  <div className="flex-1 space-y-3">
+                    {[
+                      { label: "제출", actual: goalData.actual.submissions, goal: goalData.goal.submissions, progress: goalData.progress.submissions, unit: "건", color: "bg-violet-500" },
+                      { label: "승인", actual: goalData.actual.approvals, goal: goalData.goal.approvals, progress: goalData.progress.approvals, unit: "건", color: "bg-emerald-500" },
+                      { label: "수입", actual: goalData.actual.earnings, goal: goalData.goal.earnings, progress: goalData.progress.earnings, unit: "원", color: "bg-amber-500", format: true },
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">{item.label}</span>
+                          <span className="font-bold">
+                            {item.format ? `${Math.round(item.actual / 10000)}만` : item.actual}/{item.format ? `${Math.round(item.goal / 10000)}만${item.unit}` : `${item.goal}${item.unit}`}
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-muted/20 overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full transition-all duration-700", item.color)}
+                            style={{ width: `${item.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      )}
+
+      {/* 2.6 Deadline Alerts */}
+      {stats?.upcomingDeadlines && stats.upcomingDeadlines.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-20 mb-6"
+        >
+          <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 backdrop-blur-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">마감 임박</span>
+            </div>
+            <div className="space-y-2">
+              {stats.upcomingDeadlines.map((d) => (
+                <Link key={d.assignmentId} href={`/stars/upload`} className="block">
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-colors group">
+                    <span className="text-sm font-medium text-slate-200 truncate flex-1">{d.title}</span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <Badge variant="outline" className={cn(
+                        "text-[10px] font-bold border",
+                        d.daysLeft <= 1 ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-amber-400 border-amber-500/30 bg-amber-500/10"
+                      )}>
+                        D-{d.daysLeft}
+                      </Badge>
+                      <ArrowRight className="w-3 h-3 text-slate-500 group-hover:text-violet-400 transition-colors" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* 3. The "Scattered Archive" OR "Mobile Grid" Area */}
       <div className={cn(
         "relative z-10 w-full",
@@ -344,19 +585,156 @@ export default function StarDashboardPage() {
             ))}
 
             {submissions?.length === 0 && (
-              <div className="text-center py-20 w-full">
-                <p className="text-muted-foreground text-lg mb-4">아직 제작된 작품이 없습니다.</p>
-                <Link href="/stars/upload">
-                  <Button className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl shadow-lg shadow-violet-500/40 transform transition-transform hover:scale-105 active:scale-95">
-                    새 프로젝트 시작하기
-                    <Zap className="ml-2 w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-lg mx-auto py-10"
+              >
+                <Card className="bg-white/[0.04] dark:bg-white/[0.02] border-white/[0.08] backdrop-blur-sm overflow-hidden">
+                  <CardContent className="p-6 space-y-6">
+                    {/* Header */}
+                    <div className="text-center space-y-2">
+                      <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                        <Zap className="w-7 h-7 text-white" />
+                      </div>
+                      <h3 className="text-lg font-black">환영합니다! 🎉</h3>
+                      <p className="text-sm text-muted-foreground">아래 단계를 따라 첫 작품을 시작해보세요</p>
+                    </div>
+
+                    {/* Steps */}
+                    <div className="space-y-3">
+                      {[
+                        { step: 1, label: "프로필 완성하기", desc: "은행 정보와 기본 프로필을 설정하세요", href: "/stars/settings", icon: "👤" },
+                        { step: 2, label: "게시판에서 프로젝트 찾기", desc: "관심 있는 제작 요청을 탐색하고 수락하세요", href: "/stars/project-board", icon: "📋" },
+                        { step: 3, label: "영상 업로드", desc: "제작한 영상을 업로드하고 제출하세요", href: "/stars/upload", icon: "🎬" },
+                        { step: 4, label: "피드백 확인 & 수정", desc: "관리자 피드백을 확인하고 수정본을 제출하세요", href: "/stars/feedback", icon: "💬" },
+                      ].map((item, i) => (
+                        <Link key={item.step} href={item.href}>
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.15 + i * 0.1 }}
+                            className="flex items-center gap-4 p-3.5 rounded-xl border border-white/[0.06] hover:border-violet-500/30 hover:bg-violet-500/5 transition-all group cursor-pointer"
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-muted/30 flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform">
+                              {item.icon}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black text-violet-500 bg-violet-500/10 px-1.5 py-0.5 rounded-md">STEP {item.step}</span>
+                                <span className="text-sm font-bold truncate">{item.label}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.desc}</p>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-violet-500 transition-colors shrink-0" />
+                          </motion.div>
+                        </Link>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             )}
           </div>
         )}
       </div>
+
+      {/* 영상 통계 트렌드 */}
+      {videoStats && videoStats.data.some((d) => d.submitted > 0) && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-violet-500" />
+                영상 통계 트렌드
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3 mb-4">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs font-bold">
+                  <Eye className="w-3.5 h-3.5" />
+                  총 조회수 {videoStats.summary.totalViews.toLocaleString()}
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  승인율 {videoStats.summary.approvalRate}%
+                </div>
+              </div>
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={videoStats.data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(v: string) => v.split("-")[1] + "월"}
+                      stroke="var(--muted-foreground)"
+                      opacity={0.5}
+                    />
+                    <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" opacity={0.5} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--popover)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                      }}
+                      labelFormatter={(label: any) => {
+                        const [y, m] = String(label).split("-");
+                        return `${y}년 ${parseInt(m)}월`;
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: "11px" }} />
+                    <Bar dataKey="submitted" name="제출" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="approved" name="승인" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="feedbacks" name="피드백" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* 목표 편집 다이얼로그 */}
+      <Dialog open={isGoalEditOpen} onOpenChange={setIsGoalEditOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="w-4 h-4 text-violet-500" />
+              이달의 목표 설정
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {[
+              { label: "월 제출 목표 (건)", key: "submissions" as const },
+              { label: "월 승인 목표 (건)", key: "approvals" as const },
+              { label: "월 수입 목표 (원)", key: "earnings" as const },
+            ].map((field) => (
+              <div key={field.key} className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground">{field.label}</label>
+                <input
+                  type="number"
+                  min={0}
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                  value={editGoal[field.key]}
+                  onChange={(e) => setEditGoal((prev) => ({ ...prev, [field.key]: Number(e.target.value) || 0 }))}
+                />
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsGoalEditOpen(false)}>취소</Button>
+            <Button
+              onClick={() => goalMutation.mutate(editGoal)}
+              disabled={goalMutation.isPending}
+              className="bg-violet-600 hover:bg-violet-700"
+            >
+              {goalMutation.isPending ? "저장 중..." : "저장"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

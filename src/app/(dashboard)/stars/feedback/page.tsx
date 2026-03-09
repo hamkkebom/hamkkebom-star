@@ -31,34 +31,7 @@ type LatestFeedback = {
   author: { name: string };
 };
 
-type MySubmission = {
-  id: string;
-  versionTitle: string | null;
-  version: string;
-  duration: number | null;
-  signedThumbnailUrl: string | null;
-  assignment: {
-    request: {
-      title: string;
-    } | null;
-  } | null;
-  _count: {
-    feedbacks: number;
-  } | null;
-  video: {
-    title: string | null;
-    streamUid: string | null;
-    thumbnailUrl: string | null;
-  } | null;
-  aiAnalysis: {
-    summary: string;
-    status: string;
-    scores: Record<string, number>;
-  } | null;
-  latestFeedback: LatestFeedback | null;
-  unreadFeedbackCount: number;
-  createdAt: string;
-};
+import type { MySubmissionFeedback as MySubmission } from "@/types/shared";
 
 // --- Utilities ---
 function formatDuration(seconds: number): string {
@@ -255,7 +228,7 @@ const ProjectCard = memo(function ProjectCard({ sub, index }: { sub: MySubmissio
                           [{typeLabels[latest.type] ?? latest.type}]
                         </span>
                         <span className="text-[9px] text-muted-foreground/70 font-medium">
-                          {latest.author.name}
+                          {latest.author?.name}
                         </span>
                       </div>
                       <p className="text-[11px] sm:text-xs leading-relaxed text-muted-foreground dark:text-zinc-400 line-clamp-2">

@@ -40,6 +40,8 @@ import {
   Play,
   ExternalLink,
   ZoomIn,
+  FileText,
+  Columns2,
 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useMemo, useState } from "react";
@@ -81,6 +83,7 @@ type VersionSibling = {
   versionSlot: number;
   version: string;
   versionTitle: string | null;
+  streamUid: string | null;
   status: string;
   createdAt: string;
   _count: { feedbacks: number };
@@ -141,6 +144,7 @@ export default function ReviewDetailPage() {
   const [reassignReason, setReassignReason] = useState("");
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [starSearch, setStarSearch] = useState("");
+  const [compareMode, setCompareMode] = useState(false);
 
   const handleDownload = async () => {
     setIsDownloading(true);
@@ -346,16 +350,83 @@ export default function ReviewDetailPage() {
       </Card>
 
 
-      {/* 영상 다운로드 */}
       {(sub.streamUid || sub.video?.streamUid) && (
-        <Button variant="outline" onClick={handleDownload} disabled={isDownloading}>
-          {isDownloading ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />다운로드 중...</>
-          ) : (
-            <><Download className="mr-2 h-4 w-4" />영상 다운로드</>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={handleDownload} disabled={isDownloading}>
+            {isDownloading ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />다운로드 중...</>
+            ) : (
+              <><Download className="mr-2 h-4 w-4" />영상 다운로드</>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.open(`/api/feedbacks/export?submissionId=${sub.id}`, "_blank");
+              toast.success("피드백 리포트 다운로드가 시작되었습니다.");
+            }}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            피드백 내보내기
+          </Button>
+          {versionSiblings.length > 1 && (
+            <Button
+              variant={compareMode ? "default" : "outline"}
+              onClick={() => setCompareMode(!compareMode)}
+            >
+              <Columns2 className="mr-2 h-4 w-4" />
+              {compareMode ? "비교 닫기" : "버전 비교"}
+            </Button>
           )}
-        </Button>
+        </div>
       )}
+
+      {/* 버전 비교 뷰 */}
+      {compareMode && versionSiblings.length > 1 && (() => {
+        const currentIdx = versionSiblings.findIndex(v => v.id === sub.id);
+        const prevVersion = currentIdx > 0 ? versionSiblings[currentIdx - 1] : null;
+        if (!prevVersion) return (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              비교할 이전 버전이 없습니다.
+            </CardContent>
+          </Card>
+        );
+        return (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Columns2 className="h-4 w-4 text-violet-500" />
+                버전 비교
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline" className="text-xs">이전</Badge>
+                    <span className="text-sm font-medium">{prevVersion.versionTitle || `v${prevVersion.version.replace(/^v/i, "")}`}</span>
+                    <Badge className={cn("text-xs", statusColors[prevVersion.status])}>{statusLabels[prevVersion.status]}</Badge>
+                  </div>
+                  <div className="aspect-video rounded-lg overflow-hidden bg-black">
+                    <VideoPlayer streamUid={(prevVersion as any).streamUid || ""} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="text-xs bg-violet-500">현재</Badge>
+                    <span className="text-sm font-medium">{sub.versionTitle || `v${sub.version.replace(/^v/i, "")}`}</span>
+                    <Badge className={cn("text-xs", statusColors[sub.status])}>{statusLabels[sub.status]}</Badge>
+                  </div>
+                  <div className="aspect-video rounded-lg overflow-hidden bg-black">
+                    <VideoPlayer streamUid={(sub.streamUid || sub.video?.streamUid)!} />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* ========== 스타 등록 썸네일 관리 ========== */}
       <Card>

@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
       "lucide-react",
       "@tanstack/react-query",
       "date-fns",
+      "framer-motion",
+      "recharts",
+      "zod",
+      "@dnd-kit/core",
+      "@dnd-kit/sortable",
     ],
   },
   images: {

@@ -1,27 +1,17 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/auth-helpers";
 export const dynamic = "force-dynamic";
 
 // POST /api/admin/reviews/action
 // body: { submissionId, action: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES' | 'UNDO', feedback?: string }
 export async function POST(req: NextRequest) {
     try {
-        const supabase = await createClient();
-        const { data: { user }, error } = await supabase.auth.getUser();
-
-        if (error || !user) {
+        // ✅ getAuthUser() 사용 — 인증 캐시 활용
+        const user = await getAuthUser();
+        if (!user || user.role !== "ADMIN") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const requester = await prisma.user.findUnique({
-            where: { authId: user.id },
-            select: { id: true, role: true },
-        });
-
-        if (!requester || requester.role !== "ADMIN") {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const { submissionId, action, feedback, adEligible } = await req.json();
@@ -34,13 +24,13 @@ export async function POST(req: NextRequest) {
         const result = await prisma.$transaction(async (tx) => {
             let newStatus = "PENDING";
             let reviewedAt: Date | null = new Date();
-            let reviewerId: string | null = requester.id;
+            let reviewerId: string | null = user.id;
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             let summaryFeedback: string | undefined = feedback || undefined;
 
             if (action === "APPROVE") newStatus = "APPROVED";
             else if (action === "REJECT") newStatus = "REJECTED";
-            else if (action === "REQUEST_CHANGES") newStatus = "REVISED"; // or 'REJECTED' with feedback
+            else if (action === "REQUEST_CHANGES") newStatus = "REVISED";
             else if (action === "UNDO") {
                 newStatus = "IN_REVIEW";
                 reviewedAt = null;
@@ -60,8 +50,6 @@ export async function POST(req: NextRequest) {
             });
 
             // 2. Video.status 자동 연동
-            // Submission 승인 → Video도 APPROVED로 공개
-            // Submission 반려/취소 → Video를 DRAFT로 비공개 처리
             if (updatedSubmission.videoId) {
                 if (action === "APPROVE") {
                     await tx.video.update({
@@ -79,13 +67,13 @@ export async function POST(req: NextRequest) {
                 }
             }
 
-            // 3. 피드백 코멘트가 있다면 개별 Feedback 레코드로도 저장 (선택)
+            // 3. 피드백 코멘트가 있다면 개별 Feedback 레코드로도 저장
             if (feedback) {
                 await tx.feedback.create({
                     data: {
                         content: feedback,
                         type: "GENERAL",
-                        authorId: requester.id,
+                        authorId: user.id,
                         submissionId: submissionId,
                         status: "PENDING"
                     }

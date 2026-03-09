@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RequestCard, type RequestCardItem } from "@/components/project/request-card";
+import { toast } from "sonner";
 
 type RequestBoardResponse = {
   data: RequestCardItem[];
@@ -65,9 +66,43 @@ function RequestCardSkeleton() {
 }
 
 export function RequestList({ status, search }: { status: string; search: string }) {
+  const queryClient = useQueryClient();
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["project-requests-board", status, search],
     queryFn: () => fetchRequestBoard(status, search),
+  });
+
+  // Bookmarks
+  const { data: bookmarkData } = useQuery({
+    queryKey: ["my-bookmarks"],
+    queryFn: async () => {
+      const res = await fetch("/api/bookmarks", { cache: "no-store" });
+      if (!res.ok) return { data: [] };
+      return (await res.json()) as { data: { requestId: string }[] };
+    },
+  });
+
+  const bookmarkedIds = new Set(bookmarkData?.data.map((b) => b.requestId) ?? []);
+
+  const toggleBookmark = useMutation({
+    mutationFn: async ({ requestId, bookmarked }: { requestId: string; bookmarked: boolean }) => {
+      if (bookmarked) {
+        await fetch(`/api/bookmarks?requestId=${requestId}`, { method: "DELETE" });
+      } else {
+        await fetch("/api/bookmarks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestId }),
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-bookmarks"] });
+    },
+    onError: () => {
+      toast.error("북마크 처리에 실패했습니다.");
+    },
   });
 
   if (isLoading) {
@@ -102,7 +137,12 @@ export function RequestList({ status, search }: { status: string; search: string
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {data.data.map((request) => (
-        <RequestCard key={request.id} request={request} />
+        <RequestCard
+          key={request.id}
+          request={request}
+          bookmarked={bookmarkedIds.has(request.id)}
+          onToggleBookmark={() => toggleBookmark.mutate({ requestId: request.id, bookmarked: bookmarkedIds.has(request.id) })}
+        />
       ))}
     </div>
   );

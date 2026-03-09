@@ -22,12 +22,9 @@ export async function GET() {
   }
 
   try {
-    const errors: string[] = [];
-
-    // 1) grades 조회
-    let grades: unknown[] = [];
-    try {
-      grades = await prisma.pricingGrade.findMany({
+    // ✅ 2개 쿼리 병렬 실행 (직렬 → 병렬로 ~50% 시간 절감)
+    const [grades, unassigned] = await Promise.all([
+      prisma.pricingGrade.findMany({
         orderBy: { sortOrder: "asc" },
         include: {
           users: {
@@ -41,7 +38,6 @@ export async function GET() {
               isApproved: true,
               _count: {
                 select: {
-                  assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } },
                   submissions: true,
                   videos: true,
                 },
@@ -50,15 +46,8 @@ export async function GET() {
             orderBy: { name: "asc" },
           },
         },
-      });
-    } catch (e) {
-      errors.push(`[grades] ${e instanceof Error ? e.message : String(e)}`);
-    }
-
-    // 2) unassigned 조회
-    let unassigned: unknown[] = [];
-    try {
-      unassigned = await prisma.user.findMany({
+      }),
+      prisma.user.findMany({
         where: { role: "STAR", gradeId: null },
         select: {
           id: true,
@@ -69,21 +58,17 @@ export async function GET() {
           isApproved: true,
           _count: {
             select: {
-              assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } },
               submissions: true,
               videos: true,
             },
           },
         },
         orderBy: { name: "asc" },
-      });
-    } catch (e) {
-      errors.push(`[unassigned] ${e instanceof Error ? e.message : String(e)}`);
-    }
+      }),
+    ]);
 
     return NextResponse.json({
       data: { grades, unassigned },
-      _debug: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
     return NextResponse.json(

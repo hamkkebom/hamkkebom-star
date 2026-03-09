@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js"; // Use supabase-js directly for admin
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/auth-helpers";
 export const dynamic = "force-dynamic";
 
 // Admin Client 생성 (Service Role Key 필요)
@@ -19,17 +19,7 @@ const supabaseAdmin = createClient(
 
 export async function GET(_req: NextRequest) {
     try {
-        // 권한 체크 (기존과 동일)
-        const supabase = await createServerClient();
-        const { data: { user }, error } = await supabase.auth.getUser();
-
-        if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-        const requester = await prisma.user.findUnique({
-            where: { authId: user.id },
-            select: { role: true },
-        });
-
+        const requester = await getAuthUser();
         if (!requester || requester.role !== "ADMIN") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
@@ -58,17 +48,7 @@ export async function GET(_req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
-        // 1. 권한 체크
-        const supabase = await createServerClient();
-        const { data: { user }, error } = await supabase.auth.getUser();
-
-        if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-        const requester = await prisma.user.findUnique({
-            where: { authId: user.id },
-            select: { role: true },
-        });
-
+        const requester = await getAuthUser();
         if (!requester || requester.role !== "ADMIN") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
@@ -116,16 +96,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
     try {
-        const supabase = await createServerClient();
-        const { data: { user }, error } = await supabase.auth.getUser();
-
-        if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-        const requester = await prisma.user.findUnique({
-            where: { authId: user.id },
-            select: { role: true },
-        });
-
+        const requester = await getAuthUser();
         if (!requester || requester.role !== "ADMIN") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }

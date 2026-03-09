@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/auth-helpers";
 export const dynamic = "force-dynamic";
 
 const supabaseAdmin = createClient(
@@ -29,18 +29,7 @@ export async function DELETE(
             return NextResponse.json({ error: "비밀번호를 입력해주세요." }, { status: 400 });
         }
 
-        const supabase = await createServerClient();
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-        if (authError || !user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const requester = await prisma.user.findUnique({
-            where: { authId: user.id },
-            select: { role: true, email: true },
-        });
-
+        const requester = await getAuthUser();
         if (!requester || requester.role !== "ADMIN" || !requester.email) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
@@ -76,7 +65,7 @@ export async function DELETE(
             return NextResponse.json({ error: "해당 사용자는 관리자가 아닙니다." }, { status: 400 });
         }
 
-        if (targetAdmin.authId === user.id) {
+        if (targetAdmin.authId === requester.authId) {
             return NextResponse.json({ error: "자기 자신의 계정은 삭제할 수 없습니다." }, { status: 400 });
         }
 

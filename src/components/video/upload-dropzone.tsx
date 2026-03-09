@@ -64,13 +64,32 @@ export function UploadDropzone({
   /** 파일 업로드만 수행 (제출은 별도) */
   const handleUpload = useCallback(
     async (file: File) => {
-      if (!file.type.startsWith("video/")) {
-        toast.error("영상 파일만 업로드할 수 있습니다.");
+      // 허용 MIME 타입 체크
+      const allowedTypes = [
+        "video/mp4", "video/quicktime", "video/webm", "video/x-msvideo",
+        "video/x-matroska", "video/mpeg", "video/x-ms-wmv", "video/x-flv",
+      ];
+      if (!file.type.startsWith("video/") && !allowedTypes.includes(file.type)) {
+        toast.error("영상 파일만 업로드할 수 있습니다.", {
+          description: "지원 형식: MP4, MOV, WebM, AVI, MKV, MPEG",
+        });
         return;
       }
 
+      // 최대 파일 크기 (5GB)
       if (file.size > 5 * 1024 * 1024 * 1024) {
-        toast.error("파일 크기는 5GB 이하여야 합니다.");
+        const sizeMB = Math.round(file.size / (1024 * 1024));
+        toast.error(`파일 크기가 너무 큽니다 (${sizeMB}MB)`, {
+          description: "최대 5GB까지 업로드할 수 있습니다.",
+        });
+        return;
+      }
+
+      // 최소 파일 크기 (100KB — 손상된 파일 방지)
+      if (file.size < 100 * 1024) {
+        toast.error("파일이 너무 작습니다.", {
+          description: "유효한 영상 파일인지 확인해주세요.",
+        });
         return;
       }
 

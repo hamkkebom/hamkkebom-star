@@ -162,6 +162,9 @@ export async function GET(request: Request) {
           avatarUrl: true,
         },
       },
+      _count: {
+        select: { replies: true },
+      },
     },
     orderBy: [{ createdAt: "asc" }],
   });

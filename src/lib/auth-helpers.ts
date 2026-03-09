@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 
@@ -8,24 +9,24 @@ interface GetAuthUserOptions {
 
 /**
  * Supabase 인증 → Prisma User 조회.
- * 기본적으로 isApproved === false인 유저는 null을 반환합니다.
- * 레이아웃에서 미승인 유저를 별도 리다이렉트해야 할 경우 { skipApprovalCheck: true } 사용.
+ * React cache()로 같은 요청 내 중복 호출 방지.
+ * 레이아웃 + 페이지에서 모두 호출하더라도 1회만 실행됩니다.
  */
-export async function getAuthUser(options?: GetAuthUserOptions) {
+const getAuthUserCached = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser();
 
-  if (!authUser?.id) {
-    return null;
-  }
+  if (!authUser?.id) return null;
 
-  const user = await prisma.user.findUnique({ where: { authId: authUser.id } });
+  return prisma.user.findUnique({ where: { authId: authUser.id } });
+});
 
-  if (!user) {
-    return null;
-  }
+export async function getAuthUser(options?: GetAuthUserOptions) {
+  const user = await getAuthUserCached();
+
+  if (!user) return null;
 
   if (!options?.skipApprovalCheck && !user.isApproved) {
     return null;

@@ -15,20 +15,12 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
-function getPrismaClient(): PrismaClient {
-  if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = createPrismaClient();
-  }
-  return globalForPrisma.prisma;
-}
+/**
+ * Prisma 싱글턴 — Proxy 패턴 제거하여 오버헤드 최소화.
+ * dev 환경에서 HMR 시 중복 인스턴스 방지.
+ */
+export const prisma: PrismaClient = globalForPrisma.prisma ?? createPrismaClient();
 
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop: string | symbol) {
-    const client = getPrismaClient();
-    const value = client[prop as keyof PrismaClient];
-    if (typeof value === "function") {
-      return (value as Function).bind(client);
-    }
-    return value;
-  },
-});
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}

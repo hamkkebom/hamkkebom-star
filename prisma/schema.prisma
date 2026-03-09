@@ -25,6 +25,8 @@ model User {
   bankName        String?
   bankAccount     String?
   aiToolSupportFee Int?
+  rejectionReason String?
+  monthlyGoal     Json?
   feedbacks       Feedback[]          @relation("AuthoredFeedbacks")
   portfolio       Portfolio?
   assignments     ProjectAssignment[]
@@ -48,6 +50,14 @@ model User {
   // Reviewed Assignments Relation
   reviewedAssignments ProjectAssignment[] @relation("ReviewedAssignments")
   auditLogs    AuditLog[] @relation("userAuditLogs")
+  feedbackReplies FeedbackReply[] @relation("AuthoredReplies")
+  bookmarks    ProjectBookmark[]
+  pushSubscriptions PushSubscription[]
+  announcements     Announcement[]
+  announcementReads AnnouncementRead[]
+  starConversations   Conversation[] @relation("StarConversations")
+  adminConversations  Conversation[] @relation("AdminConversations")
+  sentMessages        Message[]      @relation("SentMessages")
   @@map("users")
 }
 
@@ -67,8 +77,21 @@ model ProjectRequest {
   updatedAt       DateTime            @updatedAt
   assignments     ProjectAssignment[]
   createdBy       User                @relation("CreatedRequests", fields: [createdById], references: [id])
+  bookmarks       ProjectBookmark[]
 
   @@map("project_requests")
+}
+
+model ProjectBookmark {
+  id        String         @id @default(cuid())
+  userId    String
+  requestId String
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request   ProjectRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, requestId])
+  @@map("project_bookmarks")
 }
 
 model ProjectAssignment {
@@ -121,6 +144,15 @@ model Submission {
   parent          Submission?        @relation("SubmissionHistory", fields: [parentId], references: [id])
   children        Submission[]       @relation("SubmissionHistory")
 
+  // 동시 리뷰 방지 (Optimistic locking)
+  lockedBy        String?
+  lockedAt        DateTime?
+
+  @@index([starId])
+  @@index([status])
+  @@index([assignmentId])
+  @@index([starId, createdAt])
+  @@index([starId, status])
   @@map("submissions")
 }
 
@@ -152,13 +184,18 @@ model Feedback {
   endTime      Float?
   annotation   Json?
   authorId     String
-  submissionId String
-  seenByStarAt DateTime?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  author       User             @relation("AuthoredFeedbacks", fields: [authorId], references: [id])
-  submission   Submission       @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId    String
+  seenByStarAt    DateTime?
+  resolvedByStar  Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  author          User             @relation("AuthoredFeedbacks", fields: [authorId], references: [id])
+  submission      Submission       @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  replies         FeedbackReply[]
 
+  @@index([submissionId])
+  @@index([authorId])
+  @@index([submissionId, seenByStarAt])
   @@map("feedbacks")
 }
 
@@ -190,6 +227,9 @@ model Video {
   counselor       Counselor?          @relation(fields: [counselorId], references: [id])
   owner           User                @relation(fields: [ownerId], references: [id])
 
+  @@index([ownerId])
+  @@index([status, createdAt])
+  @@index([ownerId, status])
   @@map("videos")
 }
 
@@ -276,6 +316,9 @@ model Settlement {
   items       SettlementItem[]
   star        User             @relation(fields: [starId], references: [id])
 
+  @@index([starId])
+  @@index([status])
+  @@index([starId, startDate])
   @@map("settlements")
 }
 
@@ -487,6 +530,7 @@ enum VideoSubject {
 
 enum SettlementStatus {
   PENDING
+  REVIEW
   PROCESSING
   COMPLETED
   FAILED
@@ -503,4 +547,136 @@ enum PlacementStatus {
   ACTIVE
   COMPLETED
   PAUSED
+}
+
+model FeedbackReply {
+  id         String   @id @default(cuid())
+  feedbackId String
+  authorId   String
+  content    String
+  createdAt  DateTime @default(now())
+
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  author     User     @relation("AuthoredReplies", fields: [authorId], references: [id])
+
+  @@index([feedbackId])
+  @@map("feedback_replies")
+}
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model Announcement {
+  id         String               @id @default(cuid())
+  title      String
+  content    String
+  priority   AnnouncementPriority @default(NORMAL)
+  isActive   Boolean              @default(true)
+  authorId   String
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  author     User                 @relation(fields: [authorId], references: [id])
+  reads      AnnouncementRead[]
+  @@index([isActive, createdAt])
+  @@map("announcements")
+}
+
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model AnnouncementRead {
+  id               String       @id @default(cuid())
+  announcementId   String
+  userId           String
+  readAt           DateTime     @default(now())
+  announcement     Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([announcementId, userId])
+  @@map("announcement_reads")
+}
+
+model FaqItem {
+  id           String   @id @default(cuid())
+  question     String
+  answer       String
+  category     String   @default("일반")
+  sortOrder    Int      @default(0)
+  isPublished  Boolean  @default(true)
+  targetRole   String   @default("ALL")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([category, sortOrder])
+  @@map("faq_items")
+}
+
+model GuideSection {
+  id           String   @id @default(cuid())
+  title        String
+  content      String
+  icon         String?
+  category     String   @default("시작하기")
+  sortOrder    Int      @default(0)
+  isPublished  Boolean  @default(true)
+  targetRole   String   @default("ALL")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([category, sortOrder])
+  @@map("guide_sections")
+}
+
+model Conversation {
+  id            String    @id @default(cuid())
+  starId        String
+  adminId       String?
+  subject       String?
+  lastMessage   String?
+  lastMessageAt DateTime?
+  isArchived    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  star          User      @relation("StarConversations", fields: [starId], references: [id])
+  admin         User?     @relation("AdminConversations", fields: [adminId], references: [id])
+  messages      Message[]
+
+  @@index([starId])
+  @@index([adminId])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+model Message {
+  id              String       @id @default(cuid())
+  conversationId  String
+  senderId        String
+  content         String
+  messageType     String       @default("TEXT")
+  isRead          Boolean      @default(false)
+  readAt          DateTime?
+  createdAt       DateTime     @default(now())
+
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender          User         @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([conversationId, isRead, senderId])
+  @@map("messages")
 }

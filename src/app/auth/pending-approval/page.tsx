@@ -1,58 +1,102 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Clock, ArrowLeft, ShieldCheck, UserCheck } from "lucide-react";
+import { Clock, ArrowLeft, ShieldCheck, UserCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthCardWrapper } from "@/components/auth/auth-card-wrapper";
 
 export default function PendingApprovalPage() {
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkStatus() {
+      try {
+        const res = await fetch("/api/users/me", { cache: "no-store" });
+        if (res.ok) {
+          const json = await res.json();
+          const user = json.data;
+          if (user?.rejectionReason) {
+            setRejectionReason(user.rejectionReason);
+          }
+        }
+      } catch {
+        // ignore — not logged in yet
+      } finally {
+        setLoading(false);
+      }
+    }
+    checkStatus();
+  }, []);
+
   return (
     <AuthCardWrapper>
       <div className="flex flex-col items-center space-y-6 text-center">
         {/* Icon */}
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-500/10">
-          <Clock className="h-10 w-10 text-amber-400" />
+        <div className={`flex h-20 w-20 items-center justify-center rounded-full ${rejectionReason ? "bg-destructive/10" : "bg-amber-500/10"}`}>
+          {rejectionReason ? (
+            <XCircle className="h-10 w-10 text-destructive" />
+          ) : (
+            <Clock className="h-10 w-10 text-amber-400" />
+          )}
         </div>
 
         {/* Title */}
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold">관리자 승인 대기 중</h2>
+          <h2 className="text-xl font-semibold">
+            {rejectionReason ? "가입이 반려되었습니다" : "관리자 승인 대기 중"}
+          </h2>
           <p className="text-sm text-muted-foreground">
-            회원가입이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.
+            {rejectionReason
+              ? "관리자가 가입 요청을 반려하였습니다."
+              : "회원가입이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다."}
           </p>
         </div>
 
+        {/* Rejection Reason */}
+        {rejectionReason && (
+          <div className="w-full rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-left">
+            <p className="text-xs font-bold text-destructive mb-1">반려 사유</p>
+            <p className="text-sm text-foreground">{rejectionReason}</p>
+          </div>
+        )}
+
         {/* Steps */}
-        <div className="w-full space-y-3 rounded-xl border border-border/50 bg-muted/30 p-4 text-left">
-          <div className="flex items-start gap-3">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">
-              <ShieldCheck className="h-3.5 w-3.5" />
+        {!rejectionReason && (
+          <div className="w-full space-y-3 rounded-xl border border-border/50 bg-muted/30 p-4 text-left">
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">
+                <ShieldCheck className="h-3.5 w-3.5" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                회원가입이 정상적으로 완료되었습니다
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              회원가입이 정상적으로 완료되었습니다
-            </p>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-xs font-bold text-amber-400">
-              <Clock className="h-3.5 w-3.5" />
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-xs font-bold text-amber-400">
+                <Clock className="h-3.5 w-3.5" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                관리자가 가입 요청을 확인하고 승인할 예정입니다
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              관리자가 가입 요청을 확인하고 승인할 예정입니다
-            </p>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-xs font-bold text-violet-400">
-              <UserCheck className="h-3.5 w-3.5" />
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-xs font-bold text-violet-400">
+                <UserCheck className="h-3.5 w-3.5" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                승인이 완료되면 로그인하여 서비스를 이용할 수 있습니다
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              승인이 완료되면 로그인하여 서비스를 이용할 수 있습니다
-            </p>
           </div>
-        </div>
+        )}
 
         {/* Note */}
         <p className="text-xs text-muted-foreground">
-          승인이 지연되는 경우 관리자에게 문의해 주세요.
+          {rejectionReason
+            ? "다시 가입하시거나 관리자에게 문의해 주세요."
+            : "승인이 지연되는 경우 관리자에게 문의해 주세요."}
         </p>
 
         {/* Back to login */}

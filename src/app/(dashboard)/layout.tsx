@@ -1,6 +1,10 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { BottomNavStar } from "@/components/layout/bottom-nav-star";
+import { OfflineBanner } from "@/components/pwa/offline-banner";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { UpdatePrompt } from "@/components/pwa/update-prompt";
+import { PushPermission } from "@/components/pwa/push-permission";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 
@@ -30,6 +34,10 @@ export default async function DashboardLayout({
           {children}
         </main>
         <BottomNavStar />
+        <OfflineBanner />
+        <InstallPrompt />
+        <UpdatePrompt />
+        <PushPermission />
       </div>
     </div>
   );

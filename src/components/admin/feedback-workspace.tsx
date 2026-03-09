@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -35,14 +34,22 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Undo2 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { toast } from "sonner";
-import confetti from "canvas-confetti";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { useCanvasStore } from "@/store/canvas-store";
 import { AnnotationCanvas } from "@/components/admin/annotation-canvas";
 import { DrawingPreview } from "@/components/admin/drawing-preview";
+import { EmptyState } from "@/components/ui/empty-state";
+
+// Shared types, constants, helpers
+import type { Submission } from "@/types/feedback-workspace";
+import {
+    FEEDBACK_TYPES, PRIORITY_OPTIONS,
+    TYPE_LABELS, TYPE_COLORS, PRIORITY_BADGE,
+    formatTime,
+} from "@/types/feedback-workspace";
+
+// Custom hook — all state, queries, mutations, handlers
+import { useFeedbackWorkspace } from "@/hooks/use-feedback-workspace";
 
 // Dynamic imports
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,114 +59,7 @@ const VideoPlayer = dynamic(() => import("@/components/video/video-player").then
 }) as any;
 
 // ============================================================
-//  TYPES
-// ============================================================
-
-type FeedbackType = "GENERAL" | "SUBTITLE" | "BGM" | "CUT_EDIT" | "COLOR_GRADE";
-type FeedbackPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
-
-type Submission = {
-    id: string;
-    version: string;
-    versionTitle: string | null;
-    status: string;
-    createdAt: string;
-    streamUid?: string;
-    signedThumbnailUrl?: string | null;
-    video: {
-        id: string;
-        title: string;
-        thumbnailUrl: string | null;
-        streamUid: string | null;
-        description?: string;
-    } | null;
-    star: {
-        id: string;
-        name: string;
-        chineseName?: string | null;
-        avatarUrl: string | null;
-        email: string;
-    };
-    assignment: {
-        request: {
-            title: string;
-        };
-    } | null;
-    _count?: {
-        feedbacks: number;
-    };
-};
-
-type FeedbackItem = {
-    id: string;
-    type: FeedbackType;
-    priority: FeedbackPriority;
-    content: string;
-    startTime: number | null;
-    endTime: number | null;
-    annotation?: any;
-    status: string;
-    createdAt: string;
-    author: {
-        id: string;
-        name: string;
-        email: string;
-        avatarUrl: string | null;
-    };
-};
-
-type ReviewAction = "APPROVE" | "REJECT" | "REQUEST_CHANGES";
-
-// ============================================================
-//  CONSTANTS
-// ============================================================
-
-const FEEDBACK_TYPES: { value: FeedbackType; label: string; icon: typeof Zap; color: string }[] = [
-    { value: "GENERAL", label: "일반", icon: MessageSquare, color: "text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-slate-500/10 dark:border-slate-500/20" },
-    { value: "SUBTITLE", label: "자막", icon: Type, color: "text-cyan-600 bg-cyan-50 border-cyan-200 dark:text-cyan-400 dark:bg-cyan-500/10 dark:border-cyan-500/20" },
-    { value: "BGM", label: "BGM", icon: Music, color: "text-pink-600 bg-pink-50 border-pink-200 dark:text-pink-400 dark:bg-pink-500/10 dark:border-pink-500/20" },
-    { value: "CUT_EDIT", label: "컷 편집", icon: Scissors, color: "text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20" },
-    { value: "COLOR_GRADE", label: "색보정", icon: Palette, color: "text-violet-600 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-500/10 dark:border-violet-500/20" },
-];
-
-const PRIORITY_OPTIONS: { value: FeedbackPriority; label: string; color: string; dot: string }[] = [
-    { value: "LOW", label: "낮음", color: "text-slate-600 dark:text-slate-400", dot: "bg-slate-500 dark:bg-slate-400" },
-    { value: "NORMAL", label: "보통", color: "text-blue-600 dark:text-blue-400", dot: "bg-blue-500 dark:bg-blue-400" },
-    { value: "HIGH", label: "높음", color: "text-orange-600 dark:text-orange-400", dot: "bg-orange-500 dark:bg-orange-400" },
-    { value: "URGENT", label: "긴급", color: "text-red-600 dark:text-red-400", dot: "bg-red-500 dark:bg-red-400" },
-];
-
-const TYPE_LABELS: Record<FeedbackType, string> = {
-    GENERAL: "일반", SUBTITLE: "자막", BGM: "BGM", CUT_EDIT: "컷편집", COLOR_GRADE: "색보정"
-};
-
-const TYPE_COLORS: Record<FeedbackType, string> = {
-    GENERAL: "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/10 dark:text-slate-300",
-    SUBTITLE: "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-300",
-    BGM: "border-pink-200 bg-pink-50 text-pink-700 dark:border-pink-500/30 dark:bg-pink-500/10 dark:text-pink-300",
-    CUT_EDIT: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
-    COLOR_GRADE: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300",
-};
-
-const PRIORITY_BADGE: Record<FeedbackPriority, string> = {
-    LOW: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-500/20 dark:bg-slate-500/5 dark:text-slate-500",
-    NORMAL: "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-500/20 dark:bg-blue-500/5 dark:text-blue-400",
-    HIGH: "border-orange-200 bg-orange-50 text-orange-600 dark:border-orange-500/20 dark:bg-orange-500/5 dark:text-orange-400",
-    URGENT: "border-red-200 bg-red-50 text-red-600 animate-pulse dark:border-red-500/20 dark:bg-red-500/5 dark:text-red-400",
-};
-
-// ============================================================
-//  HELPERS
-// ============================================================
-
-function formatTime(seconds: number) {
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
-    return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-}
-
-// ============================================================
-//  MAIN COMPONENT
+//  MAIN COMPONENT (View-only — logic in useFeedbackWorkspace)
 // ============================================================
 
 export function FeedbackWorkspace({
@@ -171,371 +71,35 @@ export function FeedbackWorkspace({
     initialSelectedId?: string;
     isStandalone?: boolean;
 }) {
-    const queryClient = useQueryClient();
-    const [submissions, setSubmissions] = useState(initialSubmissions);
-    const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId || null);
-    const [filter, setFilter] = useState("ALL");
-    const [searchQuery, setSearchQuery] = useState("");
-
-    // Playback
-    const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
-
-    // Feedback Form State
-    const [feedbackText, setFeedbackText] = useState("");
-    const [feedbackType, setFeedbackType] = useState<FeedbackType>("GENERAL");
-    const [feedbackPriority, setFeedbackPriority] = useState<FeedbackPriority>("NORMAL");
-    const [capturedTime, setCapturedTime] = useState<number | null>(null);
-    const [capturedEndTime, setCapturedEndTime] = useState<number | null>(null);
-    const [isTimeCaptured, setIsTimeCaptured] = useState(false);
-
-    // Action Modal
-    const [actionModal, setActionModal] = useState<{ isOpen: boolean; type: ReviewAction | null }>({ isOpen: false, type: null });
-    const [rejectReason, setRejectReason] = useState("");
-    const [adEligible, setAdEligible] = useState(false);
-
-    // Edit State
-    const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
-    const [editFeedbackText, setEditFeedbackText] = useState("");
-    const [editFeedbackType, setEditFeedbackType] = useState<FeedbackType>("GENERAL");
-    const [editFeedbackPriority, setEditFeedbackPriority] = useState<FeedbackPriority>("NORMAL");
-
-    // Download State
-    const [isDownloading, setIsDownloading] = useState(false);
-
-    // Mobile Sheet State
-    const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
-
-    // Canvas State — 개별 셀렉터로 분리 (React 19 useSyncExternalStore 무한 루프 방지)
-    const isCanvasActive = useCanvasStore((s) => s.isActive);
-    const toggleCanvas = useCanvasStore((s) => s.toggleCanvas);
-    const setCanvasTool = useCanvasStore((s) => s.setTool);
-    const clearCanvas = useCanvasStore((s) => s.clearCanvas);
-    const drawingObjects = useCanvasStore((s) => s.drawingObjects);
-    const loadDrawing = useCanvasStore((s) => s.loadDrawing);
-    const hasDrawingAttached = useCanvasStore((s) => s.hasDrawingAttached);
-    const attachedTimecode = useCanvasStore((s) => s.attachedTimecode);
-    const detachDrawing = useCanvasStore((s) => s.detachDrawing);
-    const sourceSize = useCanvasStore((s) => s.sourceSize);
-    const videoContainerRef = useRef<HTMLDivElement>(null);
-
-    // Keyboard Shortcuts
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-            if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-
-            const key = e.key.toLowerCase();
-            if (key === 'c') {
-                e.preventDefault();
-                setIsTimeCaptured(true);
-                setCapturedTime(currentTime);
-                toast.info(`⏱ 시점이 캡처되었습니다.`);
-            } else if (key === 'd') {
-                e.preventDefault();
-                toggleCanvas();
-            } else if (isCanvasActive) {
-                switch (key) {
-                    case 'v': e.preventDefault(); setCanvasTool('select'); break;
-                    case 'p': e.preventDefault(); setCanvasTool('pen'); break;
-                    case 'r': e.preventDefault(); setCanvasTool('rect'); break;
-                    case 'a': e.preventDefault(); setCanvasTool('arrow'); break;
-                    case 't': e.preventDefault(); setCanvasTool('text'); break;
-                }
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isCanvasActive, toggleCanvas, setCanvasTool, currentTime]);
-
-    useEffect(() => { setSubmissions(initialSubmissions); }, [initialSubmissions]);
-
-    // Set initial selected ID if provided
-    useEffect(() => {
-        if (initialSelectedId && submissions.some(s => s.id === initialSelectedId)) {
-            setSelectedId(initialSelectedId);
-        }
-    }, [initialSelectedId, submissions]);
-
-    const selectedSubmission = useMemo(
-        () => submissions.find(s => s.id === selectedId),
-        [submissions, selectedId]
-    );
-
-    const filteredSubmissions = useMemo(() => {
-        return submissions.filter(s => {
-            const matchesFilter = filter === "ALL" || s.status === filter;
-            const matchesSearch = !searchQuery ||
-                s.video?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (s.star.chineseName || s.star.name).toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesFilter && matchesSearch;
-        });
-    }, [submissions, filter, searchQuery]);
-
-    // --- Queries ---
-
-    const { data: feedbacksRaw = [], isLoading: isFeedbacksLoading } = useQuery({
-        queryKey: ["feedbacks", selectedId],
-        queryFn: async () => {
-            if (!selectedId) return [];
-            const res = await fetch(`/api/feedbacks?submissionId=${selectedId}`, { cache: "no-store" });
-            if (!res.ok) throw new Error("Failed to fetch feedbacks");
-            return (await res.json()).data as FeedbackItem[];
-        },
-        enabled: !!selectedId,
-        refetchInterval: false,
-    });
-
-    // --- Mutations ---
-
-    const createFeedbackMutation = useMutation({
-        mutationFn: async () => {
-            if (!selectedId || !feedbackText.trim()) return;
-            const res = await fetch("/api/feedbacks", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    submissionId: selectedId,
-                    type: feedbackType,
-                    priority: feedbackPriority,
-                    content: feedbackText.trim(),
-                    ...(isTimeCaptured && capturedTime !== null ? {
-                        startTime: capturedTime,
-                        endTime: capturedEndTime ?? (capturedTime + 3),
-                    } : {}),
-                    annotation: drawingObjects.length > 0 ? { strokes: drawingObjects, sourceSize: sourceSize ?? undefined } : undefined,
-                }),
-            });
-            if (!res.ok) {
-                const errData = (await res.json()) as { error?: { message?: string } };
-                throw new Error(errData.error?.message ?? "피드백 등록에 실패했습니다.");
-            }
-            return res.json();
-        },
-        onSuccess: () => {
-            setFeedbackText("");
-            setIsTimeCaptured(false);
-            setCapturedTime(null);
-            setCapturedEndTime(null);
-            clearCanvas();
-            detachDrawing();
-
-            // 등록에 성공하면 현재 선택된 영상의 status를 프론트엔드 레벨에서 IN_REVIEW 상태로 만듦
-            if (selectedId) {
-                setSubmissions(prev =>
-                    prev.map(sub =>
-                        sub.id === selectedId
-                            ? {
-                                ...sub,
-                                status: "IN_REVIEW",
-                                _count: {
-                                    ...sub._count,
-                                    feedbacks: (sub._count?.feedbacks || 0) + 1
-                                }
-                            }
-                            : sub
-                    )
-                );
-            }
-            // 그리고 IN_REVIEW(피드백중) 탭으로 화면 전환
-            setFilter("IN_REVIEW");
-
-            queryClient.invalidateQueries({ queryKey: ["feedbacks", selectedId] });
-            queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
-            toast.success("피드백이 등록되었습니다 ✨");
-        },
-        onError: (err) => toast.error(err instanceof Error ? err.message : "피드백 등록 실패")
-    });
-
-    const updateFeedbackMutation = useMutation({
-        mutationFn: async (args: { id: string, content: string, type: FeedbackType, priority: FeedbackPriority }) => {
-            const res = await fetch(`/api/feedbacks/${args.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(args)
-            });
-            if (!res.ok) throw new Error("수정에 실패했습니다.");
-            return res.json();
-        },
-        onSuccess: () => {
-            setEditingFeedbackId(null);
-            queryClient.invalidateQueries({ queryKey: ["feedbacks", selectedId] });
-            toast.success("피드백이 수정되었습니다.");
-        },
-        onError: (err) => toast.error(err instanceof Error ? err.message : "수정 실패")
-    });
-
-    const deleteFeedbackMutation = useMutation({
-        mutationFn: async (id: string) => {
-            const res = await fetch(`/api/feedbacks/${id}`, { method: "DELETE" });
-            if (!res.ok) throw new Error("삭제에 실패했습니다.");
-            return res.json();
-        },
-        onSuccess: (data) => {
-            // 삭제 후 남은 피드백이 0개이면 PENDING으로 전환
-            const remaining = data?.remainingFeedbacks;
-            if (remaining === 0 && selectedId) {
-                setSubmissions(prev =>
-                    prev.map(sub =>
-                        sub.id === selectedId
-                            ? { ...sub, status: "PENDING", _count: { ...sub._count, feedbacks: 0 } }
-                            : sub
-                    )
-                );
-                setFilter("PENDING");
-            } else if (selectedId) {
-                // 피드백 카운트 감소
-                setSubmissions(prev =>
-                    prev.map(sub =>
-                        sub.id === selectedId
-                            ? { ...sub, _count: { ...sub._count, feedbacks: Math.max(0, (sub._count?.feedbacks || 1) - 1) } }
-                            : sub
-                    )
-                );
-            }
-            queryClient.invalidateQueries({ queryKey: ["feedbacks", selectedId] });
-            queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
-            toast.success("피드백이 삭제되었습니다.");
-        },
-        onError: (err) => toast.error(err instanceof Error ? err.message : "삭제 실패")
-    });
-
-    const reviewMutation = useMutation({
-        mutationFn: async ({ id, action, feedback, adEligible }: { id: string; action: ReviewAction | "UNDO"; feedback?: string; adEligible?: boolean }) => {
-            const res = await fetch("/api/admin/reviews/action", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ submissionId: id, action, feedback, adEligible })
-            });
-            if (!res.ok) throw new Error("처리 중 오류가 발생했습니다.");
-            return res.json();
-        },
-        onSuccess: (data, variables) => {
-            queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
-            queryClient.invalidateQueries({ queryKey: ["submissions"] });
-
-            // UI 상태 즉시 업데이트
-            setSubmissions(prev => prev.map(sub => {
-                if (sub.id === variables.id) {
-                    let newStatus = sub.status;
-                    if (variables.action === "APPROVE") newStatus = "APPROVED";
-                    else if (variables.action === "REJECT") newStatus = "REJECTED";
-                    else if (variables.action === "UNDO") newStatus = "IN_REVIEW";
-                    return { ...sub, status: newStatus };
-                }
-                return sub;
-            }));
-
-            if (variables.action === "APPROVE") {
-                toast.success("승인 완료! 🎉");
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
-            } else if (variables.action === "REJECT") {
-                toast.success("반려 처리되었습니다.");
-            } else if (variables.action === "UNDO") {
-                toast.success("처리가 취소되었습니다.");
-            }
-
-            setActionModal({ isOpen: false, type: null });
-            setRejectReason("");
-            setAdEligible(false);
-        },
-        onError: (err) => toast.error(err instanceof Error ? err.message : "요청 실패")
-    });
-
-    // --- Handlers ---
-
-    const handleCaptureTime = () => {
-        setCapturedTime(currentTime);
-        setIsTimeCaptured(true);
-        toast.info(`⏱ ${formatTime(currentTime)} 시점이 캡처되었습니다.`);
-    };
-
-    const clearCapturedTime = () => {
-        setCapturedTime(null);
-        setIsTimeCaptured(false);
-    };
-
-    const handleAction = (type: ReviewAction | "UNDO") => {
-        if (!selectedId) return;
-        if (type === "APPROVE") {
-            setActionModal({ isOpen: true, type });
-        } else if (type === "REJECT") {
-            setActionModal({ isOpen: true, type });
-        } else if (type === "UNDO") {
-            // 실행 취소는 모달 없이 바로 실행
-            reviewMutation.mutate({ id: selectedId, action: "UNDO" });
-        }
-    };
-
-    const confirmAction = () => {
-        if (!selectedId || !actionModal.type) return;
-        reviewMutation.mutate({
-            id: selectedId,
-            action: actionModal.type,
-            feedback: actionModal.type === "APPROVE" ? undefined : rejectReason,
-            adEligible: actionModal.type === "APPROVE" ? adEligible : undefined,
-        });
-    };
-
-    const startEditingFeedback = (fb: FeedbackItem) => {
-        setEditingFeedbackId(fb.id);
-        setEditFeedbackText(fb.content);
-        setEditFeedbackType(fb.type);
-        setEditFeedbackPriority(fb.priority);
-    };
-
-    const cancelEditing = () => {
-        setEditingFeedbackId(null);
-    };
-
-    const saveEditing = () => {
-        if (!editingFeedbackId || !editFeedbackText.trim()) return;
-        updateFeedbackMutation.mutate({
-            id: editingFeedbackId,
-            content: editFeedbackText.trim(),
-            type: editFeedbackType,
-            priority: editFeedbackPriority
-        });
-    };
-
-    const handleSelectSubmission = (id: string) => {
-        setSelectedId(id);
-        // Reset form state on new selection
-        setFeedbackText("");
-        setFeedbackType("GENERAL");
-        setFeedbackPriority("NORMAL");
-        setIsTimeCaptured(false);
-        setCapturedTime(null);
-        setAdEligible(false);
-        setCurrentTime(0);
-        setDuration(0);
-        setSeekTo(undefined);
-        setIsMobileSheetOpen(false); // Close sheet on new selection
-    };
-
-    const handleDownload = async () => {
-        if (!selectedId) return;
-        setIsDownloading(true);
-        try {
-            // 서버사이드 프록시 — API가 직접 mp4 파일을 반환합니다
-            const a = document.createElement("a");
-            a.href = `/api/submissions/${selectedId}/download`;
-            a.download = "";
-            a.click();
-            toast.success("다운로드가 시작되었습니다.");
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : "다운로드에 실패했습니다.");
-        } finally {
-            setIsDownloading(false);
-        }
-    };
-
-    const streamUid = selectedSubmission?.video?.streamUid || selectedSubmission?.streamUid;
+    const {
+        // State
+        submissions, selectedId, filter, searchQuery,
+        currentTime, duration, seekTo,
+        feedbackText, feedbackType, feedbackPriority,
+        capturedTime, isTimeCaptured,
+        actionModal, rejectReason, adEligible,
+        editingFeedbackId, editFeedbackText, editFeedbackType, editFeedbackPriority,
+        isDownloading, isMobileSheetOpen,
+        // Canvas
+        isCanvasActive, toggleCanvas, drawingObjects, loadDrawing,
+        hasDrawingAttached, attachedTimecode, detachDrawing,
+        videoContainerRef,
+        // Derived
+        selectedSubmission, filteredSubmissions, feedbacksRaw, isFeedbacksLoading, streamUid,
+        // Mutations
+        createFeedbackMutation, updateFeedbackMutation, deleteFeedbackMutation, reviewMutation,
+        // Setters
+        setFilter, setSearchQuery, setCurrentTime, setDuration, setSeekTo,
+        setFeedbackText, setFeedbackType, setFeedbackPriority,
+        setCapturedTime, setIsTimeCaptured,
+        setActionModal, setRejectReason, setAdEligible,
+        setEditFeedbackText, setEditFeedbackType, setEditFeedbackPriority,
+        setIsMobileSheetOpen,
+        // Handlers
+        handleCaptureTime, clearCapturedTime, handleAction, confirmAction,
+        startEditingFeedback, cancelEditing, saveEditing,
+        handleSelectSubmission, handleDownload,
+    } = useFeedbackWorkspace({ submissions: initialSubmissions, initialSelectedId });
 
     return (
         <TooltipProvider>
@@ -679,10 +243,7 @@ export function FeedbackWorkspace({
                                             </motion.div>
                                         ))
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center py-20 text-center">
-                                            <Filter className="w-6 h-6 mb-2 text-slate-700" />
-                                            <p className="text-xs text-slate-600">표시할 항목이 없습니다.</p>
-                                        </div>
+                                        <EmptyState preset="no-results" compact />
                                     )}
                                 </AnimatePresence>
                             </div>

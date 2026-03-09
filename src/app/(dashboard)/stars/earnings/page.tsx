@@ -11,10 +11,21 @@ import {
   Download,
   ChevronDown,
   Wallet,
+  TrendingUp,
+  BarChart3,
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
@@ -23,6 +34,7 @@ import { AnimatedCard } from "@/components/settlement/animated-card";
 import { GlowBadge } from "@/components/settlement/glow-badge";
 import { NumberTicker } from "@/components/settlement/number-ticker";
 import { formatKRW, formatDateRange } from "@/lib/settlement-utils";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -96,6 +108,19 @@ const STATUS_GLOW_MAP: Record<string, { label: string; variant: GlowVariant }> =
 
 export default function EarningsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // 연간 수입 차트 데이터
+  type MonthlyEarning = { month: string; amount: number; count: number };
+  type AnnualSummary = { total: number; average: number; bestMonth: string | null; bestAmount: number };
+
+  const { data: annualData } = useQuery({
+    queryKey: ["annual-earnings"],
+    queryFn: async () => {
+      const res = await fetch("/api/stars/annual-earnings", { cache: "no-store" });
+      if (!res.ok) return null;
+      return (await res.json()) as { data: MonthlyEarning[]; summary: AnnualSummary };
+    },
+  });
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["my-settlements"],
@@ -172,6 +197,84 @@ export default function EarningsPage() {
           delay={0.2}
         />
       </div>
+
+      {/* Annual Earnings Chart */}
+      {annualData && annualData.data.some((d) => d.amount > 0) && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-violet-500" />
+                월별 수입 추이
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Summary badges */}
+              <div className="flex flex-wrap gap-3 mb-4">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  연간 총 {formatKRW(annualData.summary.total)}
+                </div>
+                {annualData.summary.average > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs font-bold">
+                    <DollarSign className="w-3.5 h-3.5" />
+                    월 평균 {formatKRW(annualData.summary.average)}
+                  </div>
+                )}
+              </div>
+              {/* Chart */}
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={annualData.data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="earningsGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(v: string) => v.split("-")[1] + "월"}
+                      stroke="var(--muted-foreground)"
+                      opacity={0.5}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      tickFormatter={(v: number) => v >= 10000 ? `${Math.round(v / 10000)}만` : `${v}`}
+                      stroke="var(--muted-foreground)"
+                      opacity={0.5}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--popover)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                      }}
+                      formatter={(value: any) => [formatKRW(Number(value)), "수입"]}
+                      labelFormatter={(label: any) => {
+                        const [y, m] = String(label).split("-");
+                        return `${y}년 ${parseInt(m)}월`;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#8b5cf6"
+                      strokeWidth={2.5}
+                      fill="url(#earningsGrad)"
+                      animationDuration={1200}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* List */}
       {isLoading ? (

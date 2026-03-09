@@ -15,6 +15,7 @@ import {
   Sparkles,
   User,
   Bell,
+  Smartphone,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -181,7 +182,19 @@ export function Sidebar() {
           </Link>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
+          <Link
+            href="/stars/install"
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 rounded-xl p-2 text-xs font-medium transition-all duration-200 border border-transparent",
+              pathname.startsWith("/stars/install")
+                ? "bg-violet-500/10 text-violet-600 border-violet-500/20 shadow-inner"
+                : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground hover:border-sidebar-border"
+            )}
+          >
+            <Smartphone className={cn("h-4 w-4 mb-0.5", pathname.startsWith("/stars/install") && "text-violet-500")} />
+            앱 설치
+          </Link>
           <Link
             href="/stars/settings"
             className={cn(

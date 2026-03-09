@@ -1,17 +1,27 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useFeedbackViewStore } from "@/store/feedback-view-store";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Brush, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, Brush, User, MessageCircle, Send, ChevronDown } from "lucide-react";
 import confetti from "canvas-confetti";
 import { formatDistanceToNow, isToday, format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { DrawingPreview } from "@/components/admin/drawing-preview";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface FeedbackDetailCardProps {
     onTimecodeClick: (time: number) => void;
+}
+
+interface Reply {
+    id: string;
+    content: string;
+    createdAt: string;
+    author: { id: string; name: string; role: string; avatarUrl: string | null };
 }
 
 const typeLabels: Record<string, string> = {
@@ -43,6 +53,116 @@ function formatTimecode(seconds: number): string {
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
+// --- Reply Section Component ---
+function ReplySection({ feedbackId }: { feedbackId: string }) {
+    const [replyText, setReplyText] = useState("");
+    const [isOpen, setIsOpen] = useState(false);
+    const queryClient = useQueryClient();
+
+    const { data: replies = [] } = useQuery<Reply[]>({
+        queryKey: ["feedback-replies", feedbackId],
+        queryFn: async () => {
+            const res = await fetch(`/api/feedbacks/${feedbackId}/replies`, { cache: "no-store" });
+            if (!res.ok) return [];
+            const json = await res.json();
+            return json.data ?? [];
+        },
+        enabled: isOpen,
+        staleTime: 30_000,
+    });
+
+    const sendReply = useMutation({
+        mutationFn: async (content: string) => {
+            const res = await fetch(`/api/feedbacks/${feedbackId}/replies`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content }),
+            });
+            if (!res.ok) throw new Error("전송 실패");
+            return res.json();
+        },
+        onSuccess: () => {
+            setReplyText("");
+            queryClient.invalidateQueries({ queryKey: ["feedback-replies", feedbackId] });
+        },
+    });
+
+    const handleSubmit = useCallback((e: React.FormEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!replyText.trim()) return;
+        sendReply.mutate(replyText.trim());
+    }, [replyText, sendReply]);
+
+    return (
+        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-1.5 text-[11px] text-indigo-300 hover:text-indigo-200 transition-colors"
+            >
+                <MessageCircle className="w-3 h-3" />
+                <span className="font-medium">답변</span>
+                <ChevronDown className={cn("w-3 h-3 transition-transform", isOpen && "rotate-180")} />
+            </button>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                    >
+                        {/* Replies List */}
+                        {replies.length > 0 && (
+                            <div className="mt-2 space-y-2 pl-2 border-l-2 border-indigo-500/20">
+                                {replies.map((reply) => (
+                                    <div key={reply.id} className="text-xs">
+                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                            <span className={cn(
+                                                "font-bold",
+                                                reply.author.role === "ADMIN" ? "text-indigo-300" : "text-emerald-300"
+                                            )}>
+                                                {reply.author.name}
+                                            </span>
+                                            <span className="text-slate-600">·</span>
+                                            <span className="text-slate-500 text-[10px]">
+                                                {formatFeedbackTime(reply.createdAt)}
+                                            </span>
+                                        </div>
+                                        <p className="text-slate-300 leading-relaxed">{reply.content}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Reply Input */}
+                        <form onSubmit={handleSubmit} className="mt-2 flex gap-1.5">
+                            <input
+                                type="text"
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                placeholder="답변을 입력하세요..."
+                                className="flex-1 h-8 px-3 text-xs bg-white/[0.04] border border-white/10 rounded-lg text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/40"
+                            />
+                            <Button
+                                type="submit"
+                                size="sm"
+                                disabled={!replyText.trim() || sendReply.isPending}
+                                className="h-8 w-8 p-0 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30"
+                            >
+                                <Send className="w-3 h-3" />
+                            </Button>
+                        </form>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+// --- Main Component ---
 export function FeedbackDetailCards({ onTimecodeClick }: FeedbackDetailCardProps) {
     const feedbacks = useFeedbackViewStore((s) => s.feedbacks);
     const selectedFeedbackId = useFeedbackViewStore((s) => s.selectedFeedbackId);
@@ -61,10 +181,24 @@ export function FeedbackDetailCards({ onTimecodeClick }: FeedbackDetailCardProps
     const completedCount = checkedIds.size;
     const totalCount = feedbacks.length;
 
-    const handleCheck = (id: string, e: React.MouseEvent) => {
+    // 서버에 resolvedByStar 저장 + 클라이언트 체크 토글 + confetti
+    const handleCheck = useCallback(async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         const wasChecked = checkedIds.has(id);
         toggleCheck(id);
+
+        // 서버에 resolvedByStar 상태 저장
+        try {
+            await fetch(`/api/feedbacks/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ resolvedByStar: !wasChecked }),
+            });
+        } catch {
+            // 서버 오류 시 토글 복원
+            toggleCheck(id);
+            return;
+        }
 
         if (!wasChecked) {
             confetti({
@@ -87,7 +221,7 @@ export function FeedbackDetailCards({ onTimecodeClick }: FeedbackDetailCardProps
                 }, 300);
             }
         }
-    };
+    }, [checkedIds, toggleCheck, completedCount, totalCount]);
 
     return (
         <div className="space-y-4">
@@ -228,6 +362,9 @@ export function FeedbackDetailCards({ onTimecodeClick }: FeedbackDetailCardProps
                                                 <span>{formatFeedbackTime(fb.createdAt)}</span>
                                             </div>
                                         </div>
+
+                                        {/* Reply Section */}
+                                        <ReplySection feedbackId={fb.id} />
                                     </div>
                                 </div>
                             </motion.div>

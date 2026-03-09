@@ -26,7 +26,7 @@ export async function PATCH(
 
   const { id } = await params;
 
-  let body: { approved?: boolean };
+  let body: { approved?: boolean; rejectionReason?: string };
   try {
     body = await request.json();
   } catch {
@@ -57,6 +57,7 @@ export async function PATCH(
     where: { id },
     data: {
       isApproved: approved,
+      rejectionReason: approved ? null : (body.rejectionReason?.trim() || null),
     },
     select: {
       id: true,

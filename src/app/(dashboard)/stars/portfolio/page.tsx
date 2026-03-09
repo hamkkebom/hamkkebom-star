@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Share2, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,17 @@ type Portfolio = {
 
 export default function PortfolioPage() {
   const queryClient = useQueryClient();
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  // 공유 링크용 userId
+  const { data: userData } = useQuery({
+    queryKey: ["user-me"],
+    queryFn: async () => {
+      const res = await fetch("/api/users/me", { cache: "no-store" });
+      if (!res.ok) return null;
+      return (await res.json()).data as { id: string };
+    },
+  });
 
   // Portfolio info editing
   const [editingInfo, setEditingInfo] = useState(false);
@@ -164,6 +176,23 @@ export default function PortfolioPage() {
           <p className="text-sm text-muted-foreground">포트폴리오를 관리하고 작품을 추가하세요.</p>
         </div>
         <div className="flex gap-2">
+          {userData && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                const url = `${window.location.origin}/portfolio/${userData.id}`;
+                navigator.clipboard.writeText(url);
+                setLinkCopied(true);
+                toast.success("공유 링크가 복사되었습니다!");
+                setTimeout(() => setLinkCopied(false), 2000);
+              }}
+            >
+              {linkCopied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+              {linkCopied ? "복사됨!" : "공유 링크"}
+            </Button>
+          )}
           {!editingInfo && (
             <Button variant="outline" onClick={startEditingInfo}>
               정보 수정

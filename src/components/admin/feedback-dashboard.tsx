@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // ============================================================
 //  TYPES
@@ -580,19 +581,10 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
 
                 {/* Empty State */}
                 {filteredSubmissions.length === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center justify-center py-32 text-center"
-                    >
-                        <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] flex items-center justify-center mb-6">
-                            <Play className="w-10 h-10 text-indigo-400/50 dark:text-indigo-500/50" />
-                        </div>
-                        <h3 className="text-lg font-bold text-slate-500 dark:text-slate-400 mb-2">표시할 항목이 없습니다</h3>
-                        <p className="text-sm text-slate-400 dark:text-slate-600 max-w-sm">
-                            {filter !== "ALL" ? "필터를 변경해보세요." : "담당 STAR의 영상이 아직 없습니다."}
-                        </p>
-                    </motion.div>
+                    <EmptyState
+                        preset="no-results"
+                        description={filter !== "ALL" ? "필터를 변경해보세요." : "담당 STAR의 영상이 아직 없습니다."}
+                    />
                 )}
             </div>
 

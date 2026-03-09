@@ -8,6 +8,68 @@ export const dynamic = "force-dynamic";
 
 const submissionStatuses = new Set(Object.values(SubmissionStatus));
 
+// ── 썸네일 URL 메모리 캐시 (TTL 50분) ──
+const thumbnailCache = new Map<string, { url: string; expiresAt: number }>();
+const CACHE_TTL_MS = 50 * 60 * 1000;
+
+function getCachedThumbnail(key: string): string | null {
+  const cached = thumbnailCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+  if (cached) thumbnailCache.delete(key);
+  return null;
+}
+
+function setCachedThumbnail(key: string, url: string): void {
+  thumbnailCache.set(key, { url, expiresAt: Date.now() + CACHE_TTL_MS });
+  if (thumbnailCache.size > 500) {
+    const firstKey = thumbnailCache.keys().next().value;
+    if (firstKey) thumbnailCache.delete(firstKey);
+  }
+}
+
+async function resolveThumbnail(
+  submissionId: string,
+  subThumbUrl: string | null,
+  videoThumbUrl: string | null,
+  streamUid: string | null,
+  videoStreamUid: string | null
+): Promise<string | null> {
+  const cacheKey = `sub-thumb:${submissionId}`;
+  const cached = getCachedThumbnail(cacheKey);
+  if (cached) return cached;
+
+  let url: string | null = null;
+
+  if (subThumbUrl) {
+    const r2Key = extractR2Key(subThumbUrl);
+    if (r2Key) {
+      try { url = await getPresignedGetUrl(r2Key); } catch { /* ignore */ }
+    }
+  }
+
+  if (!url && videoThumbUrl) {
+    const r2Key = extractR2Key(videoThumbUrl);
+    if (r2Key) {
+      try { url = await getPresignedGetUrl(r2Key); } catch { /* ignore */ }
+    }
+  }
+
+  if (!url) {
+    const uid = streamUid || videoStreamUid;
+    if (uid) {
+      try {
+        const token = await getSignedPlaybackToken(uid);
+        if (token) {
+          url = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  if (url) setCachedThumbnail(cacheKey, url);
+  return url;
+}
+
 export async function GET(request: Request) {
   const user = await getAuthUser();
 
@@ -31,8 +93,7 @@ export async function GET(request: Request) {
   const assignmentId = searchParams.get("assignmentId")?.trim();
   const status = searchParams.get("status");
   const hasFeedback = searchParams.get("hasFeedback");
-
-  const filter = searchParams.get("filter"); // 'AI_DONE' | 'HAS_FEEDBACK' | undefined
+  const filter = searchParams.get("filter");
 
   if (status && status !== "ALL" && !submissionStatuses.has(status as SubmissionStatus)) {
     return NextResponse.json(
@@ -47,12 +108,10 @@ export async function GET(request: Request) {
     ...(status && status !== "ALL" ? { status: status as SubmissionStatus } : {}),
   };
 
-  // 기존 hasFeedback 파라미터 호환성 유지 (optional)
   if (hasFeedback === "true") {
     where.feedbacks = { some: {} };
   }
 
-  // 새로운 filter 파라미터 처리
   if (filter === "AI_DONE") {
     where.aiAnalysis = { status: "DONE" };
   } else if (filter === "HAS_FEEDBACK") {
@@ -61,6 +120,7 @@ export async function GET(request: Request) {
     where.feedbacks = { some: { seenByStarAt: null } };
   }
 
+  // ✅ 메인 쿼리 + count 병렬 실행
   const [rows, total] = await Promise.all([
     prisma.submission.findMany({
       where,
@@ -68,10 +128,7 @@ export async function GET(request: Request) {
         assignment: {
           include: {
             request: {
-              select: {
-                id: true,
-                title: true,
-              },
+              select: { id: true, title: true },
             },
           },
         },
@@ -83,18 +140,11 @@ export async function GET(request: Request) {
           },
         },
         _count: {
-          select: {
-            feedbacks: true,
-          },
+          select: { feedbacks: true },
         },
         aiAnalysis: {
-          select: {
-            summary: true,
-            status: true,
-            scores: true,
-          },
+          select: { summary: true, status: true, scores: true },
         },
-        // 최근 피드백 1건 + 미확인 카운트용 데이터
         feedbacks: {
           take: 1,
           orderBy: { createdAt: "desc" },
@@ -115,74 +165,52 @@ export async function GET(request: Request) {
     prisma.submission.count({ where }),
   ]);
 
-  // 각 submission의 썸네일 URL 생성 (우선순위: 스타 업로드 → Video → Stream)
-  const rowsWithThumbnails = await Promise.all(
-    rows.map(async (row) => {
-      let finalThumbnailUrl: string | null = null;
+  // ✅ 썸네일 + unread 카운트 병렬 실행
+  const submissionIds = rows.map((r) => r.id);
 
-      // 1순위: Submission.thumbnailUrl (스타가 직접 업로드한 썸네일)
-      if (row.thumbnailUrl) {
-        const r2Key = extractR2Key(row.thumbnailUrl);
-        if (r2Key) {
-          try {
-            finalThumbnailUrl = await getPresignedGetUrl(r2Key);
-          } catch {
-            // R2 실패 시 fallback
-          }
-        }
+  const [allThumbnails, pendingCounts] = await Promise.all([
+    // 썸네일: 5건씩 배치 병렬 처리
+    (async () => {
+      const BATCH_SIZE = 5;
+      const results: (string | null)[] = new Array(rows.length).fill(null);
+      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const batch = rows.slice(i, i + BATCH_SIZE);
+        const thumbs = await Promise.all(
+          batch.map((row) =>
+            resolveThumbnail(
+              row.id,
+              row.thumbnailUrl,
+              row.video?.thumbnailUrl ?? null,
+              row.streamUid,
+              row.video?.streamUid ?? null
+            )
+          )
+        );
+        thumbs.forEach((t, j) => { results[i + j] = t; });
       }
+      return results;
+    })(),
+    // unread 카운트
+    submissionIds.length > 0
+      ? prisma.feedback.groupBy({
+        by: ["submissionId"],
+        where: {
+          submissionId: { in: submissionIds },
+          seenByStarAt: null,
+        },
+        _count: { id: true },
+      })
+      : Promise.resolve([]),
+  ]);
 
-      // 2순위: Video.thumbnailUrl (승인 후 Video에 복사된 URL)
-      if (!finalThumbnailUrl) {
-        const videoThumbUrl = row.video?.thumbnailUrl;
-        if (videoThumbUrl) {
-          const r2Key = extractR2Key(videoThumbUrl);
-          if (r2Key) {
-            try {
-              finalThumbnailUrl = await getPresignedGetUrl(r2Key);
-            } catch {
-              // ignore
-            }
-          }
-        }
-      }
-
-      // 3순위: Cloudflare Stream 자동 생성 썸네일
-      if (!finalThumbnailUrl) {
-        const uid = row.streamUid || row.video?.streamUid;
-        if (uid) {
-          try {
-            const token = await getSignedPlaybackToken(uid);
-            if (token) {
-              finalThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
-            }
-          } catch {
-            // ignore
-          }
-        }
-      }
-
-      return { ...row, signedThumbnailUrl: finalThumbnailUrl };
-    })
-  );
-
-  // 각 제출물별 미확인(seenByStarAt이 null) 피드백 카운트 집계
-  const submissionIds = rowsWithThumbnails.map((r) => r.id);
-  const pendingCounts = await prisma.feedback.groupBy({
-    by: ["submissionId"],
-    where: {
-      submissionId: { in: submissionIds },
-      seenByStarAt: null,
-    },
-    _count: { id: true },
-  });
   const pendingMap = new Map(pendingCounts.map((p) => [p.submissionId, p._count.id]));
 
-  const finalRows = rowsWithThumbnails.map((row) => ({
+  const finalRows = rows.map((row, idx) => ({
     ...row,
+    signedThumbnailUrl: allThumbnails[idx],
     latestFeedback: row.feedbacks?.[0] ?? null,
     unreadFeedbackCount: pendingMap.get(row.id) ?? 0,
-    feedbacks: undefined, // 원본 배열은 응답에서 제거
+    feedbacks: undefined,
   }));
 
   return NextResponse.json({
@@ -193,4 +221,3 @@ export async function GET(request: Request) {
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
   });
 }
-

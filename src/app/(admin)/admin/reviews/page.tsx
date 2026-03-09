@@ -320,11 +320,25 @@ export default function AdminReviewsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">전체 피드백 관리</h1>
-          <p className="text-sm text-muted-foreground">
-            제출된 영상들을 부서 구분 없이 모두 확인하고 리뷰합니다.
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">전체 피드백 관리</h1>
+            <p className="text-sm text-muted-foreground">
+              제출된 영상들을 부서 구분 없이 모두 확인하고 리뷰합니다.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 ml-auto shrink-0"
+            onClick={() => {
+              window.open("/api/submissions/export", "_blank");
+              toast.success("CSV 다운로드가 시작되었습니다.");
+            }}
+          >
+            <Download className="w-3.5 h-3.5" />
+            CSV
+          </Button>
         </div>
 
         {/* Premium Filter Segments */}

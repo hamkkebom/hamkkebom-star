@@ -1,46 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/auth-helpers";
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest) {
     try {
-        const supabase = await createClient();
-        const {
-            data: { user },
-            error,
-        } = await supabase.auth.getUser();
-
-        if (error || !user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        // Check if the requester is an admin
-        const requester = await prisma.user.findUnique({
-            where: { authId: user.id },
-            select: {
-                role: true,
-                id: true,
-                name: true,
-                email: true,
-                avatarUrl: true,
-            },
-        });
-
-        console.log(
-            "Assign API (GET) - authId:",
-            user.id,
-            "email:",
-            requester?.email,
-            "role:",
-            requester?.role
-        );
-
+        const requester = await getAuthUser();
         if (!requester || requester.role !== "ADMIN") {
-            return NextResponse.json(
-                { error: "Forbidden", details: { role: requester?.role } },
-                { status: 403 }
-            );
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         // Fetch all users with role STAR, including pending submission count
@@ -60,9 +27,10 @@ export async function GET(_req: NextRequest) {
                         avatarUrl: true,
                     },
                 },
-                submissions: {
-                    where: { status: "PENDING" },
-                    select: { id: true },
+                _count: {
+                    select: {
+                        submissions: { where: { status: "PENDING" } },
+                    },
                 },
             },
         });
@@ -70,8 +38,8 @@ export async function GET(_req: NextRequest) {
         // Transform data to include count
         const starsWithCount = keyUsers.map((user) => ({
             ...user,
-            pendingSubmissionCount: user.submissions.length,
-            submissions: undefined, // Remove raw array
+            pendingSubmissionCount: user._count.submissions,
+            _count: undefined,
         }));
 
         // Fetch all active admins (potential managers)
@@ -104,22 +72,7 @@ export async function GET(_req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
     try {
-        const supabase = await createClient();
-        const {
-            data: { user },
-            error,
-        } = await supabase.auth.getUser();
-
-        if (error || !user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        // Check if the requester is an admin
-        const requester = await prisma.user.findUnique({
-            where: { authId: user.id },
-            select: { role: true, id: true },
-        });
-
+        const requester = await getAuthUser();
         if (!requester || requester.role !== "ADMIN") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }

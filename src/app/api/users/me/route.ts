@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { getAuthUser } from "@/lib/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
 
 const updateUserSchema = z.object({
@@ -8,44 +9,28 @@ const updateUserSchema = z.object({
   email: z.string().email("올바른 이메일을 입력해주세요.").optional(),
   phone: z.string().nullable().optional(),
   avatarUrl: z.string().url("올바른 URL을 입력해주세요.").nullable().optional(),
+  bankName: z.string().nullable().optional(),
+  bankAccount: z.string().nullable().optional(),
 });
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-
-    if (!authUser?.id) {
-      return NextResponse.json(
-        { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
-        { status: 401 }
-      );
-    }
-
-    const userSelect = {
-      id: true,
-      authId: true,
-      email: true,
-      name: true,
-      phone: true,
-      avatarUrl: true,
-      role: true,
-      isApproved: true,
-      baseRate: true,
-      createdAt: true,
-      updatedAt: true,
-    } as const;
-
-    let user = await prisma.user.findUnique({
-      where: { authId: authUser.id },
-      select: userSelect,
-    });
+    // ✅ getAuthUser() — React cache + 중복 호출 방지
+    let user = await getAuthUser({ skipApprovalCheck: true });
 
     if (!user) {
+      // 신규 유저: Supabase에서 authId로 자동 생성
+      const supabase = await createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser?.id) {
+        return NextResponse.json(
+          { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
+          { status: 401 }
+        );
+      }
+
       const metadata: Record<string, unknown> =
         authUser.user_metadata && typeof authUser.user_metadata === "object"
           ? authUser.user_metadata
@@ -70,7 +55,6 @@ export async function GET() {
           phone,
           chineseName,
         },
-        select: userSelect,
       });
     }
 
@@ -86,26 +70,12 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
-      { status: 401 }
-    );
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { authId: authUser.id },
-  });
+  const user = await getAuthUser({ skipApprovalCheck: true });
 
   if (!user) {
     return NextResponse.json(
-      { error: { code: "NOT_FOUND", message: "사용자 정보를 찾을 수 없습니다." } },
-      { status: 404 }
+      { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
+      { status: 401 }
     );
   }
 
@@ -155,6 +125,8 @@ export async function PATCH(request: Request) {
       role: true,
       isApproved: true,
       baseRate: true,
+      bankName: true,
+      bankAccount: true,
       createdAt: true,
       updatedAt: true,
     },

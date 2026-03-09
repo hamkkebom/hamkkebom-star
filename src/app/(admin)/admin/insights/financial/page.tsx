@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, CheckCircle2, BarChart3, Hash, TrendingUp, Trophy, Film, ServerCrash } from "lucide-react";
+import { Wallet, CheckCircle2, BarChart3, Hash, TrendingUp, Trophy, Film, ServerCrash, CalendarDays } from "lucide-react";
 import { InsightKpiCard } from "@/components/admin/insight-kpi-card";
 import { InsightPeriodToggle } from "@/components/admin/insight-period-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,12 +12,35 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 
+/* ───────── Date Range Presets ───────── */
+type DatePreset = "7d" | "30d" | "90d" | "year";
+const DATE_PRESETS: { value: DatePreset; label: string }[] = [
+    { value: "7d", label: "7일" },
+    { value: "30d", label: "30일" },
+    { value: "90d", label: "90일" },
+    { value: "year", label: "올해" },
+];
+
+function getDateRange(preset: DatePreset): { from: string; to: string; label: string } {
+    const now = new Date();
+    const to = now.toISOString().slice(0, 10);
+    let fromDate: Date;
+    let label: string;
+    switch (preset) {
+        case "7d": fromDate = new Date(now.getTime() - 7 * 86400000); label = "7일"; break;
+        case "30d": fromDate = new Date(now.getTime() - 30 * 86400000); label = "30일"; break;
+        case "90d": fromDate = new Date(now.getTime() - 90 * 86400000); label = "90일"; break;
+        case "year": fromDate = new Date(now.getFullYear(), 0, 1); label = `${now.getFullYear()}년`; break;
+    }
+    return { from: fromDate.toISOString().slice(0, 10), to, label };
+}
+
 /* ───────── Financial KPIs ───────── */
-function FinancialKpiSection() {
+function FinancialKpiSection({ dateRange }: { dateRange: { from: string; to: string; label: string } }) {
     const { data, isLoading } = useQuery({
-        queryKey: ['insights', 'financial', 'kpis'],
+        queryKey: ['insights', 'financial', 'kpis', dateRange.from, dateRange.to],
         queryFn: async () => {
-            const res = await fetch('/api/admin/insights/financial/kpis');
+            const res = await fetch(`/api/admin/insights/financial/kpis?from=${dateRange.from}&to=${dateRange.to}`);
             if (!res.ok) throw new Error("Failed to fetch financial KPIs");
             return res.json();
         },
@@ -51,7 +74,7 @@ function FinancialKpiSection() {
             {data.map((kpi: any, index: number) => (
                 <div key={kpi.title} className="w-[85vw] sm:w-[300px] shrink-0 snap-center md:w-auto md:shrink">
                     <InsightKpiCard
-                        title={`${kpi.title} (30일)`}
+                        title={`${kpi.title} (${dateRange.label})`}
                         value={kpi.value}
                         trend={kpi.trend}
                         icon={getIcon(kpi.icon)}
@@ -164,11 +187,11 @@ function FinancialTrendSection() {
 }
 
 /* ───────── Top Earning STARs ───────── */
-function TopEarningStarsSection() {
+function TopEarningStarsSection({ dateRange }: { dateRange: { from: string; to: string; label: string } }) {
     const { data, isLoading } = useQuery({
-        queryKey: ['insights', 'financial', 'leaderboard'],
+        queryKey: ['insights', 'financial', 'leaderboard', dateRange.from, dateRange.to],
         queryFn: async () => {
-            const res = await fetch('/api/admin/insights/financial/leaderboard');
+            const res = await fetch(`/api/admin/insights/financial/leaderboard?from=${dateRange.from}&to=${dateRange.to}`);
             if (!res.ok) throw new Error("Failed to fetch leaderboard");
             return res.json();
         },
@@ -182,7 +205,7 @@ function TopEarningStarsSection() {
                     <Trophy className="w-5 h-5 text-amber-500" />
                     최고 수익 STAR (Top 5)
                 </CardTitle>
-                <CardDescription className="text-xs font-bold uppercase tracking-widest mt-1">이번 달 정산 기준 수익 랭킹</CardDescription>
+                <CardDescription className="text-xs font-bold uppercase tracking-widest mt-1">{dateRange.label} 정산 기준 수익 랭킹</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 p-0 overflow-hidden">
                 {isLoading ? (
@@ -248,11 +271,11 @@ function TopEarningStarsSection() {
 }
 
 /* ───────── Top Earning Videos ───────── */
-function TopEarningVideosSection() {
+function TopEarningVideosSection({ dateRange }: { dateRange: { from: string; to: string; label: string } }) {
     const { data, isLoading } = useQuery({
-        queryKey: ['insights', 'financial', 'leaderboard'],
+        queryKey: ['insights', 'financial', 'leaderboard', dateRange.from, dateRange.to],
         queryFn: async () => {
-            const res = await fetch('/api/admin/insights/financial/leaderboard');
+            const res = await fetch(`/api/admin/insights/financial/leaderboard?from=${dateRange.from}&to=${dateRange.to}`);
             if (!res.ok) throw new Error("Failed to fetch leaderboard");
             return res.json();
         },
@@ -266,7 +289,7 @@ function TopEarningVideosSection() {
                     <Film className="w-5 h-5 text-rose-500" />
                     최고 수익 영상 (Top 5)
                 </CardTitle>
-                <CardDescription className="text-xs font-bold uppercase tracking-widest mt-1">이번 달 정산 기준 영상별 수익</CardDescription>
+                <CardDescription className="text-xs font-bold uppercase tracking-widest mt-1">{dateRange.label} 정산 기준 영상별 수익</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 p-0 overflow-hidden">
                 {isLoading ? (
@@ -333,6 +356,9 @@ function TopEarningVideosSection() {
 
 /* ───────── Main Page ───────── */
 export default function FinancialInsightsPage() {
+    const [datePreset, setDatePreset] = useState<DatePreset>("30d");
+    const dateRange = useMemo(() => getDateRange(datePreset), [datePreset]);
+
     return (
         <div className="max-w-[1600px] mx-auto space-y-8 pb-10">
             {/* Header */}
@@ -349,28 +375,46 @@ export default function FinancialInsightsPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.1 }}
-                    className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2 flex items-center"
+                    className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2 flex items-center flex-wrap gap-2"
                 >
                     정산 데이터와 수익 창출 퍼포먼스를 한눈에 파악하세요.
-                    <span className="ml-3 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-[9px] font-black tracking-widest text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)] animate-pulse flex items-center gap-1">
+                    <span className="ml-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-[9px] font-black tracking-widest text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)] animate-pulse flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>
                         FINANCIAL TRACKING
                     </span>
                 </motion.div>
             </div>
 
+            {/* Date Range Filter */}
+            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                <span className="text-xs font-bold text-muted-foreground mr-1">기간:</span>
+                {DATE_PRESETS.map((p) => (
+                    <button
+                        key={p.value}
+                        onClick={() => setDatePreset(p.value)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${datePreset === p.value
+                                ? "bg-amber-500 text-white shadow-md shadow-amber-500/30"
+                                : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                            }`}
+                    >
+                        {p.label}
+                    </button>
+                ))}
+            </motion.div>
+
             {/* Zone A: Financial KPIs */}
-            <FinancialKpiSection />
+            <FinancialKpiSection dateRange={dateRange} />
 
             {/* Zone B: Revenue Trend */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <FinancialTrendSection />
-                <TopEarningStarsSection />
+                <TopEarningStarsSection dateRange={dateRange} />
             </div>
 
             {/* Zone C: Top Earning Videos */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <TopEarningVideosSection />
+                <TopEarningVideosSection dateRange={dateRange} />
             </div>
         </div>
     );
