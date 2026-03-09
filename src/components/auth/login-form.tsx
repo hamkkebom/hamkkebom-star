@@ -73,8 +73,9 @@ export function LoginForm() {
         return;
       }
 
-      // Full page navigation ensures middleware runs and server-side auth works
-      window.location.href = "/";
+      // Role 기반으로 올바른 대시보드로 즉시 이동
+      const redirectPath = data.data.role === "ADMIN" ? "/admin" : "/stars/dashboard";
+      window.location.href = redirectPath;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "로그인 중 오류가 발생했습니다.";
