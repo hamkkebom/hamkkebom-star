@@ -64,6 +64,8 @@ model User {
   boardPosts          BoardPost[]    @relation("BoardPosts")
   boardComments       BoardComment[] @relation("BoardComments")
   boardPostLikes      BoardPostLike[]
+  followers           Follow[]       @relation("Following")
+  following           Follow[]       @relation("Followers")
   @@map("users")
 }
 
@@ -807,4 +809,18 @@ enum BoardType {
   SHOWCASE
   RECRUITMENT
   NOTICE
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+  @@map("follows")
 }

@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, User, Users } from "lucide-react";
+import { Sparkles, User, Users, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { useAuthStore } from "@/stores/auth-store";
 
 const navLinks: { href: string; label: string; icon: typeof Sparkles; exact?: boolean }[] = [
   { href: "/community", label: "커뮤니티", icon: Users },
+  { href: "/explore", label: "탐색", icon: Compass },
 ];
 
 export function PublicHeader() {
