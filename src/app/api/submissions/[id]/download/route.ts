@@ -1,15 +1,43 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
-import { getSignedDownloadUrl } from "@/lib/cloudflare/stream";
+import { getSignedDownloadUrl, getSignedDownloadUrlCustomerDomain, getDownloadUrl } from "@/lib/cloudflare/stream";
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
 /**
+ * 여러 URL을 순서대로 시도하여, 실제 비디오 파일을 반환하는 첫 번째 URL을 사용합니다.
+ * CF Stream 다운로드 URL은 302 리다이렉트를 반환할 수 있으므로 자동 follow.
+ */
+async function tryFetchVideo(urls: (string | null)[]): Promise<Response | null> {
+  for (const url of urls) {
+    if (!url) continue;
+    try {
+      const res = await fetch(url, { redirect: "follow" });
+      if (!res.ok) {
+        console.log(`[Download] URL failed (${res.status}): ${url.slice(0, 80)}...`);
+        continue;
+      }
+      const ct = res.headers.get("content-type") || "";
+      if (!ct.includes("video/") && !ct.includes("octet-stream")) {
+        const body = await res.text();
+        console.log(`[Download] URL returned non-video ct=${ct}: ${body.slice(0, 200)}`);
+        continue;
+      }
+      return res;
+    } catch (err) {
+      console.error(`[Download] Fetch error for ${url.slice(0, 80)}:`, err);
+      continue;
+    }
+  }
+  return null;
+}
+
+/**
  * GET /api/submissions/[id]/download
  * 제출물 영상을 서버사이드 프록시로 다운로드합니다.
- * ADMIN만 사용 가능.
+ * ADMIN만 사용 가능. 다운로드 미활성화 영상은 자동 활성화 후 폴링합니다.
  */
 export async function GET(_request: Request, { params }: Params) {
   const user = await getAuthUser();
@@ -55,22 +83,20 @@ export async function GET(_request: Request, { params }: Params) {
   }
 
   try {
-    // 서명된 다운로드 URL 생성 (videodelivery.net 사용)
-    const downloadUrl = await getSignedDownloadUrl(streamUid);
-    if (!downloadUrl) {
-      return NextResponse.json(
-        { error: { code: "INTERNAL_ERROR", message: "다운로드 URL 생성에 실패했습니다." } },
-        { status: 500 }
-      );
-    }
+    // 다운로드 활성화 (비활성화 상태면 자동 활성화 + 폴링)
+    const enabledUrl = await getDownloadUrl(streamUid);
 
-    // Cloudflare에서 영상을 가져와서 프록시로 전달 (파일명 지정)
-    const cfResponse = await fetch(downloadUrl);
-    if (!cfResponse.ok) {
-      console.error(`[Download] CF 응답 실패: ${cfResponse.status} for uid=${streamUid}`);
+    // 서명된 다운로드 URL 생성 (두 가지 도메인)
+    const signedUrl = await getSignedDownloadUrl(streamUid);
+    const customerUrl = await getSignedDownloadUrlCustomerDomain(streamUid);
+
+    // 순서: 1) CF API 직접 URL → 2) videodelivery.net signed → 3) customer domain signed
+    const videoResponse = await tryFetchVideo([enabledUrl, signedUrl, customerUrl]);
+
+    if (!videoResponse) {
       return NextResponse.json(
-        { error: { code: "DOWNLOAD_FAILED", message: `다운로드 실패 (${cfResponse.status})` } },
-        { status: cfResponse.status }
+        { error: { code: "DOWNLOAD_FAILED", message: "영상 다운로드에 실패했습니다. 잠시 후 다시 시도해주세요." } },
+        { status: 503 }
       );
     }
 
@@ -90,12 +116,12 @@ export async function GET(_request: Request, { params }: Params) {
     );
 
     // Content-Length가 있으면 전달
-    const contentLength = cfResponse.headers.get("content-length");
+    const contentLength = videoResponse.headers.get("content-length");
     if (contentLength) {
       headers.set("Content-Length", contentLength);
     }
 
-    return new Response(cfResponse.body, {
+    return new Response(videoResponse.body, {
       status: 200,
       headers,
     });

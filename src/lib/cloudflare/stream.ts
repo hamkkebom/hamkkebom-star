@@ -201,13 +201,16 @@ export async function getSignedDownloadUrlCustomerDomain(uid: string): Promise<s
 
 /**
  * Cloudflare Stream 영상의 mp4 다운로드 URL을 획득합니다.
- * 다운로드가 활성화되어 있지 않으면 자동으로 활성화합니다.
+ * 다운로드가 활성화되어 있지 않으면 자동으로 활성화하고,
+ * ready 상태가 될 때까지 폴링합니다 (최대 maxWaitSeconds 대기).
  */
-export async function getDownloadUrl(uid: string): Promise<string | null> {
+export async function getDownloadUrl(uid: string, maxWaitSeconds = 60): Promise<string | null> {
   if (!isConfigured()) {
     // Mock mode — 개발용 placeholder
     return `https://videodelivery.net/${uid}/downloads/default.mp4`;
   }
+
+  type DownloadsResult = { result: { default?: { url: string; status: string; percentComplete?: number } } };
 
   // 1) 기존 다운로드 URL 확인
   const checkRes = await fetch(`${BASE_URL}/${uid}/downloads`, {
@@ -215,9 +218,13 @@ export async function getDownloadUrl(uid: string): Promise<string | null> {
   });
 
   if (checkRes.ok) {
-    const checkJson = (await checkRes.json()) as { result: { default?: { url: string; status: string } } };
-    if (checkJson.result.default?.url && checkJson.result.default.status === "ready") {
+    const checkJson = (await checkRes.json()) as DownloadsResult;
+    if (checkJson.result.default?.status === "ready" && checkJson.result.default.url) {
       return checkJson.result.default.url;
+    }
+    // 이미 inprogress면 활성화 단계 건너뛰고 폴링만
+    if (checkJson.result.default?.status === "inprogress") {
+      return pollDownloadReady(uid, maxWaitSeconds);
     }
   }
 
@@ -232,8 +239,53 @@ export async function getDownloadUrl(uid: string): Promise<string | null> {
     return null;
   }
 
-  const enableJson = (await enableRes.json()) as { result: { default?: { url: string } } };
-  return enableJson.result.default?.url ?? null;
+  const enableJson = (await enableRes.json()) as DownloadsResult;
+  if (enableJson.result.default?.status === "ready" && enableJson.result.default.url) {
+    return enableJson.result.default.url;
+  }
+
+  // 3) ready가 아니면 폴링
+  return pollDownloadReady(uid, maxWaitSeconds);
+}
+
+/**
+ * CF Stream 다운로드가 ready 상태가 될 때까지 폴링합니다.
+ * @param uid — Cloudflare Stream UID
+ * @param maxWaitSeconds — 최대 대기 시간 (초)
+ * @returns 다운로드 URL 또는 null (타임아웃/에러)
+ */
+async function pollDownloadReady(uid: string, maxWaitSeconds: number): Promise<string | null> {
+  const intervalMs = 3000; // 3초 간격 폴링
+  const maxAttempts = Math.ceil((maxWaitSeconds * 1000) / intervalMs);
+
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, intervalMs));
+
+    const res = await fetch(`${BASE_URL}/${uid}/downloads`, {
+      headers: { Authorization: `Bearer ${API_TOKEN}` },
+    });
+
+    if (!res.ok) continue;
+
+    const json = (await res.json()) as { result: { default?: { url: string; status: string; percentComplete?: number } } };
+    const dl = json.result.default;
+
+    if (dl?.status === "ready" && dl.url) {
+      console.log(`[CF Stream] 다운로드 준비 완료 (${(i + 1) * 3}초 대기): ${uid}`);
+      return dl.url;
+    }
+
+    if (dl?.status === "error") {
+      console.error(`[CF Stream] 다운로드 생성 실패: ${uid}`);
+      return null;
+    }
+
+    // inprogress — 계속 폴링
+    console.log(`[CF Stream] 다운로드 준비 중... ${dl?.percentComplete ?? 0}% (${uid})`);
+  }
+
+  console.error(`[CF Stream] 다운로드 준비 타임아웃 (${maxWaitSeconds}초): ${uid}`);
+  return null;
 }
 
 // ---------------------------------------------------------------------------
