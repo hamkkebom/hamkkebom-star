@@ -35,7 +35,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Undo2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
+import { ko } from "date-fns/locale/ko";
+import { downloadThumbnail } from "@/lib/download-thumbnail";
 import { AnnotationCanvas } from "@/components/admin/annotation-canvas";
 import { DrawingPreview } from "@/components/admin/drawing-preview";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -909,8 +910,18 @@ export function FeedbackWorkspace({
                                                                         onClick={(e) => e.stopPropagation()}
                                                                     >
                                                                         <ZoomIn className="w-4 h-4" />
-                                                                        원본 보기
+                                                                        새창
                                                                     </a>
+                                                                    <button
+                                                                        className="flex items-center gap-2 bg-indigo-500/80 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-indigo-600 transition-colors"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            downloadThumbnail(selectedSubmission.signedThumbnailUrl || selectedSubmission.video?.thumbnailUrl, selectedSubmission.video?.title || "썸네일");
+                                                                        }}
+                                                                    >
+                                                                        <Download className="w-4 h-4" />
+                                                                        다운로드
+                                                                    </button>
                                                                 </div>
                                                             </div>
 
