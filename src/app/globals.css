@@ -47,83 +47,56 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* ── Light Theme: 보라-인디고 브랜드 ── */
+/* ── Theme: 별들에게 물어봐 (몽환 우주 테마) ── */
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.985 0.002 280);
-  --foreground: oklch(0.16 0.015 280);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.16 0.015 280);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.16 0.015 280);
-  --primary: oklch(0.55 0.22 275);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.955 0.02 275);
-  --secondary-foreground: oklch(0.35 0.12 275);
-  --muted: oklch(0.96 0.01 275);
-  --muted-foreground: oklch(0.5 0.02 275);
-  --accent: oklch(0.94 0.04 275);
-  --accent-foreground: oklch(0.35 0.12 275);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.015 275);
-  --input: oklch(0.91 0.015 275);
-  --ring: oklch(0.55 0.22 275);
-  --chart-1: oklch(0.55 0.22 275);
-  --chart-2: oklch(0.65 0.18 160);
-  --chart-3: oklch(0.75 0.15 50);
-  --chart-4: oklch(0.6 0.2 310);
-  --chart-5: oklch(0.7 0.17 30);
-  --sidebar: oklch(0.98 0.005 275);
-  --sidebar-foreground: oklch(0.16 0.015 280);
-  --sidebar-primary: oklch(0.55 0.22 275);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0.04 275);
-  --sidebar-accent-foreground: oklch(0.35 0.12 275);
-  --sidebar-border: oklch(0.91 0.015 275);
-  --sidebar-ring: oklch(0.55 0.22 275);
-}
-
-/* ── Dark Theme ── */
-.dark {
-  --background: oklch(0.13 0.015 275);
-  --foreground: oklch(0.95 0.005 275);
-  --card: oklch(0.18 0.02 275);
-  --card-foreground: oklch(0.95 0.005 275);
-  --popover: oklch(0.18 0.02 275);
-  --popover-foreground: oklch(0.95 0.005 275);
-  --primary: oklch(0.7 0.2 275);
-  --primary-foreground: oklch(0.13 0.015 275);
-  --secondary: oklch(0.22 0.03 275);
-  --secondary-foreground: oklch(0.9 0.02 275);
-  --muted: oklch(0.22 0.02 275);
-  --muted-foreground: oklch(0.65 0.03 275);
-  --accent: oklch(0.25 0.04 275);
-  --accent-foreground: oklch(0.9 0.02 275);
+  --background: oklch(0.12 0.02 280 / 0.7);
+  --foreground: oklch(0.95 0.01 280);
+  --card: oklch(0.15 0.03 280 / 0.55);
+  --card-foreground: oklch(0.96 0.01 280);
+  --popover: oklch(0.15 0.03 280 / 0.65);
+  --popover-foreground: oklch(0.96 0.01 280);
+  --primary: oklch(0.75 0.18 280);
+  --primary-foreground: oklch(0.12 0.02 280);
+  --secondary: oklch(0.25 0.05 280 / 0.6);
+  --secondary-foreground: oklch(0.92 0.02 280);
+  --muted: oklch(0.2 0.04 280 / 0.5);
+  --muted-foreground: oklch(0.7 0.04 280);
+  --accent: oklch(0.3 0.06 280 / 0.6);
+  --accent-foreground: oklch(0.95 0.03 280);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.28 0.025 275);
-  --input: oklch(0.28 0.025 275);
-  --ring: oklch(0.7 0.2 275);
-  --chart-1: oklch(0.65 0.22 275);
+  --border: oklch(0.3 0.06 280 / 0.4);
+  --input: oklch(0.3 0.06 280 / 0.4);
+  --ring: oklch(0.75 0.18 280);
+  --chart-1: oklch(0.65 0.22 280);
   --chart-2: oklch(0.7 0.17 162);
   --chart-3: oklch(0.77 0.19 70);
   --chart-4: oklch(0.63 0.265 304);
   --chart-5: oklch(0.65 0.246 16);
-  --sidebar: oklch(0.15 0.02 275);
-  --sidebar-foreground: oklch(0.95 0.005 275);
-  --sidebar-primary: oklch(0.7 0.2 275);
-  --sidebar-primary-foreground: oklch(0.13 0.015 275);
-  --sidebar-accent: oklch(0.25 0.04 275);
-  --sidebar-accent-foreground: oklch(0.9 0.02 275);
-  --sidebar-border: oklch(0.28 0.025 275);
-  --sidebar-ring: oklch(0.7 0.2 275);
+  --sidebar: oklch(0.12 0.03 280 / 0.6);
+  --sidebar-foreground: oklch(0.95 0.01 280);
+  --sidebar-primary: oklch(0.75 0.18 280);
+  --sidebar-primary-foreground: oklch(0.12 0.02 280);
+  --sidebar-accent: oklch(0.25 0.05 280 / 0.6);
+  --sidebar-accent-foreground: oklch(0.92 0.02 280);
+  --sidebar-border: oklch(0.3 0.06 280 / 0.4);
+  --sidebar-ring: oklch(0.75 0.18 280);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+    background-image: url('/images/ask_the_stars_bg_bright.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-color: #0B0515;
+    /* Fallback */
   }
 }
 
@@ -132,9 +105,11 @@
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out both;
   }
+
   .animate-slide-up {
     animation: slideUp 0.4s ease-out both;
   }
+
   .animate-scale-in {
     animation: scaleIn 0.3s ease-out both;
   }
@@ -144,6 +119,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -154,6 +130,7 @@
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -165,6 +142,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -176,34 +154,22 @@
   .card-hover {
     transition:
       transform 0.2s ease,
-      box-shadow 0.2s ease;
+      box-shadow 0.2s ease,
+      background-color 0.2s ease;
   }
+
   .card-hover:hover {
     transform: translateY(-2px);
+    background-color: oklch(0.25 0.04 280 / 0.65);
     box-shadow:
-      0 8px 25px -5px oklch(0.55 0.22 275 / 12%),
-      0 4px 10px -4px oklch(0.55 0.22 275 / 8%);
-  }
-  .dark .card-hover:hover {
-    box-shadow:
-      0 8px 25px -5px oklch(0.7 0.2 275 / 15%),
-      0 4px 10px -4px oklch(0.7 0.2 275 / 10%);
+      0 8px 25px -5px oklch(0.7 0.2 280 / 25%),
+      0 4px 10px -4px oklch(0.7 0.2 280 / 20%);
   }
 }
 
 /* ── Gradient text utility ── */
 .text-gradient {
-  background: linear-gradient(
-    135deg,
-    oklch(0.55 0.22 275),
-    oklch(0.6 0.25 310)
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.dark .text-gradient {
-  background: linear-gradient(135deg, oklch(0.7 0.2 275), oklch(0.75 0.22 310));
+  background: linear-gradient(135deg, oklch(0.75 0.18 280), oklch(0.8 0.2 310));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -214,6 +180,7 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
@@ -221,90 +188,92 @@
 /* ── ✨ Premium Scrollbar ── */
 .scrollbar-pretty {
   scrollbar-width: thin;
-  scrollbar-color: oklch(0.75 0.08 275 / 40%) transparent;
+  scrollbar-color: oklch(0.6 0.1 280 / 40%) transparent;
 }
+
 .scrollbar-pretty::-webkit-scrollbar {
   width: 6px;
   transition: width 0.3s ease;
 }
+
 .scrollbar-pretty:hover::-webkit-scrollbar {
   width: 8px;
 }
+
 .scrollbar-pretty::-webkit-scrollbar-track {
   background: transparent;
   border-radius: 100px;
   margin: 8px 0;
 }
+
 .scrollbar-pretty::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    oklch(0.7 0.12 275 / 35%),
-    oklch(0.6 0.18 275 / 45%)
-  );
+  background: linear-gradient(180deg,
+      oklch(0.5 0.12 280 / 40%),
+      oklch(0.45 0.15 280 / 50%));
   border-radius: 100px;
   border: 1.5px solid transparent;
   background-clip: padding-box;
   transition: background 0.3s ease;
 }
+
 .scrollbar-pretty::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    oklch(0.65 0.18 275 / 60%),
-    oklch(0.55 0.22 275 / 70%)
-  );
+  background: linear-gradient(180deg,
+      oklch(0.6 0.18 280 / 65%),
+      oklch(0.55 0.2 280 / 75%));
 }
+
 .scrollbar-pretty::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(
-    180deg,
-    oklch(0.6 0.22 275 / 80%),
-    oklch(0.5 0.25 275 / 90%)
-  );
-}
-/* Dark mode */
-.dark .scrollbar-pretty {
-  scrollbar-color: oklch(0.5 0.1 275 / 40%) transparent;
-}
-.dark .scrollbar-pretty::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    oklch(0.5 0.12 275 / 40%),
-    oklch(0.45 0.15 275 / 50%)
-  );
-}
-.dark .scrollbar-pretty::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    oklch(0.6 0.18 275 / 65%),
-    oklch(0.55 0.2 275 / 75%)
-  );
-}
-.dark .scrollbar-pretty::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(
-    180deg,
-    oklch(0.65 0.2 275 / 80%),
-    oklch(0.6 0.22 275 / 90%)
-  );
+  background: linear-gradient(180deg,
+      oklch(0.65 0.2 280 / 80%),
+      oklch(0.6 0.22 280 / 90%));
 }
 
 /* ── Float animation for login orbs ── */
 @keyframes float {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-30px) scale(1.05); }
+
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+
+  50% {
+    transform: translateY(-30px) scale(1.05);
+  }
 }
 
 /* ── Nano Banana Custom Animations ── */
 @keyframes pulseSubtle {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
-  50% { opacity: 0.9; box-shadow: 0 0 0 4px rgba(124, 58, 237, 0); }
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
+  }
+
+  50% {
+    opacity: 0.9;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0);
+  }
 }
+
 .animate-pulse-subtle {
   animation: pulseSubtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes bounceSlow {
-  0%, 100% { transform: translateY(-5%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
-  50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+
+  0%,
+  100% {
+    transform: translateY(-5%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
 }
+
 .animate-bounce-slow {
   animation: bounceSlow 2s infinite;
 }
@@ -314,22 +283,45 @@
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translate3d(0, 20px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
+
 .animate-fade-in-up {
   animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 @keyframes badgePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.3); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.3);
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
+
 .animate-scale-in {
   animation: scaleIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }

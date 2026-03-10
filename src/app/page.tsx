@@ -6,6 +6,7 @@ import { WeeklyChart } from "@/components/home/weekly-chart";
 import { PopularStars } from "@/components/home/popular-stars";
 import { CommunityPreview } from "@/components/home/community-preview";
 import { FaqPreview } from "@/components/home/faq-preview";
+import { CategoryShowcase } from "@/components/home/category-showcase";
 import Link from "next/link";
 import { Film, Users, Star, Search } from "lucide-react";
 
@@ -34,8 +35,13 @@ export default function Home() {
           <WeeklyChart />
         </section>
 
-        {/* 커뮤니티 미리보기 */}
+        {/* 카테고리 쇼케이스 */}
         <section className="bg-white dark:bg-slate-900 border-y border-slate-100 dark:border-slate-800/50">
+          <CategoryShowcase />
+        </section>
+
+        {/* 커뮤니티 미리보기 */}
+        <section className="bg-slate-50 dark:bg-slate-950/50">
           <CommunityPreview />
         </section>
 

@@ -8,12 +8,14 @@ export const dynamic = "force-dynamic";
 /**
  * 여러 URL을 순서대로 시도하여, 실제 비디오 파일을 반환하는 첫 번째 URL을 사용합니다.
  * JSON/HTML 에러 응답을 받으면 다음 URL로 넘어갑니다.
+ * CF Stream 다운로드 URL은 302 리다이렉트를 반환할 수 있으므로 자동 follow.
  */
 async function tryFetchVideo(urls: (string | null)[]): Promise<Response | null> {
     for (const url of urls) {
         if (!url) continue;
         try {
-            const res = await fetch(url);
+            // redirect: "follow"로 302 리다이렉트 자동 추적
+            const res = await fetch(url, { redirect: "follow" });
             if (!res.ok) {
                 console.log(`[Download] URL failed (${res.status}): ${url.slice(0, 80)}...`);
                 continue;

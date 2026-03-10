@@ -88,12 +88,13 @@ export default function CommunityPage() {
         </div>
       </div>
 
-      <div className="flex-1 bg-card rounded-xl border border-border overflow-hidden">
+      <div className={cn("flex-1 bg-card rounded-xl border border-border overflow-hidden", boardType === "SHOWCASE" && "bg-transparent border-none")}>
         {isLoading ? (
-          <div className="divide-y divide-border">
+          <div className={cn("divide-y divide-border", boardType === "SHOWCASE" && "grid grid-cols-2 md:grid-cols-3 gap-4 divide-y-0")}>
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="p-4 flex gap-3">
-                <div className="flex-1 space-y-3">
+              <div key={i} className={cn("p-4 flex gap-3", boardType === "SHOWCASE" && "flex-col p-0 rounded-xl border border-border overflow-hidden")}>
+                {boardType === "SHOWCASE" && <Skeleton className="aspect-video w-full" />}
+                <div className={cn("flex-1 space-y-3", boardType === "SHOWCASE" && "p-3")}>
                   <Skeleton className="h-5 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                 </div>
@@ -104,7 +105,7 @@ export default function CommunityPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="divide-y divide-border"
+            className={cn("divide-y divide-border", boardType === "SHOWCASE" && "grid grid-cols-2 md:grid-cols-3 gap-4 divide-y-0")}
           >
             {posts.map((post: any, i: number) => (
               <motion.div
@@ -118,11 +119,16 @@ export default function CommunityPage() {
             ))}
           </motion.div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+          <div className="flex flex-col items-center justify-center py-20 text-center px-4 bg-card rounded-xl border border-border">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
               <MessageSquare className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium mb-2">아직 게시글이 없습니다</h3>
+            <h3 className="text-lg font-medium mb-2">
+              {boardType === "SHOWCASE" ? "아직 공유된 작품이 없습니다" : 
+               boardType === "QNA" ? "아직 등록된 질문이 없습니다" : 
+               boardType === "RECRUITMENT" ? "아직 모집 중인 글이 없습니다" : 
+               "아직 게시글이 없습니다"}
+            </h3>
             <p className="text-muted-foreground mb-6">첫 글을 작성해보세요!</p>
             <Button asChild variant="default">
               <Link href="/community/write">글쓰기</Link>

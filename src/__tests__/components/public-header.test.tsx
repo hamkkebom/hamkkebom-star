@@ -4,7 +4,7 @@ import type React from "react";
 
 // Mock Next.js modules
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...props }: { href: string; children: React.ReactNode; [key: string]: unknown }) =>
+  default: ({ href, children, ...props }: { href: string; children: React.ReactNode;[key: string]: unknown }) =>
     <a href={href} {...props}>{children}</a>,
 }));
 
@@ -29,10 +29,6 @@ vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({ auth: { signOut: mockSignOut } }),
 }));
 
-// Mock ThemeToggle
-vi.mock("@/components/layout/theme-toggle", () => ({
-  ThemeToggle: () => <div data-testid="theme-toggle" />,
-}));
 
 const { PublicHeader } = await import("@/components/layout/public-header");
 
@@ -53,7 +49,7 @@ describe("PublicHeader", () => {
 
   it("로고가 '/'를 가리킨다", () => {
     render(<PublicHeader />);
-    const logoLink = screen.getByText("함께봄").closest("a");
+    const logoLink = screen.getByText("별들에게").closest("a");
     expect(logoLink).toHaveAttribute("href", "/");
   });
 

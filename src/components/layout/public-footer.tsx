@@ -2,15 +2,21 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 
 const serviceLinks = [
-  { href: "/explore", label: "영상 탐색" },
-  { href: "/community", label: "커뮤니티" },
+  { href: "/videos", label: "영상" },
+  { href: "/best", label: "베스트 영상" },
+  { href: "/categories", label: "카테고리" },
+  { href: "/counselors", label: "상담사" },
+  { href: "/showcase", label: "미디어 쇼케이스" },
   { href: "/stars", label: "크리에이터" },
+  { href: "/community", label: "커뮤니티" },
 ];
 
 const supportLinks = [
   { href: "/announcements", label: "공지사항" },
   { href: "/faq", label: "FAQ" },
   { href: "/guide", label: "이용 가이드" },
+  { href: "/recruit", label: "STAR 모집" },
+  { href: "/updates", label: "업데이트" },
 ];
 
 const legalLinks = [

@@ -6,14 +6,16 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { ChevronLeft, Heart, MessageSquare, Share2, Trash2, CornerDownRight } from "lucide-react";
+import { ChevronLeft, Heart, MessageSquare, Share2, Trash2, CornerDownRight, MoreVertical, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
+import { ReportDialog } from "@/components/community/report-dialog";
 
 const BOARD_TYPE_MAP: Record<string, string> = {
   FREE: "자유", QNA: "Q&A", TIPS: "제작 팁", SHOWCASE: "작품 자랑", RECRUITMENT: "협업 모집", NOTICE: "공지",
@@ -188,6 +190,21 @@ export default function PostDetailPage() {
                 <Trash2 className="w-4 h-4" />
               </Button>
             )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <ReportDialog targetType="POST" targetId={post.id}>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-500 focus:text-red-500 cursor-pointer">
+                    <Flag className="mr-2 h-4 w-4" />
+                    신고하기
+                  </DropdownMenuItem>
+                </ReportDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -258,6 +275,23 @@ export default function PostDetailPage() {
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium text-sm">{comment.author.chineseName || comment.author.name}</span>
                     <span className="text-xs text-muted-foreground">{timeAgo(comment.createdAt)}</span>
+                    <div className="ml-auto">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <MoreVertical className="w-3 h-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <ReportDialog targetType="COMMENT" targetId={comment.id}>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-500 focus:text-red-500 cursor-pointer">
+                              <Flag className="mr-2 h-4 w-4" />
+                              신고하기
+                            </DropdownMenuItem>
+                          </ReportDialog>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                   <p className="text-sm whitespace-pre-wrap mb-2">{comment.content}</p>
                   <button 
@@ -305,6 +339,23 @@ export default function PostDetailPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-sm">{reply.author.chineseName || reply.author.name}</span>
                           <span className="text-xs text-muted-foreground">{timeAgo(reply.createdAt)}</span>
+                          <div className="ml-auto">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6">
+                                  <MoreVertical className="w-3 h-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <ReportDialog targetType="COMMENT" targetId={reply.id}>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-500 focus:text-red-500 cursor-pointer">
+                                    <Flag className="mr-2 h-4 w-4" />
+                                    신고하기
+                                  </DropdownMenuItem>
+                                </ReportDialog>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                         <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
                       </div>

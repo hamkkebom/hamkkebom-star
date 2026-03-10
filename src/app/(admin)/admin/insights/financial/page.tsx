@@ -9,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "next-themes";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 
 /* ───────── Date Range Presets ───────── */
@@ -92,8 +91,7 @@ function FinancialKpiSection({ dateRange }: { dateRange: { from: string; to: str
 /* ───────── Revenue Trend Chart ───────── */
 function FinancialTrendSection() {
     const [period, setPeriod] = useState<"day" | "week" | "month">("month");
-    const { theme } = useTheme();
-    const isDark = theme === "dark";
+    const isDark = true;
 
     const amber = isDark ? "#fbbf24" : "#f59e0b";
     const rose = isDark ? "#fb7185" : "#f43f5e";
@@ -394,8 +392,8 @@ export default function FinancialInsightsPage() {
                         key={p.value}
                         onClick={() => setDatePreset(p.value)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${datePreset === p.value
-                                ? "bg-amber-500 text-white shadow-md shadow-amber-500/30"
-                                : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                            ? "bg-amber-500 text-white shadow-md shadow-amber-500/30"
+                            : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
                             }`}
                     >
                         {p.label}

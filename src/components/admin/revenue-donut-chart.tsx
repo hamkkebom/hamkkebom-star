@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 type DataPoint = {
@@ -16,8 +15,7 @@ const COLORS = {
 };
 
 export function RevenueDonutChart({ data }: { data: DataPoint[] }) {
-    const { theme } = useTheme();
-    const isDark = theme === "dark";
+    const isDark = true;
 
     const total = data.reduce((acc, curr) => acc + curr.value, 0);
 

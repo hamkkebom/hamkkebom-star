@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, User, Users, Compass, Search, MoreHorizontal, Bell, HelpCircle, BookOpen, Star, FileText, Film } from "lucide-react";
+import { Sparkles, User, Users, Compass, Search, MoreHorizontal, Bell, HelpCircle, BookOpen, Star, FileText, Film, Trophy, LayoutGrid, HeartHandshake, Tv, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { useAuthStore } from "@/stores/auth-store";
 import {
   DropdownMenu,
@@ -69,23 +68,35 @@ export function PublicHeader() {
                 더보기
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48 rounded-xl p-2 z-[100]">
+            <DropdownMenuContent align="start" className="w-52 rounded-xl p-2 z-[100]">
               <DropdownMenuItem asChild className="rounded-md cursor-pointer text-sm font-medium hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground text-zinc-700 dark:text-zinc-300 py-2">
-                <Link href="/announcements"><Bell className="mr-2 h-4 w-4" /> 📢 공지사항</Link>
+                <Link href="/best"><Trophy className="mr-2 h-4 w-4" /> 베스트 영상</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-md cursor-pointer text-sm font-medium hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground text-zinc-700 dark:text-zinc-300 py-2">
-                <Link href="/faq"><HelpCircle className="mr-2 h-4 w-4" /> ❓ FAQ</Link>
+                <Link href="/categories"><LayoutGrid className="mr-2 h-4 w-4" /> 카테고리</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-md cursor-pointer text-sm font-medium hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground text-zinc-700 dark:text-zinc-300 py-2">
-                <Link href="/guide"><BookOpen className="mr-2 h-4 w-4" /> 📖 가이드</Link>
+                <Link href="/counselors"><HeartHandshake className="mr-2 h-4 w-4" /> 상담사</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-md cursor-pointer text-sm font-medium hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground text-zinc-700 dark:text-zinc-300 py-2">
+                <Link href="/showcase"><Tv className="mr-2 h-4 w-4" /> 미디어 쇼케이스</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="my-1.5" />
               <DropdownMenuItem asChild className="rounded-md cursor-pointer text-sm font-medium hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground text-zinc-700 dark:text-zinc-300 py-2">
-                <Link href="/stars"><Star className="mr-2 h-4 w-4" /> 🌟 크리에이터 목록</Link>
+                <Link href="/stars"><Star className="mr-2 h-4 w-4" /> 크리에이터 목록</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-md cursor-pointer text-sm font-medium hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground text-zinc-700 dark:text-zinc-300 py-2">
+                <Link href="/recruit"><Megaphone className="mr-2 h-4 w-4" /> STAR 모집</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="my-1.5" />
               <DropdownMenuItem asChild className="rounded-md cursor-pointer text-sm font-medium hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground text-zinc-700 dark:text-zinc-300 py-2">
-                <Link href="/explore"><Search className="mr-2 h-4 w-4" /> 🔍 통합 검색</Link>
+                <Link href="/announcements"><Bell className="mr-2 h-4 w-4" /> 공지사항</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-md cursor-pointer text-sm font-medium hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground text-zinc-700 dark:text-zinc-300 py-2">
+                <Link href="/faq"><HelpCircle className="mr-2 h-4 w-4" /> FAQ</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-md cursor-pointer text-sm font-medium hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground text-zinc-700 dark:text-zinc-300 py-2">
+                <Link href="/explore"><Search className="mr-2 h-4 w-4" /> 통합 검색</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -96,7 +107,6 @@ export function PublicHeader() {
           <Link href="/explore" className="p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors hidden sm:flex">
             <Search className="w-5 h-5" />
           </Link>
-          <ThemeToggle />
           {isLoading ? null : user === null ? (
             <Link href="/auth/login">
               <Button variant="outline" size="sm" className="gap-1.5">

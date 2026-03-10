@@ -57,6 +57,7 @@ export async function GET(_request: Request, { params }: Params) {
           videos: {
             where: { status: { in: ["APPROVED", "FINAL"] } },
           },
+          followers: true,
         },
       },
     },
@@ -68,6 +69,16 @@ export async function GET(_request: Request, { params }: Params) {
       { status: 404 }
     );
   }
+
+  // Aggregate stats
+  const aggregateStats = await prisma.video.aggregate({
+    where: { ownerId: id, status: { in: ["APPROVED", "FINAL"] } },
+    _sum: { viewCount: true },
+  });
+
+  const likeStats = await prisma.videoLike.count({
+    where: { video: { ownerId: id, status: { in: ["APPROVED", "FINAL"] } } },
+  });
 
   return NextResponse.json({
     data: {
@@ -85,6 +96,9 @@ export async function GET(_request: Request, { params }: Params) {
         owner: { name: user.name },
       })),
       videoCount: user._count.videos,
+      followerCount: user._count.followers,
+      totalViews: aggregateStats._sum.viewCount ?? 0,
+      totalLikes: likeStats,
     },
   });
 }

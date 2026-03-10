@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 
 type DataPoint = {
@@ -10,8 +9,7 @@ type DataPoint = {
 };
 
 export function TrendAreaChart({ data }: { data: DataPoint[] }) {
-    const { theme } = useTheme();
-    const isDark = theme === "dark";
+    const isDark = true;
 
     const indigo = isDark ? "#818cf8" : "#6366f1"; // indigo-400 / indigo-500
     const emerald = isDark ? "#34d399" : "#10b981"; // emerald-400 / emerald-500

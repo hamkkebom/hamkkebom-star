@@ -45,6 +45,11 @@ export async function GET(_request: Request, { params }: Params) {
           where: { userId: user?.id ?? "none" },
           select: { id: true }
         },
+        mediaPlacements: {
+          where: { status: { in: ["ACTIVE", "COMPLETED"] } },
+          select: { id: true, medium: true, channel: true, url: true, startDate: true, campaignName: true },
+          orderBy: { startDate: "desc" }
+        },
       },
     });
 

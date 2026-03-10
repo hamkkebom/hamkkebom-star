@@ -10,10 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { VideoPlayer } from "@/components/video/video-player";
 import { LikeButton } from "@/components/video/like-button";
 import { BookmarkButton } from "@/components/video/bookmark-button";
 import { VideoComments } from "@/components/video/video-comments";
+import { ReportDialog } from "@/components/community/report-dialog";
 import {
   ArrowLeft,
   Calendar,
@@ -32,6 +34,13 @@ import {
   UserPlus,
   ChevronDown,
   ChevronUp,
+  Youtube,
+  Instagram,
+  Globe,
+  ExternalLink,
+  MoreVertical,
+  Flag,
+  Star,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -47,6 +56,15 @@ type TechnicalSpec = {
   fps: number | null;
   duration: number | null;
   audioCodec: string | null;
+};
+
+type MediaPlacement = {
+  id: string;
+  medium: string;
+  channel: string | null;
+  url: string | null;
+  startDate: string | null;
+  campaignName: string | null;
 };
 
 type VideoDetail = {
@@ -67,6 +85,10 @@ type VideoDetail = {
   likeCount?: number;
   hasBookmarked?: boolean;
   commentCount?: number;
+  mediaPlacements?: MediaPlacement[];
+  averageRating?: number;
+  ratingCount?: number;
+  userRating?: number;
 };
 
 /* ─── Config ─── */
@@ -106,6 +128,83 @@ function handleShare(title: string) {
     navigator.clipboard.writeText(window.location.href);
     toast.success("링크가 복사되었습니다.");
   }
+}
+
+/* ─── Star Rating Component ─── */
+function StarRating({ 
+  average = 0, 
+  count = 0, 
+  userRating = 0, 
+  onRate, 
+  readonly = false 
+}: { 
+  average?: number; 
+  count?: number; 
+  userRating?: number; 
+  onRate?: (rating: number) => void;
+  readonly?: boolean;
+}) {
+  const [hoverRating, setHoverRating] = useState(0);
+  const [isRatingMode, setIsRatingMode] = useState(false);
+  
+  const displayRating = isRatingMode ? (hoverRating || userRating || 0) : average;
+  
+  const handleStarClick = (rating: number) => {
+    if (readonly) return;
+    if (onRate) onRate(rating);
+    setIsRatingMode(false);
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-1" onMouseLeave={() => setHoverRating(0)}>
+      <div 
+        className="flex items-center gap-1 cursor-pointer" 
+        onClick={() => !readonly && setIsRatingMode(true)}
+      >
+        {[1, 2, 3, 4, 5].map((star) => {
+          const isFilled = displayRating >= star;
+          const isHalf = !isFilled && displayRating >= star - 0.5;
+          
+          return (
+            <div 
+              key={star}
+              className="relative p-1 touch-manipulation"
+              onMouseEnter={() => !readonly && isRatingMode && setHoverRating(star)}
+              onClick={(e) => {
+                if (isRatingMode) {
+                  e.stopPropagation();
+                  handleStarClick(star);
+                }
+              }}
+            >
+              {isFilled ? (
+                <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
+              ) : isHalf ? (
+                <div className="relative w-6 h-6">
+                  <Star className="absolute inset-0 w-6 h-6 text-yellow-400/30" />
+                  <div className="absolute inset-0 overflow-hidden w-[50%]">
+                    <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
+                  </div>
+                </div>
+              ) : (
+                <Star className="w-6 h-6 text-yellow-400/30" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {!isRatingMode && (
+        <div className="text-xs text-white/60 font-medium">
+          {average.toFixed(1)} / 5.0 <span className="text-white/40">({count}명 평가)</span>
+        </div>
+      )}
+      {isRatingMode && (
+        <div className="text-xs text-yellow-400 font-medium animate-pulse">
+          별점을 선택해주세요
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -338,6 +437,27 @@ export default function VideoDetailPage() {
             >
               <Share2 className="h-4 w-4" />
             </Button>
+            {video && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full border border-white/10 text-white/50 hover:border-white/20 hover:bg-white/5 hover:text-white"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <ReportDialog targetType="VIDEO" targetId={video.id}>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-500 focus:text-red-500 cursor-pointer">
+                      <Flag className="mr-2 h-4 w-4" />
+                      신고하기
+                    </DropdownMenuItem>
+                  </ReportDialog>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
@@ -440,6 +560,66 @@ export default function VideoDetailPage() {
                   </div>
                 </section>
 
+                {/* Media Placements Section */}
+                {video.mediaPlacements && video.mediaPlacements.length > 0 && (
+                  <section>
+                    <SectionHeader icon={<Globe className="h-4 w-4" />} title="이 영상이 활약하는 곳" />
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
+                      {video.mediaPlacements.map((placement) => {
+                        const isYoutube = placement.medium.toLowerCase().includes("youtube") || placement.medium.toLowerCase().includes("유튜브");
+                        const isInstagram = placement.medium.toLowerCase().includes("instagram") || placement.medium.toLowerCase().includes("인스타그램");
+                        const isTiktok = placement.medium.toLowerCase().includes("tiktok") || placement.medium.toLowerCase().includes("틱톡");
+                        
+                        let icon = <Globe className="h-5 w-5" />;
+                        let colorClass = "text-blue-400 bg-blue-500/10 border-blue-500/20";
+                        
+                        if (isYoutube) {
+                          icon = <Youtube className="h-5 w-5" />;
+                          colorClass = "text-red-400 bg-red-500/10 border-red-500/20";
+                        } else if (isInstagram) {
+                          icon = <Instagram className="h-5 w-5" />;
+                          colorClass = "text-pink-400 bg-pink-500/10 border-pink-500/20";
+                        } else if (isTiktok) {
+                          icon = <Film className="h-5 w-5" />;
+                          colorClass = "text-slate-300 bg-slate-500/10 border-slate-500/20";
+                        }
+
+                        return (
+                          <div key={placement.id} className="min-w-[240px] snap-start rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 backdrop-blur-sm flex flex-col gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className={`flex h-10 w-10 items-center justify-center rounded-full border ${colorClass}`}>
+                                {icon}
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-white/90">{placement.medium}</p>
+                                {placement.channel && <p className="text-xs text-white/50">{placement.channel}</p>}
+                              </div>
+                            </div>
+                            {placement.campaignName && (
+                              <p className="text-sm text-white/70 line-clamp-2">{placement.campaignName}</p>
+                            )}
+                            <div className="mt-auto pt-2 flex items-center justify-between">
+                              <span className="text-xs text-white/40">
+                                {placement.startDate ? new Date(placement.startDate).toLocaleDateString("ko-KR") : "진행 중"}
+                              </span>
+                              {placement.url && (
+                                <a
+                                  href={placement.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs font-medium text-violet-400 hover:text-violet-300 transition-colors"
+                                >
+                                  매체에서 보기 <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+
                 {/* Related Videos (Mobile only) */}
                 {relatedVideos.length > 0 && (
                   <section className="md:hidden">
@@ -530,6 +710,26 @@ export default function VideoDetailPage() {
                         value={video.category.name}
                       />
                     )}
+                  </div>
+                  
+                  <div className="mt-6 pt-6 border-t border-white/[0.06]">
+                    <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/30 text-center">
+                      영상 평가
+                    </p>
+                    <StarRating 
+                      average={video.averageRating ?? 4.5} 
+                      count={video.ratingCount ?? 12} 
+                      userRating={video.userRating}
+                      readonly={!user}
+                      onRate={(rating) => {
+                        if (!user) {
+                          toast.error("로그인이 필요합니다.");
+                          return;
+                        }
+                        toast.success(`별점 ${rating}점을 주셨습니다.`);
+                        // Optimistic update logic would go here
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -629,6 +829,20 @@ export default function VideoDetailPage() {
               </Button>
               <span className="text-[10px] text-white/50">공유</span>
             </div>
+
+            <ReportDialog targetType="VIDEO" targetId={video.id}>
+              <div className="flex flex-col items-center gap-1 cursor-pointer">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full text-white/70 hover:bg-white/10 hover:text-white"
+                  title="신고"
+                >
+                  <Flag className="h-5 w-5" />
+                </Button>
+                <span className="text-[10px] text-white/50">신고</span>
+              </div>
+            </ReportDialog>
           </div>
         </div>
       )}

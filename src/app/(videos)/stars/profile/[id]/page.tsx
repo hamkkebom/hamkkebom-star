@@ -15,7 +15,12 @@ import {
   Tv,
   Users,
   UserPlus,
-  UserCheck
+  UserCheck,
+  Youtube,
+  Instagram,
+  Heart,
+  Eye,
+  Video
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import NumberTicker from "@/components/ui/number-ticker";
 
 type StarDetail = {
   id: string;
@@ -50,6 +56,9 @@ type StarDetail = {
     technicalSpec: { duration: number | null } | null;
   }[];
   videoCount: number;
+  followerCount: number;
+  totalViews: number;
+  totalLikes: number;
 };
 
 type FollowData = {
@@ -117,6 +126,17 @@ export default function StarProfilePage() {
       return;
     }
     toggleFollow.mutate();
+  };
+
+  const handleShare = () => {
+    if (!star) return;
+    const title = `${star.name} 프로필`;
+    if (navigator.share) {
+      navigator.share({ title, url: window.location.href }).catch(() => { });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("링크가 복사되었습니다.");
+    }
   };
 
   if (!isLoading && (error || !data?.data)) return <NotFoundState />;
@@ -228,6 +248,26 @@ export default function StarProfilePage() {
                     {star.bio || "영상으로 세상을 연결하는 크리에이터입니다."}
                   </p>
 
+                  {/* Stats Bar */}
+                  <div className="grid grid-cols-2 md:flex md:flex-row gap-3 md:gap-6 py-4">
+                    <div className="flex flex-col items-center md:items-start rounded-xl bg-background/50 p-3 md:p-0 md:bg-transparent border md:border-none border-border/50">
+                      <span className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1"><Video className="h-3 w-3" /> 영상</span>
+                      <span className="text-xl md:text-2xl font-bold"><NumberTicker value={star.videoCount} />개</span>
+                    </div>
+                    <div className="flex flex-col items-center md:items-start rounded-xl bg-background/50 p-3 md:p-0 md:bg-transparent border md:border-none border-border/50">
+                      <span className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1"><Users className="h-3 w-3" /> 팔로워</span>
+                      <span className="text-xl md:text-2xl font-bold"><NumberTicker value={star.followerCount} />명</span>
+                    </div>
+                    <div className="flex flex-col items-center md:items-start rounded-xl bg-background/50 p-3 md:p-0 md:bg-transparent border md:border-none border-border/50">
+                      <span className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1"><Eye className="h-3 w-3" /> 조회</span>
+                      <span className="text-xl md:text-2xl font-bold"><NumberTicker value={star.totalViews} />회</span>
+                    </div>
+                    <div className="flex flex-col items-center md:items-start rounded-xl bg-background/50 p-3 md:p-0 md:bg-transparent border md:border-none border-border/50">
+                      <span className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1"><Heart className="h-3 w-3" /> 좋아요</span>
+                      <span className="text-xl md:text-2xl font-bold"><NumberTicker value={star.totalLikes} />개</span>
+                    </div>
+                  </div>
+
                   {/* Links */}
                   <div className="flex flex-wrap justify-center md:justify-start gap-3 md:gap-4 pt-2">
                     {star.showreel && (
@@ -245,16 +285,28 @@ export default function StarProfilePage() {
                       </Button>
                     )}
                     {star.socialLinks && typeof star.socialLinks === "object" &&
-                      Object.entries(star.socialLinks).map(([platform, url]) => (
-                        <Button key={platform} asChild variant="ghost" size="icon" className="rounded-full hover:bg-muted">
-                          <a href={url as string} target="_blank" rel="noopener noreferrer" title={platform}>
-                            <ExternalLink className="h-5 w-5" />
-                          </a>
-                        </Button>
-                      ))
+                      Object.entries(star.socialLinks).map(([platform, url]) => {
+                        if (!url) return null;
+                        const isYoutube = platform.toLowerCase().includes("youtube");
+                        const isInstagram = platform.toLowerCase().includes("instagram");
+                        return (
+                          <Button key={platform} asChild variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+                            <a href={url as string} target="_blank" rel="noopener noreferrer" title={platform}>
+                              {isYoutube ? <Youtube className="h-5 w-5" /> : isInstagram ? <Instagram className="h-5 w-5" /> : <ExternalLink className="h-5 w-5" />}
+                            </a>
+                          </Button>
+                        );
+                      })
                     }
-                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" onClick={handleShare}>
                       <Share2 className="h-5 w-5" />
+                    </Button>
+                  </div>
+                  
+                  {/* Mobile Share Button */}
+                  <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
+                    <Button size="lg" className="w-full rounded-full shadow-lg" onClick={handleShare}>
+                      <Share2 className="mr-2 h-4 w-4" /> 프로필 공유
                     </Button>
                   </div>
                 </>
