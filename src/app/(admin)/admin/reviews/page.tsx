@@ -7,7 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale/ko";
 
 import { toast } from "sonner";
-import { Clock, Eye, CheckCircle2, LayoutGrid, Download, Loader2 } from "lucide-react";
+import { Clock, Eye, CheckCircle2, LayoutGrid, Download, Loader2, Hand } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -415,7 +415,7 @@ export default function AdminReviewsPage() {
                 onClick={() => setIsSwipeSheetOpen(true)}
                 className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-base shadow-lg shadow-violet-500/30 hover:shadow-xl active:scale-[0.98] transition-all"
               >
-                <span className="text-2xl">👆</span>
+                <Hand className="w-6 h-6" />
                 스와이프 심사 시작
                 <span className="ml-auto bg-white/20 text-white text-xs font-black px-2.5 py-1 rounded-full">
                   {pendingRowsForDeck.length}건
