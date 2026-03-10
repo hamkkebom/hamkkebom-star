@@ -11,9 +11,6 @@ import {
   Film,
   ChevronLeft,
   ChevronRight,
-  Play,
-  Home,
-  LayoutGrid,
   Filter,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -311,19 +308,7 @@ export function VideosBrowser() {
 
   // URL ?page= 파라미터에서 페이지 직접 파생 (state 불필요)
   const page = Number(searchParams.get("page")) || 1;
-  // viewMode도 URL에서 파생 — 뒤로가기 시 전체보기 상태가 유지됨
-  const viewMode = (searchParams.get("view") === "grid" ? "grid" : "home") as "home" | "grid";
 
-  const setViewMode = useCallback((mode: "home" | "grid") => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (mode === "grid") {
-      params.set("view", "grid");
-    } else {
-      params.delete("view");
-    }
-    params.set("page", "1");
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [searchParams, router, pathname]);
 
   const setPage = useCallback((newPage: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -432,8 +417,6 @@ export function VideosBrowser() {
   }, [page, sort, categoryId, ownerId, counselorId, durationRange, activeSearch]);
 
   const hasActiveFilter = categoryId || ownerId || counselorId || durationRange !== "all" || activeSearch;
-  const showGrid = hasActiveFilter || viewMode === "grid";
-  const isDefaultView = !showGrid;
 
   const { data: filteredData, isLoading: isFilteredLoading } = useQuery<VideosResponse>({
     queryKey: ["videos-browse", activeSearch, page, categoryId, ownerId, counselorId, durationRange, sort],
@@ -442,48 +425,11 @@ export function VideosBrowser() {
       if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
       return (await res.json()) as VideosResponse;
     },
-    enabled: !isDefaultView,
     staleTime: 30_000,
   });
 
-  const { data: latestData, isLoading: isLatestLoading } = useQuery<VideosResponse>({
-    queryKey: ["videos-browse-latest"],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos?sort=latest&pageSize=20`);
-      if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
-      return (await res.json()) as VideosResponse;
-    },
-    enabled: isDefaultView,
-    staleTime: 30_000,
-  });
-
-  const { data: popularData, isLoading: isPopularLoading } = useQuery<VideosResponse>({
-    queryKey: ["videos-browse-popular"],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos?sort=popular&pageSize=20`);
-      if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
-      return (await res.json()) as VideosResponse;
-    },
-    enabled: isDefaultView,
-    staleTime: 30_000,
-  });
-
-  const randomCategoryId = categories.length > 0 ? categories[0].id : "";
-  const randomCategoryName = categories.length > 0 ? categories[0].name : "추천";
-
-  const { data: catData } = useQuery<VideosResponse>({
-    queryKey: ["videos-browse-cat", randomCategoryId],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos?sort=popular&categoryId=${randomCategoryId}&pageSize=20`);
-      if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
-      return (await res.json()) as VideosResponse;
-    },
-    enabled: isDefaultView && !!randomCategoryId,
-    staleTime: 30_000,
-  });
-
-  const isLoading = isDefaultView ? (isLatestLoading || isPopularLoading) : isFilteredLoading;
-  const displayData = isDefaultView ? latestData : filteredData;
+  const isLoading = isFilteredLoading;
+  const displayData = filteredData;
 
   // ─── Handlers ───
   const handleSearch = (e: React.FormEvent) => {
@@ -548,33 +494,8 @@ export function VideosBrowser() {
           {/* 2. Filter Controls (Segmented & Dropdowns) */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
 
-            {/* Left: Quick Filters (Segmented) */}
+            {/* Quick Filters (Segmented) */}
             <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto">
-              <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
-                <button
-                  onClick={() => resetFilters("home")}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
-                      ${!showGrid
-                      ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
-                      : "text-muted-foreground hover:text-foreground"
-                    }`}
-                >
-                  <Home className="w-4 h-4" />
-                  <span className="hidden sm:inline">홈</span>
-                </button>
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
-                      ${showGrid
-                      ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
-                      : "text-muted-foreground hover:text-foreground"
-                    }`}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  <span className="hidden sm:inline">전체보기</span>
-                </button>
-              </div>
-              <div className="h-4 w-px bg-border mx-2 hidden sm:block" />
               <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
                 {(Object.entries(DURATION_RANGES) as [DurationRange, { label: string }][]).map(([key, val]) => (
                   <button
@@ -790,55 +711,8 @@ export function VideosBrowser() {
         ))}
       </div>
 
-      {/* ═══ V6 Enterprise Cinematic Hero Section (Netflix/Disney+ Style) ═══ */}
-      {/* 가장 최신 영상 1개를 히어로 배너로 사용 (데이터가 있을 때만) */}
+      {/* ═══ Content Grid ═══ */}
       <div className="relative z-10 w-full pb-20 bg-background text-foreground transition-all duration-500">
-        {displayData?.data && displayData.data.length > 0 && page === 1 && !showGrid ? (
-          <div className="relative w-full h-[75vh] min-h-[500px] max-h-[850px] overflow-hidden bg-background dark:bg-[#050505] flex items-end">
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-105"
-              style={{
-                backgroundImage: `url(${displayData.data[0].signedThumbnailUrl || displayData.data[0].thumbnailUrl})`,
-                maskImage: 'linear-gradient(to top, transparent 0%, black 30%, black 100%), linear-gradient(to right, black 50%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to top, transparent 0%, black 30%, black 100%)'
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent" />
-
-            <div className="relative z-10 w-full max-w-[1920px] mx-auto px-4 sm:px-8 pb-12 sm:pb-20">
-              <div className="flex flex-col items-start gap-4 sm:gap-5 max-w-3xl p-6 sm:p-8 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-8 duration-700 relative">
-                <div>
-                  <span className="inline-block bg-black/5 dark:bg-white/15 text-foreground dark:text-white border border-black/10 dark:border-white/20 px-4 py-1.5 font-bold text-xs sm:text-sm tracking-widest uppercase rounded-full">
-                    {displayData.data[0].category?.name || "추천 영상"}
-                  </span>
-                </div>
-                <div>
-                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground dark:text-white leading-[1.1] drop-shadow-lg dark:drop-shadow-2xl break-keep">
-                    {displayData.data[0].title}
-                  </h1>
-                </div>
-                <div>
-                  <p className="text-foreground/80 dark:text-white/80 text-sm sm:text-lg font-medium flex items-center gap-3 drop-shadow-md">
-                    <span className="flex items-center gap-2"><Film className="w-4 h-4 sm:w-5 sm:h-5" /> {displayData.data[0].owner.chineseName || displayData.data[0].owner.name}님의 작품</span>
-                    <span>•</span>
-                    <span>{new Date(displayData.data[0].createdAt).toLocaleDateString()}</span>
-                  </p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-4 mt-2">
-                    <Button
-                      onClick={() => router.push(`/videos/${displayData.data[0].id}`)}
-                      className="bg-white text-black hover:bg-neutral-200 font-extrabold px-10 py-7 rounded-xl text-lg sm:text-xl flex items-center gap-3 transition-all duration-300 shadow-[0_0_40px_rgba(255,255,255,0.4)] hover:shadow-[0_0_60px_rgba(255,255,255,0.6)] hover:scale-105"
-                    >
-                      <Play className="w-6 h-6 fill-current" /> 재생
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
 
         {/* ═══ Content Lists ═══ */}
         {isLoading ? (
@@ -853,7 +727,7 @@ export function VideosBrowser() {
               ))}
             </div>
           </div>
-        ) : (!isDefaultView && !filteredData?.data.length) || (isDefaultView && !latestData?.data.length && !popularData?.data.length) ? (
+        ) : !filteredData?.data?.length ? (
           <div className="mx-auto max-w-[1920px] px-4 sm:px-6 py-20">
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-black/10 dark:border-white/10 py-20">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900 text-3xl">
@@ -874,47 +748,37 @@ export function VideosBrowser() {
           </div>
         ) : (
           <div className="flex flex-col gap-6 sm:gap-10 pt-8">
-            {!isDefaultView ? (
-              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground dark:text-white mb-6">
-                  {hasActiveFilter ? "탐색 결과" : "검색 결과"}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
-                  {filteredData?.data.map((video, index) => {
-                    const useSigned = !!video.signedThumbnailUrl;
-                    return (
-                      <div key={video.id} className="animate-in fade-in slide-in-from-bottom-4 group">
-                        <VideoCard
-                          id={video.id}
-                          title={video.title}
-                          thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
-                          streamUid={useSigned ? null : video.streamUid}
-                          duration={video.technicalSpec?.duration ?? null}
-                          ownerName={video.owner.chineseName || video.owner.name}
-                          categoryName={video.category?.name ?? null}
-                          createdAt={video.createdAt}
-                          viewCount={video.viewCount}
-                          priority={page === 1 && index < 8}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
+            <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground dark:text-white mb-6">
+                {hasActiveFilter ? "탐색 결과" : "전체 영상"}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
+                {filteredData?.data.map((video, index) => {
+                  const useSigned = !!video.signedThumbnailUrl;
+                  return (
+                    <div key={video.id} className="animate-in fade-in slide-in-from-bottom-4 group">
+                      <VideoCard
+                        id={video.id}
+                        title={video.title}
+                        thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
+                        streamUid={useSigned ? null : video.streamUid}
+                        duration={video.technicalSpec?.duration ?? null}
+                        ownerName={video.owner.chineseName || video.owner.name}
+                        categoryName={video.category?.name ?? null}
+                        createdAt={video.createdAt}
+                        viewCount={video.viewCount}
+                        priority={page === 1 && index < 8}
+                      />
+                    </div>
+                  );
+                })}
               </div>
-            ) : (
-              <>
-                <SwimlaneRow title="✨ 이제 막 올라온 따끈따끈한 새 영상" videos={latestData?.data || []} page={1} />
-                <SwimlaneRow title="🔥 영감이 뿜뿜! 주간 인기 레퍼런스" videos={popularData?.data || []} page={1} />
-                {catData?.data && catData.data.length > 0 && (
-                  <SwimlaneRow title={`👀 다른 스타들은 [${randomCategoryName}]에서 어떻게 풀이했을까?`} videos={catData.data} page={1} />
-                )}
-              </>
-            )}
+            </div>
           </div>
         )}
 
-        {/* Minimal Pagination at Bottom - Only show when filtering */}
-        {displayData && !isDefaultView && displayData.totalPages > 1 && (
+        {/* Pagination */}
+        {displayData && displayData.totalPages > 1 && (
           <div className="mt-12 flex flex-col items-center justify-center gap-4">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)} className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full px-4 md:px-6 h-11 md:h-9">
