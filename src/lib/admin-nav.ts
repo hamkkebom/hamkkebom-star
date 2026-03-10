@@ -19,6 +19,11 @@ import {
     Activity,
     BadgeDollarSign,
     ScrollText,
+    Mail,
+    BarChart3,
+    Target,
+    Brain,
+    Award,
 } from "lucide-react";
 
 export type NavChild = {
@@ -81,6 +86,15 @@ export const navGroups: NavGroup[] = [
         ],
     },
     {
+        id: "message",
+        label: "메시지",
+        icon: Mail,
+        color: "cyan",
+        children: [
+            { href: "/admin/messages", label: "메시지 관리", icon: MessageSquare },
+        ],
+    },
+    {
         id: "insight",
         label: "지표",
         icon: TrendingUp,
@@ -88,6 +102,10 @@ export const navGroups: NavGroup[] = [
         children: [
             { href: "/admin/insights/operational", label: "운영 지표", icon: Activity },
             { href: "/admin/insights/financial", label: "재무 지표", icon: BadgeDollarSign },
+            { href: "/admin/insights/scorecard", label: "스코어카드", icon: Award },
+            { href: "/admin/insights/trends", label: "트렌드 분석", icon: BarChart3 },
+            { href: "/admin/insights/roi", label: "ROI 분석", icon: Target },
+            { href: "/admin/insights/ai-quality", label: "AI 품질 분석", icon: Brain },
         ],
     },
     {

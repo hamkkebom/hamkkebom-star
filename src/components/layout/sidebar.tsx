@@ -16,6 +16,8 @@ import {
   User,
   Bell,
   Smartphone,
+  Briefcase,
+  MessageSquare,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -31,14 +33,16 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: "/stars/dashboard", label: "대시보드", icon: LayoutDashboard },
-  { href: "/stars/my-videos", label: "내 영상 관리", icon: Clapperboard }, // Updated Icon
+  { href: "/stars/my-videos", label: "내 영상 관리", icon: Clapperboard },
   {
     href: "/stars/upload",
     label: "프로젝트 찾기 & 제출",
     icon: Rocket,
     isSpecial: true
   },
-  { href: "/stars/feedback", label: "피드백 확인", icon: MessageCircleHeart }, // Updated Icon
+  { href: "/stars/feedback", label: "피드백 확인", icon: MessageCircleHeart },
+  { href: "/stars/portfolio", label: "포트폴리오", icon: Briefcase },
+  { href: "/stars/messages", label: "메시지", icon: MessageSquare },
   { href: "/stars/earnings", label: "수입 관리", icon: Wallet },
 ];
 

@@ -173,7 +173,7 @@ export function InstallPrompt() {
                                     <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-lg font-black text-violet-600">3</div>
                                     <div>
                                         <p className="text-sm font-bold text-foreground">&quot;추가&quot; 버튼을 눌러 완료!</p>
-                                        <p className="text-xs text-muted-foreground mt-0.5">홈 화면에 함케봄스타 아이콘이 생깁니다</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">홈 화면에 별들에게 물어봐 아이콘이 생깁니다</p>
                                     </div>
                                 </div>
                             </div>

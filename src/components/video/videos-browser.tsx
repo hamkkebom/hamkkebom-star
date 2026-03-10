@@ -93,19 +93,31 @@ function FilterDropdown({
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number; right: number }>({ top: 0, left: 0, right: 0 });
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
 
   // 드롭다운 위치 계산 (버튼 기준 fixed)
   useLayoutEffect(() => {
     if (open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setMenuPos({
-        top: rect.bottom + 8,
-        left: rect.left,
-        right: window.innerWidth - rect.right,
-      });
+      const vw = window.innerWidth;
+      const top = rect.bottom + 8;
+      const margin = 12;
+
+      // 600px 미만: 항상 풀너비 (좌우 margin)
+      if (vw < 600) {
+        setMenuStyle({ top, left: margin, right: margin });
+      } else {
+        // 데스크톱: 버튼 기준으로 정렬하되, 화면 밖 방지
+        if (align === "right") {
+          const rightVal = Math.max(margin, vw - rect.right);
+          setMenuStyle({ top, right: rightVal, maxWidth: Math.min(400, vw - margin * 2) });
+        } else {
+          const leftVal = Math.max(margin, rect.left);
+          setMenuStyle({ top, left: leftVal, maxWidth: Math.min(400, vw - margin * 2) });
+        }
+      }
     }
-  }, [open]);
+  }, [open, align]);
 
   useEffect(() => {
     if (!open) return;
@@ -155,7 +167,7 @@ function FilterDropdown({
       {open && typeof document !== "undefined" && createPortal(
         <div
           ref={menuRef}
-          className="fixed z-[9999] min-w-[280px] sm:min-w-[320px] max-w-[calc(100vw-16px)] max-h-[60vh] overflow-y-auto rounded-2xl border border-black/5 bg-background/95 backdrop-blur-xl p-3 shadow-2xl animate-in fade-in-0 zoom-in-95 slide-in-from-top-2
+          className="fixed z-[9999] max-h-[60vh] overflow-y-auto rounded-2xl border border-black/5 bg-background/95 backdrop-blur-xl p-3 shadow-2xl animate-in fade-in-0 zoom-in-95 slide-in-from-top-2
             [&::-webkit-scrollbar]:w-1.5
             [&::-webkit-scrollbar-track]:bg-transparent
             [&::-webkit-scrollbar-thumb]:bg-black/10
@@ -163,12 +175,7 @@ function FilterDropdown({
             dark:[&::-webkit-scrollbar-thumb]:bg-white/10
             hover:[&::-webkit-scrollbar-thumb]:bg-black/20
             dark:hover:[&::-webkit-scrollbar-thumb]:bg-white/20"
-          style={{
-            top: menuPos.top,
-            ...(align === "right"
-              ? { right: Math.max(8, menuPos.right) }
-              : { left: Math.max(8, menuPos.left) }),
-          }}
+          style={menuStyle}
         >
           {children}
         </div>,
@@ -558,11 +565,11 @@ export function VideosBrowser() {
             </div>
 
             {/* Right: Detailed Filters (Dropdowns) */}
-            <div className="flex items-center gap-2 flex-wrap overflow-visible pb-1 w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto justify-start sm:justify-end">
 
               {/* Category Dropdown (Grid) */}
               <FilterDropdown label={catLabel} icon={Film} isActive={!!categoryId} onClear={() => { setCategoryId(null); setPage(1); }} align="right">
-                <div className="w-[320px] p-1">
+                <div className="w-full sm:w-[320px] p-1">
                   <div className="mb-2 px-1">
                     <DropdownItem active={!categoryId} onClick={() => { setCategoryId(null); setPage(1); }}>
                       전체 카테고리
@@ -580,7 +587,7 @@ export function VideosBrowser() {
 
               {/* Owner Dropdown (Grid) */}
               <FilterDropdown label={ownerLabel} icon={Film} isActive={!!ownerId} onClear={() => { setOwnerId(null); setPage(1); }} align="right">
-                <div className="w-[320px] p-1">
+                <div className="w-full sm:w-[320px] p-1">
                   <div className="mb-2 px-1">
                     <DropdownItem active={!ownerId} onClick={() => { setOwnerId(null); setPage(1); }}>
                       전체 제작자
@@ -598,7 +605,7 @@ export function VideosBrowser() {
 
               {/* Counselor Dropdown (List - usually fewer items, but keeping consistent) */}
               <FilterDropdown label={counselorLabel} icon={Film} isActive={!!counselorId} onClear={() => { setCounselorId(null); setPage(1); }} align="right">
-                <div className="w-[280px] p-1">
+                <div className="w-full sm:w-[280px] p-1">
                   <div className="mb-2 px-1">
                     <DropdownItem active={!counselorId} onClick={() => { setCounselorId(null); setPage(1); }}>
                       전체 상담사
