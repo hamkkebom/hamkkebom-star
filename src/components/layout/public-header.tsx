@@ -36,9 +36,9 @@ export function PublicHeader() {
           </div>
           <span className="hidden text-lg font-bold tracking-tight md:block">
             <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent dark:from-violet-400 dark:to-indigo-400">
-              함께봄
+              별들에게
             </span>
-            <span className="ml-0.5 text-muted-foreground">스타</span>
+            <span className="ml-1 text-muted-foreground">물어봐</span>
           </span>
         </a>
 

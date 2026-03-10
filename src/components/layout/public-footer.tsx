@@ -30,7 +30,7 @@ export function PublicFooter() {
               <Sparkles className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-foreground tracking-tight">함께봄스타</span>
+              <span className="text-lg font-bold text-foreground tracking-tight">별들에게 물어봐</span>
               <span className="text-xs text-muted-foreground mt-0.5">프리미엄 지식 크리에이터 네트워크</span>
             </div>
           </div>

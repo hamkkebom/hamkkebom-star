@@ -19,15 +19,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "함께봄스타 — 영상 커뮤니티",
-    template: "%s | 함께봄스타",
+    default: "별들에게 물어봐 — 영상 커뮤니티",
+    template: "%s | 별들에게 물어봐",
   },
   description: "영상 크리에이터를 위한 커뮤니티 플랫폼. 영상 피드백, 게시판, 인기 차트, 크리에이터 팔로우.",
-  keywords: ["영상 커뮤니티", "크리에이터", "영상 피드백", "함께봄스타", "영상 제작"],
+  keywords: ["영상 커뮤니티", "크리에이터", "영상 피드백", "별들에게 물어봐", "영상 제작"],
   openGraph: {
-    title: "함께봄스타 — 영상 커뮤니티",
+    title: "별들에게 물어봐 — 영상 커뮤니티",
     description: "영상 크리에이터를 위한 커뮤니티 플랫폼",
-    siteName: "함께봄스타",
+    siteName: "별들에게 물어봐",
     locale: "ko_KR",
     type: "website",
   },

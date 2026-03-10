@@ -3,7 +3,7 @@ import { VideosBrowser } from "@/components/video/videos-browser";
 
 export const metadata = {
     title: "영상 목록",
-    description: "함께봄스타의 모든 영상을 확인하세요.",
+    description: "별들에게 물어봐의 모든 영상을 확인하세요.",
 };
 
 export default function VideosPage() {
