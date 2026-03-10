@@ -33,6 +33,7 @@ import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { FeedbackList } from "@/components/feedback/feedback-list";
 import { SwipeableReviewDeck, type SwipeableItem } from "@/components/admin/swipeable-review-deck";
 import { VerticalShortsFeed } from "@/components/admin/vertical-shorts-feed";
+import { SwipeReviewSheet } from "@/components/admin/swipe-review-sheet";
 
 export type SubmissionStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "REVISED";
 
@@ -142,6 +143,7 @@ export default function AdminReviewsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkRejectDialogOpen, setIsBulkRejectDialogOpen] = useState(false);
   const [bulkRejectReason, setBulkRejectReason] = useState("");
+  const [isSwipeSheetOpen, setIsSwipeSheetOpen] = useState(false);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-submissions", filter, page],
@@ -406,30 +408,34 @@ export default function AdminReviewsPage() {
         </div>
       ) : (
         <>
-          {filter === "PENDING" && rows.length > 0 && (
-            <div className="block md:hidden mb-8">
-              <div className="mb-4 text-center">
-                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                  Swipe to review
+          {/* 모바일 스와이프 심사 FAB 버튼 */}
+          {filter === "PENDING" && pendingRowsForDeck.length > 0 && (
+            <div className="block md:hidden mb-4">
+              <button
+                onClick={() => setIsSwipeSheetOpen(true)}
+                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-base shadow-lg shadow-violet-500/30 hover:shadow-xl active:scale-[0.98] transition-all"
+              >
+                <span className="text-2xl">👆</span>
+                스와이프 심사 시작
+                <span className="ml-auto bg-white/20 text-white text-xs font-black px-2.5 py-1 rounded-full">
+                  {pendingRowsForDeck.length}건
                 </span>
-                <p className="text-lg font-black text-slate-800 dark:text-slate-200 mt-1">
-                  모바일 스와이프 심사
-                </p>
-              </div>
-              <SwipeableReviewDeck
-                items={pendingRowsForDeck}
-                onApprove={(id) => approveMutation.mutate(id)}
-                onReject={(id) => {
-                  const sub = rows.find(r => r.id === id);
-                  if (sub) setSelectedSubmission(sub);
-                }}
-                onViewDetail={(id) => {
-                  const sub = rows.find(r => r.id === id);
-                  if (sub) setSelectedSubmission(sub);
-                }}
-              />
+              </button>
             </div>
           )}
+
+          {/* 모바일 스와이프 심사 바텀시트 */}
+          <SwipeReviewSheet
+            open={isSwipeSheetOpen}
+            onOpenChange={setIsSwipeSheetOpen}
+            items={pendingRowsForDeck}
+            onApprove={(id) => approveMutation.mutate(id)}
+            onReject={(id) => rejectMutation.mutate({ id, reason: "관리자 반려" })}
+            onViewDetail={(id) => {
+              const sub = rows.find(r => r.id === id);
+              if (sub) setSelectedSubmission(sub);
+            }}
+          />
 
           {filter !== "PENDING" && rows.length > 0 && (
             <div className="block md:hidden mb-8">
