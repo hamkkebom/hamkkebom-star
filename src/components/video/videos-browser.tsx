@@ -331,11 +331,29 @@ export function VideosBrowser() {
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }, [searchParams, router, pathname]);
 
-  const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [ownerId, setOwnerId] = useState<string | null>(null);
-  const [counselorId, setCounselorId] = useState<string | null>(null);
-  const [durationRange, setDurationRange] = useState<DurationRange>("all");
-  const [sort, setSort] = useState<"latest" | "oldest">("latest");
+  // ─── 필터 상태를 URL searchParams에서 파생 (뒤로가기 시 유지) ───
+  const categoryId = searchParams.get("categoryId") || null;
+  const ownerId = searchParams.get("ownerId") || null;
+  const counselorId = searchParams.get("counselorId") || null;
+  const durationRange: DurationRange = (searchParams.get("duration") as DurationRange) || "all";
+  const sort: "latest" | "oldest" = (searchParams.get("sort") as "latest" | "oldest") || "latest";
+
+  const updateFilter = useCallback((key: string, value: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [searchParams, router, pathname]);
+
+  const setCategoryId = useCallback((v: string | null) => updateFilter("categoryId", v), [updateFilter]);
+  const setOwnerId = useCallback((v: string | null) => updateFilter("ownerId", v), [updateFilter]);
+  const setCounselorId = useCallback((v: string | null) => updateFilter("counselorId", v), [updateFilter]);
+  const setDurationRange = useCallback((v: DurationRange) => updateFilter("duration", v === "all" ? null : v), [updateFilter]);
+  const setSort = useCallback((v: "latest" | "oldest") => updateFilter("sort", v === "latest" ? null : v), [updateFilter]);
 
   // Mobile Filter Sheet State
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -346,12 +364,15 @@ export function VideosBrowser() {
   const [tempSort, setTempSort] = useState<"latest" | "oldest">("latest");
 
   const applyMobileFilters = () => {
-    setCategoryId(tempCategoryId);
-    setOwnerId(tempOwnerId);
-    setCounselorId(tempCounselorId);
-    setDurationRange(tempDurationRange);
-    setSort(tempSort);
-    setPage(1);
+    const params = new URLSearchParams(searchParams.toString());
+    // 필터 전부 덮어쓰기
+    if (tempCategoryId) params.set("categoryId", tempCategoryId); else params.delete("categoryId");
+    if (tempOwnerId) params.set("ownerId", tempOwnerId); else params.delete("ownerId");
+    if (tempCounselorId) params.set("counselorId", tempCounselorId); else params.delete("counselorId");
+    if (tempDurationRange !== "all") params.set("duration", tempDurationRange); else params.delete("duration");
+    if (tempSort !== "latest") params.set("sort", tempSort); else params.delete("sort");
+    params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
     setIsMobileFilterOpen(false);
   };
 
@@ -471,20 +492,14 @@ export function VideosBrowser() {
     setPage(1);
   };
 
-  const resetFilters = (mode?: "home" | "grid") => {
-    setCategoryId(null);
-    setOwnerId(null);
-    setCounselorId(null);
-    setDurationRange("all");
+  const resetFilters = useCallback((mode?: "home" | "grid") => {
+    const params = new URLSearchParams();
+    if (mode === "grid") params.set("view", "grid");
+    params.set("page", "1");
     setActiveSearch("");
     setSearch("");
-    setSort("latest");
-    if (mode) {
-      setViewMode(mode);
-    } else {
-      setPage(1);
-    }
-  };
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [pathname, router]);
 
   // ─── Labels for active state ───
   const catLabel = categoryId ? categories.find((c) => c.id === categoryId)?.name ?? "카테고리" : "카테고리";
@@ -564,7 +579,7 @@ export function VideosBrowser() {
                 {(Object.entries(DURATION_RANGES) as [DurationRange, { label: string }][]).map(([key, val]) => (
                   <button
                     key={key}
-                    onClick={() => { setDurationRange(key); setPage(1); }}
+                    onClick={() => setDurationRange(key)}
                     className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
                       ${durationRange === key
                         ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
@@ -578,7 +593,7 @@ export function VideosBrowser() {
               <div className="h-4 w-px bg-border mx-2 hidden sm:block" />
               <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
                 <button
-                  onClick={() => { setSort("latest"); setPage(1); }}
+                  onClick={() => setSort("latest")}
                   className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
                       ${sort === "latest"
                       ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
@@ -588,7 +603,7 @@ export function VideosBrowser() {
                   최신순
                 </button>
                 <button
-                  onClick={() => { setSort("oldest"); setPage(1); }}
+                  onClick={() => setSort("oldest")}
                   className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
                       ${sort === "oldest"
                       ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
@@ -604,16 +619,16 @@ export function VideosBrowser() {
             <div className="hidden md:flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto justify-start sm:justify-end">
 
               {/* Category Dropdown (Grid) */}
-              <FilterDropdown label={catLabel} icon={Film} isActive={!!categoryId} onClear={() => { setCategoryId(null); setPage(1); }} align="right">
+              <FilterDropdown label={catLabel} icon={Film} isActive={!!categoryId} onClear={() => setCategoryId(null)} align="right">
                 <div className="w-full sm:w-[320px] p-1">
                   <div className="mb-2 px-1">
-                    <DropdownItem active={!categoryId} onClick={() => { setCategoryId(null); setPage(1); }}>
+                    <DropdownItem active={!categoryId} onClick={() => setCategoryId(null)}>
                       전체 카테고리
                     </DropdownItem>
                   </div>
                   <div className="grid grid-cols-2 gap-1">
                     {categories.map((c) => (
-                      <DropdownItem key={c.id} active={categoryId === c.id} onClick={() => { setCategoryId(c.id); setPage(1); }} count={c._count.videos}>
+                      <DropdownItem key={c.id} active={categoryId === c.id} onClick={() => setCategoryId(c.id)} count={c._count.videos}>
                         {c.name}
                       </DropdownItem>
                     ))}
@@ -622,16 +637,16 @@ export function VideosBrowser() {
               </FilterDropdown>
 
               {/* Owner Dropdown (Grid) */}
-              <FilterDropdown label={ownerLabel} icon={Film} isActive={!!ownerId} onClear={() => { setOwnerId(null); setPage(1); }} align="right">
+              <FilterDropdown label={ownerLabel} icon={Film} isActive={!!ownerId} onClear={() => setOwnerId(null)} align="right">
                 <div className="w-full sm:w-[320px] p-1">
                   <div className="mb-2 px-1">
-                    <DropdownItem active={!ownerId} onClick={() => { setOwnerId(null); setPage(1); }}>
+                    <DropdownItem active={!ownerId} onClick={() => setOwnerId(null)}>
                       전체 제작자
                     </DropdownItem>
                   </div>
                   <div className="grid grid-cols-2 gap-1">
                     {owners.map((o) => (
-                      <DropdownItem key={o.id} active={ownerId === o.id} onClick={() => { setOwnerId(o.id); setPage(1); }} count={o.videoCount}>
+                      <DropdownItem key={o.id} active={ownerId === o.id} onClick={() => setOwnerId(o.id)} count={o.videoCount}>
                         {o.chineseName || o.name}
                       </DropdownItem>
                     ))}
@@ -640,16 +655,16 @@ export function VideosBrowser() {
               </FilterDropdown>
 
               {/* Counselor Dropdown (List - usually fewer items, but keeping consistent) */}
-              <FilterDropdown label={counselorLabel} icon={Film} isActive={!!counselorId} onClear={() => { setCounselorId(null); setPage(1); }} align="right">
+              <FilterDropdown label={counselorLabel} icon={Film} isActive={!!counselorId} onClear={() => setCounselorId(null)} align="right">
                 <div className="w-full sm:w-[280px] p-1">
                   <div className="mb-2 px-1">
-                    <DropdownItem active={!counselorId} onClick={() => { setCounselorId(null); setPage(1); }}>
+                    <DropdownItem active={!counselorId} onClick={() => setCounselorId(null)}>
                       전체 상담사
                     </DropdownItem>
                   </div>
                   <div className="space-y-1">
                     {counselors.map((c) => (
-                      <DropdownItem key={c.id} active={counselorId === c.id} onClick={() => { setCounselorId(c.id); setPage(1); }} count={c.videoCount}>
+                      <DropdownItem key={c.id} active={counselorId === c.id} onClick={() => setCounselorId(c.id)} count={c.videoCount}>
                         {c.displayName}
                       </DropdownItem>
                     ))}
@@ -759,7 +774,7 @@ export function VideosBrowser() {
       {/* Mobile Category Chips */}
       <div className="md:hidden flex items-center gap-2 overflow-x-auto px-4 py-3 scrollbar-none [&::-webkit-scrollbar]:hidden border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-[140px] z-30">
         <button
-          onClick={() => { setCategoryId(null); setPage(1); }}
+          onClick={() => setCategoryId(null)}
           className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${!categoryId ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground"}`}
         >
           전체
@@ -767,7 +782,7 @@ export function VideosBrowser() {
         {categories.map(c => (
           <button
             key={c.id}
-            onClick={() => { setCategoryId(c.id); setPage(1); }}
+            onClick={() => setCategoryId(c.id)}
             className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${categoryId === c.id ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground"}`}
           >
             {c.name}
