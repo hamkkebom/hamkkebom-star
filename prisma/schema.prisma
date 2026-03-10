@@ -66,6 +66,7 @@ model User {
   boardPostLikes      BoardPostLike[]
   followers           Follow[]       @relation("Following")
   following           Follow[]       @relation("Followers")
+  reports             Report[]
   @@map("users")
 }
 
@@ -823,4 +824,45 @@ model Follow {
   @@unique([followerId, followingId])
   @@index([followingId])
   @@map("follows")
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  reporterId  String
+  targetType  ReportTarget
+  targetId    String
+  reason      ReportReason
+  description String?
+  status      ReportStatus @default(PENDING)
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime     @default(now())
+
+  reporter    User         @relation(fields: [reporterId], references: [id])
+
+  @@index([targetType, targetId])
+  @@index([status])
+  @@map("reports")
+}
+
+enum ReportTarget {
+  VIDEO
+  COMMENT
+  POST
+  USER
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  INAPPROPRIATE
+  COPYRIGHT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
 }

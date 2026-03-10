@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "./providers";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,10 +19,18 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "별들에게 물어봐 — 영상 제작 관리",
-    template: "%s | 별들에게 물어봐",
+    default: "함께봄스타 — 영상 커뮤니티",
+    template: "%s | 함께봄스타",
   },
-  description: "STAR와 관리자를 위한 영상 제작 관리 플랫폼",
+  description: "영상 크리에이터를 위한 커뮤니티 플랫폼. 영상 피드백, 게시판, 인기 차트, 크리에이터 팔로우.",
+  keywords: ["영상 커뮤니티", "크리에이터", "영상 피드백", "함께봄스타", "영상 제작"],
+  openGraph: {
+    title: "함께봄스타 — 영상 커뮤니티",
+    description: "영상 크리에이터를 위한 커뮤니티 플랫폼",
+    siteName: "함께봄스타",
+    locale: "ko_KR",
+    type: "website",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -66,6 +75,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <Toaster />
+          <MobileBottomNav />
           <ServiceWorkerRegister />
           <InstallPrompt />
         </Providers>

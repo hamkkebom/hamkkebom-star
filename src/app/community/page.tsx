@@ -90,7 +90,7 @@ export default function CommunityPage() {
     return (
         <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-[#050508]">
             <PublicHeader />
-            <main className="flex-1 mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
+            <main className="flex-1 mx-auto w-full max-w-4xl px-4 py-6 pb-20 md:pb-6 sm:px-6">
                 {/* 헤더 */}
                 <div className="flex items-center justify-between mb-6">
                     <h1 className="text-2xl font-black text-foreground">커뮤니티</h1>
@@ -114,8 +114,8 @@ export default function CommunityPage() {
                                 key={bt.value}
                                 onClick={() => { setBoardType(bt.value); setPage(1); }}
                                 className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-bold transition-all active:scale-95 ${isActive
-                                        ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
-                                        : "bg-white dark:bg-slate-900 text-muted-foreground border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
+                                    : "bg-white dark:bg-slate-900 text-muted-foreground border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
                                     }`}
                             >
                                 <Icon className="w-3.5 h-3.5" />
@@ -145,8 +145,8 @@ export default function CommunityPage() {
                                 key={opt.value}
                                 onClick={() => { setSort(opt.value); setPage(1); }}
                                 className={`px-3 py-2.5 text-xs font-bold transition-colors ${sort === opt.value
-                                        ? "bg-violet-600 text-white"
-                                        : "text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    ? "bg-violet-600 text-white"
+                                    : "text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-800"
                                     }`}
                             >
                                 {opt.label}
@@ -239,8 +239,8 @@ export default function CommunityPage() {
                                     key={p}
                                     onClick={() => setPage(p)}
                                     className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${p === page
-                                            ? "bg-violet-600 text-white shadow"
-                                            : "bg-white dark:bg-slate-900 text-muted-foreground border border-slate-200 dark:border-slate-800"
+                                        ? "bg-violet-600 text-white shadow"
+                                        : "bg-white dark:bg-slate-900 text-muted-foreground border border-slate-200 dark:border-slate-800"
                                         }`}
                                 >
                                     {p}

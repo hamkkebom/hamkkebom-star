@@ -66,7 +66,7 @@ export default function ExplorePage() {
     return (
         <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-[#050508]">
             <PublicHeader />
-            <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+            <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-6 pb-20 md:pb-6 sm:px-6">
                 {/* 검색 헤더 */}
                 <div className="flex items-center gap-3 mb-8">
                     <Compass className="w-7 h-7 text-violet-500" />
