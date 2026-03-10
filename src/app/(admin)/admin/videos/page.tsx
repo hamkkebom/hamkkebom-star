@@ -5,12 +5,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale/ko";
-import { Calendar as CalendarIcon, Search, X, Share2, Film, Pencil } from "lucide-react";
+import { Calendar as CalendarIcon, Search, X, Share2, Film, Pencil, Download } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
+import { downloadThumbnail } from "@/lib/download-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -510,6 +511,15 @@ export default function AdminVideosPage() {
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
+                              variant="ghost"
+                              size="icon"
+                              title="썸네일 다운로드"
+                              disabled={!row.signedThumbnailUrl && !row.thumbnailUrl}
+                              onClick={() => downloadThumbnail(row.signedThumbnailUrl || row.thumbnailUrl, row.title)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
                               variant="secondary"
                               size="sm"
                               onClick={() => {
@@ -677,6 +687,15 @@ export default function AdminVideosPage() {
                 }}
               >
                 {selectedMobileVideo.submissionId ? "상세 피드백 스튜디오 보기" : "피드백 기록 없음"}
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full h-14 mt-3 rounded-2xl font-bold bg-muted/50 border-border/60 hover:bg-muted"
+                disabled={!selectedMobileVideo.signedThumbnailUrl && !selectedMobileVideo.thumbnailUrl}
+                onClick={() => downloadThumbnail(selectedMobileVideo.signedThumbnailUrl || selectedMobileVideo.thumbnailUrl, selectedMobileVideo.title)}
+              >
+                <Download className="w-5 h-5 mr-2 text-muted-foreground" /> 썸네일 다운로드
               </Button>
             </div>
           )}

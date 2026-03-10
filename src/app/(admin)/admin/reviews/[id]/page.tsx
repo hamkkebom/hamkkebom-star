@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { downloadThumbnail } from "@/lib/download-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -457,8 +458,18 @@ export default function ReviewDetailPage() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ZoomIn className="w-4 h-4" />
-                    원본 보기
+                    새창
                   </a>
+                  <button
+                    className="flex items-center gap-2 bg-indigo-500/80 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-indigo-600 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      downloadThumbnail(sub.signedThumbnailUrl || sub.video?.thumbnailUrl, sub.video?.title || "썸네일");
+                    }}
+                  >
+                    <Download className="w-4 h-4" />
+                    다운로드
+                  </button>
                 </div>
               </div>
               {/* 썸네일 정보 */}
