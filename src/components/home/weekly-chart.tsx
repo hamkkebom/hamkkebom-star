@@ -29,19 +29,25 @@ export function WeeklyChart() {
 
     return (
         <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-            <div className="flex items-center gap-2 mb-5">
-                <Trophy className="w-5 h-5 text-amber-500" />
-                <h2 className="text-lg font-black text-foreground">주간 인기 차트</h2>
+            <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-amber-500" />
+                    <h2 className="text-lg font-black text-foreground">주간 인기 차트</h2>
+                </div>
+                <Link href="/videos?sort=popular" className="text-sm font-bold text-violet-600 dark:text-violet-400 hover:underline">
+                    전체 보기
+                </Link>
             </div>
 
             {/* TOP 3 대형 카드 */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {videos.slice(0, 3).map((v, i) => {
                     const rankColors = [
-                        "from-amber-400 to-orange-500",
-                        "from-slate-300 to-slate-400",
-                        "from-amber-600 to-amber-700",
+                        "from-amber-400 to-orange-500 shadow-amber-500/40",
+                        "from-slate-300 to-slate-400 shadow-slate-400/40",
+                        "from-amber-600 to-amber-700 shadow-amber-700/40",
                     ];
+
                     return (
                         <motion.div
                             key={v.id}
@@ -51,28 +57,33 @@ export function WeeklyChart() {
                         >
                             <Link
                                 href={`/videos/${v.id}`}
-                                className="group relative block rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all active:scale-[0.98]"
+                                className="group block rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-lg hover:shadow-violet-500/10 hover:border-violet-300 dark:hover:border-violet-700 transition-all active:scale-[0.98] bg-white dark:bg-slate-900"
                             >
-                                <div className="aspect-video bg-slate-100 dark:bg-slate-800 relative">
+                                <div className="relative bg-slate-100 dark:bg-slate-800 aspect-video overflow-hidden">
                                     {v.signedThumbnailUrl ? (
-                                        <img src={v.signedThumbnailUrl} alt={v.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                        <img src={v.signedThumbnailUrl} alt={v.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30">
-                                            <Sparkles className="w-8 h-8 text-violet-400" />
+                                            <Sparkles className="w-8 h-8 text-amber-400" />
                                         </div>
                                     )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                    <div className={`absolute top-2 left-2 w-8 h-8 rounded-lg bg-gradient-to-br ${rankColors[i]} flex items-center justify-center text-white text-sm font-black shadow-lg`}>
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                    <div className={`absolute top-3 left-3 w-8 h-8 rounded-lg bg-gradient-to-br ${rankColors[i]} flex items-center justify-center text-white text-sm font-black shadow-lg border border-white/20 z-10`}>
                                         {i + 1}
                                     </div>
+                                    {i === 0 && (
+                                        <div className="absolute top-3 right-3 px-3 py-1.5 text-[11px] font-black text-amber-950 bg-amber-400 rounded-full flex items-center gap-1 shadow-lg z-10">
+                                            <Trophy className="w-3.5 h-3.5" /> 주간 1위
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="p-3">
-                                    <h3 className="text-sm font-bold line-clamp-1 text-foreground">{v.title}</h3>
-                                    <div className="flex items-center justify-between mt-1">
-                                        <span className="text-xs text-muted-foreground">{v.owner.chineseName || v.owner.name}</span>
-                                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                            <Eye className="w-3 h-3" />
-                                            {v.viewCount.toLocaleString()}
+                                <div className="p-4">
+                                    <h3 className="text-sm font-bold line-clamp-2 text-foreground mb-2 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">{v.title}</h3>
+                                    <div className="flex items-center justify-between mt-auto text-xs text-muted-foreground">
+                                        <span className="font-medium truncate pe-2">{v.owner.chineseName || v.owner.name}</span>
+                                        <span className="flex items-center gap-1 shrink-0">
+                                            <Eye className="w-3.5 h-3.5" />
+                                            {v.viewCount >= 10000 ? (v.viewCount / 10000).toFixed(1) + '만' : v.viewCount.toLocaleString()}
                                         </span>
                                     </div>
                                 </div>

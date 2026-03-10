@@ -49,11 +49,18 @@ export function PopularStars() {
                             className="flex flex-col items-center gap-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:shadow-lg hover:border-violet-300 dark:hover:border-violet-700 transition-all active:scale-95 min-w-[110px]"
                         >
                             <div className="relative">
-                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-lg shadow-violet-500/20">
+                                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-black shadow-lg ${i === 0 ? "bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/30" :
+                                        i === 1 ? "bg-gradient-to-br from-slate-300 to-slate-500 shadow-slate-500/30" :
+                                            i === 2 ? "bg-gradient-to-br from-amber-700 to-orange-800 shadow-orange-900/30" :
+                                                "bg-gradient-to-br from-violet-500 to-indigo-600 shadow-violet-500/20"
+                                    }`}>
                                     {(star.chineseName || star.name).charAt(0)}
                                 </div>
                                 {i < 3 && (
-                                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-400 text-[10px] font-black text-white flex items-center justify-center shadow-sm">
+                                    <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-[10px] font-black text-white flex items-center justify-center shadow-md border border-white/20 ${i === 0 ? "bg-amber-400 text-amber-950" :
+                                            i === 1 ? "bg-slate-300 text-slate-900" :
+                                                "bg-amber-700"
+                                        }`}>
                                         {i + 1}
                                     </div>
                                 )}

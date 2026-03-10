@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { VideoPlayer } from "@/components/video/video-player";
 import { LikeButton } from "@/components/video/like-button";
+import { BookmarkButton } from "@/components/video/bookmark-button";
+import { VideoComments } from "@/components/video/video-comments";
 import {
   ArrowLeft,
   Calendar,
@@ -17,7 +21,6 @@ import {
   Download,
   Film,
   HardDrive,
-  Heart,
   Monitor,
   Music,
   Play,
@@ -25,6 +28,10 @@ import {
   Tag,
   Tv,
   Video,
+  MessageSquare,
+  UserPlus,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -58,6 +65,8 @@ type VideoDetail = {
   technicalSpec: TechnicalSpec | null;
   hasLiked?: boolean;
   likeCount?: number;
+  hasBookmarked?: boolean;
+  commentCount?: number;
 };
 
 /* ─── Config ─── */
@@ -95,6 +104,7 @@ function handleShare(title: string) {
     navigator.share({ title, url: window.location.href }).catch(() => { });
   } else {
     navigator.clipboard.writeText(window.location.href);
+    toast.success("링크가 복사되었습니다.");
   }
 }
 
@@ -107,11 +117,25 @@ export default function VideoDetailPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
 
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
+  const [isTechSpecsExpanded, setIsTechSpecsExpanded] = useState(false);
+  const [isCommentSheetOpen, setIsCommentSheetOpen] = useState(false);
+
   const { data, isLoading, error } = useQuery<{ data: VideoDetail }>({
     queryKey: ["video-detail", id],
     queryFn: () => fetch(`/api/videos/${id}`).then((r) => r.json()),
     enabled: !!id,
   });
+
+  const video = data?.data ?? null;
+
+  const { data: relatedData } = useQuery<{ data: VideoDetail[] }>({
+    queryKey: ["related-videos", video?.category?.id],
+    queryFn: () => fetch(`/api/videos?categoryId=${video?.category?.id}&pageSize=7`).then((r) => r.json()),
+    enabled: !!video?.category?.id,
+  });
+
+  const relatedVideos = relatedData?.data?.filter(v => v.id !== id).slice(0, 6) || [];
 
   // ─── 조회수 증가 트리거 (StrictMode 중복 방지) ───
   const viewTracked = useRef(false);
@@ -138,12 +162,11 @@ export default function VideoDetailPage() {
     );
   }
 
-  const video = data?.data ?? null;
   const spec = video?.technicalSpec ?? null;
   const status = video ? (statusConfig[video.status] || { label: video.status, className: "" }) : null;
 
   return (
-    <div className="relative min-h-screen bg-[#06060e] text-white">
+    <div className="relative min-h-screen bg-[#06060e] text-white pb-28 md:pb-0">
       {/* ─── Ambient Background ─── */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-[20%] top-[5%] h-[600px] w-[600px] animate-[float_8s_ease-in-out_infinite] rounded-full bg-violet-600/8 blur-[150px]" />
@@ -253,7 +276,7 @@ export default function VideoDetailPage() {
 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-white/40">
                   <div className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
+                     <Calendar className="h-3.5 w-3.5" />
                     {new Date(video.createdAt).toLocaleDateString("ko-KR", {
                       year: "numeric",
                       month: "long",
@@ -277,8 +300,8 @@ export default function VideoDetailPage() {
             ) : null}
           </div>
 
-          {/* Action buttons — 항상 즉시 표시 */}
-          <div className="flex shrink-0 items-center gap-2 pointer-events-auto">
+          {/* Action buttons — Desktop Inline view */}
+          <div className="hidden shrink-0 items-center gap-2 pointer-events-auto md:flex">
             {isAdmin && video?.streamUid && (
               <Button
                 variant="outline"
@@ -294,11 +317,17 @@ export default function VideoDetailPage() {
               </Button>
             )}
             {video && (
-              <LikeButton
-                videoId={video.id}
-                initialLiked={video.hasLiked ?? false}
-                initialCount={video.likeCount ?? 0}
-              />
+              <>
+                <LikeButton
+                  videoId={video.id}
+                  initialLiked={video.hasLiked ?? false}
+                  initialCount={video.likeCount ?? 0}
+                />
+                <BookmarkButton
+                  videoId={video.id}
+                  initialBookmarked={video.hasBookmarked ?? false}
+                />
+              </>
             )}
             <Button
               variant="ghost"
@@ -328,9 +357,26 @@ export default function VideoDetailPage() {
                   <section>
                     <SectionHeader icon={<Film className="h-4 w-4" />} title="제작의도 / 설명" />
                     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-sm">
-                      <p className="whitespace-pre-wrap text-[15px] leading-[1.8] text-white/70">
-                        {video.description}
-                      </p>
+                      <div className={`relative ${!isDescExpanded ? 'max-h-24 overflow-hidden' : ''}`}>
+                        <p className="whitespace-pre-wrap text-[15px] leading-[1.8] text-white/70">
+                          {video.description}
+                        </p>
+                        {!isDescExpanded && (
+                          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#06060e] to-transparent" />
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 w-full text-white/50 hover:text-white"
+                        onClick={() => setIsDescExpanded(!isDescExpanded)}
+                      >
+                        {isDescExpanded ? (
+                          <>접기 <ChevronUp className="ml-1 h-4 w-4" /></>
+                        ) : (
+                          <>더보기 <ChevronDown className="ml-1 h-4 w-4" /></>
+                        )}
+                      </Button>
                     </div>
                   </section>
                 )}
@@ -354,8 +400,18 @@ export default function VideoDetailPage() {
                 {/* Technical Specs */}
                 {spec && (
                   <section>
-                    <SectionHeader icon={<Monitor className="h-4 w-4" />} title="기술 스펙" />
-                    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <SectionHeader icon={<Monitor className="h-4 w-4" />} title="기술 스펙" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="md:hidden text-white/50"
+                        onClick={() => setIsTechSpecsExpanded(!isTechSpecsExpanded)}
+                      >
+                        {isTechSpecsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <div className={`rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-sm transition-all ${!isTechSpecsExpanded ? 'hidden md:block' : 'block'}`}>
                       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                         {spec.duration != null && (
                           <SpecItem label="길이" value={formatDuration(spec.duration)} />
@@ -375,6 +431,38 @@ export default function VideoDetailPage() {
                     </div>
                   </section>
                 )}
+
+                {/* Comments Section (Desktop only) */}
+                <section id="comments-section" className="hidden md:block scroll-mt-24">
+                  <SectionHeader icon={<MessageSquare className="h-4 w-4" />} title="댓글" />
+                  <div className="rounded-2xl border border-white/[0.06] bg-[#06060e] p-4 sm:p-6 backdrop-blur-sm shadow-xl">
+                    <VideoComments videoId={video.id} />
+                  </div>
+                </section>
+
+                {/* Related Videos (Mobile only) */}
+                {relatedVideos.length > 0 && (
+                  <section className="md:hidden">
+                    <SectionHeader icon={<Film className="h-4 w-4" />} title="관련 영상" />
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
+                      {relatedVideos.map((rv) => (
+                        <Link key={rv.id} href={`/videos/${rv.id}`} className="min-w-[200px] snap-start group">
+                          <div className="relative aspect-video rounded-xl overflow-hidden bg-white/5 mb-2">
+                            {rv.thumbnailUrl ? (
+                              <Image src={rv.thumbnailUrl} alt={rv.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Video className="h-8 w-8 text-white/20" />
+                              </div>
+                            )}
+                          </div>
+                          <h4 className="text-sm font-medium line-clamp-2 text-white/90 group-hover:text-violet-300 transition-colors">{rv.title}</h4>
+                          <p className="text-xs text-white/50 mt-1">{rv.owner.chineseName || rv.owner.name}</p>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                )}
               </>
             ) : null}
           </div>
@@ -386,44 +474,93 @@ export default function VideoDetailPage() {
                 <Skeleton className="h-48 w-full rounded-2xl bg-white/5" />
               </>
             ) : video ? (
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 backdrop-blur-sm">
-                <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/30">
-                  영상 정보
-                </p>
-                <div className="space-y-3">
-                  <QuickInfoRow
-                    icon={<Calendar className="h-3.5 w-3.5" />}
-                    label="업로드 날짜"
-                    value={new Date(video.createdAt).toLocaleDateString("ko-KR")}
-                  />
-                  {spec?.duration && (
-                    <QuickInfoRow
-                      icon={<Clock className="h-3.5 w-3.5" />}
-                      label="영상 길이"
-                      value={formatDuration(spec.duration)}
-                    />
-                  )}
-                  {spec?.fileSize && (
-                    <QuickInfoRow
-                      icon={<HardDrive className="h-3.5 w-3.5" />}
-                      label="파일 크기"
-                      value={formatFileSize(spec.fileSize)}
-                    />
-                  )}
-                  {video.category && (
-                    <QuickInfoRow
-                      icon={<Tag className="h-3.5 w-3.5" />}
-                      label="카테고리"
-                      value={video.category.name}
-                    />
-                  )}
+              <div className="space-y-6">
+                {/* Creator Card */}
+                <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-br from-violet-500/10 to-indigo-500/5 p-6 backdrop-blur-sm flex flex-col items-center text-center">
+                  <div className="relative mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-white/10 bg-slate-800">
+                    {video.owner.avatarUrl ? (
+                      <Image src={video.owner.avatarUrl} alt={video.owner.name} fill className="object-cover" />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-xl font-bold text-white/50">
+                        {video.owner.chineseName && video.owner.chineseName.length > 0
+                          ? video.owner.chineseName.charAt(0)
+                          : video.owner.name.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-1">
+                    {video.owner.chineseName || video.owner.name}
+                  </h3>
+                  <p className="text-sm text-white/50 mb-4">크리에이터</p>
+                  <Button className="w-full gap-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(124,58,237,0.3)]">
+                    <UserPlus className="h-4 w-4" />
+                    팔로우
+                  </Button>
                 </div>
+
+                {/* Video Info */}
+                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 backdrop-blur-sm">
+                  <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/30">
+                    영상 정보
+                  </p>
+                  <div className="space-y-3">
+                    <QuickInfoRow
+                      icon={<Calendar className="h-3.5 w-3.5" />}
+                      label="업로드 날짜"
+                      value={new Date(video.createdAt).toLocaleDateString("ko-KR")}
+                    />
+                    {spec?.duration && (
+                      <QuickInfoRow
+                        icon={<Clock className="h-3.5 w-3.5" />}
+                        label="영상 길이"
+                        value={formatDuration(spec.duration)}
+                      />
+                    )}
+                    {spec?.fileSize && (
+                      <QuickInfoRow
+                        icon={<HardDrive className="h-3.5 w-3.5" />}
+                        label="파일 크기"
+                        value={formatFileSize(spec.fileSize)}
+                      />
+                    )}
+                    {video.category && (
+                      <QuickInfoRow
+                        icon={<Tag className="h-3.5 w-3.5" />}
+                        label="카테고리"
+                        value={video.category.name}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Related Videos (Desktop only) */}
+                {relatedVideos.length > 0 && (
+                  <div className="hidden md:block rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 backdrop-blur-sm">
+                    <p className="mb-4 text-xs font-medium uppercase tracking-wider text-white/30">
+                      관련 영상
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {relatedVideos.map((rv) => (
+                        <Link key={rv.id} href={`/videos/${rv.id}`} className="group">
+                          <div className="relative aspect-video rounded-lg overflow-hidden bg-white/5 mb-2">
+                            {rv.thumbnailUrl ? (
+                              <Image src={rv.thumbnailUrl} alt={rv.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Video className="h-6 w-6 text-white/20" />
+                              </div>
+                            )}
+                          </div>
+                          <h4 className="text-xs font-medium line-clamp-2 text-white/80 group-hover:text-violet-300 transition-colors">{rv.title}</h4>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : null}
           </aside>
         </div>
-
-        {/* 관련 영상 — 숨김 처리 */}
 
         {/* ── Bottom Nav — 항상 즉시 표시 ── */}
         <div className="mt-16 border-t border-white/[0.06] pb-16 pt-8">
@@ -436,6 +573,65 @@ export default function VideoDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Fixed Bottom Action Bar (Mobile only) ── */}
+      {video && (
+        <div className="fixed bottom-14 left-0 right-0 z-50 border-t border-white/10 bg-slate-950/90 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden">
+          <div className="mx-auto flex max-w-7xl items-center justify-around">
+            <div className="flex flex-col items-center gap-1">
+              <LikeButton
+                videoId={video.id}
+                initialLiked={video.hasLiked ?? false}
+                initialCount={video.likeCount ?? 0}
+              />
+              <span className="text-[10px] text-white/50">좋아요</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <BookmarkButton
+                videoId={video.id}
+                initialBookmarked={video.hasBookmarked ?? false}
+              />
+              <span className="text-[10px] text-white/50">북마크</span>
+            </div>
+            
+            <Sheet open={isCommentSheetOpen} onOpenChange={setIsCommentSheetOpen}>
+              <SheetTrigger asChild>
+                <div className="flex flex-col items-center gap-1 cursor-pointer">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full text-white/70 hover:bg-white/10 hover:text-white"
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                  </Button>
+                  <span className="text-[10px] text-white/50">댓글 {video.commentCount ?? 0}</span>
+                </div>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl bg-[#06060e] border-white/10 p-0 flex flex-col">
+                <SheetHeader className="p-4 border-b border-white/10 text-left">
+                  <SheetTitle className="text-white">댓글 {video.commentCount ?? 0}개</SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-y-auto p-4">
+                  <VideoComments videoId={video.id} />
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <div className="flex flex-col items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-white/70 hover:bg-white/10 hover:text-white"
+                onClick={() => handleShare(video.title)}
+                title="공유"
+              >
+                <Share2 className="h-5 w-5" />
+              </Button>
+              <span className="text-[10px] text-white/50">공유</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

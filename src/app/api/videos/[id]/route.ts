@@ -36,8 +36,12 @@ export async function GET(_request: Request, { params }: Params) {
         counselor: { select: { id: true, displayName: true } },
         technicalSpec: true,
         eventLogs: { orderBy: { createdAt: "desc" }, take: 10 },
-        _count: { select: { likes: true } },
+        _count: { select: { likes: true, comments: true } },
         likes: {
+          where: { userId: user?.id ?? "none" },
+          select: { id: true }
+        },
+        bookmarks: {
           where: { userId: user?.id ?? "none" },
           select: { id: true }
         },
@@ -45,13 +49,13 @@ export async function GET(_request: Request, { params }: Params) {
     });
 
     if (!video) {
+      // ... (생략됨, 동일)
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "영상을 찾을 수 없습니다." } },
         { status: 404 }
       );
     }
 
-    // 비공개 영상(DRAFT/PENDING)은 인증 필요
     if (video.status !== "APPROVED" && video.status !== "FINAL" && !user) {
       return NextResponse.json(
         { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
@@ -59,19 +63,21 @@ export async function GET(_request: Request, { params }: Params) {
       );
     }
 
-    // duration이 없으면 백그라운드에서 Cloudflare 동기화
     lazySyncDuration(video.id, video.streamUid, !!video.technicalSpec?.duration).catch(() => { });
 
-    // 응답 데이터에 hasLiked 및 likeCount 추가 변환
-    const { likes, _count, ...restVideo } = video;
+    const { likes, bookmarks, _count, ...restVideo } = video;
     const hasLiked = user ? (likes?.length ?? 0) > 0 : false;
+    const hasBookmarked = user ? (bookmarks?.length ?? 0) > 0 : false;
     const likeCount = _count?.likes ?? 0;
+    const commentCount = _count?.comments ?? 0;
 
     return NextResponse.json({
       data: {
         ...restVideo,
         hasLiked,
         likeCount,
+        hasBookmarked,
+        commentCount,
       }
     });
   } catch (err) {

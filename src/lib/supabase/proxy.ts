@@ -77,7 +77,15 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // 공개 경로 — 인증 불필요
-  const publicPrefixes = ["/auth", "/videos", "/api/videos", "/api/stars", "/api/categories", "/api/health", "/offline"];
+  const publicPrefixes = [
+    "/auth", "/videos", "/api/videos", "/api/stars", "/api/categories", "/api/health", "/offline",
+    "/community", "/explore",           // 커뮤니티 공개 접근
+    "/api/board", "/api/search",        // 게시판/검색 API 공개
+    "/api/reports", "/api/users",       // 신고/팔로우 API
+    "/api/announcements", "/api/faq",   // 공지/FAQ API
+    "/announcements", "/faq", "/guide", // 공지/FAQ/가이드 페이지
+    "/portfolio",                       // 포트폴리오 공개
+  ];
   const isPublicRoute =
     pathname === "/" ||
     pathname === "/stars" ||

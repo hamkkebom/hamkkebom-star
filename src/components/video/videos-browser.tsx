@@ -14,10 +14,18 @@ import {
   Play,
   Home,
   LayoutGrid,
+  Filter,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoCard } from "@/components/video/video-card";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 /* ───── Types ───── */
 type CategoryRow = {
@@ -329,6 +337,34 @@ export function VideosBrowser() {
   const [durationRange, setDurationRange] = useState<DurationRange>("all");
   const [sort, setSort] = useState<"latest" | "oldest">("latest");
 
+  // Mobile Filter Sheet State
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [tempCategoryId, setTempCategoryId] = useState<string | null>(null);
+  const [tempOwnerId, setTempOwnerId] = useState<string | null>(null);
+  const [tempCounselorId, setTempCounselorId] = useState<string | null>(null);
+  const [tempDurationRange, setTempDurationRange] = useState<DurationRange>("all");
+  const [tempSort, setTempSort] = useState<"latest" | "oldest">("latest");
+
+  const applyMobileFilters = () => {
+    setCategoryId(tempCategoryId);
+    setOwnerId(tempOwnerId);
+    setCounselorId(tempCounselorId);
+    setDurationRange(tempDurationRange);
+    setSort(tempSort);
+    setPage(1);
+    setIsMobileFilterOpen(false);
+  };
+
+  const resetMobileFilters = () => {
+    setTempCategoryId(null);
+    setTempOwnerId(null);
+    setTempCounselorId(null);
+    setTempDurationRange("all");
+    setTempSort("latest");
+  };
+
+  const activeFilterCount = (categoryId ? 1 : 0) + (ownerId ? 1 : 0) + (counselorId ? 1 : 0) + (durationRange !== "all" ? 1 : 0) + (sort !== "latest" ? 1 : 0);
+
   // ─── Data fetching: categories, owners, counselors ───
   const { data: categoriesData } = useQuery<{ data: CategoryRow[] }>({
     queryKey: ["video-categories"],
@@ -460,7 +496,7 @@ export function VideosBrowser() {
     : "상담사";
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-20 md:pb-0">
       {/* ═══ Premium Search & Filter Header ═══ */}
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="mx-auto max-w-[1920px] px-4 py-4 sm:px-6 space-y-4">
@@ -502,7 +538,7 @@ export function VideosBrowser() {
               <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
                 <button
                   onClick={() => resetFilters("home")}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                  className={`flex items-center gap-1.5 px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
                       ${!showGrid
                       ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
                       : "text-muted-foreground hover:text-foreground"
@@ -513,7 +549,7 @@ export function VideosBrowser() {
                 </button>
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                  className={`flex items-center gap-1.5 px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
                       ${showGrid
                       ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
                       : "text-muted-foreground hover:text-foreground"
@@ -529,7 +565,7 @@ export function VideosBrowser() {
                   <button
                     key={key}
                     onClick={() => { setDurationRange(key); setPage(1); }}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                    className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
                       ${durationRange === key
                         ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
                         : "text-muted-foreground hover:text-foreground"
@@ -543,7 +579,7 @@ export function VideosBrowser() {
               <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
                 <button
                   onClick={() => { setSort("latest"); setPage(1); }}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                  className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
                       ${sort === "latest"
                       ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
                       : "text-muted-foreground hover:text-foreground"
@@ -553,7 +589,7 @@ export function VideosBrowser() {
                 </button>
                 <button
                   onClick={() => { setSort("oldest"); setPage(1); }}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                  className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
                       ${sort === "oldest"
                       ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
                       : "text-muted-foreground hover:text-foreground"
@@ -565,7 +601,7 @@ export function VideosBrowser() {
             </div>
 
             {/* Right: Detailed Filters (Dropdowns) */}
-            <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto justify-start sm:justify-end">
+            <div className="hidden md:flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto justify-start sm:justify-end">
 
               {/* Category Dropdown (Grid) */}
               <FilterDropdown label={catLabel} icon={Film} isActive={!!categoryId} onClear={() => { setCategoryId(null); setPage(1); }} align="right">
@@ -632,8 +668,111 @@ export function VideosBrowser() {
                 </button>
               )}
             </div>
+
+            {/* Mobile Filter Button */}
+            <div className="md:hidden flex items-center">
+              <Sheet open={isMobileFilterOpen} onOpenChange={(open) => {
+                setIsMobileFilterOpen(open);
+                if (open) {
+                  setTempCategoryId(categoryId);
+                  setTempOwnerId(ownerId);
+                  setTempCounselorId(counselorId);
+                  setTempDurationRange(durationRange);
+                  setTempSort(sort);
+                }
+              }}>
+                <SheetTrigger asChild>
+                  <button className="relative flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background text-foreground text-sm font-medium">
+                    <Filter className="w-4 h-4" />
+                    필터
+                    {activeFilterCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-[10px] font-bold text-white">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl px-0 pb-0 flex flex-col">
+                  <SheetHeader className="px-6 pb-4 border-b">
+                    <SheetTitle className="text-left">필터</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex-1 overflow-y-auto px-6 py-4 space-y-8">
+                    {/* Category */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">카테고리</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setTempCategoryId(null)} className={`px-4 py-2 rounded-full text-sm ${!tempCategoryId ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>전체</button>
+                        {categories.map(c => (
+                          <button key={c.id} onClick={() => setTempCategoryId(c.id)} className={`px-4 py-2 rounded-full text-sm ${tempCategoryId === c.id ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>{c.name}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Owner */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">제작자</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setTempOwnerId(null)} className={`px-4 py-2 rounded-full text-sm ${!tempOwnerId ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>전체</button>
+                        {owners.map(o => (
+                          <button key={o.id} onClick={() => setTempOwnerId(o.id)} className={`px-4 py-2 rounded-full text-sm ${tempOwnerId === o.id ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>{o.chineseName || o.name}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Counselor */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">상담사</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setTempCounselorId(null)} className={`px-4 py-2 rounded-full text-sm ${!tempCounselorId ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>전체</button>
+                        {counselors.map(c => (
+                          <button key={c.id} onClick={() => setTempCounselorId(c.id)} className={`px-4 py-2 rounded-full text-sm ${tempCounselorId === c.id ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>{c.displayName}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Duration */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">길이</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {(Object.entries(DURATION_RANGES) as [DurationRange, { label: string }][]).map(([key, val]) => (
+                          <button key={key} onClick={() => setTempDurationRange(key)} className={`px-4 py-2 rounded-full text-sm ${tempDurationRange === key ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>{val.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Sort */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">정렬</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setTempSort("latest")} className={`px-4 py-2 rounded-full text-sm ${tempSort === "latest" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>최신순</button>
+                        <button onClick={() => setTempSort("oldest")} className={`px-4 py-2 rounded-full text-sm ${tempSort === "oldest" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>오래된순</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border-t flex gap-3 bg-background">
+                    <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={resetMobileFilters}>초기화</Button>
+                    <Button className="flex-1 h-12 rounded-xl" onClick={applyMobileFilters}>적용</Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Mobile Category Chips */}
+      <div className="md:hidden flex items-center gap-2 overflow-x-auto px-4 py-3 scrollbar-none [&::-webkit-scrollbar]:hidden border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-[140px] z-30">
+        <button
+          onClick={() => { setCategoryId(null); setPage(1); }}
+          className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${!categoryId ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground"}`}
+        >
+          전체
+        </button>
+        {categories.map(c => (
+          <button
+            key={c.id}
+            onClick={() => { setCategoryId(c.id); setPage(1); }}
+            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${categoryId === c.id ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground"}`}
+          >
+            {c.name}
+          </button>
+        ))}
       </div>
 
       {/* ═══ V6 Enterprise Cinematic Hero Section (Netflix/Disney+ Style) ═══ */}
@@ -763,7 +902,7 @@ export function VideosBrowser() {
         {displayData && !isDefaultView && displayData.totalPages > 1 && (
           <div className="mt-12 flex flex-col items-center justify-center gap-4">
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)} className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full px-6">
+              <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)} className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full px-4 md:px-6 h-11 md:h-9">
                 이전
               </Button>
               <div className="flex items-center gap-1">
@@ -777,14 +916,14 @@ export function VideosBrowser() {
                     <button
                       key={pageNum}
                       onClick={() => setPage(pageNum)}
-                      className={`h-9 min-w-9 rounded-full px-2 text-sm font-bold transition-colors ${pageNum === page ? "bg-black text-white dark:bg-white dark:text-black shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(255,255,255,0.5)]" : "text-zinc-500 hover:text-foreground dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"}`}
+                      className={`h-11 min-w-[44px] md:h-9 md:min-w-[36px] rounded-full px-2 text-sm font-bold transition-colors ${pageNum === page ? "bg-black text-white dark:bg-white dark:text-black shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(255,255,255,0.5)]" : "text-zinc-500 hover:text-foreground dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"}`}
                     >
                       {pageNum}
                     </button>
                   );
                 })}
               </div>
-              <Button variant="ghost" size="sm" disabled={page >= displayData.totalPages} onClick={() => setPage(page + 1)} className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full px-6">
+              <Button variant="ghost" size="sm" disabled={page >= displayData.totalPages} onClick={() => setPage(page + 1)} className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full px-4 md:px-6 h-11 md:h-9">
                 다음
               </Button>
             </div>
