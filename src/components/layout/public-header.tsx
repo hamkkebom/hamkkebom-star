@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, User } from "lucide-react";
+import { Sparkles, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { useAuthStore } from "@/stores/auth-store";
 
 const navLinks: { href: string; label: string; icon: typeof Sparkles; exact?: boolean }[] = [
-  // { href: "/stars", label: "스타 소개", icon: Sparkles },  // 임시 비활성화
+  { href: "/community", label: "커뮤니티", icon: Users },
 ];
 
 export function PublicHeader() {
@@ -16,15 +16,12 @@ export function PublicHeader() {
   const user = useAuthStore((s) => s.user);
   const isLoading = useAuthStore((s) => s.isLoading);
 
-
-
   return (
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-         {/* Logo */}
-         {/* Logo - Force reload to reset state */}
-         {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-         <a href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+        {/* Logo - Force reload to reset state */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md shadow-violet-500/25">
             <Sparkles className="h-5 w-5" />
           </div>

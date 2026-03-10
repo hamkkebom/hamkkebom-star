@@ -7,6 +7,7 @@ import { HeroBanner } from "@/components/home/hero-banner";
 import { WeeklyChart } from "@/components/home/weekly-chart";
 import { PopularStars } from "@/components/home/popular-stars";
 import { FaqPreview } from "@/components/home/faq-preview";
+import { CommunityPreview } from "@/components/home/community-preview";
 
 export default function Home() {
   return (
@@ -26,6 +27,9 @@ export default function Home() {
 
         {/* 주간 인기 차트 */}
         <WeeklyChart />
+
+        {/* 커뮤니티 미리보기 */}
+        <CommunityPreview />
 
         {/* 영상 브라우저 (기존 기능 유지) */}
         <Suspense fallback={<div className="py-20 text-center text-muted-foreground">영상 로딩 중...</div>}>

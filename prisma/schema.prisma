@@ -58,6 +58,12 @@ model User {
   starConversations   Conversation[] @relation("StarConversations")
   adminConversations  Conversation[] @relation("AdminConversations")
   sentMessages        Message[]      @relation("SentMessages")
+  videoComments       VideoComment[] @relation("VideoComments")
+  commentLikes        CommentLike[]
+  videoBookmarks      VideoBookmark[]
+  boardPosts          BoardPost[]    @relation("BoardPosts")
+  boardComments       BoardComment[] @relation("BoardComments")
+  boardPostLikes      BoardPostLike[]
   @@map("users")
 }
 
@@ -223,6 +229,9 @@ model Video {
   eventLogs       VideoEventLog[]
   likes           VideoLike[]
   technicalSpec   VideoTechnicalSpec?
+  comments        VideoComment[]
+  bookmarks       VideoBookmark[]
+  boardPosts      BoardPost[]
   category        Category?           @relation(fields: [categoryId], references: [id])
   counselor       Counselor?          @relation(fields: [counselorId], references: [id])
   owner           User                @relation(fields: [ownerId], references: [id])
@@ -679,4 +688,123 @@ model Message {
   @@index([senderId])
   @@index([conversationId, isRead, senderId])
   @@map("messages")
+}
+
+// ── 커뮤니티 모델 ──
+
+model VideoComment {
+  id         String         @id @default(cuid())
+  videoId    String
+  authorId   String
+  content    String
+  parentId   String?
+  likeCount  Int            @default(0)
+  isPinned   Boolean        @default(false)
+  isHidden   Boolean        @default(false)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  video      Video          @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  author     User           @relation("VideoComments", fields: [authorId], references: [id])
+  parent     VideoComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  children   VideoComment[] @relation("CommentReplies")
+  likes      CommentLike[]
+
+  @@index([videoId, createdAt])
+  @@index([authorId])
+  @@map("video_comments")
+}
+
+model CommentLike {
+  id        String       @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime     @default(now())
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   VideoComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@map("comment_likes")
+}
+
+model VideoBookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  videoId   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@map("video_bookmarks")
+}
+
+model BoardPost {
+  id           String        @id @default(cuid())
+  boardType    BoardType     @default(FREE)
+  title        String
+  content      String
+  authorId     String
+  isPinned     Boolean       @default(false)
+  isNotice     Boolean       @default(false)
+  isHidden     Boolean       @default(false)
+  viewCount    Int           @default(0)
+  likeCount    Int           @default(0)
+  tags         String[]
+  thumbnailUrl String?
+  videoId      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  author       User          @relation("BoardPosts", fields: [authorId], references: [id])
+  video        Video?        @relation(fields: [videoId], references: [id])
+  comments     BoardComment[]
+  likes        BoardPostLike[]
+
+  @@index([boardType, createdAt])
+  @@index([authorId])
+  @@index([boardType, isPinned])
+  @@map("board_posts")
+}
+
+model BoardComment {
+  id        String         @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  parentId  String?
+  isHidden  Boolean        @default(false)
+  createdAt DateTime       @default(now())
+
+  post      BoardPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User           @relation("BoardComments", fields: [authorId], references: [id])
+  parent    BoardComment?  @relation("BoardCommentReplies", fields: [parentId], references: [id])
+  children  BoardComment[] @relation("BoardCommentReplies")
+
+  @@index([postId, createdAt])
+  @@map("board_comments")
+}
+
+model BoardPostLike {
+  id        String    @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      BoardPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("board_post_likes")
+}
+
+enum BoardType {
+  FREE
+  QNA
+  TIPS
+  SHOWCASE
+  RECRUITMENT
+  NOTICE
 }
