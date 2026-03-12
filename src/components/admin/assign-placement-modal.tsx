@@ -166,7 +166,7 @@ export function AssignPlacementModal({ open, onOpenChange, videoId = "", videoTi
                             ) : searchResults?.length === 0 && searchQuery ? (
                                 <p className="text-center text-sm text-muted-foreground py-6">검색 결과가 없습니다.</p>
                             ) : (
-                                searchResults?.map((video: Record<string, string>) => (
+                                searchResults?.map((video: { id: string; title: string; owner?: { name: string; chineseName?: string } }) => (
                                     <button
                                         key={video.id}
                                         onClick={() => {

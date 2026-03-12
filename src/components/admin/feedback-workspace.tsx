@@ -387,7 +387,7 @@ export function FeedbackWorkspace({
                                                         seekTo={seekTo}
                                                     />
                                                     <AnnotationCanvas
-                                                        videoRef={videoContainerRef as unknown as React.RefObject<HTMLVideoElement>}
+                                                        videoRef={videoContainerRef}
                                                         currentTime={currentTime}
                                                         onSave={(strokes, time) => {
                                                             setIsTimeCaptured(true);
