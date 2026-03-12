@@ -11,12 +11,13 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getAuthUser({ skipApprovalCheck: true });
+  const user = await getAuthUser({ skipApprovalCheck: true, skipBanCheck: true });
 
   if (!user || user.role !== "ADMIN") {
     redirect("/");
   }
 
+  // ADMIN은 ban 체크하지 않음 (ADMIN은 ban할 수 없음)
   if (!user.isApproved) {
     redirect("/auth/pending-approval");
   }

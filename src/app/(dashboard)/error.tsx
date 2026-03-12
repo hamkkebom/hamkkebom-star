@@ -22,7 +22,7 @@ export default function DashboardError({
         <AlertTriangle className="w-10 h-10 text-red-400" />
       </div>
 
-      <h2 className="text-2xl font-bold text-foreground dark:text-white mb-2">
+      <h2 className="text-2xl font-bold text-foreground dark:text-foreground mb-2">
         문제가 발생했습니다
       </h2>
 

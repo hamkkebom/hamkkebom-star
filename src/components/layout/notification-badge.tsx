@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/popover";
 import { useNotifications } from "@/hooks/use-notifications";
 import { cn } from "@/lib/utils";
+import { timeAgo } from "@/lib/date-utils";
 
 type NotificationType = "feedback" | "submission" | "settlement" | "assignment";
 
@@ -23,17 +24,6 @@ type NotificationItem = {
   createdAt: string;
   link: string;
 };
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "방금 전";
-  if (mins < 60) return `${mins}분 전`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  const days = Math.floor(hours / 24);
-  return `${days}일 전`;
-}
 
 const typeIcons = {
   feedback: MessageSquare,
@@ -102,7 +92,7 @@ export function NotificationBadge() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative hover:bg-accent/50 transition-colors">
+        <Button variant="ghost" size="icon" className="relative hover:bg-accent/50 transition-colors min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0">
           <Bell className="h-5 w-5" />
           {totalCount > 0 && (
             <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground animate-scale-in">
@@ -112,7 +102,7 @@ export function NotificationBadge() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 p-0 overflow-hidden border-border/50 shadow-2xl shadow-primary/5 dark:shadow-primary/10">
-        <div className="relative border-b border-border/50 bg-muted/30 px-4 py-3 backdrop-blur-sm">
+        <div className="relative border-b border-border/50 bg-muted/30 px-4 py-3">
           <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-primary via-primary/50 to-transparent" />
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold tracking-tight">알림</h3>

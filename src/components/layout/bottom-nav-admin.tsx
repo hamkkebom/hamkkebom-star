@@ -12,6 +12,8 @@ import {
     Menu,
     ChevronRight,
     LogOut,
+    FolderKanban,
+    UsersRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -25,11 +27,11 @@ import { navGroups, colorMap, externalItems } from "@/lib/admin-nav";
 import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
-    { id: "home", href: "/admin", label: "홈", icon: LayoutDashboard, exact: true },
-    { id: "users", href: "/admin/users", label: "가입 승인", icon: UserCheck },
-    { id: "reviews", href: "/admin/reviews", label: "리뷰/할당", icon: ClipboardList, isSpecial: true },
-    { id: "settings", href: "/admin/settings", label: "설정", icon: Settings },
-    { id: "menu", href: "#", label: "전체 메뉴", icon: Menu, isMenu: true },
+    { id: "home", href: "/admin", label: "대시보드", icon: LayoutDashboard, exact: true },
+    { id: "project", href: "/admin/requests", label: "프로젝트", icon: FolderKanban },
+    { id: "reviews", href: "/admin/reviews", label: "피드백", icon: ClipboardList, isSpecial: true },
+    { id: "creator", href: "/admin/users", label: "계정", icon: UsersRound },
+    { id: "menu", href: "#", label: "전체", icon: Menu, isMenu: true },
 ];
 
 export function BottomNavAdmin() {
@@ -59,7 +61,7 @@ export function BottomNavAdmin() {
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
             {/* 관리자 탭은 조금 더 정돈되고 단단한 느낌 유지 */}
-            <div className="absolute inset-0 bg-background/95 backdrop-blur-xl border-t border-border/50 shadow-[0_-5px_20px_rgba(0,0,0,0.05)]" />
+            <div className="absolute inset-0 bg-card border-t border-border shadow-[0_-5px_20px_rgba(0,0,0,0.05)]" />
 
             <nav className="relative flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom,16px)] pt-2 h-[calc(64px+env(safe-area-inset-bottom,16px))]">
                 {navItems.map((item) => {
@@ -106,7 +108,7 @@ export function BottomNavAdmin() {
                                                     </div>
                                                     <div className="grid grid-cols-1 gap-1">
                                                         {group.children.map((child) => {
-                                                            const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
+                                                            const isChildActive = child.exact ? pathname === child.href : (pathname === child.href || pathname.startsWith(child.href + "/"));
                                                             return (
                                                                 <SheetTrigger asChild key={child.href}>
                                                                     <Link

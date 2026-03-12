@@ -1,6 +1,4 @@
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header } from "@/components/layout/header";
-import { BottomNavStar } from "@/components/layout/bottom-nav-star";
+import { StarTopNav } from "@/components/layout/star-top-nav";
 import { OfflineBanner } from "@/components/pwa/offline-banner";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { UpdatePrompt } from "@/components/pwa/update-prompt";
@@ -13,9 +11,22 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getAuthUser({ skipApprovalCheck: true });
+  const user = await getAuthUser({ skipApprovalCheck: true, skipBanCheck: true });
 
-  if (!user || user.role !== "STAR") {
+  if (!user) {
+    redirect("/");
+  }
+
+  // Ban → Suspend → Role → Approve 순서 체크 (Momus 리뷰 반영)
+  if (user.isBanned) {
+    redirect("/auth/banned");
+  }
+
+  if (user.suspendedUntil && user.suspendedUntil > new Date()) {
+    redirect("/auth/suspended");
+  }
+
+  if (user.role !== "STAR") {
     redirect("/");
   }
 
@@ -24,21 +35,15 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-[100dvh]">
-      <div className="hidden md:block h-[100dvh]">
-        <Sidebar />
-      </div>
-      <div className="flex flex-1 flex-col overflow-hidden relative">
-        <Header isAdmin={false} />
-        <main className="flex-1 overflow-y-auto p-4 pb-[calc(1rem+64px+env(safe-area-inset-bottom,16px))] md:p-6">
-          {children}
-        </main>
-        <BottomNavStar />
-        <OfflineBanner />
-        <InstallPrompt />
-        <UpdatePrompt />
-        <PushPermission />
-      </div>
+    <div className="flex h-[100dvh] flex-col">
+      <StarTopNav />
+      <main className="flex-1 overflow-y-auto p-4 pb-[calc(1rem+64px+env(safe-area-inset-bottom,16px))] md:p-6 md:pb-6">
+        {children}
+      </main>
+      <OfflineBanner />
+      <InstallPrompt />
+      <UpdatePrompt />
+      <PushPermission />
     </div>
   );
 }

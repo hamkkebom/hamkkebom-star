@@ -5,16 +5,12 @@ const serviceLinks = [
   { href: "/videos", label: "영상" },
   { href: "/best", label: "베스트 영상" },
   { href: "/categories", label: "카테고리" },
-  { href: "/counselors", label: "상담사" },
-  { href: "/showcase", label: "미디어 쇼케이스" },
   { href: "/stars", label: "크리에이터" },
   { href: "/community", label: "커뮤니티" },
 ];
 
 const supportLinks = [
-  { href: "/announcements", label: "공지사항" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/guide", label: "이용 가이드" },
+  { href: "/help", label: "지원센터" },
   { href: "/recruit", label: "STAR 모집" },
   { href: "/updates", label: "업데이트" },
 ];
@@ -27,12 +23,12 @@ const legalLinks = [
 
 export function PublicFooter() {
   return (
-    <footer className="border-t bg-muted/30">
+    <footer className="border-t border-border bg-card">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-4">
           {/* Logo */}
-          <div className="flex items-start gap-3 col-span-1 border-b pb-6 md:border-none md:pb-0 border-border/10">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-indigo-600 text-white shadow-md shadow-violet-500/20">
+          <div className="flex items-start gap-3 col-span-1 border-b pb-6 md:border-none md:pb-0 border-border">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Sparkles className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
@@ -46,7 +42,7 @@ export function PublicFooter() {
             <nav className="flex flex-col gap-3">
               <h4 className="font-bold text-sm text-foreground mb-1">서비스</h4>
               {serviceLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                   {link.label}
                 </Link>
               ))}
@@ -56,7 +52,7 @@ export function PublicFooter() {
             <nav className="flex flex-col gap-3">
               <h4 className="font-bold text-sm text-foreground mb-1">지원</h4>
               {supportLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                   {link.label}
                 </Link>
               ))}
@@ -66,7 +62,7 @@ export function PublicFooter() {
             <nav className="flex flex-col gap-3">
               <h4 className="font-bold text-sm text-foreground mb-1">법적 고지</h4>
               {legalLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                   {link.label}
                 </Link>
               ))}
@@ -75,8 +71,8 @@ export function PublicFooter() {
         </div>
 
         {/* Copyright */}
-        <div className="mt-12 pt-6 border-t border-border/10 flex items-center justify-between">
-          <p className="text-xs font-medium text-muted-foreground/60 w-full text-center md:text-left">
+        <div className="mt-12 pt-6 border-t border-border flex items-center justify-between">
+          <p className="text-xs font-medium text-muted-foreground w-full text-center md:text-left">
             © {new Date().getFullYear()} 함께봄. All rights reserved.
           </p>
         </div>

@@ -52,10 +52,11 @@ function SidebarGroup({
   pendingCounts?: Record<string, number>;
 }) {
   const colors = colorMap[group.color];
-  const hasActiveChild = group.children.some((c) => pathname === c.href || pathname.startsWith(c.href + "/"));
+  const matchChild = (c: NavChild) => c.exact ? pathname === c.href : (pathname === c.href || pathname.startsWith(c.href + "/"));
+  const hasActiveChild = group.children.some(matchChild);
   // 가장 구체적인(긴) 매칭 href 찾기 — 부모/자식 경로 중복 활성화 방지
   const activeHref = group.children
-    .filter(c => pathname === c.href || pathname.startsWith(c.href + "/"))
+    .filter(matchChild)
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
@@ -109,7 +110,7 @@ function SidebarGroup({
 
         {/* 그룹 레벨 승인 대기 뱃지 */}
         {group.id === "project" && (pendingCounts?.pendingApprovals ?? 0) > 0 && (
-          <span className="mr-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-500 text-white shadow-sm animate-pulse">
+          <span className="mr-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-500 text-foreground shadow-sm animate-pulse">
             {pendingCounts!.pendingApprovals}
           </span>
         )}
@@ -228,7 +229,7 @@ export function AdminSidebar() {
   // pathname 기반 자동 펼침: 해당 그룹 ID 찾기
   const findActiveGroupId = () => {
     for (const group of navGroups) {
-      if (group.children.some((c) => pathname.startsWith(c.href))) {
+      if (group.children.some((c) => c.exact ? pathname === c.href : pathname.startsWith(c.href))) {
         return group.id;
       }
     }
@@ -282,7 +283,7 @@ export function AdminSidebar() {
       <div className="flex h-14 items-center px-5">
         <Link href="/" className="group flex items-center gap-2.5 transition-transform hover:scale-[1.02] active:scale-95 duration-300">
           <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 via-orange-500 to-amber-500 shadow-lg shadow-orange-500/20 group-hover:shadow-orange-500/40 transition-shadow">
-            <span className="text-white font-extrabold text-xs">관</span>
+            <span className="text-foreground font-extrabold text-xs">관</span>
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-bold tracking-tight text-foreground/90 group-hover:text-primary transition-colors">
@@ -299,33 +300,6 @@ export function AdminSidebar() {
 
       {/* 네비게이션 */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {/* 대시보드 (독립) */}
-        <Link
-          href="/admin"
-          className={cn(
-            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-300 relative overflow-hidden mb-3",
-            isDashboardActive
-              ? "bg-primary/10 text-primary shadow-sm"
-              : "text-muted-foreground hover:bg-sidebar-accent/40 hover:text-foreground",
-          )}
-        >
-          {isDashboardActive && (
-            <motion.span
-              layoutId="dashboard-indicator"
-              className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-primary shadow-[0_0_12px_rgba(124,58,237,0.4)]"
-            />
-          )}
-          <LayoutDashboard
-            className={cn(
-              "h-[18px] w-[18px] transition-colors",
-              isDashboardActive ? "text-primary" : "text-muted-foreground",
-            )}
-          />
-          대시보드
-        </Link>
-
-        <div className="mx-1 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-2" />
-
         {/* 그룹 메뉴 */}
         <div className="space-y-1">
           {navGroups.map((group) => (
@@ -367,7 +341,7 @@ export function AdminSidebar() {
             <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
             <span className="text-xs font-bold tracking-tight">업데이트 노트</span>
           </div>
-          <span className="text-[9px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full shadow-sm group-hover:scale-105 transition-transform">
+          <span className="text-[9px] font-bold bg-amber-500 text-foreground px-1.5 py-0.5 rounded-full shadow-sm group-hover:scale-105 transition-transform">
             NEW
           </span>
         </Link>
@@ -386,7 +360,7 @@ export function AdminSidebar() {
                   <User className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                 )}
               </div>
-              <div className="absolute -bottom-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border-2 border-background shadow-sm">
+              <div className="absolute -bottom-1 -right-1 bg-red-500 text-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full border-2 border-background shadow-sm">
                 ADMIN
               </div>
             </div>
