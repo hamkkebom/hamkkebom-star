@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 type NotificationItem = {
   id: string;
-  type: "feedback" | "submission" | "settlement" | "assignment";
+  type: "feedback" | "submission" | "settlement" | "assignment" | "board_comment" | "board_like";
   title: string;
   description: string;
   createdAt: string;
@@ -141,6 +141,61 @@ export async function GET() {
           link: "/stars/upload",
         });
       }
+    }
+
+    // Recent board comments on my posts
+    const recentComments = await prisma.boardComment.findMany({
+      where: {
+        post: { authorId: user.id },
+        authorId: { not: user.id },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        author: { select: { name: true } },
+        post: { select: { id: true, title: true } },
+      },
+    });
+
+    for (const comment of recentComments) {
+      items.push({
+        id: comment.id,
+        type: "board_comment",
+        title: `새 댓글 — ${comment.post.title}`,
+        description: `${comment.author.name}: ${comment.content.substring(0, 60)}${comment.content.length > 60 ? "..." : ""}`,
+        createdAt: comment.createdAt.toISOString(),
+        link: `/community/posts/${comment.post.id}`,
+      });
+    }
+
+    // Recent board post likes
+    const recentLikes = await prisma.boardPostLike.findMany({
+      where: {
+        post: { authorId: user.id },
+        user: { id: { not: user.id } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        createdAt: true,
+        user: { select: { name: true } },
+        post: { select: { id: true, title: true } },
+      },
+    });
+
+    for (const like of recentLikes) {
+      items.push({
+        id: like.id,
+        type: "board_like",
+        title: `좋아요 — ${like.post.title}`,
+        description: `${like.user.name}님이 좋아합니다.`,
+        createdAt: like.createdAt.toISOString(),
+        link: `/community/posts/${like.post.id}`,
+      });
     }
   }
 

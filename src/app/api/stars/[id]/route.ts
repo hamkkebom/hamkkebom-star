@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveSignedThumbnail } from "@/lib/thumbnail";
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
@@ -80,6 +81,18 @@ export async function GET(_request: Request, { params }: Params) {
     where: { video: { ownerId: id, status: { in: ["APPROVED", "FINAL"] } } },
   });
 
+  // 각 영상에 서명된 썸네일 URL 생성
+  const videosWithThumbnails = await Promise.all(
+    user.videos.map(async (v) => {
+      const signedThumbnailUrl = await resolveSignedThumbnail(v.thumbnailUrl, v.streamUid);
+      return {
+        ...v,
+        signedThumbnailUrl,
+        owner: { name: user.name },
+      };
+    }),
+  );
+
   return NextResponse.json({
     data: {
       id: user.id,
@@ -91,10 +104,7 @@ export async function GET(_request: Request, { params }: Params) {
       website: user.portfolio?.website ?? null,
       socialLinks: user.portfolio?.socialLinks ?? null,
       portfolioItems: user.portfolio?.items ?? [],
-      videos: user.videos.map((v) => ({
-        ...v,
-        owner: { name: user.name },
-      })),
+      videos: videosWithThumbnails,
       videoCount: user._count.videos,
       followerCount: user._count.followers,
       totalViews: aggregateStats._sum.viewCount ?? 0,

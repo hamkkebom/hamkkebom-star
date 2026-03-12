@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { resolveSignedThumbnail } from "@/lib/thumbnail";
 
 export const dynamic = "force-dynamic";
 
@@ -53,12 +54,13 @@ export async function GET(request: Request) {
     ]);
 
     // Transform to match VideoCard expected format
-    const data = bookmarks.map((b) => {
+    const data = await Promise.all(bookmarks.map(async (b) => {
       const v = b.video;
+      const signedThumbnailUrl = await resolveSignedThumbnail(v.thumbnailUrl, v.streamUid);
       return {
         id: v.id,
         title: v.title,
-        thumbnailUrl: v.thumbnailUrl,
+        thumbnailUrl: signedThumbnailUrl || v.thumbnailUrl,
         streamUid: v.streamUid,
         duration: v.technicalSpec?.duration || null,
         ownerName: v.owner.name,
@@ -67,7 +69,7 @@ export async function GET(request: Request) {
         viewCount: v.viewCount,
         bookmarkedAt: b.createdAt.toISOString(),
       };
-    });
+    }));
 
     return NextResponse.json({
       data,

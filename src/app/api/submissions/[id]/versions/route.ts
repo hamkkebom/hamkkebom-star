@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { resolveSignedThumbnail } from "@/lib/thumbnail";
 export const dynamic = "force-dynamic";
 
 /**
@@ -55,10 +56,18 @@ export async function GET(
         orderBy: { versionSlot: "asc" },
     });
 
+    // 썸네일 서명 처리
+    const signedVersions = await Promise.all(
+        versions.map(async (v) => ({
+            ...v,
+            signedThumbnailUrl: await resolveSignedThumbnail(v.thumbnailUrl, v.streamUid),
+        })),
+    );
+
     return NextResponse.json({
         data: {
             currentId: id,
-            versions,
+            versions: signedVersions,
         },
     });
 }

@@ -43,6 +43,34 @@ export async function POST(request: NextRequest) {
         },
     });
 
+    // Auto-moderation: hide target if 5+ pending reports
+    const AUTO_HIDE_THRESHOLD = 5;
+    const pendingReportCount = await prisma.report.count({
+        where: { targetType, targetId, status: "PENDING" },
+    });
+
+    if (pendingReportCount >= AUTO_HIDE_THRESHOLD) {
+        if (targetType === "POST") {
+            await prisma.boardPost.update({
+                where: { id: targetId },
+                data: { isHidden: true },
+            }).catch(() => {}); // Silently fail if post not found
+        } else if (targetType === "COMMENT") {
+            // Try BoardComment first, then VideoComment
+            const boardResult = await prisma.boardComment.update({
+                where: { id: targetId },
+                data: { isHidden: true },
+            }).catch(() => null);
+
+            if (!boardResult) {
+                await prisma.videoComment.update({
+                    where: { id: targetId },
+                    data: { isHidden: true },
+                }).catch(() => {});
+            }
+        }
+    }
+
     return NextResponse.json(report, { status: 201 });
 }
 
@@ -57,7 +85,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "PENDING";
     const page = Math.max(1, Number(searchParams.get("page") || "1"));
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (status !== "ALL") where.status = status;
 
     const [reports, total] = await Promise.all([

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { VideoStatus, VideoSubject } from "@/generated/prisma/client";
+import { VideoStatus, VideoSubject, SubmissionStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 const videoStatuses = new Set(Object.values(VideoStatus));
 const videoSubjects = new Set(Object.values(VideoSubject));
+const submissionStatuses = new Set(Object.values(SubmissionStatus));
 
 // ── 서버사이드 썸네일 URL 메모리 캐시 (TTL 50분) ──
 const thumbnailCache = new Map<string, { url: string; expiresAt: number }>();
@@ -48,6 +49,7 @@ export async function GET(request: Request) {
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
   const q = searchParams.get("q")?.trim(); // Global search query
+  const submissionStatusParam = searchParams.get("submissionStatus")?.trim();
 
   if (sort !== "latest" && sort !== "oldest" && sort !== "popular") {
     return NextResponse.json(
@@ -110,20 +112,27 @@ export async function GET(request: Request) {
     ]
   } : {};
 
-  const dateFilter: any = {};
+  const dateFilter: Record<string, unknown> = {};
   if (dateFrom || dateTo) {
-    dateFilter.createdAt = {};
+    const createdAt: Record<string, Date> = {};
     if (dateFrom) {
-      dateFilter.createdAt.gte = new Date(dateFrom);
+      createdAt.gte = new Date(dateFrom);
     }
     if (dateTo) {
       const end = new Date(dateTo);
       end.setUTCHours(23, 59, 59, 999);
-      dateFilter.createdAt.lte = end;
+      createdAt.lte = end;
     }
+    dateFilter.createdAt = createdAt;
   }
 
-  const where: any = {
+  // submissionStatus 필터: 최신 제출물의 상태 기준으로 영상 필터링
+  const submissionStatusFilter =
+    user?.role === "ADMIN" && submissionStatusParam && submissionStatuses.has(submissionStatusParam as SubmissionStatus)
+      ? { submissions: { some: { status: submissionStatusParam as SubmissionStatus } } }
+      : {};
+
+  const where: Record<string, unknown> = {
     ...(categoryId ? { categoryId } : {}),
     ...(ownerId ? { ownerId } : {}),
     ...ownerFilter,
@@ -133,9 +142,14 @@ export async function GET(request: Request) {
     ...(videoSubjectParam ? { videoSubject: videoSubjectParam as VideoSubject } : {}),
     ...durationFilter,
     ...statusFilter,
+    ...submissionStatusFilter,
   };
 
-  const [rows, total] = await Promise.all([
+  // 상태별 카운트 (필터 무관, ADMIN만 전체 상태 카운트 / 비로그인은 공개 상태만)
+  const statusCountWhere: Record<string, unknown> = { ...where };
+  delete statusCountWhere.status; // 상태 필터 제외한 나머지 조건으로 카운트
+
+  const [rows, total, statusCountsRaw] = await Promise.all([
     prisma.video.findMany({
       where,
       include: {
@@ -166,7 +180,7 @@ export async function GET(request: Request) {
           },
         },
         submissions: {
-          select: { id: true, thumbnailUrl: true },
+          select: { id: true, thumbnailUrl: true, status: true },
           orderBy: { createdAt: "desc" },
           take: 1,
         },
@@ -181,6 +195,11 @@ export async function GET(request: Request) {
       take: pageSize,
     }),
     prisma.video.count({ where }),
+    prisma.video.groupBy({
+      by: ["status"],
+      where: statusCountWhere,
+      _count: true,
+    }),
   ]);
 
   // ── 썸네일 URL 생성 (메모리 캐시 활용, 캐시 미스만 외부 호출) ──
@@ -215,7 +234,7 @@ export async function GET(request: Request) {
           }
         }
 
-        // 3순위: Cloudflare Stream 자동 생성 썸네일
+        // 3순위: Cloudflare Stream 자동 생성 썸네일 (서명 토큰 → unsigned fallback)
         if (!finalThumbnailUrl && row.streamUid) {
           try {
             const token = await getSignedPlaybackToken(row.streamUid);
@@ -223,6 +242,10 @@ export async function GET(request: Request) {
               finalThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
             }
           } catch { /* ignore */ }
+          // 서명 토큰 실패 시 unsigned fallback (requireSignedURLs 미설정 영상용)
+          if (!finalThumbnailUrl) {
+            finalThumbnailUrl = `https://videodelivery.net/${row.streamUid}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+          }
         }
 
         // 캐시에 저장
@@ -231,16 +254,43 @@ export async function GET(request: Request) {
         }
       }
 
-      const latestSubmissionId = row.submissions?.[0]?.id ?? null;
-      const { submissions, ...restRow } = row;
+      const latestSubmission = row.submissions?.[0] ?? null;
+      const { submissions: _submissions, ...restRow } = row;
 
       return {
         ...restRow,
         signedThumbnailUrl: finalThumbnailUrl,
-        submissionId: latestSubmissionId,
+        submissionId: latestSubmission?.id ?? null,
+        latestSubmissionStatus: latestSubmission?.status ?? null,
       };
     })
   );
+
+  // 상태별 카운트를 { DRAFT: 0, PENDING: 5, ... } 형태로 변환
+  const statusCounts: Record<string, number> = {};
+  for (const row of statusCountsRaw) {
+    statusCounts[row.status] = row._count;
+  }
+
+  // 제출물 상태별 카운트 (ADMIN만, submissionStatus 필터 제외한 조건으로)
+  let submissionStatusCounts: Record<string, number> | undefined;
+  if (user?.role === "ADMIN") {
+    const baseWhere: Record<string, unknown> = { ...where };
+    delete baseWhere.submissions; // submissionStatus 필터 제외
+    const subCounts = await prisma.submission.groupBy({
+      by: ["status"],
+      where: {
+        video: baseWhere,
+        // 최신 제출물만 카운트하기 위해 video 연결된 것만
+        videoId: { not: null },
+      },
+      _count: true,
+    });
+    submissionStatusCounts = {};
+    for (const sc of subCounts) {
+      submissionStatusCounts[sc.status] = (submissionStatusCounts[sc.status] ?? 0) + sc._count;
+    }
+  }
 
   return NextResponse.json(
     {
@@ -249,6 +299,8 @@ export async function GET(request: Request) {
       page,
       pageSize,
       totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      statusCounts,
+      ...(submissionStatusCounts ? { submissionStatusCounts } : {}),
     },
     {
       headers: {

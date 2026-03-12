@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveSignedThumbnail } from "@/lib/thumbnail";
 export const dynamic = "force-dynamic";
 
 /**
@@ -50,12 +51,34 @@ export async function GET(_req: Request, { params }: Params) {
             title: true,
             description: true,
             thumbnailUrl: true,
+            streamUid: true,
             viewCount: true,
             createdAt: true,
         },
         orderBy: { createdAt: "desc" },
         take: 20,
     });
+
+    // 썸네일 서명 처리
+    const signedVideos = await Promise.all(
+        approvedVideos.map(async (v) => ({
+            ...v,
+            signedThumbnailUrl: await resolveSignedThumbnail(v.thumbnailUrl, v.streamUid),
+        })),
+    );
+
+    // 포트폴리오 항목 썸네일 서명 처리
+    const signedItems = portfolio?.items
+        ? await Promise.all(
+            portfolio.items.map(async (item) => ({
+                ...item,
+                signedThumbnailUrl: await resolveSignedThumbnail(
+                    item.thumbnailUrl,
+                    null, // portfolio items don't have streamUid
+                ),
+            })),
+        )
+        : [];
 
     return NextResponse.json({
         data: {
@@ -71,10 +94,10 @@ export async function GET(_req: Request, { params }: Params) {
                     showreel: portfolio.showreel,
                     website: portfolio.website,
                     socialLinks: portfolio.socialLinks,
-                    items: portfolio.items,
+                    items: signedItems,
                 }
                 : null,
-            videos: approvedVideos,
+            videos: signedVideos,
         },
     });
 }

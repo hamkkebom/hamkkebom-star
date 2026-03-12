@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { addSignedThumbnails } from "@/lib/thumbnail";
 
 export const dynamic = "force-dynamic";
 
@@ -73,12 +74,14 @@ export async function GET(
     });
 
     // Remove status from the response to match requirements
-    const { status, ...counselorData } = counselor;
+    const { status: _status, ...counselorData } = counselor;
+
+    const signedVideos = await addSignedThumbnails(videos);
 
     return NextResponse.json({
       data: {
         counselor: counselorData,
-        videos,
+        videos: signedVideos,
         totalVideos,
       },
     });

@@ -23,8 +23,11 @@ export async function GET(_request: Request, { params }: Params) {
       createdBy: { select: { id: true, name: true, email: true } },
       assignments: {
         include: {
-          star: { select: { id: true, name: true, email: true, avatarUrl: true } },
+          star: { select: { id: true, name: true, chineseName: true, email: true, avatarUrl: true } },
+          reviewedBy: { select: { id: true, name: true } },
+          _count: { select: { submissions: true } },
         },
+        orderBy: { createdAt: "desc" },
       },
       _count: { select: { assignments: { where: { status: { in: ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"] } } } } },
     },

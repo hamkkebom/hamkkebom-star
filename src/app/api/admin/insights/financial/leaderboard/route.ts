@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { startOfMonth } from "date-fns";
+import { resolveSignedThumbnail } from "@/lib/thumbnail";
 
 export const dynamic = "force-dynamic";
 
@@ -77,9 +78,17 @@ export async function GET() {
             .sort((a, b) => b.totalAmount - a.totalAmount)
             .slice(0, 5);
 
-        const topVideos = Object.values(videoMap)
+        const topVideosRaw = Object.values(videoMap)
             .sort((a, b) => b.totalAmount - a.totalAmount)
             .slice(0, 5);
+
+        // 썸네일 서명 처리
+        const topVideos = await Promise.all(
+            topVideosRaw.map(async (v) => ({
+                ...v,
+                signedThumbnail: await resolveSignedThumbnail(v.thumbnail, null),
+            })),
+        );
 
         return NextResponse.json({ topStars, topVideos });
     } catch (error) {

@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 export const dynamic = "force-dynamic";
 
+const VALID_MEDIUMS = ["YOUTUBE", "INSTAGRAM", "TIKTOK"];
+
 // 매체 목록 로드 (특정 비디오 기준)
 export async function GET(request: Request) {
     const user = await getAuthUser();
@@ -39,7 +41,14 @@ export async function POST(request: Request) {
         const { videoId, medium, url, externalId, note, status = "ACTIVE" } = body;
 
         if (!videoId || !medium) {
-            return NextResponse.json({ error: "videoId and medium are required" }, { status: 400 });
+            return NextResponse.json({ error: { code: "BAD_REQUEST", message: "videoId와 medium은 필수입니다." } }, { status: 400 });
+        }
+
+        if (!VALID_MEDIUMS.includes(medium)) {
+            return NextResponse.json(
+                { error: { code: "VALIDATION_ERROR", message: `유효하지 않은 매체입니다. 허용: ${VALID_MEDIUMS.join(", ")}` } },
+                { status: 400 }
+            );
         }
 
         // 이미 해당 매체에 등록되어 있는지 확인

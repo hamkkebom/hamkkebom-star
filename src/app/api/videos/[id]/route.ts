@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { getVideoStatus } from "@/lib/cloudflare/stream";
+import { resolveSignedThumbnail } from "@/lib/thumbnail";
 export const dynamic = "force-dynamic";
 
 /**
@@ -45,6 +46,10 @@ export async function GET(_request: Request, { params }: Params) {
           where: { userId: user?.id ?? "none" },
           select: { id: true }
         },
+        ratings: {
+          where: { userId: user?.id ?? "none" },
+          select: { value: true }
+        },
         mediaPlacements: {
           where: { status: { in: ["ACTIVE", "COMPLETED"] } },
           select: { id: true, medium: true, channel: true, url: true, startDate: true, campaignName: true },
@@ -70,19 +75,27 @@ export async function GET(_request: Request, { params }: Params) {
 
     lazySyncDuration(video.id, video.streamUid, !!video.technicalSpec?.duration).catch(() => { });
 
-    const { likes, bookmarks, _count, ...restVideo } = video;
+    const { likes, bookmarks, ratings, _count, ratingSum, ratingCount, ...restVideo } = video;
     const hasLiked = user ? (likes?.length ?? 0) > 0 : false;
     const hasBookmarked = user ? (bookmarks?.length ?? 0) > 0 : false;
     const likeCount = _count?.likes ?? 0;
     const commentCount = _count?.comments ?? 0;
+    const averageRating = ratingCount > 0 ? ratingSum / ratingCount : 0;
+    const userRating = user && ratings?.length > 0 ? ratings[0].value : null;
+
+    const signedThumbnailUrl = await resolveSignedThumbnail(restVideo.thumbnailUrl, restVideo.streamUid);
 
     return NextResponse.json({
       data: {
         ...restVideo,
+        signedThumbnailUrl,
         hasLiked,
         likeCount,
         hasBookmarked,
         commentCount,
+        averageRating,
+        ratingCount,
+        userRating,
       }
     });
   } catch (err) {

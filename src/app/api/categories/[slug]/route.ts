@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { addSignedThumbnails } from "@/lib/thumbnail";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export async function GET(
       );
     }
 
-    const videos = await prisma.video.findMany({
+    const rawVideos = await prisma.video.findMany({
       where: {
         categoryId: category.id,
         status: { in: ["APPROVED", "FINAL"] },
@@ -41,6 +42,7 @@ export async function GET(
         id: true,
         title: true,
         thumbnailUrl: true,
+        streamUid: true,
         viewCount: true,
         createdAt: true,
         owner: {
@@ -61,6 +63,8 @@ export async function GET(
       },
       take: 6,
     });
+
+    const videos = await addSignedThumbnails(rawVideos);
 
     // Get top creators in this category
     const topCreatorsData = await prisma.video.groupBy({

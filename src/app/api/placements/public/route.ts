@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveSignedThumbnail } from "@/lib/thumbnail";
 
 export const dynamic = "force-dynamic";
+
+const VALID_MEDIUMS = ["YOUTUBE", "INSTAGRAM", "TIKTOK"];
 
 export async function GET(request: Request) {
   try {
@@ -10,12 +13,15 @@ export async function GET(request: Request) {
     const pageSize = Math.min(50, Math.max(1, Number(searchParams.get("pageSize") ?? "12") || 12));
     const medium = searchParams.get("medium")?.trim();
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       status: { in: ["ACTIVE", "COMPLETED"] },
     };
 
     if (medium && medium !== "전체") {
       where.medium = medium;
+    } else {
+      // "전체" 또는 미지정: 유효한 매체만 필터
+      where.medium = { in: VALID_MEDIUMS };
     }
 
     const [total, placements, statsRaw] = await Promise.all([
@@ -52,7 +58,7 @@ export async function GET(request: Request) {
       }),
       prisma.mediaPlacement.groupBy({
         by: ["medium"],
-        where: { status: { in: ["ACTIVE", "COMPLETED"] } },
+        where: { status: { in: ["ACTIVE", "COMPLETED"] }, medium: { in: VALID_MEDIUMS } },
         _count: { id: true },
       }),
     ]);
@@ -67,8 +73,24 @@ export async function GET(request: Request) {
     
     stats.other = stats.total - stats.youtube - stats.instagram - stats.tiktok;
 
+    // 썸네일 서명 처리 (placement.video.thumbnailUrl)
+    const signedPlacements = await Promise.all(
+      placements.map(async (p) => ({
+        ...p,
+        video: p.video
+          ? {
+              ...p.video,
+              signedThumbnailUrl: await resolveSignedThumbnail(
+                p.video.thumbnailUrl,
+                null, // placements don't have streamUid directly
+              ),
+            }
+          : p.video,
+      })),
+    );
+
     return NextResponse.json({
-      data: placements,
+      data: signedPlacements,
       total,
       page,
       pageSize,

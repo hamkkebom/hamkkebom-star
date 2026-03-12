@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { resolveSignedThumbnail } from "@/lib/thumbnail";
 export const dynamic = "force-dynamic";
+
+const VALID_MEDIUMS = ["YOUTUBE", "INSTAGRAM", "TIKTOK"];
 
 export async function GET(request: Request) {
     const user = await getAuthUser();
@@ -15,9 +18,12 @@ export async function GET(request: Request) {
     const pageSize = parseInt(searchParams.get("pageSize") || "30", 10);
 
     try {
-        const whereClause: any = {};
+        const whereClause: Record<string, unknown> = {};
         if (medium && medium !== "ALL") {
             whereClause.medium = medium;
+        } else {
+            // "ALL" 또는 미지정: 유효한 매체만 필터 (잘못된 medium 값 제외)
+            whereClause.medium = { in: VALID_MEDIUMS };
         }
 
         const [placements, total] = await Promise.all([
@@ -45,9 +51,10 @@ export async function GET(request: Request) {
             prisma.mediaPlacement.count({ where: whereClause })
         ]);
 
-        // Stats calculation (Optional to do it here, but helps UI)
+        // Stats calculation — 유효한 매체만 카운트
         const stats = await prisma.mediaPlacement.groupBy({
             by: ['medium'],
+            where: { medium: { in: VALID_MEDIUMS } },
             _count: true,
         });
 
@@ -55,10 +62,27 @@ export async function GET(request: Request) {
             acc[curr.medium as string] = curr._count;
             return acc;
         }, {} as Record<string, number>);
-        statsMap.ALL = total;
+        // ALL = 유효 매체 합산 (잘못된 medium 제외)
+        statsMap.ALL = Object.values(statsMap).reduce((sum, n) => sum + n, 0);
+
+        // 썸네일 서명 처리 (placement.video.thumbnailUrl)
+        const signedPlacements = await Promise.all(
+            placements.map(async (p) => ({
+                ...p,
+                video: p.video
+                    ? {
+                        ...p.video,
+                        signedThumbnailUrl: await resolveSignedThumbnail(
+                            p.video.thumbnailUrl,
+                            null,
+                        ),
+                    }
+                    : p.video,
+            })),
+        );
 
         return NextResponse.json({
-            data: placements,
+            data: signedPlacements,
             stats: statsMap,
             meta: {
                 total,

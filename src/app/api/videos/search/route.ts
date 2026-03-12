@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { VideoStatus, VideoSubject } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { addSignedThumbnails } from "@/lib/thumbnail";
 import type { Prisma } from "@/generated/prisma/client";
 export const dynamic = "force-dynamic";
 
@@ -105,9 +106,14 @@ export async function GET(request: Request) {
     prisma.video.count({ where }),
   ]);
 
+  // 썸네일 서명 처리
+  const signedRows = await addSignedThumbnails(
+    rows.map((r) => ({ ...r, streamUid: r.streamUid ?? null, thumbnailUrl: r.thumbnailUrl ?? null })),
+  );
+
   return NextResponse.json(
     {
-      data: rows,
+      data: signedRows,
       total,
       page,
       pageSize,

@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { id } = await params;
     const { status } = await request.json();
 
-    if (!["REVIEWED", "RESOLVED", "DISMISSED"].includes(status)) {
+    if (!["UNDER_REVIEW", "RESOLVED", "DISMISSED", "ESCALATED"].includes(status)) {
         return NextResponse.json({ error: "유효하지 않은 상태입니다." }, { status: 400 });
     }
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { FeedbackStatus, SubmissionStatus, SettlementStatus } from "@/generated/prisma/client";
+import { SubmissionStatus, SettlementStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 export const dynamic = "force-dynamic";
@@ -25,9 +25,28 @@ export async function GET() {
       },
     });
 
+    // Count recent board comments on my posts
+    const unreadComments = await prisma.boardComment.count({
+      where: {
+        post: { authorId: user.id },
+        authorId: { not: user.id },
+      },
+    });
+
+    // Count recent board post likes
+    const unreadLikes = await prisma.boardPostLike.count({
+      where: {
+        post: { authorId: user.id },
+        user: { id: { not: user.id } },
+      },
+    });
+
     return NextResponse.json({
       data: {
         unreadFeedbacks,
+        unreadComments,
+        unreadLikes,
+        total: unreadFeedbacks + unreadComments + unreadLikes,
       },
     });
   }

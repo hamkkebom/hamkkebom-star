@@ -7,16 +7,16 @@ export const dynamic = "force-dynamic";
 
 const validBoardTypes = new Set(Object.values(BoardType));
 
-/** GET /api/board/posts — 게시글 목록 */
+/** GET /api/board/posts — 게시글 목록 (offset + cursor 페이지네이션) */
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const boardType = searchParams.get("boardType");
     const sort = searchParams.get("sort") || "latest";
-    const page = Math.max(1, Number(searchParams.get("page") || "1"));
     const pageSize = Math.min(30, Number(searchParams.get("pageSize") || "20"));
     const q = searchParams.get("q")?.trim();
+    const cursor = searchParams.get("cursor");
 
-    const where: any = { isHidden: false };
+    const where: Record<string, unknown> = { isHidden: false };
 
     if (boardType && validBoardTypes.has(boardType as BoardType)) {
         where.boardType = boardType;
@@ -28,6 +28,60 @@ export async function GET(request: NextRequest) {
             { content: { contains: q, mode: "insensitive" } },
         ];
     }
+
+    const includeClause = {
+        author: { select: { id: true, name: true, chineseName: true, avatarUrl: true, role: true } },
+        _count: { select: { comments: true, likes: true } },
+    } as const;
+
+    // --- Cursor-based pagination (for infinite scroll) ---
+    if (cursor) {
+        const separatorIdx = cursor.lastIndexOf("_");
+        const cursorDate = separatorIdx > 0 ? cursor.slice(0, separatorIdx) : null;
+        const cursorId = separatorIdx > 0 ? cursor.slice(separatorIdx + 1) : null;
+
+        if (cursorDate && cursorId) {
+            const parsedDate = new Date(cursorDate);
+            where.OR = where.OR
+                ? {
+                      AND: [
+                          { OR: where.OR },
+                          {
+                              OR: [
+                                  { createdAt: { lt: parsedDate } },
+                                  { createdAt: parsedDate, id: { lt: cursorId } },
+                              ],
+                          },
+                      ],
+                  }
+                : {
+                      OR: [
+                          { createdAt: { lt: parsedDate } },
+                          { createdAt: parsedDate, id: { lt: cursorId } },
+                      ],
+                  };
+        }
+
+        const posts = await prisma.boardPost.findMany({
+            where,
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take: pageSize + 1,
+            include: includeClause,
+        });
+
+        const hasMore = posts.length > pageSize;
+        const items = hasMore ? posts.slice(0, pageSize) : posts;
+        const lastItem = items[items.length - 1];
+        const nextCursor =
+            hasMore && lastItem
+                ? `${lastItem.createdAt.toISOString()}_${lastItem.id}`
+                : null;
+
+        return NextResponse.json({ data: items, nextCursor, pageSize });
+    }
+
+    // --- Offset-based pagination (default) ---
+    const page = Math.max(1, Number(searchParams.get("page") || "1"));
 
     const orderBy = sort === "popular"
         ? [{ likeCount: "desc" as const }, { createdAt: "desc" as const }]
@@ -41,10 +95,7 @@ export async function GET(request: NextRequest) {
             orderBy,
             skip: (page - 1) * pageSize,
             take: pageSize,
-            include: {
-                author: { select: { id: true, name: true, chineseName: true, avatarUrl: true, role: true } },
-                _count: { select: { comments: true, likes: true } },
-            },
+            include: includeClause,
         }),
         prisma.boardPost.count({ where }),
     ]);
@@ -63,7 +114,7 @@ export async function POST(request: NextRequest) {
     const user = await getAuthUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { title, content, boardType, tags, videoId } = await request.json();
+    const { title, content, contentJson, boardType, tags, videoId } = await request.json();
 
     if (!title?.trim() || !content?.trim()) {
         return NextResponse.json({ error: "제목과 내용을 입력해주세요." }, { status: 400 });
@@ -73,6 +124,7 @@ export async function POST(request: NextRequest) {
         data: {
             title: title.trim(),
             content: content.trim(),
+            contentJson: contentJson ?? undefined,
             boardType: boardType && validBoardTypes.has(boardType) ? boardType : "FREE",
             tags: tags || [],
             videoId: videoId || null,
