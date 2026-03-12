@@ -47,40 +47,41 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* ── Theme: 별들에게 물어봐 (몽환 우주 테마) ── */
+/* ── Theme: 별들에게 물어봐 (크리에이터 커뮤니티) ── */
+/* ArtStation/Vimeo 기반 솔리드 다크, 시안/블루 액센트 (hue 230) */
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.12 0.02 280 / 0.7);
-  --foreground: oklch(0.95 0.01 280);
-  --card: oklch(0.15 0.03 280 / 0.55);
-  --card-foreground: oklch(0.96 0.01 280);
-  --popover: oklch(0.15 0.03 280 / 0.65);
-  --popover-foreground: oklch(0.96 0.01 280);
-  --primary: oklch(0.75 0.18 280);
-  --primary-foreground: oklch(0.12 0.02 280);
-  --secondary: oklch(0.25 0.05 280 / 0.6);
-  --secondary-foreground: oklch(0.92 0.02 280);
-  --muted: oklch(0.2 0.04 280 / 0.5);
-  --muted-foreground: oklch(0.7 0.04 280);
-  --accent: oklch(0.3 0.06 280 / 0.6);
-  --accent-foreground: oklch(0.95 0.03 280);
+  --background: oklch(0.13 0.01 230);
+  --foreground: oklch(0.93 0.01 230);
+  --card: oklch(0.17 0.01 230);
+  --card-foreground: oklch(0.93 0.01 230);
+  --popover: oklch(0.17 0.015 230);
+  --popover-foreground: oklch(0.93 0.01 230);
+  --primary: oklch(0.7 0.15 230);
+  --primary-foreground: oklch(0.13 0.01 230);
+  --secondary: oklch(0.22 0.02 230);
+  --secondary-foreground: oklch(0.9 0.01 230);
+  --muted: oklch(0.2 0.015 230);
+  --muted-foreground: oklch(0.72 0.03 230);
+  --accent: oklch(0.25 0.025 230);
+  --accent-foreground: oklch(0.93 0.02 230);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.3 0.06 280 / 0.4);
-  --input: oklch(0.3 0.06 280 / 0.4);
-  --ring: oklch(0.75 0.18 280);
-  --chart-1: oklch(0.65 0.22 280);
+  --border: oklch(0.28 0.02 230);
+  --input: oklch(0.22 0.02 230);
+  --ring: oklch(0.7 0.15 230);
+  --chart-1: oklch(0.65 0.15 230);
   --chart-2: oklch(0.7 0.17 162);
   --chart-3: oklch(0.77 0.19 70);
-  --chart-4: oklch(0.63 0.265 304);
-  --chart-5: oklch(0.65 0.246 16);
-  --sidebar: oklch(0.12 0.03 280 / 0.6);
-  --sidebar-foreground: oklch(0.95 0.01 280);
-  --sidebar-primary: oklch(0.75 0.18 280);
-  --sidebar-primary-foreground: oklch(0.12 0.02 280);
-  --sidebar-accent: oklch(0.25 0.05 280 / 0.6);
-  --sidebar-accent-foreground: oklch(0.92 0.02 280);
-  --sidebar-border: oklch(0.3 0.06 280 / 0.4);
-  --sidebar-ring: oklch(0.75 0.18 280);
+  --chart-4: oklch(0.63 0.2 300);
+  --chart-5: oklch(0.65 0.2 16);
+  --sidebar: oklch(0.14 0.01 230);
+  --sidebar-foreground: oklch(0.93 0.01 230);
+  --sidebar-primary: oklch(0.7 0.15 230);
+  --sidebar-primary-foreground: oklch(0.13 0.01 230);
+  --sidebar-accent: oklch(0.22 0.02 230);
+  --sidebar-accent-foreground: oklch(0.9 0.01 230);
+  --sidebar-border: oklch(0.28 0.02 230);
+  --sidebar-ring: oklch(0.7 0.15 230);
 }
 
 @layer base {
@@ -88,15 +89,15 @@
     @apply border-border outline-ring/50;
   }
 
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+
   body {
     @apply bg-background text-foreground;
-    background-image: url('/images/ask_the_stars_bg_bright.png');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
-    background-color: #0B0515;
-    /* Fallback */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 }
 
@@ -160,16 +161,16 @@
 
   .card-hover:hover {
     transform: translateY(-2px);
-    background-color: oklch(0.25 0.04 280 / 0.65);
+    background-color: oklch(0.22 0.02 230);
     box-shadow:
-      0 8px 25px -5px oklch(0.7 0.2 280 / 25%),
-      0 4px 10px -4px oklch(0.7 0.2 280 / 20%);
+      0 8px 25px -5px oklch(0.5 0.1 230 / 15%),
+      0 4px 10px -4px oklch(0.5 0.1 230 / 10%);
   }
 }
 
 /* ── Gradient text utility ── */
 .text-gradient {
-  background: linear-gradient(135deg, oklch(0.75 0.18 280), oklch(0.8 0.2 310));
+  background: linear-gradient(135deg, oklch(0.7 0.15 230), oklch(0.75 0.18 200));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -188,7 +189,7 @@
 /* ── ✨ Premium Scrollbar ── */
 .scrollbar-pretty {
   scrollbar-width: thin;
-  scrollbar-color: oklch(0.6 0.1 280 / 40%) transparent;
+  scrollbar-color: oklch(0.5 0.08 230 / 40%) transparent;
 }
 
 .scrollbar-pretty::-webkit-scrollbar {
@@ -208,8 +209,8 @@
 
 .scrollbar-pretty::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg,
-      oklch(0.5 0.12 280 / 40%),
-      oklch(0.45 0.15 280 / 50%));
+      oklch(0.4 0.06 230 / 40%),
+      oklch(0.35 0.08 230 / 50%));
   border-radius: 100px;
   border: 1.5px solid transparent;
   background-clip: padding-box;
@@ -218,14 +219,14 @@
 
 .scrollbar-pretty::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg,
-      oklch(0.6 0.18 280 / 65%),
-      oklch(0.55 0.2 280 / 75%));
+      oklch(0.5 0.1 230 / 65%),
+      oklch(0.45 0.12 230 / 75%));
 }
 
 .scrollbar-pretty::-webkit-scrollbar-thumb:active {
   background: linear-gradient(180deg,
-      oklch(0.65 0.2 280 / 80%),
-      oklch(0.6 0.22 280 / 90%));
+      oklch(0.55 0.12 230 / 80%),
+      oklch(0.5 0.15 230 / 90%));
 }
 
 /* ── Float animation for login orbs ── */
@@ -247,12 +248,12 @@
   0%,
   100% {
     opacity: 1;
-    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
+    box-shadow: 0 0 0 0 rgba(56, 152, 236, 0.4);
   }
 
   50% {
     opacity: 0.9;
-    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0);
+    box-shadow: 0 0 0 4px rgba(56, 152, 236, 0);
   }
 }
 
@@ -324,4 +325,77 @@
 
 .animate-scale-in {
   animation: scaleIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* ── Tiptap Editor Styles ── */
+.ProseMirror {
+  min-height: 300px;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1rem;
+  color: var(--muted-foreground);
+}
+
+.ProseMirror code {
+  background: var(--muted);
+  padding: 0.2em 0.4em;
+  border-radius: var(--radius-sm);
+  font-size: 0.875em;
+}
+
+.ProseMirror pre {
+  background: var(--muted);
+  padding: 1rem;
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
+.ProseMirror pre code {
+  background: none;
+  padding: 0;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5em;
+}
+
+.ProseMirror a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }

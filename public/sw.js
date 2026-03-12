@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hamkkebom-pwa-v1';
+const CACHE_NAME = 'hamkkebom-pwa-v4';
 const PRECACHE_URLS = [
     '/',
     '/stars/dashboard',
@@ -35,69 +35,100 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const FALLBACK_RESPONSE = () =>
+    new Response('', { status: 504, statusText: 'Offline' });
+
+const FALLBACK_JSON = () =>
+    new Response(JSON.stringify({ error: { code: 'OFFLINE', message: 'Offline' } }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+    });
+
+const FALLBACK_HTML = () =>
+    new Response('<h1>Offline</h1>', {
+        status: 503,
+        headers: { 'Content-Type': 'text/html' },
+    });
+
+/** Network first — 성공 시 캐시 갱신, 실패 시 캐시 폴백 */
+async function networkFirst(request, fallbackFn) {
+    try {
+        const response = await fetch(request);
+        if (response && (response.ok || response.type === 'opaque')) {
+            const cache = await caches.open(CACHE_NAME);
+            try { await cache.put(request, response.clone()); } catch { /* cache put 실패 무시 */ }
+        }
+        return response;
+    } catch {
+        try {
+            const cached = await caches.match(request);
+            if (cached) return cached;
+        } catch { /* 캐시 조회 실패 무시 */ }
+        return fallbackFn ? fallbackFn() : FALLBACK_RESPONSE();
+    }
+}
+
+/** Cache first — 캐시 히트 시 즉시 반환, 미스 시 네트워크 */
+async function cacheFirst(request) {
+    try {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+    } catch { /* 캐시 조회 실패 무시 */ }
+
+    try {
+        const response = await fetch(request);
+        if (response && (response.ok || response.type === 'opaque')) {
+            const cache = await caches.open(CACHE_NAME);
+            try { await cache.put(request, response.clone()); } catch { /* cache put 실패 무시 */ }
+        }
+        return response;
+    } catch {
+        return FALLBACK_RESPONSE();
+    }
+}
+
+// ─── Fetch handler ───────────────────────────────────────────────────────────
+
 self.addEventListener('fetch', (event) => {
+    // GET 요청만 처리 (navigate 포함)
+    if (event.request.method !== 'GET') return;
+
     const url = new URL(event.request.url);
 
-    // 1. API GET 요청: Network First
+    // Same-origin만 처리
+    if (url.origin !== self.location.origin) return;
+
+    // 개발 모드 HMR / hot-reload / 내부 Next.js 요청은 무시
+    if (url.pathname.startsWith('/_next/webpack')) return;
+    if (url.pathname.startsWith('/__nextjs')) return;
+
+    // 1. API: Network First
     if (url.pathname.startsWith('/api/')) {
-        if (event.request.method === 'GET') {
-            event.respondWith(
-                fetch(event.request)
-                    .then((response) => {
-                        const resClone = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
-                        return response;
-                    })
-                    .catch(() => caches.match(event.request))
-            );
-        }
-        return; // POST/PUT/DELETE는 브라우저 기본 동작에 맡김
+        event.respondWith(networkFirst(event.request, FALLBACK_JSON));
+        return;
     }
 
     // 2. Next.js 정적 에셋: Cache First
     if (url.pathname.startsWith('/_next/static/')) {
+        event.respondWith(cacheFirst(event.request));
+        return;
+    }
+
+    // 3. 페이지 탐색: Network First + /offline 폴백
+    if (event.request.mode === 'navigate') {
         event.respondWith(
-            caches.match(event.request).then((response) => {
-                return response || fetch(event.request).then((res) => {
-                    const resClone = res.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
-                    return res;
-                });
+            networkFirst(event.request, async () => {
+                const offline = await caches.match('/offline');
+                return offline || FALLBACK_HTML();
             })
         );
         return;
     }
 
-    // 3. 페이지 탐색 (오프라인 폴백 처리)
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request)
-                .then((response) => {
-                    const resClone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
-                    return response;
-                })
-                .catch(() => {
-                    return caches.match(event.request).then((cachedResponse) => {
-                        return cachedResponse || caches.match('/offline');
-                    });
-                })
-        );
-        return;
-    }
-
-    // 4. 나머지 에셋 (이미지 등): Stale-While-Revalidate
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            const fetchPromise = fetch(event.request).then((networkResponse) => {
-                if (event.request.method === 'GET') {
-                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse.clone()));
-                }
-                return networkResponse;
-            }).catch(() => cachedResponse);
-            return cachedResponse || fetchPromise;
-        })
-    );
+    // 4. 나머지 (이미지, favicon, manifest 등): Cache First
+    event.respondWith(cacheFirst(event.request));
 });
 
 // Push Notification 처리

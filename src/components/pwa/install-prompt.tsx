@@ -18,9 +18,9 @@ export function InstallPrompt() {
     useEffect(() => {
         // iOS 감지
         const ua = navigator.userAgent;
-        const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
-        const isInStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone;
-        setIsIOS(isIOSDevice);
+        const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as unknown as Record<string, unknown>).MSStream;
+        const isInStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as Record<string, boolean>).standalone;
+        setIsIOS(isIOSDevice); // eslint-disable-line react-hooks/set-state-in-effect -- one-time init from browser API
 
         // 이미 설치된 경우 프롬프트 안 보여줌
         if (isInStandalone) return;
@@ -95,22 +95,22 @@ export function InstallPrompt() {
                         className="fixed bottom-[calc(64px+env(safe-area-inset-bottom,16px)+8px)] left-4 right-4 md:left-auto md:right-6 md:w-96 z-50"
                     >
                         <div className="bg-gradient-to-br from-violet-600 to-pink-500 rounded-2xl p-4 shadow-2xl shadow-violet-500/30 flex items-center gap-3">
-                            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                                <Download className="w-6 h-6 text-white" />
+                            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-accent flex items-center justify-center">
+                                <Download className="w-6 h-6 text-foreground" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-white text-sm font-bold">앱으로 써보세요! 📱</p>
-                                <p className="text-white/70 text-xs mt-0.5">홈 화면에 추가하고 앱처럼 사용하세요</p>
+                                <p className="text-foreground text-sm font-bold">앱으로 써보세요! 📱</p>
+                                <p className="text-muted-foreground text-xs mt-0.5">홈 화면에 추가하고 앱처럼 사용하세요</p>
                             </div>
                             <button
                                 onClick={handleInstall}
-                                className="flex-shrink-0 px-4 py-2 rounded-xl bg-white text-violet-700 text-xs font-black shadow-md hover:bg-white/90 active:scale-95 transition-all"
+                                className="flex-shrink-0 px-4 py-2 rounded-xl bg-white text-violet-700 text-xs font-black shadow-md hover:bg-muted active:scale-95 transition-all"
                             >
                                 설치
                             </button>
                             <button
                                 onClick={handleDismiss}
-                                className="flex-shrink-0 text-white/60 hover:text-white transition-colors"
+                                className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -133,7 +133,7 @@ export function InstallPrompt() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-end justify-center bg-card"
                         onClick={() => setShowIOSGuide(false)}
                     >
                         <motion.div
@@ -180,7 +180,7 @@ export function InstallPrompt() {
 
                             <button
                                 onClick={() => setShowIOSGuide(false)}
-                                className="mt-8 w-full py-3 rounded-xl bg-violet-600 text-white font-bold text-sm shadow-lg shadow-violet-600/30 active:scale-95 transition-all"
+                                className="mt-8 w-full py-3 rounded-xl bg-violet-600 text-foreground font-bold text-sm shadow-lg shadow-violet-600/30 active:scale-95 transition-all"
                             >
                                 알겠습니다
                             </button>

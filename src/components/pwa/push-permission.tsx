@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Bell, BellOff, X } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -122,10 +122,10 @@ export function PushPermission() {
                             <button
                                 onClick={subscribe}
                                 disabled={isLoading}
-                                className="flex-1 py-2 rounded-xl bg-violet-600 text-white text-sm font-bold shadow-md shadow-violet-600/30 hover:bg-violet-700 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="flex-1 py-2 rounded-xl bg-violet-600 text-foreground text-sm font-bold shadow-md shadow-violet-600/30 hover:bg-violet-700 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (
-                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <span className="w-4 h-4 border-2 border-border border-t-white rounded-full animate-spin" />
                                 ) : (
                                     <Bell className="w-4 h-4" />
                                 )}

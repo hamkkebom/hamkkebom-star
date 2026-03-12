@@ -74,7 +74,7 @@ export default function RootLayout({
       >
         <Providers>
           {children}
-          <Toaster />
+          <Toaster position="top-center" />
           <MobileBottomNav />
           <ServiceWorkerRegister />
           <InstallPrompt />

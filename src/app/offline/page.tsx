@@ -22,7 +22,7 @@ export default function OfflinePage() {
             <motion.h1
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-3xl font-black tracking-tight text-foreground dark:text-white mb-3"
+                className="text-3xl font-black tracking-tight text-foreground dark:text-foreground mb-3"
             >
                 인터넷 연결을 확인해주세요
             </motion.h1>
@@ -45,7 +45,7 @@ export default function OfflinePage() {
             >
                 <button
                     onClick={() => window.location.reload()}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-violet-600 text-white font-bold shadow-lg shadow-violet-600/30 hover:bg-violet-700 active:scale-95 transition-all"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 active:scale-95 transition-all"
                 >
                     <RefreshCcw className="w-4 h-4" />
                     다시 시도

@@ -69,7 +69,7 @@ export function UpdatePrompt() {
                         </div>
                         <button
                             onClick={handleUpdate}
-                            className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-md hover:bg-emerald-700 active:scale-95 transition-all"
+                            className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 text-foreground text-xs font-bold shadow-md hover:bg-emerald-700 active:scale-95 transition-all"
                         >
                             업데이트
                         </button>

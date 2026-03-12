@@ -91,9 +91,9 @@ export function LoginForm() {
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-[#0a0a1a] p-12 lg:flex">
         {/* Animated Background Orbs */}
         <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
-          <div className="absolute -left-[15%] top-[10%] h-[500px] w-[500px] animate-[float_8s_ease-in-out_infinite] rounded-full bg-violet-600/15 blur-[120px]" />
-          <div className="absolute -right-[10%] top-[50%] h-[400px] w-[400px] animate-[float_10s_ease-in-out_infinite_reverse] rounded-full bg-blue-500/10 blur-[100px]" />
-          <div className="absolute -bottom-[10%] left-[30%] h-[350px] w-[350px] animate-[float_12s_ease-in-out_infinite_1s] rounded-full bg-indigo-500/10 blur-[90px]" />
+          <div className="absolute -left-[15%] top-[10%] h-[500px] w-[500px] animate-[float_8s_ease-in-out_infinite] rounded-full bg-[oklch(0.5_0.12_230/0.15)] blur-[120px]" />
+          <div className="absolute -right-[10%] top-[50%] h-[400px] w-[400px] animate-[float_10s_ease-in-out_infinite_reverse] rounded-full bg-[oklch(0.6_0.15_230/0.1)] blur-[100px]" />
+          <div className="absolute -bottom-[10%] left-[30%] h-[350px] w-[350px] animate-[float_12s_ease-in-out_infinite_1s] rounded-full bg-[oklch(0.5_0.12_230/0.1)] blur-[90px]" />
         </div>
 
         {/* Subtle Grid Pattern */}
@@ -108,7 +108,7 @@ export function LoginForm() {
         {/* Content Layer — 그라데이션 "별들에게 물어봐" 중앙 표시 */}
         <div className="relative z-10 flex h-full items-center justify-center">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <h1 className="text-5xl font-black tracking-tight bg-gradient-to-r from-violet-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
+            <h1 className="text-5xl font-black tracking-tight bg-gradient-to-r from-primary via-primary/70 to-primary/50 bg-clip-text text-transparent">
               별들에게 물어봐
             </h1>
           </Link>

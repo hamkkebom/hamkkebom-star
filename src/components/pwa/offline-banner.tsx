@@ -20,9 +20,9 @@ export function OfflineBanner() {
             setShowOnlineMode(false);
         };
 
-        // 초기 상태
+        // 초기 상태 — 브라우저 API 동기화
         if (!navigator.onLine) {
-            setIsOffline(true);
+            setIsOffline(true); // eslint-disable-line react-hooks/set-state-in-effect -- sync from navigator.onLine
         }
 
         window.addEventListener("online", handleOnline);
@@ -53,7 +53,7 @@ export function OfflineBanner() {
                     initial={{ y: -50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -50, opacity: 0 }}
-                    className="bg-emerald-500 text-white px-4 py-2 flex items-center justify-center gap-2 text-sm font-bold shadow-md z-50 fixed top-0 left-0 right-0 w-full"
+                    className="bg-emerald-500 text-foreground px-4 py-2 flex items-center justify-center gap-2 text-sm font-bold shadow-md z-50 fixed top-0 left-0 right-0 w-full"
                 >
                     <Wifi className="w-4 h-4" />
                     <span>온라인으로 복귀했습니다!</span>
