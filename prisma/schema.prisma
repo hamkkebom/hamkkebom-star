@@ -61,12 +61,31 @@ model User {
   videoComments       VideoComment[] @relation("VideoComments")
   commentLikes        CommentLike[]
   videoBookmarks      VideoBookmark[]
+  videoRatings        VideoRating[]
   boardPosts          BoardPost[]    @relation("BoardPosts")
   boardComments       BoardComment[] @relation("BoardComments")
   boardPostLikes      BoardPostLike[]
+  boardCommentLikes   BoardCommentLike[]
+  boardPostBookmarks  BoardPostBookmark[]
   followers           Follow[]       @relation("Following")
   following           Follow[]       @relation("Followers")
   reports             Report[]
+
+  // 제재 관련 필드
+  isBanned            Boolean        @default(false)
+  bannedAt            DateTime?
+  bannedReason        String?
+  suspendedUntil      DateTime?
+  suspendedReason     String?
+  warningCount        Int            @default(0)
+
+  // 제재 관계
+  sanctions           UserSanction[] @relation("UserSanctions")
+  appliedSanctions    UserSanction[] @relation("AppliedSanctions")
+  revokedSanctions    UserSanction[] @relation("RevokedSanctions")
+  appeals             Appeal[]       @relation("UserAppeals")
+  reviewedAppeals     Appeal[]       @relation("ReviewedAppeals")
+
   @@map("users")
 }
 
@@ -231,6 +250,9 @@ model Video {
   submissions     Submission[]
   eventLogs       VideoEventLog[]
   likes           VideoLike[]
+  ratings         VideoRating[]
+  ratingSum       Int                 @default(0)
+  ratingCount     Int                 @default(0)
   technicalSpec   VideoTechnicalSpec?
   comments        VideoComment[]
   bookmarks       VideoBookmark[]
@@ -744,47 +766,79 @@ model VideoBookmark {
   @@map("video_bookmarks")
 }
 
+model VideoRating {
+  id        String   @id @default(cuid())
+  userId    String
+  videoId   String
+  value     Int      // 1~5 정수
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([videoId])
+  @@map("video_ratings")
+}
+
 model BoardPost {
-  id           String        @id @default(cuid())
-  boardType    BoardType     @default(FREE)
-  title        String
-  content      String
-  authorId     String
-  isPinned     Boolean       @default(false)
-  isNotice     Boolean       @default(false)
-  isHidden     Boolean       @default(false)
-  viewCount    Int           @default(0)
-  likeCount    Int           @default(0)
-  tags         String[]
-  thumbnailUrl String?
-  videoId      String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  boardType       BoardType     @default(FREE)
+  title           String
+  content         String
+  contentJson     Json?
+  authorId        String
+  isPinned        Boolean       @default(false)
+  isNotice        Boolean       @default(false)
+  isHidden        Boolean       @default(false)
+  isFeatured      Boolean       @default(false)
+  isEdited        Boolean       @default(false)
+  editedAt        DateTime?
+  viewCount       Int           @default(0)
+  likeCount       Int           @default(0)
+  commentCount    Int           @default(0)
+  hotScore        Float         @default(0)
+  tags            String[]
+  thumbnailUrl    String?
+  imageUrls       String[]      @default([])
+  videoId         String?
+  acceptedAnswerId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  author       User          @relation("BoardPosts", fields: [authorId], references: [id])
-  video        Video?        @relation(fields: [videoId], references: [id])
-  comments     BoardComment[]
-  likes        BoardPostLike[]
+  author          User          @relation("BoardPosts", fields: [authorId], references: [id])
+  video           Video?        @relation(fields: [videoId], references: [id])
+  comments        BoardComment[]
+  likes           BoardPostLike[]
+  bookmarks       BoardPostBookmark[]
 
+  @@unique([createdAt, id])
   @@index([boardType, createdAt])
   @@index([authorId])
   @@index([boardType, isPinned])
+  @@index([hotScore(sort: Desc), createdAt(sort: Desc)])
+  @@index([acceptedAnswerId])
   @@map("board_posts")
 }
 
 model BoardComment {
-  id        String         @id @default(cuid())
+  id        String              @id @default(cuid())
   postId    String
   authorId  String
   content   String
   parentId  String?
-  isHidden  Boolean        @default(false)
-  createdAt DateTime       @default(now())
+  isHidden  Boolean             @default(false)
+  isEdited  Boolean             @default(false)
+  editedAt  DateTime?
+  likeCount Int                 @default(0)
+  createdAt DateTime            @default(now())
 
-  post      BoardPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author    User           @relation("BoardComments", fields: [authorId], references: [id])
-  parent    BoardComment?  @relation("BoardCommentReplies", fields: [parentId], references: [id])
-  children  BoardComment[] @relation("BoardCommentReplies")
+  post      BoardPost           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User                @relation("BoardComments", fields: [authorId], references: [id])
+  parent    BoardComment?       @relation("BoardCommentReplies", fields: [parentId], references: [id])
+  children  BoardComment[]      @relation("BoardCommentReplies")
+  likes     BoardCommentLike[]
 
   @@index([postId, createdAt])
   @@map("board_comments")
@@ -801,6 +855,33 @@ model BoardPostLike {
 
   @@unique([userId, postId])
   @@map("board_post_likes")
+}
+
+model BoardCommentLike {
+  id        String       @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime     @default(now())
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   BoardComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@map("board_comment_likes")
+}
+
+model BoardPostBookmark {
+  id        String    @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      BoardPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@map("board_post_bookmarks")
 }
 
 enum BoardType {
@@ -827,21 +908,28 @@ model Follow {
 }
 
 model Report {
-  id          String       @id @default(cuid())
-  reporterId  String
-  targetType  ReportTarget
-  targetId    String
-  reason      ReportReason
-  description String?
-  status      ReportStatus @default(PENDING)
-  resolvedBy  String?
-  resolvedAt  DateTime?
-  createdAt   DateTime     @default(now())
+  id               String         @id @default(cuid())
+  reporterId       String
+  targetType       ReportTarget
+  targetId         String
+  reason           ReportReason
+  description      String?
+  status           ReportStatus   @default(PENDING)
+  priority         ReportPriority @default(MEDIUM)
+  resolutionAction String?
+  resolutionNote   String?
+  resolvedBy       String?
+  resolvedAt       DateTime?
+  assignedTo       String?
+  createdAt        DateTime       @default(now())
 
-  reporter    User         @relation(fields: [reporterId], references: [id])
+  reporter         User           @relation(fields: [reporterId], references: [id])
+  sanctions        UserSanction[] @relation("ReportSanctions")
 
   @@index([targetType, targetId])
   @@index([status])
+  @@index([status, priority])
+  @@index([assignedTo])
   @@map("reports")
 }
 
@@ -862,7 +950,80 @@ enum ReportReason {
 
 enum ReportStatus {
   PENDING
-  REVIEWED
+  UNDER_REVIEW
   RESOLVED
   DISMISSED
+  ESCALATED
+}
+
+enum ReportPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// ── 제재 모델 ──
+
+model UserSanction {
+  id             String       @id @default(cuid())
+  userId         String
+  type           SanctionType
+  reason         String
+  internalNote   String?
+  startAt        DateTime     @default(now())
+  endAt          DateTime?
+  isActive       Boolean      @default(true)
+  appliedById    String
+  revokedAt      DateTime?
+  revokedById    String?
+  revokeReason   String?
+  reportId       String?
+  notifiedUser   Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  user           User         @relation("UserSanctions", fields: [userId], references: [id])
+  appliedBy      User         @relation("AppliedSanctions", fields: [appliedById], references: [id])
+  revokedBy      User?        @relation("RevokedSanctions", fields: [revokedById], references: [id])
+  report         Report?      @relation("ReportSanctions", fields: [reportId], references: [id])
+  appeals        Appeal[]     @relation("SanctionAppeals")
+
+  @@index([userId, isActive])
+  @@index([type])
+  @@map("user_sanctions")
+}
+
+enum SanctionType {
+  WARNING
+  CONTENT_HIDDEN
+  CONTENT_REMOVED
+  TEMP_RESTRICT
+  TEMP_BAN
+  PERM_BAN
+}
+
+model Appeal {
+  id            String       @id @default(cuid())
+  userId        String
+  sanctionId    String?
+  reason        String
+  status        AppealStatus @default(PENDING)
+  reviewedById  String?
+  reviewNote    String?
+  resolvedAt    DateTime?
+  createdAt     DateTime     @default(now())
+
+  user          User          @relation("UserAppeals", fields: [userId], references: [id])
+  sanction      UserSanction? @relation("SanctionAppeals", fields: [sanctionId], references: [id])
+  reviewedBy    User?         @relation("ReviewedAppeals", fields: [reviewedById], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("appeals")
+}
+
+enum AppealStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
 }

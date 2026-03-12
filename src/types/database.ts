@@ -18,6 +18,7 @@ export type {
   Counselor,
   MediaPlacement,
   PricingGrade,
+  VideoRating,
 } from "@/generated/prisma/client";
 
 export {
