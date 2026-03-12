@@ -280,11 +280,11 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
           ) : null}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Status Badge */}
           {statusInfo && (
             <div className={cn(
-              "flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-md transition-all hover:scale-105 cursor-default select-none",
+              "flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-md transition-all hover:scale-105 cursor-default select-none",
               statusInfo.className
             )}>
               {StatusIcon && <StatusIcon className="w-4 h-4" />}
@@ -296,20 +296,22 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
           {submission && (
             <Link
               href={`/stars/my-videos/${submission.id}`}
-              className="inline-flex items-center gap-2 rounded-full bg-secondary/80 border border-secondary px-4 py-1.5 text-xs font-bold hover:bg-secondary hover:scale-105 transition-all"
+              className="inline-flex items-center gap-2 rounded-full bg-secondary/80 border border-secondary px-3 sm:px-4 py-1.5 text-xs font-bold hover:bg-secondary hover:scale-105 transition-all"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              영상 관리
+              <span className="hidden sm:inline">영상 관리</span>
+              <span className="sm:hidden">관리</span>
             </Link>
           )}
 
           {/* Edit/Upload Button */}
           <Link
             href={`/stars/upload`}
-            className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 hover:scale-105 transition-all"
+            className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-3 sm:px-4 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 hover:scale-105 transition-all"
           >
             <Edit3 className="w-3.5 h-3.5" />
-            수정본 업로드
+            <span className="hidden sm:inline">수정본 업로드</span>
+            <span className="sm:hidden">업로드</span>
           </Link>
         </div>
       </div>

@@ -161,7 +161,7 @@ export default function EarningsPage() {
   const detail = detailData?.data;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">정산 내역</h1>
@@ -223,7 +223,7 @@ export default function EarningsPage() {
                 )}
               </div>
               {/* Chart */}
-              <div className="h-52">
+              <div className="h-44 sm:h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={annualData.data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                     <defs>
@@ -254,7 +254,9 @@ export default function EarningsPage() {
                         fontSize: "12px",
                         boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
                       }}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       formatter={(value: any) => [formatKRW(Number(value)), "수입"]}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       labelFormatter={(label: any) => {
                         const [y, m] = String(label).split("-");
                         return `${y}년 ${parseInt(m)}월`;
@@ -328,7 +330,7 @@ export default function EarningsPage() {
                       <NumberTicker
                         value={Number(settlement.totalAmount)}
                         suffix="원"
-                        className="text-lg font-bold tabular-nums"
+                        className="text-sm sm:text-lg font-bold tabular-nums"
                       />
                       <GlowBadge
                         label={STATUS_GLOW_MAP[settlement.status]?.label ?? settlement.status}
