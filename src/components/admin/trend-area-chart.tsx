@@ -55,13 +55,13 @@ export function TrendAreaChart({ data }: { data: DataPoint[] }) {
                         content={({ active, payload, label }) => {
                             if (active && payload && payload.length) {
                                 return (
-                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xl">
+                                    <div className="bg-muted dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xl">
                                         <p className="font-bold text-sm text-slate-700 dark:text-slate-300 mb-2">{label} 데이터</p>
                                         {payload.map((entry, index) => (
                                             <div key={index} className="flex items-center gap-2 text-xs font-medium mt-1">
                                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
                                                 <span className="text-slate-500 dark:text-slate-400">{entry.name === 'submitted' ? '접수 건수' : '승인 건수'}:</span>
-                                                <span className="text-slate-900 dark:text-white font-bold">{entry.value}</span>
+                                                <span className="text-slate-900 dark:text-foreground font-bold">{entry.value}</span>
                                             </div>
                                         ))}
                                     </div>

@@ -93,6 +93,7 @@ const STATUS_CONFIG: Record<ExtendedStatus, {
 };
 
 // --- Custom Node Component ---
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomNode = ({ data }: { data: any }) => {
     const router = useRouter();
     const { status, label, count, description, color, icon: Icon } = data;
@@ -141,11 +142,11 @@ const CustomNode = ({ data }: { data: any }) => {
             )} />
 
             {/* Card Content */}
-            <div className="relative flex h-full flex-col justify-between rounded-xl border border-white/10 bg-slate-900/90 p-5 shadow-xl backdrop-blur-xl">
+            <div className="relative flex h-full flex-col justify-between rounded-xl border border-border bg-slate-900/90 p-5 shadow-xl">
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                         <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br shadow-lg", color)}>
-                            <Icon className="h-6 w-6 text-white" />
+                            <Icon className="h-6 w-6 text-foreground" />
                         </div>
                         <div>
                             <h3 className="font-bold text-slate-100">{label.split('(')[0]}</h3>
@@ -153,7 +154,7 @@ const CustomNode = ({ data }: { data: any }) => {
                         </div>
                     </div>
                     <div className="flex flex-col items-end">
-                        <span className="text-2xl font-bold tabular-nums text-white">{count}</span>
+                        <span className="text-2xl font-bold tabular-nums text-foreground">{count}</span>
                         <span className="text-[10px] text-slate-500">VIDEOS</span>
                     </div>
                 </div>
@@ -171,7 +172,7 @@ const CustomNode = ({ data }: { data: any }) => {
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="mt-2 overflow-hidden border-t border-white/5 pt-2"
+                            className="mt-2 overflow-hidden border-t border-border/50 pt-2"
                         >
                             <div className="flex items-center gap-2 text-[10px] text-slate-300">
                                 <PlayCircle className="h-3 w-3 text-emerald-400" />
@@ -280,7 +281,7 @@ const LayoutFlow = ({ counts, adEligibleCount, adIneligibleCount }: { counts: Re
             <Controls className="bg-slate-800 border-slate-700 fill-slate-300" />
 
             {/* Legend / Guide Overlay */}
-            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 rounded-xl border border-white/10 bg-slate-900/80 p-4 backdrop-blur-md">
+            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 rounded-xl border border-border bg-slate-900/80 p-4">
                 <h4 className="mb-2 text-xs font-bold text-slate-300">Interactive Mode</h4>
                 <div className="flex items-center gap-2 text-[10px] text-slate-400">
                     <Layout className="h-3 w-3" />

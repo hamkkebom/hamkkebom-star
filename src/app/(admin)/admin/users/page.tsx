@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +15,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -23,15 +31,48 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import {
-  CheckCircle2, XCircle, Search, Users,
-  ChevronLeft, ChevronRight, Mail, Phone, CreditCard, ShieldCheck,
-  Eye, EyeOff, Building
+  CheckCircle2,
+  XCircle,
+  Search,
+  Users,
+  ChevronLeft,
+  ChevronRight,
+  Mail,
+  Phone,
+  CreditCard,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Building,
+  Download,
+  MoreHorizontal,
+  Calendar,
+  AlertCircle,
+  Shield,
+  Star,
+  Clock,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { maskIdNumber } from "@/lib/settlement-utils";
-import { UserSwipeDeck, SwipeableUser } from "@/components/admin/user-swipe-deck";
+import { cn } from "@/lib/utils";
+import {
+  UserSwipeDeck,
+  SwipeableUser,
+} from "@/components/admin/user-swipe-deck";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 type UserRow = {
   id: string;
@@ -54,7 +95,20 @@ type UsersResponse = {
   page: number;
   pageSize: number;
   totalPages: number;
+  stats: {
+    total: number;
+    adminCount: number;
+    starCount: number;
+    pendingCount: number;
+    approvedCount: number;
+  };
 };
+
+type FilterType = "all" | "ADMIN" | "STAR" | "pending" | "approved";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -66,41 +120,155 @@ function formatDate(dateStr: string) {
   }).format(new Date(dateStr));
 }
 
+function exportToCSV(rows: UserRow[]) {
+  const headers = ["이름", "이메일", "역할", "상태", "가입일"];
+  const csvRows = [
+    headers.join(","),
+    ...rows.map((r) =>
+      [
+        r.name,
+        r.email,
+        r.role === "ADMIN" ? "관리자" : "STAR",
+        r.isApproved ? "승인됨" : "대기중",
+        formatDate(r.createdAt),
+      ]
+        .map((v) => `"${v}"`)
+        .join(",")
+    ),
+  ];
+  const blob = new Blob(["\uFEFF" + csvRows.join("\n")], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `사용자목록_${new Date().toISOString().split("T")[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------------------
+// Stats cards config
+// ---------------------------------------------------------------------------
+
+const STATS_CARDS = [
+  {
+    key: "total" as const,
+    label: "전체 사용자",
+    icon: Users,
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
+  },
+  {
+    key: "adminCount" as const,
+    label: "관리자",
+    icon: Shield,
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
+  },
+  {
+    key: "starCount" as const,
+    label: "STAR",
+    icon: Star,
+    iconBg: "bg-amber-500/10",
+    iconColor: "text-amber-600 dark:text-amber-400",
+  },
+  {
+    key: "pendingCount" as const,
+    label: "승인 대기",
+    icon: Clock,
+    iconBg: "bg-amber-500/10",
+    iconColor: "text-amber-600 dark:text-amber-400",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Filter tabs config
+// ---------------------------------------------------------------------------
+
+function getFilterTabs(stats: UsersResponse["stats"]) {
+  return [
+    { key: "all" as FilterType, label: "전체", count: stats.total },
+    { key: "ADMIN" as FilterType, label: "관리자", count: stats.adminCount },
+    { key: "STAR" as FilterType, label: "STAR", count: stats.starCount },
+    { key: "pending" as FilterType, label: "대기중", count: stats.pendingCount },
+    {
+      key: "approved" as FilterType,
+      label: "승인됨",
+      count: stats.approvedCount,
+    },
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
+
+  // State
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "approved" | "pending">("all");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filter, setFilter] = useState<FilterType>("all");
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
-
-
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const [showSensitive, setShowSensitive] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
-  // 검색이나 필터 변경 시 페이지 초기화
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
-    setPage(1);
-  };
-  const handleFilterChange = (newFilter: "all" | "approved" | "pending") => {
-    setFilter(newFilter);
-    setPage(1);
-  };
+  // Bulk action dialog
+  const [bulkDialog, setBulkDialog] = useState<{
+    open: boolean;
+    action: "approve" | "reject";
+  }>({ open: false, action: "approve" });
+  const [bulkRejectReason, setBulkRejectReason] = useState("");
 
-  const queryKey = ["admin-users", search, filter, page, pageSize];
+  // Search debounce (350ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const { data, isLoading } = useQuery({
+  // Clear selections on filter/page change
+  useEffect(() => {
+    setSelectedIds(new Set()); // eslint-disable-line react-hooks/set-state-in-effect -- reset on filter change
+  }, [filter, page]);
+
+  // Filter change handler
+  const handleFilterChange = useCallback(
+    (newFilter: FilterType) => {
+      if (newFilter === filter) return;
+      setFilter(newFilter);
+      setPage(1);
+    },
+    [filter]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Data fetching
+  // ---------------------------------------------------------------------------
+
+  const queryKey = ["admin-users", debouncedSearch, filter, page, pageSize];
+
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey,
     queryFn: async () => {
       const params = new URLSearchParams({
         page: String(page),
-        pageSize: String(pageSize)
+        pageSize: String(pageSize),
       });
-      if (search) params.set("search", search);
-      if (filter === "approved") params.set("approved", "true");
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (filter === "ADMIN") params.set("role", "ADMIN");
+      if (filter === "STAR") params.set("role", "STAR");
       if (filter === "pending") params.set("approved", "false");
+      if (filter === "approved") params.set("approved", "true");
+
       const res = await fetch(`/api/admin/users?${params.toString()}`, {
         cache: "no-store",
       });
@@ -109,6 +277,7 @@ export default function AdminUsersPage() {
     },
   });
 
+  // Single approve/reject
   const approveMutation = useMutation({
     mutationFn: async ({
       userId,
@@ -124,157 +293,412 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ approved, rejectionReason }),
       });
-      if (!res.ok) throw new Error((await res.json()).error?.message ?? "처리에 실패했습니다.");
+      if (!res.ok)
+        throw new Error(
+          (await res.json()).error?.message ?? "처리에 실패했습니다."
+        );
       return res.json();
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      // 상세 뷰가 열려있고 대상 유저의 상태가 바뀌었다면 상세 정보도 갱신
       if (selectedUser?.id === variables.userId) {
-        setSelectedUser(prev => prev ? { ...prev, isApproved: variables.approved } : null);
+        setSelectedUser((prev) =>
+          prev ? { ...prev, isApproved: variables.approved } : null
+        );
       }
       toast.success(
         variables.approved ? "사용자를 승인했습니다." : "사용자를 반려했습니다."
       );
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
+
+  // Bulk approve/reject
+  const bulkMutation = useMutation({
+    mutationFn: async ({
+      userIds,
+      approved,
+      rejectionReason,
+    }: {
+      userIds: string[];
+      approved: boolean;
+      rejectionReason?: string;
+    }) => {
+      const res = await fetch("/api/admin/users/bulk-approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds, approved, rejectionReason }),
+      });
+      if (!res.ok)
+        throw new Error(
+          (await res.json()).error?.message ?? "일괄 처리에 실패했습니다."
+        );
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setSelectedIds(new Set());
+      setBulkDialog({ open: false, action: "approve" });
+      setBulkRejectReason("");
+      toast.success(
+        variables.approved
+          ? `${variables.userIds.length}명을 일괄 승인했습니다.`
+          : `${variables.userIds.length}명을 일괄 반려했습니다.`
+      );
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // Derived
+  // ---------------------------------------------------------------------------
+
+  const rows = data?.data ?? [];
+  const totalPages = data?.totalPages ?? 1;
+  const stats = data?.stats ?? {
+    total: 0,
+    adminCount: 0,
+    starCount: 0,
+    pendingCount: 0,
+    approvedCount: 0,
+  };
 
   const handleRowClick = (user: UserRow) => {
     setSelectedUser(user);
     setShowSensitive(false);
+    setRejectReason("");
   };
 
-  const rows = data?.data ?? [];
-  const totalPages = data?.totalPages ?? 1;
+  // Checkbox helpers
+  const allChecked = rows.length > 0 && selectedIds.size === rows.length;
+  const someChecked = selectedIds.size > 0 && selectedIds.size < rows.length;
 
-  // 전체 통계를 알 수가 없으므로 헤더에서는 전체 카운트로 통일(API 개선 전까지)
-  const totalCount = data?.total ?? 0;
+  const toggleAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(rows.map((r) => r.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const toggleOne = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  // Bulk action handlers
+  const handleBulkApprove = () => {
+    setBulkDialog({ open: true, action: "approve" });
+  };
+
+  const handleBulkReject = () => {
+    setBulkDialog({ open: true, action: "reject" });
+    setBulkRejectReason("");
+  };
+
+  const confirmBulkAction = () => {
+    const userIds = Array.from(selectedIds);
+    if (bulkDialog.action === "approve") {
+      bulkMutation.mutate({ userIds, approved: true });
+    } else {
+      bulkMutation.mutate({
+        userIds,
+        approved: false,
+        rejectionReason: bulkRejectReason.trim() || undefined,
+      });
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Error state
+  // ---------------------------------------------------------------------------
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
+        <AlertCircle className="h-8 w-8 text-destructive" />
+        <p className="font-medium text-foreground">
+          사용자 목록을 불러오지 못했습니다
+        </p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          다시 시도
+        </Button>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">모든 계정 관리</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          가입한 스타 또는 어드민을 조회하고 정보를 관리하세요. (총 {totalCount}명 검색됨)
-        </p>
+      {/* ── [A] Header ─────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            모든 계정 관리
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            가입한 스타 또는 어드민을 조회하고 정보를 관리하세요.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          onClick={() => exportToCSV(rows)}
+          disabled={rows.length === 0}
+        >
+          <Download className="h-4 w-4 mr-1.5" />
+          CSV 내보내기
+        </Button>
       </div>
 
-      {/* 요약 카드 (클릭 필터) */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-        <Card
-          className={`cursor-pointer transition-all duration-200 hover:shadow-md ${filter === "all" ? "ring-2 ring-primary border-transparent" : ""}`}
-          onClick={() => handleFilterChange("all")}
-        >
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="p-2 bg-primary/10 rounded-full">
-              <Users className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">상태 필터</p>
-              <p className="text-xl font-bold">전체 보기</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card
-          className={`cursor-pointer transition-all duration-200 hover:shadow-md ${filter === "pending" ? "ring-2 ring-orange-500 border-transparent" : ""}`}
-          onClick={() => handleFilterChange("pending")}
-        >
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="p-2 bg-orange-500/10 rounded-full">
-              <XCircle className="h-5 w-5 text-orange-500" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">상태 필터</p>
-              <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-amber-500">
-                대기중인 계정 보기
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card
-          className={`cursor-pointer transition-all duration-200 hover:shadow-md ${filter === "approved" ? "ring-2 ring-emerald-500 border-transparent" : ""}`}
-          onClick={() => handleFilterChange("approved")}
-        >
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="p-2 bg-emerald-500/10 rounded-full">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">상태 필터</p>
-              <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-400">
-                승인완료 계정 보기
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 검색 */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="이름 또는 이메일로 검색..."
-          className="pl-9 bg-white dark:bg-slate-950 shadow-sm"
-          value={search}
-          onChange={handleSearchChange}
-        />
-      </div>
-
-      {/* 데스크톱/모바일 컨텐츠 분기 */}
+      {/* ── [B] Stats Cards ────────────────────────────────────────── */}
       {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={`user-sk-${i}`} className="h-14 w-full rounded-xl" />
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="bg-card border-border">
+              <CardContent className="flex items-center gap-3 p-4">
+                <Skeleton className="h-10 w-10 rounded-xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-6 w-10" />
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       ) : (
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          {STATS_CARDS.map((card) => {
+            const Icon = card.icon;
+            return (
+              <Card key={card.key} className="bg-card border-border shadow-sm">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <div className={cn("p-2.5 rounded-xl", card.iconBg)}>
+                    <Icon className={cn("h-5 w-5", card.iconColor)} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {card.label}
+                    </p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {stats[card.key]}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── [C] Filter Tabs + Search ───────────────────────────────── */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        {/* Tabs */}
+        <div className="overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+          <div
+            className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-max"
+            role="tablist"
+          >
+            {getFilterTabs(stats).map((tab) => (
+              <button
+                key={tab.key}
+                role="tab"
+                aria-selected={filter === tab.key}
+                onClick={() => handleFilterChange(tab.key)}
+                className={cn(
+                  "px-3 py-1.5 text-sm font-medium rounded-lg transition-all whitespace-nowrap",
+                  filter === tab.key
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab.label}
+                <span className="ml-1.5 text-xs text-muted-foreground">
+                  ({tab.count})
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="relative w-full md:max-w-xs">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="이름 또는 이메일 검색..."
+            className="pl-9 bg-card border-border shadow-sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* ── [D/E] Content ──────────────────────────────────────────── */}
+      {isLoading ? (
         <>
-          {/* 모바일 스와이프 덱 (대기 상태일 때만 표시) */}
+          {/* Desktop skeleton */}
+          <div className="hidden md:block">
+            <Card className="bg-card border-border shadow-sm rounded-2xl overflow-hidden">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow>
+                      <TableHead className="w-10 pl-4">
+                        <Skeleton className="h-4 w-4" />
+                      </TableHead>
+                      <TableHead>
+                        <Skeleton className="h-4 w-16" />
+                      </TableHead>
+                      <TableHead>
+                        <Skeleton className="h-4 w-10" />
+                      </TableHead>
+                      <TableHead>
+                        <Skeleton className="h-4 w-10" />
+                      </TableHead>
+                      <TableHead>
+                        <Skeleton className="h-4 w-14" />
+                      </TableHead>
+                      <TableHead className="w-10">
+                        <Skeleton className="h-4 w-6" />
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <TableRow key={i}>
+                        <TableCell className="pl-4">
+                          <Skeleton className="h-4 w-4" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="h-8 w-8 rounded-full" />
+                            <div className="space-y-1.5">
+                              <Skeleton className="h-4 w-24" />
+                              <Skeleton className="h-3 w-32" />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-5 w-14 rounded-full" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-5 w-14 rounded-full" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-20" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+          {/* Mobile skeleton */}
+          <div className="block md:hidden space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* ── Mobile view ──────────────────────────────────────── */}
           <div className="block md:hidden">
             {filter === "pending" ? (
               <UserSwipeDeck
-                users={rows.map(r => ({ ...r, createdAt: formatDate(r.createdAt) } as SwipeableUser))}
-                onApprove={(id) => approveMutation.mutate({ userId: id, approved: true })}
-                onReject={() => toast.info("모바일에서는 상세 보기 후 권한을 관리하세요.")} // For safety, we can just reject or ask for detail
+                users={rows.map(
+                  (r) =>
+                    ({
+                      ...r,
+                      createdAt: formatDate(r.createdAt),
+                    }) as SwipeableUser
+                )}
+                onApprove={(id) =>
+                  approveMutation.mutate({ userId: id, approved: true })
+                }
+                onReject={() =>
+                  toast.info(
+                    "모바일에서는 상세 보기 후 권한을 관리하세요."
+                  )
+                }
                 onViewDetail={(u) => {
-                  const matched = rows.find(r => r.id === u.id);
+                  const matched = rows.find((r) => r.id === u.id);
                   if (matched) handleRowClick(matched);
                 }}
               />
             ) : (
-              // 리스트 뷰 (모바일 명함형 리스트)
-              <div className="flex flex-col gap-3 mt-4">
+              <div className="flex flex-col gap-3 mt-1">
                 {rows.length === 0 ? (
-                  <div className="py-16 text-center text-muted-foreground bg-slate-50/20 dark:bg-slate-900/10 rounded-2xl border border-dashed">
-                    {search ? "검색 결과가 없습니다." : "가입한 사용자가 없습니다."}
+                  <div className="py-16 text-center text-muted-foreground bg-muted/20 rounded-2xl border border-dashed border-border">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="p-3 bg-muted/50 rounded-full">
+                        <Users className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {search
+                            ? "검색 결과가 없습니다"
+                            : "가입한 사용자가 없습니다"}
+                        </p>
+                        <p className="text-sm mt-1">
+                          {search
+                            ? "다른 검색어를 시도해 보세요."
+                            : "새로운 사용자가 가입하면 여기에 표시됩니다."}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   rows.map((row) => (
                     <div
                       key={row.id}
                       onClick={() => handleRowClick(row)}
-                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-4 active:scale-95 transition-transform"
+                      className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform cursor-pointer"
                     >
-                      <Avatar className="h-12 w-12 border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800">
+                      <Avatar className="h-12 w-12 border-2 border-border">
                         <AvatarImage src={row.avatarUrl || ""} />
-                        <AvatarFallback className="text-xs font-bold bg-slate-200 dark:bg-slate-700">{row.name.slice(0, 2)}</AvatarFallback>
+                        <AvatarFallback className="text-xs font-bold bg-muted text-muted-foreground">
+                          {row.name.slice(0, 2)}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-bold text-slate-900 dark:text-white truncate">{row.name}</h3>
-                          {row.isApproved && <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                          <h3 className="font-bold text-foreground truncate">
+                            {row.name}
+                          </h3>
+                          {row.isApproved && (
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          )}
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{row.email}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {row.email}
+                        </p>
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0">
-                        <Badge className={
-                          row.isApproved
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-none shadow-none text-[10px]"
-                            : "bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400 border-none shadow-none text-[10px]"
-                        }>
+                        <Badge
+                          className={cn(
+                            "border-none shadow-none text-[10px]",
+                            row.isApproved
+                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                              : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          )}
+                        >
                           {row.isApproved ? "승인됨" : "대기중"}
                         </Badge>
                       </div>
@@ -285,73 +709,196 @@ export default function AdminUsersPage() {
             )}
           </div>
 
-          {/* 데스크톱 테이블 뷰 */}
+          {/* ── Desktop table ────────────────────────────────────── */}
           <div className="hidden md:block">
-            <Card className="overflow-hidden shadow-sm border-slate-200 dark:border-slate-800">
+            <Card className="bg-card border-border shadow-sm rounded-2xl overflow-hidden">
               <CardContent className="p-0">
                 <Table>
-                  <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
+                  <TableHeader className="bg-muted/50">
                     <TableRow>
-                      <TableHead className="pl-6 font-semibold">이름(한글)</TableHead>
-                      <TableHead className="font-semibold">이름(중문)</TableHead>
-                      <TableHead className="font-semibold">이메일</TableHead>
-                      <TableHead className="font-semibold">역할</TableHead>
-                      <TableHead className="font-semibold">상태</TableHead>
-                      <TableHead className="font-semibold">가입일</TableHead>
+                      <TableHead className="w-10 pl-4">
+                        <Checkbox
+                          checked={allChecked}
+                          ref={(el) => {
+                            if (el) {
+                              // indeterminate state for "some checked"
+                              (
+                                el as unknown as HTMLButtonElement
+                              ).dataset.state = someChecked
+                                ? "indeterminate"
+                                : allChecked
+                                  ? "checked"
+                                  : "unchecked";
+                            }
+                          }}
+                          onCheckedChange={(checked) =>
+                            toggleAll(checked === true)
+                          }
+                          aria-label="전체 선택"
+                        />
+                      </TableHead>
+                      <TableHead className="font-semibold text-xs text-muted-foreground">
+                        사용자
+                      </TableHead>
+                      <TableHead className="font-semibold text-xs text-muted-foreground">
+                        역할
+                      </TableHead>
+                      <TableHead className="font-semibold text-xs text-muted-foreground">
+                        상태
+                      </TableHead>
+                      <TableHead className="font-semibold text-xs text-muted-foreground">
+                        가입일
+                      </TableHead>
+                      <TableHead className="w-10 font-semibold text-xs text-muted-foreground">
+                        <span className="sr-only">액션</span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rows.length === 0 ? (
                       <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          className="py-16 text-center text-muted-foreground bg-slate-50/20 dark:bg-slate-900/10"
-                        >
-                          {search
-                            ? "검색 결과가 없습니다."
-                            : "가입한 사용자가 없습니다."}
+                        <TableCell colSpan={6} className="h-48">
+                          <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                            <div className="p-3 bg-muted/50 rounded-full">
+                              <Users className="h-6 w-6" />
+                            </div>
+                            <div className="text-center">
+                              <p className="font-medium text-foreground">
+                                {search
+                                  ? "검색 결과가 없습니다"
+                                  : "가입한 사용자가 없습니다"}
+                              </p>
+                              <p className="text-sm mt-1">
+                                {search
+                                  ? "다른 검색어를 시도해 보세요."
+                                  : "새로운 사용자가 가입하면 여기에 표시됩니다."}
+                              </p>
+                            </div>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
                       rows.map((row) => (
                         <TableRow
                           key={row.id}
-                          className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 group active:bg-slate-100 dark:active:bg-slate-800"
+                          className="hover:bg-muted/50 transition-colors cursor-pointer group"
                           onClick={() => handleRowClick(row)}
                         >
-                          <TableCell className="pl-6 font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">
-                            {row.name}
+                          {/* Checkbox */}
+                          <TableCell
+                            className="pl-4"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Checkbox
+                              checked={selectedIds.has(row.id)}
+                              onCheckedChange={(checked) =>
+                                toggleOne(row.id, checked === true)
+                              }
+                              aria-label={`${row.name} 선택`}
+                            />
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-400 font-medium">
-                            {row.chineseName ?? "—"}
+
+                          {/* Composite user cell */}
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8 border border-border">
+                                <AvatarImage src={row.avatarUrl || ""} />
+                                <AvatarFallback className="text-xs bg-muted text-muted-foreground">
+                                  {row.name.slice(0, 2)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-medium text-sm text-foreground truncate">
+                                  {row.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {row.email}
+                                </span>
+                              </div>
+                            </div>
                           </TableCell>
-                          <TableCell className="text-slate-500 dark:text-slate-400">
-                            {row.email}
-                          </TableCell>
+
+                          {/* Role badge */}
                           <TableCell>
                             <Badge
-                              variant={row.role === "ADMIN" ? "default" : "secondary"}
-                              className={row.role === "ADMIN" ? "bg-slate-800" : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"}
+                              className={cn(
+                                "border-none shadow-none",
+                                row.role === "ADMIN"
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-secondary text-secondary-foreground"
+                              )}
                             >
-                              {row.role === "ADMIN" ? "관리자" : row.role === "STAR" ? "STAR" : row.role}
+                              {row.role === "ADMIN" ? "관리자" : "STAR"}
                             </Badge>
                           </TableCell>
+
+                          {/* Status badge */}
                           <TableCell>
-                            {row.isApproved ? (
-                              <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 border-none shadow-none font-bold">
-                                승인됨
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800 font-bold"
-                              >
-                                대기중
-                              </Badge>
-                            )}
+                            <Badge
+                              className={cn(
+                                "border-none shadow-none",
+                                row.isApproved
+                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                                  : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                              )}
+                            >
+                              {row.isApproved ? "승인됨" : "대기중"}
+                            </Badge>
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground font-medium">
+
+                          {/* Date */}
+                          <TableCell className="text-sm text-muted-foreground">
                             {formatDate(row.createdAt)}
+                          </TableCell>
+
+                          {/* Action dropdown */}
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">메뉴 열기</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => handleRowClick(row)}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  상세 보기
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {!row.isApproved ? (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      approveMutation.mutate({
+                                        userId: row.id,
+                                        approved: true,
+                                      })
+                                    }
+                                  >
+                                    <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-600" />
+                                    승인
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      approveMutation.mutate({
+                                        userId: row.id,
+                                        approved: false,
+                                      })
+                                    }
+                                  >
+                                    <XCircle className="h-4 w-4 mr-2 text-rose-600" />
+                                    승인 취소
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       ))
@@ -359,17 +906,20 @@ export default function AdminUsersPage() {
                   </TableBody>
                 </Table>
 
-                {/* Pagination Controls */}
+                {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+                  <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-card">
                     <div className="text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground">{page}</span> / {totalPages} 페이지
+                      <span className="font-medium text-foreground">
+                        {page}
+                      </span>{" "}
+                      / {totalPages} 페이지
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
                         disabled={page === 1}
                         className="h-8 px-2 lg:px-3"
                       >
@@ -378,33 +928,39 @@ export default function AdminUsersPage() {
                       </Button>
 
                       <div className="flex items-center gap-1 mx-2">
-                        {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-                          // 간단한 페이지네이션 표시 로직
-                          let pNum = page;
-                          if (totalPages <= 5) pNum = i + 1;
-                          else if (page <= 3) pNum = i + 1;
-                          else if (page >= totalPages - 2) pNum = totalPages - 4 + i;
-                          else pNum = page - 2 + i;
+                        {Array.from({ length: Math.min(totalPages, 5) }).map(
+                          (_, i) => {
+                            let pNum = page;
+                            if (totalPages <= 5) pNum = i + 1;
+                            else if (page <= 3) pNum = i + 1;
+                            else if (page >= totalPages - 2)
+                              pNum = totalPages - 4 + i;
+                            else pNum = page - 2 + i;
 
-                          return (
-                            <button
-                              key={pNum}
-                              onClick={() => setPage(pNum)}
-                              className={`w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium transition-colors ${page === pNum
-                                ? "bg-primary text-primary-foreground shadow-sm"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                                }`}
-                            >
-                              {pNum}
-                            </button>
-                          );
-                        })}
+                            return (
+                              <button
+                                key={pNum}
+                                onClick={() => setPage(pNum)}
+                                className={cn(
+                                  "w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium transition-colors",
+                                  page === pNum
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                )}
+                              >
+                                {pNum}
+                              </button>
+                            );
+                          }
+                        )}
                       </div>
 
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        onClick={() =>
+                          setPage((p) => Math.min(totalPages, p + 1))
+                        }
                         disabled={page === totalPages}
                         className="h-8 px-2 lg:px-3"
                       >
@@ -420,99 +976,256 @@ export default function AdminUsersPage() {
         </>
       )}
 
-      {/* 프리미엄 계정 상세 뷰 (Sheet) */}
-      <Sheet open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-lg p-0 bg-slate-50 dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 flex flex-col gap-0 shadow-2xl">
+      {/* ── [F] Floating Bulk Action Bar ───────────────────────────── */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border shadow-lg rounded-2xl px-6 py-3 flex items-center gap-4"
+          >
+            <span className="text-sm font-medium text-foreground">
+              {selectedIds.size}명 선택됨
+            </span>
+            <div className="h-4 w-px bg-border" />
+            <Button
+              size="sm"
+              onClick={handleBulkApprove}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1.5" />
+              일괄 승인
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleBulkReject}
+              className="border-border text-rose-600 hover:bg-rose-500/10"
+            >
+              <XCircle className="h-4 w-4 mr-1.5" />
+              일괄 반려
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              선택 해제
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── [G] Bulk Action Confirm Dialog ──────────────────────────── */}
+      <Dialog
+        open={bulkDialog.open}
+        onOpenChange={(open) =>
+          setBulkDialog((prev) => ({ ...prev, open }))
+        }
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {bulkDialog.action === "approve"
+                ? `${selectedIds.size}명을 일괄 승인하시겠습니까?`
+                : `${selectedIds.size}명을 일괄 반려하시겠습니까?`}
+            </DialogTitle>
+            <DialogDescription>
+              {bulkDialog.action === "approve"
+                ? "선택된 모든 사용자의 계정이 승인됩니다. 이 작업은 되돌릴 수 있습니다."
+                : "선택된 모든 사용자의 계정이 반려됩니다. 이 작업은 되돌릴 수 있습니다."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {bulkDialog.action === "reject" && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                반려 사유 (선택)
+              </label>
+              <textarea
+                className="w-full rounded-xl border border-border px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring bg-card"
+                rows={2}
+                placeholder="반려 사유를 입력하세요..."
+                value={bulkRejectReason}
+                onChange={(e) => setBulkRejectReason(e.target.value)}
+              />
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setBulkDialog({ open: false, action: "approve" })
+              }
+            >
+              취소
+            </Button>
+            <Button
+              onClick={confirmBulkAction}
+              disabled={bulkMutation.isPending}
+              className={
+                bulkDialog.action === "approve"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-rose-600 hover:bg-rose-700 text-white"
+              }
+            >
+              {bulkMutation.isPending
+                ? "처리 중..."
+                : bulkDialog.action === "approve"
+                  ? "승인 실행"
+                  : "반려 실행"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── [H] Sheet Detail Panel ─────────────────────────────────── */}
+      <Sheet
+        open={!!selectedUser}
+        onOpenChange={(open) => !open && setSelectedUser(null)}
+      >
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-lg p-0 bg-card border-l border-border flex flex-col gap-0 shadow-2xl"
+        >
           {selectedUser && (
             <>
-              {/* Header Gradient Background */}
-              <div className="relative h-32 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6 flex items-end">
-                <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]" />
-                {/* 닫기 버튼용 여백 보존 */}
-              </div>
+              <SheetHeader className="sr-only">
+                <SheetTitle>{selectedUser.name} 상세 정보</SheetTitle>
+                <SheetDescription>
+                  사용자 계정 상세 정보 및 관리
+                </SheetDescription>
+              </SheetHeader>
+
+              {/* Header — bg-secondary (no gradient) */}
+              <div className="relative h-28 bg-secondary p-6 flex items-end" />
 
               {/* Profile Overview */}
               <div className="px-6 pb-6 relative z-10 flex flex-col items-center -mt-12 mb-2">
-                <Avatar className="h-24 w-24 border-4 border-slate-50 dark:border-slate-950 shadow-xl bg-white dark:bg-slate-900">
-                  <AvatarImage src={selectedUser.avatarUrl || ""} className="object-cover" />
-                  <AvatarFallback className="text-2xl font-black bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 text-slate-600 dark:text-slate-300">
+                <Avatar className="h-24 w-24 border-4 border-card shadow-xl">
+                  <AvatarImage
+                    src={selectedUser.avatarUrl || ""}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="text-2xl font-black bg-muted text-muted-foreground">
                     {selectedUser.name.slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="mt-4 text-center space-y-1">
-                  <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex justify-center items-center gap-2">
+                  <h2 className="text-2xl font-black tracking-tight text-foreground flex justify-center items-center gap-2">
                     {selectedUser.name}
-                    {selectedUser.isApproved && <ShieldCheck className="w-5 h-5 text-emerald-500" />}
+                    {selectedUser.isApproved && (
+                      <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                    )}
                   </h2>
                   {selectedUser.chineseName && (
-                    <p className="text-sm font-medium text-muted-foreground">{selectedUser.chineseName}</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {selectedUser.chineseName}
+                    </p>
                   )}
                 </div>
 
                 <div className="flex gap-2 mt-4">
-                  <Badge className="bg-slate-800 text-white hover:bg-slate-700 rounded-full px-4 border-none">
-                    {selectedUser.role === "ADMIN" ? "관리자 계정" : selectedUser.role === "STAR" ? "스타 (STAR)" : selectedUser.role}
+                  <Badge
+                    className={cn(
+                      "rounded-full px-4 border-none",
+                      selectedUser.role === "ADMIN"
+                        ? "bg-primary/10 text-primary"
+                        : "bg-secondary text-secondary-foreground"
+                    )}
+                  >
+                    {selectedUser.role === "ADMIN"
+                      ? "관리자 계정"
+                      : "스타 (STAR)"}
                   </Badge>
-                  {selectedUser.isApproved ? (
-                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 rounded-full px-4 border-none shadow-none">
-                      승인 완료
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="border-orange-200 text-orange-600 dark:border-orange-800 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/50 rounded-full px-4">
-                      승인 대기중
-                    </Badge>
-                  )}
+                  <Badge
+                    className={cn(
+                      "rounded-full px-4 border-none shadow-none",
+                      selectedUser.isApproved
+                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                        : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                    )}
+                  >
+                    {selectedUser.isApproved ? "승인 완료" : "승인 대기중"}
+                  </Badge>
                 </div>
               </div>
 
-              {/* Scrollable Content Area */}
+              {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto px-6 pb-20 space-y-6">
-
                 {/* Personal Information Card */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                  <div className="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-b border-slate-200 dark:border-slate-800">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">개인 정보</h3>
+                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                  <div className="bg-muted/50 px-5 py-3 border-b border-border">
+                    <h3 className="text-sm font-bold text-foreground">
+                      개인 정보
+                    </h3>
                   </div>
                   <div className="p-5 space-y-4">
+                    {/* Email */}
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
-                        <Mail className="w-4 h-4 text-indigo-500" />
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5">이메일 계정</p>
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{selectedUser.email}</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                          이메일 계정
+                        </p>
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {selectedUser.email}
+                        </p>
                       </div>
                     </div>
 
+                    {/* Phone */}
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center shrink-0">
-                        <Phone className="w-4 h-4 text-violet-500" />
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <Phone className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5">연락처</p>
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{selectedUser.phone || "미등록"}</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                          연락처
+                        </p>
+                        <p className="text-sm font-medium text-foreground">
+                          {selectedUser.phone || "미등록"}
+                        </p>
                       </div>
                     </div>
 
+                    {/* ID Number */}
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center shrink-0">
-                        <Users className="w-4 h-4 text-rose-500" />
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <Users className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0 pr-2">
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5 flex justify-between">
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5 flex justify-between">
                           주민등록번호
                           {selectedUser.idNumber && (
                             <button
                               onClick={() => setShowSensitive(!showSensitive)}
-                              className="text-indigo-500 hover:text-indigo-600 transition-colors flex items-center gap-1 -mt-1 cursor-pointer"
+                              className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1 -mt-1 cursor-pointer"
                             >
-                              {showSensitive ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                              <span className="text-[10px] uppercase font-bold">{showSensitive ? '숨기기' : '보기'}</span>
+                              {showSensitive ? (
+                                <EyeOff className="w-3 h-3" />
+                              ) : (
+                                <Eye className="w-3 h-3" />
+                              )}
+                              <span className="text-[10px] uppercase font-bold">
+                                {showSensitive ? "숨기기" : "보기"}
+                              </span>
                             </button>
                           )}
                         </p>
-                        <p className={`text-sm font-${selectedUser.idNumber && showSensitive ? 'bold' : 'medium'} text-slate-900 dark:text-slate-100 tracking-wider`}>
+                        <p
+                          className={cn(
+                            "text-sm text-foreground tracking-wider",
+                            selectedUser.idNumber && showSensitive
+                              ? "font-bold"
+                              : "font-medium"
+                          )}
+                        >
                           {!selectedUser.idNumber
                             ? "미등록"
                             : showSensitive
@@ -521,38 +1234,63 @@ export default function AdminUsersPage() {
                         </p>
                       </div>
                     </div>
+
+                    {/* Created At */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <Calendar className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                          가입일
+                        </p>
+                        <p className="text-sm font-medium text-foreground">
+                          {formatDate(selectedUser.createdAt)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Financial Information Card */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                  <div className="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-b border-slate-200 dark:border-slate-800">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">정산 및 계좌 정보</h3>
+                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                  <div className="bg-muted/50 px-5 py-3 border-b border-border">
+                    <h3 className="text-sm font-bold text-foreground">
+                      정산 및 계좌 정보
+                    </h3>
                   </div>
                   <div className="p-5 space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
                         <Building className="w-4 h-4 text-emerald-500" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5">은행명</p>
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{selectedUser.bankName || "미등록"}</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                          은행명
+                        </p>
+                        <p className="text-sm font-medium text-foreground">
+                          {selectedUser.bankName || "미등록"}
+                        </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-teal-50 dark:bg-teal-500/10 flex items-center justify-center shrink-0">
-                        <CreditCard className="w-4 h-4 text-teal-500" />
+                      <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                        <CreditCard className="w-4 h-4 text-emerald-500" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5">계좌번호</p>
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-mono tracking-tight">{selectedUser.bankAccount || "미등록"}</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                          계좌번호
+                        </p>
+                        <p className="text-sm font-medium text-foreground font-mono tracking-tight">
+                          {selectedUser.bankAccount || "미등록"}
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Action Buttons Section */}
+                {/* Action Buttons */}
                 <div className="pt-4 pb-2">
                   {!selectedUser.isApproved ? (
                     <Button
@@ -572,9 +1310,11 @@ export default function AdminUsersPage() {
                   ) : (
                     <div className="space-y-3">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400">반려 사유 (선택)</label>
+                        <label className="text-xs font-medium text-muted-foreground">
+                          반려 사유 (선택)
+                        </label>
                         <textarea
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/40 bg-white dark:bg-slate-900"
+                          className="w-full rounded-xl border border-border px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring bg-card"
                           rows={2}
                           placeholder="반려 사유를 입력하세요..."
                           value={rejectReason}
@@ -584,13 +1324,14 @@ export default function AdminUsersPage() {
                       <Button
                         size="lg"
                         variant="outline"
-                        className="w-full border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 font-bold h-14 rounded-xl dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30 active:scale-[0.98] transition-all"
+                        className="w-full border-border text-rose-600 hover:bg-rose-500/10 font-bold h-14 rounded-xl active:scale-[0.98] transition-all"
                         disabled={approveMutation.isPending}
                         onClick={() => {
                           approveMutation.mutate({
                             userId: selectedUser.id,
                             approved: false,
-                            rejectionReason: rejectReason.trim() || undefined,
+                            rejectionReason:
+                              rejectReason.trim() || undefined,
                           });
                           setRejectReason("");
                         }}
@@ -601,13 +1342,11 @@ export default function AdminUsersPage() {
                     </div>
                   )}
                 </div>
-
               </div>
             </>
           )}
         </SheetContent>
       </Sheet>
-
     </div>
   );
 }

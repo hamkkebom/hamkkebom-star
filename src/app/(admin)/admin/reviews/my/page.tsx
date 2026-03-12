@@ -95,8 +95,8 @@ export default function MyReviewsPage() {
 
     if (error) {
         return (
-            <div className="p-8 bg-slate-950 h-full flex items-center justify-center">
-                <div className="flex flex-col items-center gap-2 p-6 rounded-xl border border-red-500/50 bg-red-500/10 text-red-400 max-w-md text-center">
+            <div className="p-8 h-full flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2 p-6 rounded-xl border border-rose-500/50 bg-rose-500/10 text-rose-400 max-w-md text-center">
                     <AlertCircle className="h-8 w-8 mb-2" />
                     <h3 className="text-lg font-bold">오류 발생</h3>
                     <p className="text-sm">
@@ -109,16 +109,18 @@ export default function MyReviewsPage() {
 
     return (
         <>
-            {/* 모바일 스와이프 심사 FAB 버튼 */}
+            {/* 모바일 스와이프 심사 FAB 버튼 — Enhanced with shimmer */}
             {swipeItems.length > 0 && (
                 <div className="block md:hidden mb-4 px-4">
                     <button
                         onClick={() => setIsSwipeSheetOpen(true)}
-                        className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-base shadow-lg shadow-violet-500/30 hover:shadow-xl active:scale-[0.98] transition-all"
+                        className="relative w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-foreground font-bold text-base shadow-lg shadow-violet-500/30 hover:shadow-xl active:scale-[0.98] transition-all overflow-hidden"
                     >
-                        <Hand className="w-6 h-6" />
-                        스와이프 피드백 심사
-                        <span className="ml-auto bg-white/20 text-white text-xs font-black px-2.5 py-1 rounded-full">
+                        {/* Shimmer effect */}
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2.5s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+                        <Hand className="w-6 h-6 relative z-10" />
+                        <span className="relative z-10">스와이프 피드백 심사</span>
+                        <span className="ml-auto bg-accent text-foreground text-xs font-black px-2.5 py-1 rounded-full relative z-10">
                             {swipeItems.length}건
                         </span>
                     </button>
@@ -139,6 +141,14 @@ export default function MyReviewsPage() {
             />
 
             <FeedbackDashboard submissions={submissions || []} />
+
+            {/* Shimmer animation keyframe */}
+            <style jsx global>{`
+                @keyframes shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+            `}</style>
         </>
     );
 }

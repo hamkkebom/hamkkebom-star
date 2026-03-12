@@ -165,8 +165,8 @@ export default function SettlementGuidePage() {
                 </div>
 
                 {/* Mobile E-Book Page Indicator */}
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 md:hidden z-10 bg-slate-900/40 dark:bg-white/10 backdrop-blur-xl px-4 py-2 rounded-full pointer-events-none shadow-xl border border-white/10">
-                    <span className="text-xs font-bold text-white tracking-widest uppercase">Swipe to read</span>
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 md:hidden z-10 bg-slate-900/40 dark:bg-secondary px-4 py-2 rounded-full pointer-events-none shadow-xl border border-border">
+                    <span className="text-xs font-bold text-foreground tracking-widest uppercase">Swipe to read</span>
                 </div>
 
             </div>

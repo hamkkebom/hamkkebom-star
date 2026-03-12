@@ -54,7 +54,7 @@ export function SwipeableReviewDeck({ items, onApprove, onReject, onViewDetail }
                 <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
                     <CheckCircle2 className="w-8 h-8 text-emerald-500 opacity-50" />
                 </div>
-                <p className="font-medium text-lg text-slate-900 dark:text-white">모든 심사가 완료되었습니다!</p>
+                <p className="font-medium text-lg text-slate-900 dark:text-foreground">모든 심사가 완료되었습니다!</p>
                 <p className="text-sm">더 이상 대기 중인 영상이 없습니다.</p>
             </div>
         );
@@ -126,7 +126,7 @@ export function SwipeableReviewDeck({ items, onApprove, onReject, onViewDetail }
                                     </div>
                                 </div>
 
-                                <h3 className="text-lg font-black leading-snug text-slate-900 dark:text-white line-clamp-2 mb-1">
+                                <h3 className="text-lg font-black leading-snug text-slate-900 dark:text-foreground line-clamp-2 mb-1">
                                     {item.projectTitle}
                                 </h3>
                                 {item.subTitle && (
@@ -136,7 +136,7 @@ export function SwipeableReviewDeck({ items, onApprove, onReject, onViewDetail }
                                 )}
 
                                 <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 mt-2">
-                                    <p className="text-sm font-bold text-slate-800 dark:text-white">
+                                    <p className="text-sm font-bold text-slate-800 dark:text-foreground">
                                         {item.starName}
                                     </p>
                                     <span className="text-xs text-slate-400">·</span>
@@ -162,7 +162,7 @@ export function SwipeableReviewDeck({ items, onApprove, onReject, onViewDetail }
                                         건너뛰기
                                     </button>
                                     <button
-                                        className="pointer-events-auto bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-3.5 py-1.5 rounded-full text-xs font-bold active:scale-95 transition-transform shadow-md"
+                                        className="pointer-events-auto bg-slate-900 dark:bg-white text-foreground dark:text-slate-900 px-3.5 py-1.5 rounded-full text-xs font-bold active:scale-95 transition-transform shadow-md"
                                         onClick={() => onViewDetail(item.id)}
                                     >
                                         상세 보기

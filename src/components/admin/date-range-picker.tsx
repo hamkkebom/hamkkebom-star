@@ -41,7 +41,7 @@ export function DateRangePicker({ dateRange, onDateRangeChange }: DateRangePicke
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/50 backdrop-blur-md px-4 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors h-auto"
+          className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/50 px-4 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors h-auto"
         >
           <CalendarIcon className="w-4 h-4 text-slate-500" />
           <span>
@@ -52,7 +52,7 @@ export function DateRangePicker({ dateRange, onDateRangeChange }: DateRangePicke
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-auto p-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-2xl rounded-2xl overflow-hidden"
+        className="w-auto p-0 bg-muted dark:bg-slate-900/90 border border-slate-200/50 dark:border-slate-700/50 shadow-2xl rounded-2xl overflow-hidden"
         align="end"
       >
         <Calendar

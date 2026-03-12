@@ -80,7 +80,7 @@ function OperationalTrendSection({ dateRange }: { dateRange: DateRange }) {
     });
 
     return (
-        <Card className="col-span-1 lg:col-span-2 shadow-xl border-white/40 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-3xl overflow-hidden ring-1 ring-inset ring-slate-900/5 dark:ring-white/10">
+        <Card className="col-span-1 lg:col-span-2 shadow-xl border-border dark:border-border bg-card dark:bg-slate-900/40 rounded-3xl overflow-hidden ring-1 ring-inset ring-slate-900/5 dark:ring-white/10">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <div>
                     <CardTitle className="text-xl font-black flex items-center gap-2 tracking-tight">
@@ -102,7 +102,7 @@ function OperationalTrendSection({ dateRange }: { dateRange: DateRange }) {
                             exit={{ opacity: 0 }}
                             className="absolute inset-4"
                         >
-                            <Skeleton className="w-full h-full rounded-2xl bg-white/50 dark:bg-black/20" />
+                            <Skeleton className="w-full h-full rounded-2xl bg-card dark:bg-card" />
                         </motion.div>
                     ) : (
                         <motion.div
@@ -136,8 +136,8 @@ function OperationalSpeedLeaderboardSection({ dateRange }: { dateRange: DateRang
     });
 
     return (
-        <Card className="col-span-1 shadow-xl border-white/40 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-3xl rounded-3xl overflow-hidden flex flex-col ring-1 ring-inset ring-slate-900/5 dark:ring-white/10">
-            <CardHeader className="pb-4 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/30 dark:bg-black/20">
+        <Card className="col-span-1 shadow-xl border-border dark:border-border bg-card dark:bg-slate-900/60 rounded-3xl overflow-hidden flex flex-col ring-1 ring-inset ring-slate-900/5 dark:ring-white/10">
+            <CardHeader className="pb-4 border-b border-slate-200/50 dark:border-slate-800/50 bg-accent dark:bg-card">
                 <CardTitle className="text-xl font-black flex items-center gap-2 tracking-tight">
                     <Zap className="w-5 h-5 text-emerald-500 fill-emerald-500/20" />
                     피드백 속도 에이스 (Top 5)
@@ -171,7 +171,7 @@ function OperationalSpeedLeaderboardSection({ dateRange }: { dateRange: DateRang
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: index * 0.1, duration: 0.4 }}
-                                    className="px-6 py-4 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-4 group"
+                                    className="px-6 py-4 hover:bg-secondary/500 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-4 group"
                                 >
                                     <div className="relative">
                                         <Avatar className="h-10 w-10 border-2 border-white dark:border-slate-800 shadow-md">
@@ -181,7 +181,7 @@ function OperationalSpeedLeaderboardSection({ dateRange }: { dateRange: DateRang
                                             </AvatarFallback>
                                         </Avatar>
                                         {index === 0 && (
-                                            <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-emerald-500 text-white drop-shadow-lg z-10 animate-bounce flex items-center justify-center p-0.5">
+                                            <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-emerald-500 text-foreground drop-shadow-lg z-10 animate-bounce flex items-center justify-center p-0.5">
                                                 <Zap className="w-full h-full" />
                                             </span>
                                         )}
@@ -193,7 +193,7 @@ function OperationalSpeedLeaderboardSection({ dateRange }: { dateRange: DateRang
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-end mb-1">
-                                            <p className="text-sm font-bold text-slate-800 dark:text-white truncate tracking-tight">
+                                            <p className="text-sm font-bold text-slate-800 dark:text-foreground truncate tracking-tight">
                                                 {star.name}
                                             </p>
                                             <span className="text-[10px] font-bold text-slate-400">총 {star.totalFeedbacks}건</span>

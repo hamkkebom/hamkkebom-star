@@ -34,13 +34,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { DateRange } from "react-day-picker";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import {
   Table,
   TableBody,
@@ -796,7 +790,7 @@ export default function AdminSettlementsPage() {
                               onClick={(e) => e.stopPropagation()}
                             />
                             <div>
-                              <h3 className="font-bold text-slate-900 dark:text-white leading-tight">{getStarDisplayName(row.star)}</h3>
+                              <h3 className="font-bold text-slate-900 dark:text-foreground leading-tight">{getStarDisplayName(row.star)}</h3>
                               <p className="text-[10px] text-slate-500">{formatDateRange(new Date(row.startDate), new Date(row.endDate))}</p>
                             </div>
                           </div>
@@ -825,7 +819,7 @@ export default function AdminSettlementsPage() {
                           <div className="flex items-center gap-2 mt-2 pt-3 border-t border-slate-50 dark:border-slate-800">
                             <Button
                               variant="default"
-                              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10"
+                              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-foreground font-bold h-10"
                               onClick={(e) => { e.stopPropagation(); setConfirmTarget(row); }}
                               disabled={completeMutation.isPending}
                             >
@@ -984,61 +978,60 @@ export default function AdminSettlementsPage() {
       </Tabs>
 
       {/* ======================== Generate Dialog ======================== */}
-      <Dialog open={generateOpen} onOpenChange={setGenerateOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>월별 정산 생성</DialogTitle>
-            <DialogDescription>
-              해당 기간의 승인된 제출물을 기반으로 정산을 자동 생성합니다.
-              <br />
-              <span className="text-xs text-muted-foreground">
-                ※ 이미 대기중인 정산은 재생성됩니다. 확정된 정산은 유지됩니다.
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            {/* Quick select buttons */}
-            <div className="flex gap-2 mb-1">
-              <Button variant="outline" size="sm" onClick={() => {
-                const { startDate, endDate } = getDefaultDateRange();
-                setGenDateRange({ from: startDate, to: endDate });
-              }}>이번 달</Button>
-              <Button variant="outline" size="sm" onClick={() => {
-                const now = new Date();
-                const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                const end = new Date(now.getFullYear(), now.getMonth(), 0);
-                setGenDateRange({ from: start, to: end });
-              }}>지난 달</Button>
-              <Button variant="outline" size="sm" onClick={() => {
-                const now = new Date();
-                const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-                const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                setGenDateRange({ from: start, to: end });
-              }}>최근 3개월</Button>
-            </div>
-            {/* Calendar DateRange picker */}
-            <div className="flex justify-center">
-              <Calendar
-                mode="range"
-                selected={genDateRange}
-                onSelect={setGenDateRange}
-                numberOfMonths={2}
-                className="rounded-md border"
-              />
-            </div>
-            {/* Selected range display */}
-            {genDateRange?.from && (
-              <p className="text-sm text-muted-foreground text-center">
-                선택: {formatDateRange(genDateRange.from, genDateRange.to ?? genDateRange.from)}
-              </p>
-            )}
+      <ResponsiveModal
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+        title="월별 정산 생성"
+        description="해당 기간의 승인된 제출물을 기반으로 정산을 자동 생성합니다."
+        className="sm:max-w-[600px]"
+      >
+        <p className="text-xs text-muted-foreground -mt-2 mb-4">
+          ※ 이미 대기중인 정산은 재생성됩니다. 확정된 정산은 유지됩니다.
+        </p>
+        <div className="flex flex-col gap-4">
+          {/* Quick select buttons */}
+          <div className="flex gap-2 mb-1">
+            <Button variant="outline" size="sm" onClick={() => {
+              const { startDate, endDate } = getDefaultDateRange();
+              setGenDateRange({ from: startDate, to: endDate });
+            }}>이번 달</Button>
+            <Button variant="outline" size="sm" onClick={() => {
+              const now = new Date();
+              const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+              const end = new Date(now.getFullYear(), now.getMonth(), 0);
+              setGenDateRange({ from: start, to: end });
+            }}>지난 달</Button>
+            <Button variant="outline" size="sm" onClick={() => {
+              const now = new Date();
+              const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+              const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+              setGenDateRange({ from: start, to: end });
+            }}>최근 3개월</Button>
           </div>
-          <Button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending || !genDateRange?.from} className="mt-2 gap-1.5">
+          {/* Calendar DateRange picker */}
+          <div className="flex justify-center">
+            <Calendar
+              mode="range"
+              selected={genDateRange}
+              onSelect={setGenDateRange}
+              numberOfMonths={2}
+              className="rounded-md border"
+            />
+          </div>
+          {/* Selected range display */}
+          {genDateRange?.from && (
+            <p className="text-sm text-muted-foreground text-center">
+              선택: {formatDateRange(genDateRange.from, genDateRange.to ?? genDateRange.from)}
+            </p>
+          )}
+        </div>
+        <div className="flex justify-end pt-4">
+          <Button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending || !genDateRange?.from} className="gap-1.5">
             <CalendarIcon className="h-4 w-4" />
             {generateMutation.isPending ? "생성 중..." : "정산 생성"}
           </Button>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </ResponsiveModal>
 
       {/* ======================== Confirm Dialog ======================== */}
       <AlertDialog open={!!confirmTarget} onOpenChange={(open) => !open && setConfirmTarget(null)}>
@@ -1089,7 +1082,7 @@ export default function AdminSettlementsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setCancelTarget(null)}>닫기</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-amber-600 hover:bg-amber-700 text-foreground"
               onClick={() => {
                 if (cancelTarget) cancelMutation.mutate(cancelTarget.id);
               }}

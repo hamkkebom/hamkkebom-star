@@ -87,13 +87,13 @@ export function AdminMobileDashboard({
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: i * 0.1, type: "spring", stiffness: 300, damping: 24 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="relative overflow-hidden rounded-2xl p-5 shadow-sm border bg-white dark:bg-[#0c0c14] dark:border-white/5 w-[240px] h-[130px] flex flex-col justify-between"
+                                className="relative overflow-hidden rounded-2xl p-5 shadow-sm border bg-white dark:bg-[#0c0c14] dark:border-border/50 w-[240px] h-[130px] flex flex-col justify-between"
                             >
                                 {/* Background Glow */}
                                 <div className={cn("absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 bg-gradient-to-br", card.color)} />
 
                                 <div className="flex items-center justify-between z-10">
-                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-md text-white", card.color)}>
+                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-md text-foreground", card.color)}>
                                         <card.icon className="w-5 h-5" />
                                     </div>
                                     {card.urgent && (
@@ -124,7 +124,7 @@ export function AdminMobileDashboard({
                         <Link key={i} href={action.link}>
                             <motion.div
                                 whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-3 p-3.5 rounded-2xl bg-white dark:bg-[#0c0c14] border dark:border-white/5 shadow-sm active:bg-slate-50 dark:active:bg-white/5 transition-colors"
+                                className="flex items-center gap-3 p-3.5 rounded-2xl bg-white dark:bg-[#0c0c14] border dark:border-border/50 shadow-sm active:bg-slate-50 dark:active:bg-secondary/30 transition-colors"
                             >
                                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", action.bg, action.text)}>
                                     <action.icon className="w-5 h-5" />
@@ -142,7 +142,7 @@ export function AdminMobileDashboard({
             {/* 3. Recent Timeline / Tips */}
             <section className="px-1 mt-2">
                 <h2 className="text-sm font-bold tracking-tight mb-3">최근 활동 및 알림</h2>
-                <div className="bg-white dark:bg-[#0c0c14] border dark:border-white/5 rounded-2xl p-5 shadow-sm flex flex-col items-center justify-center text-center gap-3">
+                <div className="bg-white dark:bg-[#0c0c14] border dark:border-border/50 rounded-2xl p-5 shadow-sm flex flex-col items-center justify-center text-center gap-3">
                     <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center">
                         <Settings className="w-6 h-6 text-indigo-500 animate-[spin_4s_linear_infinite]" />
                     </div>

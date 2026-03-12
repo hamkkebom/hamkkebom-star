@@ -208,7 +208,7 @@ export function SwipeReviewSheet({
                                             exit={{ opacity: 0 }}
                                             className="absolute inset-0 bg-emerald-500/20 z-20 flex items-center justify-center pointer-events-none"
                                         >
-                                            <div className="bg-emerald-500 text-white rounded-full p-6 shadow-2xl shadow-emerald-500/30">
+                                            <div className="bg-emerald-500 text-foreground rounded-full p-6 shadow-2xl shadow-emerald-500/30">
                                                 <CheckCircle2 className="w-12 h-12" />
                                             </div>
                                         </motion.div>
@@ -220,7 +220,7 @@ export function SwipeReviewSheet({
                                             exit={{ opacity: 0 }}
                                             className="absolute inset-0 bg-rose-500/20 z-20 flex items-center justify-center pointer-events-none"
                                         >
-                                            <div className="bg-rose-500 text-white rounded-full p-6 shadow-2xl shadow-rose-500/30">
+                                            <div className="bg-rose-500 text-foreground rounded-full p-6 shadow-2xl shadow-rose-500/30">
                                                 <XCircle className="w-12 h-12" />
                                             </div>
                                         </motion.div>
@@ -325,7 +325,7 @@ export function SwipeReviewSheet({
                                     </Button>
                                     <Button
                                         size="sm"
-                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-all font-bold h-11 shadow-lg shadow-emerald-500/20"
+                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-foreground active:scale-95 transition-all font-bold h-11 shadow-lg shadow-emerald-500/20"
                                         onClick={handleManualApprove}
                                     >
                                         <CheckCircle2 className="w-4 h-4 mr-1.5" />

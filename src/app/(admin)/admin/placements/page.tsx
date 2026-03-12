@@ -138,7 +138,7 @@ export default function PlacementsDashboard() {
                                         "relative flex items-center gap-2.5 px-4 py-2.5 rounded-full border transition-all duration-300 snap-center shrink-0",
                                         isActive
                                             ? "border-primary bg-primary/5 shadow-sm"
-                                            : "border-border hover:bg-muted/50 bg-background/50 backdrop-blur-md"
+                                            : "border-border hover:bg-muted/50 bg-background"
                                     )}
                                 >
                                     <div className={cn("p-1.5 rounded-full", plat.styles, isActive && "scale-110 shadow-sm transition-transform duration-300")}>
@@ -193,7 +193,7 @@ export default function PlacementsDashboard() {
                                             exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
                                             transition={{ type: "spring", stiffness: 400, damping: 30, delay: idx * 0.03 }}
                                             className={cn(
-                                                "group relative flex flex-col rounded-2xl border bg-background/50 backdrop-blur-md overflow-hidden",
+                                                "group relative flex flex-col rounded-2xl border bg-background overflow-hidden",
                                                 "hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-primary/20 transition-all duration-300",
                                                 isFetching && "opacity-60"
                                             )}
@@ -249,7 +249,7 @@ export default function PlacementsDashboard() {
                                                 )}
 
                                                 {row.url && (
-                                                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-sm" asChild>
+                                                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-primary/20 text-primary hover:bg-primary hover:text-foreground transition-all shadow-sm" asChild>
                                                         <a href={row.url} target="_blank" rel="noopener noreferrer">
                                                             <ExternalLink className="w-3.5 h-3.5" />
                                                         </a>
@@ -267,7 +267,7 @@ export default function PlacementsDashboard() {
                 {/* Placement Pagination */}
                 {!isLoading && meta.totalPages > 1 && (
                     <div className="flex justify-center">
-                        <div className="flex items-center gap-1.5 bg-background/50 backdrop-blur-md p-1.5 border rounded-full shadow-sm">
+                        <div className="flex items-center gap-1.5 bg-background p-1.5 border rounded-full shadow-sm">
                             <Button variant="ghost" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1 || isFetching} className="rounded-full px-4">이전</Button>
                             <span className="text-xs font-semibold px-2 tabular-nums">{page} <span className="text-muted-foreground font-normal mx-0.5">/</span> {meta.totalPages}</span>
                             <Button variant="ghost" size="sm" onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))} disabled={page >= meta.totalPages || isFetching} className="rounded-full px-4">다음</Button>
@@ -309,8 +309,51 @@ export default function PlacementsDashboard() {
                     )}
                 </form>
 
-                {/* Video Table */}
-                <div className="rounded-xl border bg-background/50 backdrop-blur-md overflow-hidden">
+                {/* 모바일 카드 뷰 */}
+                <div className="block md:hidden space-y-3">
+                    {isVideosLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : videos.length === 0 ? (
+                        <div className="h-32 flex items-center justify-center text-muted-foreground text-sm rounded-xl border border-dashed bg-muted/20">
+                            검색 결과가 없습니다.
+                        </div>
+                    ) : (
+                        videos.map((v: { id: string; title: string; createdAt: string; owner?: { name?: string; chineseName?: string | null } }) => (
+                            <div
+                                key={v.id}
+                                className={cn(
+                                    "bg-card border border-border rounded-xl p-4 space-y-2 active:scale-[0.98] transition-transform",
+                                    isVideosFetching && "opacity-60"
+                                )}
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <span className="font-bold text-sm truncate flex-1">{v.title}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-muted-foreground">
+                                        {v.owner?.chineseName ? `${v.owner.chineseName} / ` : ""}{v.owner?.name || "-"} · {format(new Date(v.createdAt), "yy.MM.dd", { locale: ko })}
+                                    </span>
+                                </div>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSelectedVideo({ id: v.id, title: v.title });
+                                        setModalOpen(true);
+                                    }}
+                                    className="w-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors border-transparent mt-1"
+                                >
+                                    <Share2 className="w-3.5 h-3.5 mr-1" /> 매체 등록
+                                </Button>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* 데스크톱 테이블 뷰 */}
+                <div className="hidden md:block rounded-xl border bg-background overflow-hidden">
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
@@ -334,7 +377,7 @@ export default function PlacementsDashboard() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                videos.map((v: any) => (
+                                videos.map((v: { id: string; title: string; createdAt: string; owner?: { name?: string; chineseName?: string | null } }) => (
                                     <TableRow key={v.id} className={cn("group", isVideosFetching && "opacity-60")}>
                                         <TableCell className="font-medium max-w-[300px]">
                                             <span className="truncate block">{v.title}</span>
@@ -370,7 +413,7 @@ export default function PlacementsDashboard() {
                 {/* Video Pagination */}
                 {!isVideosLoading && videoMeta.totalPages > 1 && (
                     <div className="flex justify-center">
-                        <div className="flex items-center gap-1.5 bg-background/50 backdrop-blur-md p-1.5 border rounded-full shadow-sm">
+                        <div className="flex items-center gap-1.5 bg-background p-1.5 border rounded-full shadow-sm">
                             <Button variant="ghost" size="sm" onClick={() => setVideoPage(p => Math.max(1, p - 1))} disabled={videoPage === 1 || isVideosFetching} className="rounded-full px-4">이전</Button>
                             <span className="text-xs font-semibold px-2 tabular-nums">{videoPage} <span className="text-muted-foreground font-normal mx-0.5">/</span> {videoMeta.totalPages}</span>
                             <Button variant="ghost" size="sm" onClick={() => setVideoPage(p => Math.min(videoMeta.totalPages, p + 1))} disabled={videoPage >= videoMeta.totalPages || isVideosFetching} className="rounded-full px-4">다음</Button>

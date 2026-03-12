@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { X, Youtube, Instagram, MonitorPlay, Loader2, Link as LinkIcon, Save, Trash2, Search, Video as VideoIcon } from "lucide-react";
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +47,7 @@ export function AssignPlacementModal({ open, onOpenChange, videoId = "", videoTi
     // Sync props with internal state on open
     useEffect(() => {
         if (open) {
-            setInternalVideoId(videoId);
+            setInternalVideoId(videoId); // eslint-disable-line react-hooks/set-state-in-effect -- sync props on open
             setInternalVideoTitle(videoTitle);
             setSearchQuery("");
         }
@@ -83,7 +83,7 @@ export function AssignPlacementModal({ open, onOpenChange, videoId = "", videoTi
     // When tab changes, populate URL if it exists
     useEffect(() => {
         if (activePlacement) {
-            setUrl(activePlacement.url || "");
+            setUrl(activePlacement.url || ""); // eslint-disable-line react-hooks/set-state-in-effect -- sync from query data
         } else {
             setUrl("");
         }
@@ -133,29 +133,19 @@ export function AssignPlacementModal({ open, onOpenChange, videoId = "", videoTi
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md overflow-hidden bg-background/80 backdrop-blur-xl border-white/20 dark:border-white/10 shadow-2xl p-0">
-                <div className="p-6 pb-4">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold flex items-center justify-between">
-                            <span className="flex items-center gap-2">광고 매체 할당</span>
-                            {!videoId && internalVideoId && (
-                                <Button variant="ghost" size="sm" onClick={() => setInternalVideoId("")} className="h-7 text-xs px-2 text-muted-foreground">
-                                    다른 영상 선택
-                                </Button>
-                            )}
-                        </DialogTitle>
-                        <DialogDescription className="truncate max-w-[350px]">
-                            {internalVideoId ? (
-                                <>
-                                    <span className="font-semibold text-foreground mr-1">"{internalVideoTitle}"</span>
-                                    영상이 업로드된 매체를 등록하세요.
-                                </>
-                            ) : (
-                                "매체에 등록할 영상을 검색하여 선택하세요."
-                            )}
-                        </DialogDescription>
-                    </DialogHeader>
+        <ResponsiveModal
+            open={open}
+            onOpenChange={onOpenChange}
+            title="광고 매체 할당"
+            description={internalVideoId ? `"${internalVideoTitle}" 영상이 업로드된 매체를 등록하세요.` : "매체에 등록할 영상을 검색하여 선택하세요."}
+            className="sm:max-w-md"
+        >
+                <div className="pb-2">
+                    {!videoId && internalVideoId && (
+                        <Button variant="ghost" size="sm" onClick={() => setInternalVideoId("")} className="h-7 text-xs px-2 text-muted-foreground">
+                            다른 영상 선택
+                        </Button>
+                    )}
                 </div>
 
                 {!internalVideoId ? (
@@ -176,7 +166,7 @@ export function AssignPlacementModal({ open, onOpenChange, videoId = "", videoTi
                             ) : searchResults?.length === 0 && searchQuery ? (
                                 <p className="text-center text-sm text-muted-foreground py-6">검색 결과가 없습니다.</p>
                             ) : (
-                                searchResults?.map((video: any) => (
+                                searchResults?.map((video: Record<string, string>) => (
                                     <button
                                         key={video.id}
                                         onClick={() => {
@@ -292,7 +282,6 @@ export function AssignPlacementModal({ open, onOpenChange, videoId = "", videoTi
                         </AnimatePresence>
                     </div>
                 )}
-            </DialogContent>
-        </Dialog>
+        </ResponsiveModal>
     );
 }

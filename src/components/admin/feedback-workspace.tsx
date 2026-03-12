@@ -20,7 +20,7 @@ import { ThumbnailPreview } from "./feedback-dashboard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -53,11 +53,12 @@ import {
 import { useFeedbackWorkspace } from "@/hooks/use-feedback-workspace";
 
 // Dynamic imports
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const VideoPlayer = dynamic(() => import("@/components/video/video-player").then((mod: any) => mod.VideoPlayer || mod.default || mod) as any, {
     ssr: false,
     loading: () => <div className="flex h-full w-full items-center justify-center bg-black text-slate-500"><Loader2 className="h-8 w-8 animate-spin" /></div>
 }) as any;
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 // ============================================================
 //  MAIN COMPONENT (View-only — logic in useFeedbackWorkspace)
@@ -112,20 +113,20 @@ export function FeedbackWorkspace({
                 {!isStandalone && (
                     <div
                         className={cn(
-                            "flex flex-col border-r border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0c0c14] relative z-20 shrink-0 h-full",
+                            "flex flex-col border-r border-slate-200 dark:border-border/50 bg-white dark:bg-[#0c0c14] relative z-20 shrink-0 h-full",
                             selectedId ? "hidden lg:flex w-[320px]" : "w-full lg:w-[380px]"
                         )}
                     >
                         {/* Header */}
                         <div className="p-5 pb-2">
                             <div className="flex items-center justify-between mb-5">
-                                <h2 className="text-lg font-bold tracking-tight text-white flex items-center gap-2.5">
+                                <h2 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2.5">
                                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                                        <Sparkles className="w-4 h-4 text-white" />
+                                        <Sparkles className="w-4 h-4 text-foreground" />
                                     </div>
                                     Feedback Studio
                                 </h2>
-                                <Badge variant="outline" className="border-white/10 text-slate-500 text-[10px]">
+                                <Badge variant="outline" className="border-border text-slate-500 text-[10px]">
                                     {submissions.length}건
                                 </Badge>
                             </div>
@@ -135,14 +136,14 @@ export function FeedbackWorkspace({
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-indigo-400 transition-colors" />
                                 <Input
                                     placeholder="STAR 또는 영상 검색..."
-                                    className="pl-9 bg-white/[0.03] border-white/[0.06] focus:border-indigo-500/40 focus:bg-white/[0.05] h-9 rounded-xl text-sm transition-all"
+                                    className="pl-9 bg-secondary/30 border-border/50 focus:border-indigo-500/40 focus:bg-white/[0.05] h-9 rounded-xl text-sm transition-all"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
 
                             {/* Filter Tabs */}
-                            <div className="flex gap-1 p-1 bg-white/[0.03] rounded-lg border border-white/[0.04]">
+                            <div className="flex gap-1 p-1 bg-secondary/30 rounded-lg border border-white/[0.04]">
                                 {[
                                     { id: "ALL", label: "전체" },
                                     { id: "PENDING", label: "대기" },
@@ -154,7 +155,7 @@ export function FeedbackWorkspace({
                                         className={cn(
                                             "flex-1 text-[11px] font-bold py-1.5 rounded-md transition-all duration-200",
                                             filter === tab.id
-                                                ? "bg-indigo-500/90 text-white shadow-sm shadow-indigo-500/25"
+                                                ? "bg-indigo-500/90 text-foreground shadow-sm shadow-indigo-500/25"
                                                 : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]"
                                         )}
                                     >
@@ -181,7 +182,7 @@ export function FeedbackWorkspace({
                                                     "group relative p-3 rounded-xl cursor-pointer transition-all duration-200 border",
                                                     selectedId === sub.id
                                                         ? "bg-white/[0.06] border-indigo-500/30 shadow-lg shadow-indigo-500/5"
-                                                        : "border-transparent hover:bg-white/[0.04] hover:border-white/[0.06]"
+                                                        : "border-transparent hover:bg-white/[0.04] hover:border-border/50"
                                                 )}
                                             >
                                                 {selectedId === sub.id && (
@@ -203,7 +204,7 @@ export function FeedbackWorkspace({
                                                                 <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
                                                             </div>
                                                         )}
-                                                        <div className="absolute bottom-0.5 right-0.5 px-1 py-0.5 bg-black/80 rounded text-[8px] font-mono text-white/60">
+                                                        <div className="absolute bottom-0.5 right-0.5 px-1 py-0.5 bg-background rounded text-[8px] font-mono text-muted-foreground">
                                                             v{sub.version.replace(/^v/i, "")}
                                                         </div>
                                                     </div>
@@ -219,7 +220,7 @@ export function FeedbackWorkspace({
                                                         </div>
                                                         <h3 className={cn(
                                                             "text-xs font-semibold truncate leading-tight transition-colors",
-                                                            selectedId === sub.id ? "text-white" : "text-slate-300 group-hover:text-white"
+                                                            selectedId === sub.id ? "text-foreground" : "text-slate-300 group-hover:text-foreground"
                                                         )}>
                                                             {sub.video?.title || sub.assignment?.request.title || sub.versionTitle || "제목 없음"}
                                                         </h3>
@@ -233,9 +234,9 @@ export function FeedbackWorkspace({
                                                                     {sub._count?.feedbacks}
                                                                 </span>
                                                             )}
-                                                            {sub.status === "APPROVED" && sub.video && (
-                                                                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${(sub.video as any).adEligible ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-700/50 text-slate-500'}`}>
-                                                                    {(sub.video as any).adEligible ? "광고" : "일반"}
+{sub.status === "APPROVED" && sub.video && (
+                                                                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${(sub.video as unknown as Record<string, boolean>).adEligible ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-700/50 text-slate-500'}`}>
+                                                                     {(sub.video as unknown as Record<string, boolean>).adEligible ? "광고" : "일반"}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -272,19 +273,19 @@ export function FeedbackWorkspace({
                                 {/* Video Area */}
                                 <div className="flex-1 flex flex-col relative">
                                     {/* Top Toolbar */}
-                                    <div className="h-12 border-b border-slate-200 dark:border-white/[0.06] bg-white/90 dark:bg-[#0c0c14]/90 backdrop-blur-xl flex items-center justify-between px-5 z-30">
+                                    <div className="h-12 border-b border-slate-200 dark:border-border/50 bg-muted dark:bg-[#0c0c14]/90 flex items-center justify-between px-5 z-30">
                                         <div className="flex items-center gap-3">
                                             {isStandalone && (
                                                 <Link href="/admin/reviews/my">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 -ml-2 mr-1 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-colors">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 -ml-2 mr-1 text-slate-400 hover:text-foreground hover:bg-secondary rounded-full transition-colors">
                                                         <ChevronLeft className="w-5 h-5" />
                                                     </Button>
                                                 </Link>
                                             )}
-                                            <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate max-w-[300px]">
+                                            <h2 className="text-sm font-bold text-slate-900 dark:text-foreground tracking-tight truncate max-w-[300px]">
                                                 {selectedSubmission.video?.title || "영상"}
                                             </h2>
-                                            <Badge className="bg-white/[0.06] text-slate-400 hover:bg-white/10 border-0 text-[10px] h-5">
+                                            <Badge className="bg-white/[0.06] text-slate-400 hover:bg-secondary border-0 text-[10px] h-5">
                                                 {selectedSubmission.versionTitle || `v${selectedSubmission.version.replace(/^v/i, "")}`}
                                             </Badge>
                                         </div>
@@ -294,7 +295,7 @@ export function FeedbackWorkspace({
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 h-8 text-xs font-medium transition-all"
+                                                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-secondary/50 h-8 text-xs font-medium transition-all"
                                                         onClick={handleDownload}
                                                         disabled={isDownloading || !streamUid}
                                                     >
@@ -334,7 +335,7 @@ export function FeedbackWorkspace({
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 h-8 text-xs font-medium group transition-all"
+                                                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-secondary/50 h-8 text-xs font-medium group transition-all"
                                                             onClick={() => handleAction("UNDO")}
                                                             disabled={reviewMutation.isPending}
                                                         >
@@ -362,7 +363,7 @@ export function FeedbackWorkspace({
                                                         </Button>
                                                         <Button
                                                             size="sm"
-                                                            className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 h-8 text-xs"
+                                                            className="bg-emerald-600 hover:bg-emerald-500 text-foreground shadow-md shadow-emerald-600/20 border-0 h-8 text-xs"
                                                             onClick={() => handleAction("APPROVE")}
                                                             disabled={reviewMutation.isPending}
                                                         >
@@ -386,7 +387,7 @@ export function FeedbackWorkspace({
                                                         seekTo={seekTo}
                                                     />
                                                     <AnnotationCanvas
-                                                        videoRef={videoContainerRef as any}
+                                                        videoRef={videoContainerRef as unknown as React.RefObject<HTMLVideoElement>}
                                                         currentTime={currentTime}
                                                         onSave={(strokes, time) => {
                                                             setIsTimeCaptured(true);
@@ -407,7 +408,7 @@ export function FeedbackWorkspace({
                                             <Button
                                                 variant="secondary"
                                                 size="icon"
-                                                className="absolute right-6 bottom-6 lg:right-10 lg:bottom-10 z-20 rounded-full shadow-lg w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 text-white"
+                                                className="absolute right-6 bottom-6 lg:right-10 lg:bottom-10 z-20 rounded-full shadow-lg w-12 h-12 bg-secondary hover:bg-accent border border-border text-foreground"
                                                 onClick={toggleCanvas}
                                             >
                                                 <Brush className="w-5 h-5" />
@@ -416,7 +417,7 @@ export function FeedbackWorkspace({
                                     </div>
 
                                     {/* Timeline Bar */}
-                                    <div className="h-12 bg-white dark:bg-[#0c0c14] border-t border-slate-200 dark:border-white/[0.06] px-5 flex items-center">
+                                    <div className="h-12 bg-white dark:bg-[#0c0c14] border-t border-slate-200 dark:border-border/50 px-5 flex items-center">
                                         <div className="flex items-center gap-3 w-full max-w-3xl mx-auto">
                                             <span className="text-[10px] font-mono text-slate-500 w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
                                             <input
@@ -437,22 +438,22 @@ export function FeedbackWorkspace({
                                     (Desktop: flex-col right panel | Mobile: Bottom sheet overlay)
                                    ================================================================ */}
                                 <div className={cn(
-                                    "w-full lg:w-[400px] border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0c0c14] flex flex-col z-50 shrink-0 transition-transform duration-300",
+                                    "w-full lg:w-[400px] border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-border/50 bg-white dark:bg-[#0c0c14] flex flex-col z-50 shrink-0 transition-transform duration-300",
                                     "lg:relative lg:h-full lg:translate-y-0 lg:rounded-none lg:shadow-none lg:bottom-auto lg:left-auto lg:right-auto",
                                     "fixed bottom-[calc(env(safe-area-inset-bottom,20px)+64px)] left-0 right-0 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] h-[75vh]",
                                     isMobileSheetOpen ? "translate-y-0" : "translate-y-full lg:translate-y-0"
                                 )}>
                                     {/* Drag handle for mobile */}
                                     <div
-                                        className="lg:hidden w-full flex justify-center pt-3 pb-2 cursor-pointer active:bg-white/5 transition-colors rounded-t-3xl"
+                                        className="lg:hidden w-full flex justify-center pt-3 pb-2 cursor-pointer active:bg-secondary/30 transition-colors rounded-t-3xl"
                                         onClick={() => setIsMobileSheetOpen(false)}
                                     >
-                                        <div className="w-12 h-1.5 bg-slate-300 dark:bg-white/10 rounded-full" />
+                                        <div className="w-12 h-1.5 bg-slate-300 dark:bg-secondary rounded-full" />
                                     </div>
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="lg:hidden absolute top-2 right-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10"
+                                        className="lg:hidden absolute top-2 right-2 rounded-full hover:bg-slate-100 dark:hover:bg-secondary"
                                         onClick={() => setIsMobileSheetOpen(false)}
                                     >
                                         <X className="w-4 h-4 text-slate-500" />
@@ -499,7 +500,7 @@ export function FeedbackWorkspace({
                                                                             "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200",
                                                                             isActive
                                                                                 ? `${ft.color} ring-1 ring-current/20 shadow-sm`
-                                                                                : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:border-white/[0.06] dark:bg-white/[0.02] dark:hover:bg-white/[0.05] dark:hover:text-slate-300"
+                                                                                : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:border-border/50 dark:bg-secondary/30 dark:hover:bg-secondary/50 dark:hover:text-slate-300"
                                                                         )}
                                                                     >
                                                                         <Icon className="w-3.5 h-3.5" />
@@ -528,7 +529,7 @@ export function FeedbackWorkspace({
                                                                             "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold border transition-all duration-200",
                                                                             isActive
                                                                                 ? `${pr.color} border-current/20 bg-current/5`
-                                                                                : "border-slate-200 bg-slate-50 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-slate-400 dark:hover:text-slate-300 dark:hover:bg-white/[0.04]"
+                                                                                : "border-slate-200 bg-slate-50 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:border-border/50 dark:bg-secondary/30 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:bg-white/[0.04]"
                                                                         )}
                                                                     >
                                                                         <div className={cn("w-1.5 h-1.5 rounded-full", isActive ? pr.dot : "bg-slate-600")} />
@@ -568,7 +569,7 @@ export function FeedbackWorkspace({
                                                                         </Button>
                                                                     </div>
                                                                 </div>
-                                                                <div className="relative w-full h-20 bg-black/30 rounded-lg overflow-hidden">
+                                                                <div className="relative w-full h-20 bg-card rounded-lg overflow-hidden">
                                                                     <DrawingPreview strokes={drawingObjects} />
                                                                 </div>
                                                             </div>
@@ -589,7 +590,7 @@ export function FeedbackWorkspace({
                                                                     "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all duration-200",
                                                                     isTimeCaptured
                                                                         ? "border-indigo-300 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-300 shadow-sm"
-                                                                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
+                                                                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:border-border/50 dark:bg-secondary/30 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-foreground"
                                                                 )}
                                                             >
                                                                 <Clock className="w-3.5 h-3.5" />
@@ -604,7 +605,7 @@ export function FeedbackWorkspace({
                                                                     exit={{ scale: 0, opacity: 0 }}
                                                                     whileHover={{ scale: 1.1 }}
                                                                     onClick={clearCapturedTime}
-                                                                    className="w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:text-red-400 dark:hover:bg-red-500/10 dark:hover:border-red-500/20 transition-colors"
+                                                                    className="w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 dark:border-border/50 dark:bg-secondary/30 dark:hover:text-red-400 dark:hover:bg-red-500/10 dark:hover:border-red-500/20 transition-colors"
                                                                 >
                                                                     <X className="w-3.5 h-3.5" />
                                                                 </motion.button>
@@ -621,7 +622,7 @@ export function FeedbackWorkspace({
                                                             value={feedbackText}
                                                             onChange={(e) => setFeedbackText(e.target.value)}
                                                             placeholder="구체적인 피드백을 작성해주세요... (Shift+Enter로 줄바꿈)"
-                                                            className="min-h-[120px] bg-slate-50 border-slate-200 focus:border-indigo-400 focus:bg-white dark:bg-white/[0.03] dark:border-white/[0.06] dark:focus:border-indigo-500/40 dark:focus:bg-white/[0.05] resize-none text-sm rounded-xl py-3 leading-relaxed transition-all"
+                                                            className="min-h-[120px] bg-slate-50 border-slate-200 focus:border-indigo-400 focus:bg-white dark:bg-secondary/30 dark:border-border/50 dark:focus:border-indigo-500/40 dark:focus:bg-white/[0.05] resize-none text-sm rounded-xl py-3 leading-relaxed transition-all"
                                                             onKeyDown={(e) => {
                                                                 if (e.key === "Enter" && !e.shiftKey) {
                                                                     e.preventDefault();
@@ -634,7 +635,7 @@ export function FeedbackWorkspace({
                                             </ScrollArea>
 
                                             {/* Submit Bar */}
-                                            <div className="p-4 border-t border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0a0a12] shrink-0">
+                                            <div className="p-4 border-t border-slate-200 dark:border-border/50 bg-slate-50 dark:bg-[#0a0a12] shrink-0">
                                                 <div className="flex items-center gap-2 mb-3">
                                                     {/* Summary of current form state */}
                                                     <Badge className={cn("text-[9px] h-5 border", TYPE_COLORS[feedbackType])}>
@@ -656,7 +657,7 @@ export function FeedbackWorkspace({
                                                 </div>
                                                 <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
                                                     <Button
-                                                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/20 border-0 h-10 font-bold text-sm rounded-xl transition-all duration-300"
+                                                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-foreground shadow-lg shadow-indigo-600/20 border-0 h-10 font-bold text-sm rounded-xl transition-all duration-300"
                                                         onClick={() => createFeedbackMutation.mutate()}
                                                         disabled={!feedbackText.trim() || createFeedbackMutation.isPending}
                                                     >
@@ -693,7 +694,7 @@ export function FeedbackWorkspace({
                                                                 >
                                                                     <div className="flex gap-2.5">
                                                                         <div className="flex flex-col items-center">
-                                                                            <Avatar className="w-7 h-7 border border-white/[0.08]">
+                                                                            <Avatar className="w-7 h-7 border border-border/50">
                                                                                 <AvatarImage src={fb.author.avatarUrl || undefined} />
                                                                                 <AvatarFallback className="text-[9px] bg-slate-800">{fb.author.name[0]}</AvatarFallback>
                                                                             </Avatar>
@@ -745,7 +746,7 @@ export function FeedbackWorkspace({
                                                                                                         "text-[10px] px-2 py-1 rounded-md border transition-all duration-200",
                                                                                                         editFeedbackType === ft.value
                                                                                                             ? `${ft.color} shadow-sm ring-1 ring-current/20`
-                                                                                                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-slate-400 dark:hover:bg-white/[0.05]"
+                                                                                                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-border/50 dark:bg-secondary/30 dark:text-slate-400 dark:hover:bg-secondary/50"
                                                                                                     )}
                                                                                                 >
                                                                                                     {ft.label}
@@ -762,7 +763,7 @@ export function FeedbackWorkspace({
                                                                                                         "text-[10px] px-2 py-1 rounded-md border transition-all duration-200 font-medium",
                                                                                                         editFeedbackPriority === pr.value
                                                                                                             ? `${pr.color} bg-current/5 border-current/20`
-                                                                                                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-slate-400 dark:hover:bg-white/[0.05]"
+                                                                                                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-border/50 dark:bg-secondary/30 dark:text-slate-400 dark:hover:bg-secondary/50"
                                                                                                     )}
                                                                                                 >
                                                                                                     {pr.label}
@@ -779,8 +780,8 @@ export function FeedbackWorkspace({
                                                                                     />
                                                                                     <div className="flex items-center justify-end">
                                                                                         <div className="flex gap-2">
-                                                                                            <Button size="sm" variant="ghost" className="h-7 text-[11px] px-3 text-slate-500 hover:text-slate-700 bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.05]" onClick={cancelEditing}>취소</Button>
-                                                                                            <Button size="sm" className="h-7 text-[11px] px-4 bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm" onClick={saveEditing} disabled={updateFeedbackMutation.isPending}>
+                                                                                            <Button size="sm" variant="ghost" className="h-7 text-[11px] px-3 text-slate-500 hover:text-slate-700 bg-white dark:bg-secondary/30 border border-slate-200 dark:border-white/[0.05]" onClick={cancelEditing}>취소</Button>
+                                                                                            <Button size="sm" className="h-7 text-[11px] px-4 bg-indigo-600 hover:bg-indigo-500 text-foreground shadow-sm" onClick={saveEditing} disabled={updateFeedbackMutation.isPending}>
                                                                                                 {updateFeedbackMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : <CheckCircle2 className="w-3 h-3 mr-1.5" />}
                                                                                                 저장
                                                                                             </Button>
@@ -789,7 +790,7 @@ export function FeedbackWorkspace({
                                                                                 </div>
                                                                             ) : (
                                                                                 <div className="relative group/content">
-                                                                                    <div className="text-[13px] text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-white/[0.03] p-3.5 rounded-2xl rounded-tl-none border border-slate-200 dark:border-white/[0.05] leading-relaxed whitespace-pre-line group-hover:bg-slate-100 dark:group-hover:bg-white/[0.06] transition-colors shadow-sm">
+                                                                                    <div className="text-[13px] text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-secondary/30 p-3.5 rounded-2xl rounded-tl-none border border-slate-200 dark:border-white/[0.05] leading-relaxed whitespace-pre-line group-hover:bg-slate-100 dark:group-hover:bg-white/[0.06] transition-colors shadow-sm">
                                                                                         {fb.content}
                                                                                     </div>
 
@@ -797,12 +798,12 @@ export function FeedbackWorkspace({
                                                                                     <div className="absolute top-2 right-2 opacity-0 group-hover/content:opacity-100 transition-opacity">
                                                                                         <DropdownMenu>
                                                                                             <DropdownMenuTrigger asChild>
-                                                                                                <button className="p-1.5 rounded-lg bg-white/80 dark:bg-black/50 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 backdrop-blur-sm border border-slate-200 dark:border-white/10 shadow-sm transition-all focus:outline-none">
+                                                                                                <button className="p-1.5 rounded-lg bg-muted dark:bg-card hover:bg-slate-100 dark:hover:bg-secondary text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 border border-slate-200 dark:border-border shadow-sm transition-all focus:outline-none">
                                                                                                     <MoreHorizontal className="w-3.5 h-3.5" />
                                                                                                 </button>
                                                                                             </DropdownMenuTrigger>
                                                                                             <DropdownMenuContent align="end" className="w-32 min-w-0">
-                                                                                                <DropdownMenuItem onClick={() => startEditingFeedback(fb)} className="text-xs text-slate-600 dark:text-slate-300 focus:bg-slate-50 dark:focus:bg-white/5 cursor-pointer">
+                                                                                                <DropdownMenuItem onClick={() => startEditingFeedback(fb)} className="text-xs text-slate-600 dark:text-slate-300 focus:bg-slate-50 dark:focus:bg-secondary/30 cursor-pointer">
                                                                                                     <Edit2 className="w-3.5 h-3.5 mr-2" /> 수정하기
                                                                                                 </DropdownMenuItem>
                                                                                                 <DropdownMenuSeparator />
@@ -840,13 +841,13 @@ export function FeedbackWorkspace({
                                                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                                             <User className="w-3 h-3" /> STAR 정보
                                                         </label>
-                                                        <div className="flex items-center gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/[0.06]">
+                                                        <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl border border-border/50">
                                                             <Avatar className="w-10 h-10">
                                                                 <AvatarImage src={selectedSubmission.star.avatarUrl || undefined} />
                                                                 <AvatarFallback>{selectedSubmission.star.name[0]}</AvatarFallback>
                                                             </Avatar>
                                                             <div>
-                                                                <div className="text-sm font-bold text-white">{selectedSubmission.star.name}</div>
+                                                                <div className="text-sm font-bold text-foreground">{selectedSubmission.star.name}</div>
                                                                 <div className="text-[11px] text-slate-500">{selectedSubmission.star.email}</div>
                                                             </div>
                                                         </div>
@@ -857,7 +858,7 @@ export function FeedbackWorkspace({
                                                     {/* Project/Assignment */}
                                                     <div className="space-y-2">
                                                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">프로젝트</label>
-                                                        <div className="p-3 bg-white/[0.03] rounded-xl border border-white/[0.06] text-sm text-slate-300">
+                                                        <div className="p-3 bg-secondary/30 rounded-xl border border-border/50 text-sm text-slate-300">
                                                             {selectedSubmission.assignment?.request.title || "미지정"}
                                                         </div>
                                                     </div>
@@ -901,19 +902,19 @@ export function FeedbackWorkspace({
                                                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                                 />
                                                                 {/* 호버 시 원본 보기 */}
-                                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <div className="absolute inset-0 bg-card opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                                     <a
                                                                         href={selectedSubmission.signedThumbnailUrl || selectedSubmission.video?.thumbnailUrl || ""}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        className="flex items-center gap-2 bg-white/20 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-white/30 transition-colors"
+                                                                        className="flex items-center gap-2 bg-accent text-foreground text-xs font-medium px-4 py-2 rounded-full hover:bg-accent transition-colors"
                                                                         onClick={(e) => e.stopPropagation()}
                                                                     >
                                                                         <ZoomIn className="w-4 h-4" />
                                                                         새창
                                                                     </a>
                                                                     <button
-                                                                        className="flex items-center gap-2 bg-indigo-500/80 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-indigo-600 transition-colors"
+                                                                        className="flex items-center gap-2 bg-indigo-500/80 text-foreground text-xs font-medium px-4 py-2 rounded-full hover:bg-indigo-600 transition-colors"
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             downloadThumbnail(selectedSubmission.signedThumbnailUrl || selectedSubmission.video?.thumbnailUrl, selectedSubmission.video?.title || "썸네일");
@@ -933,7 +934,7 @@ export function FeedbackWorkspace({
                                                         </div>
                                                     ) : (
                                                         <div className="flex flex-col items-center justify-center py-16 text-center">
-                                                            <div className="w-20 h-20 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-5">
+                                                            <div className="w-20 h-20 rounded-2xl bg-secondary/30 border border-border/50 flex items-center justify-center mb-5">
                                                                 <ImageIcon className="w-10 h-10 text-slate-700" />
                                                             </div>
                                                             <p className="text-sm font-medium text-slate-400 mb-1">등록된 썸네일이 없습니다</p>
@@ -958,12 +959,12 @@ export function FeedbackWorkspace({
                                     <motion.div
                                         animate={{ rotate: [0, 6, -6, 0] }}
                                         transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                                        className="w-20 h-20 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mx-auto shadow-2xl"
+                                        className="w-20 h-20 rounded-2xl bg-secondary/30 border border-border/50 flex items-center justify-center mx-auto shadow-2xl"
                                     >
                                         <Command className="w-8 h-8 text-indigo-500/60" />
                                     </motion.div>
                                     <div>
-                                        <h2 className="text-xl font-bold text-white mb-2">피드백 스튜디오</h2>
+                                        <h2 className="text-xl font-bold text-foreground mb-2">피드백 스튜디오</h2>
                                         <p className="text-slate-600 text-sm max-w-xs mx-auto leading-relaxed">
                                             좌측 리스트에서 리뷰할 영상을 선택하세요.
                                         </p>
@@ -979,13 +980,13 @@ export function FeedbackWorkspace({
                             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                 <Button
                                     size="lg"
-                                    className="rounded-full shadow-[0_8px_30px_rgba(99,102,241,0.5)] bg-indigo-600 hover:bg-indigo-500 text-white h-14 px-6 ring-2 ring-white/10 flex items-center gap-2"
+                                    className="rounded-full shadow-[0_8px_30px_rgba(99,102,241,0.5)] bg-indigo-600 hover:bg-indigo-500 text-foreground h-14 px-6 ring-2 ring-white/10 flex items-center gap-2"
                                     onClick={() => setIsMobileSheetOpen(true)}
                                 >
                                     <MessageSquare className="w-5 h-5" />
                                     <span className="font-bold">심사 / 피드백</span>
                                     {feedbacksRaw.length > 0 && (
-                                        <Badge className="ml-1.5 bg-white/20 hover:bg-white/20 text-white border-0 px-1.5 py-0.5 h-auto flex items-center justify-center font-mono text-[11px]">
+                                        <Badge className="ml-1.5 bg-accent hover:bg-accent text-foreground border-0 px-1.5 py-0.5 h-auto flex items-center justify-center font-mono text-[11px]">
                                             {feedbacksRaw.length}
                                         </Badge>
                                     )}
@@ -998,83 +999,74 @@ export function FeedbackWorkspace({
                 {/* ================================================================
                     REVIEW ACTION DIALOG
                    ================================================================ */}
-                <Dialog open={actionModal.isOpen} onOpenChange={(open) => !open && setActionModal({ isOpen: false, type: null })}>
-                    <DialogContent className="bg-[#15151f] border-white/[0.08] text-white sm:max-w-md">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                {actionModal.type === "APPROVE"
-                                    ? <><CheckCircle2 className="w-5 h-5 text-emerald-400" /> 최종 승인 확인</>
-                                    : <><AlertTriangle className="w-5 h-5 text-red-400" /> 반려/수정 요청</>}
-                            </DialogTitle>
-                            <DialogDescription className="text-slate-400">
-                                {actionModal.type === "APPROVE"
-                                    ? "승인 후에는 상태를 되돌릴 수 없습니다."
-                                    : "STAR에게 전달할 사유를 작성해주세요."}
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        {actionModal.type !== "APPROVE" && (
-                            <div className="py-2">
-                                <label className="text-[11px] font-bold text-slate-400 mb-2 block uppercase tracking-wider">반려/수정 사유 (필수)</label>
-                                <Textarea
-                                    placeholder="구체적인 사유를 입력하세요..."
-                                    className="bg-white/[0.03] border-white/[0.08] min-h-[100px] focus:border-red-500/30"
-                                    value={rejectReason}
-                                    onChange={(e) => setRejectReason(e.target.value)}
-                                />
-                            </div>
-                        )}
-                        {actionModal.type === "APPROVE" && (
-                            <div className="py-2 space-y-3">
-                                <Button
-                                    className="w-full justify-start gap-4 h-auto py-3.5 rounded-xl border border-indigo-500/30 hover:bg-slate-800/50 hover:border-indigo-500/50 transition-all text-left whitespace-normal h-auto"
-                                    variant="outline"
-                                    onClick={() => setAdEligible(true)}
-                                >
-                                    <div className={`p-1.5 rounded-full ${adEligible ? 'bg-indigo-500 shadow-lg shadow-indigo-500/40 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                                        <CheckCircle2 className="h-5 w-5" />
-                                    </div>
-                                    <div className="text-left flex-1 min-w-0">
-                                        <p className={`font-bold transition-colors ${adEligible ? 'text-indigo-400' : 'text-slate-300'}`}>광고 영상으로 전환/승인</p>
-                                        <p className="text-xs text-slate-500 mt-0.5 break-keep">이 제출물 품질이 우수하여 마케팅/광고 소재로 활용합니다.</p>
-                                    </div>
-                                </Button>
-                                <Button
-                                    className="w-full justify-start gap-4 h-auto py-3.5 rounded-xl border border-slate-700 hover:bg-slate-800/50 hover:border-slate-600 transition-all text-left whitespace-normal h-auto"
-                                    variant="outline"
-                                    onClick={() => setAdEligible(false)}
-                                >
-                                    <div className={`p-1.5 rounded-full ${!adEligible ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                                        <CheckCircle2 className="h-5 w-5" />
-                                    </div>
-                                    <div className="text-left flex-1 min-w-0">
-                                        <p className={`font-bold transition-colors ${!adEligible ? 'text-emerald-400' : 'text-slate-300'}`}>일반 리뷰 영상으로 승인</p>
-                                        <p className="text-xs text-slate-500 mt-0.5 break-keep">일반적인 리뷰 목적(광고 활용 제외)으로만 승인 상태로 바꿉니다.</p>
-                                    </div>
-                                </Button>
-                            </div>
-                        )}
-
-                        <DialogFooter className="mt-3">
-                            <Button variant="ghost" onClick={() => { setActionModal({ isOpen: false, type: null }); setRejectReason(""); setAdEligible(false); }} className="hover:bg-white/[0.05]">
-                                취소
+                <ResponsiveModal
+                    open={actionModal.isOpen}
+                    onOpenChange={(open: boolean) => !open && setActionModal({ isOpen: false, type: null })}
+                    title={actionModal.type === "APPROVE" ? "최종 승인 확인" : "반려/수정 요청"}
+                    description={actionModal.type === "APPROVE" ? "승인 후에는 상태를 되돌릴 수 없습니다." : "STAR에게 전달할 사유를 작성해주세요."}
+                    className="bg-card border-border/50 text-foreground sm:max-w-md"
+                >
+                    {actionModal.type !== "APPROVE" && (
+                        <div className="py-2">
+                            <label className="text-[11px] font-bold text-slate-400 mb-2 block uppercase tracking-wider">반려/수정 사유 (필수)</label>
+                            <Textarea
+                                placeholder="구체적인 사유를 입력하세요..."
+                                className="bg-secondary/30 border-border/50 min-h-[100px] focus:border-destructive/30"
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                            />
+                        </div>
+                    )}
+                    {actionModal.type === "APPROVE" && (
+                        <div className="py-2 space-y-3">
+                            <Button
+                                className="w-full justify-start gap-4 h-auto py-3.5 rounded-xl border border-primary/30 hover:bg-slate-800/50 hover:border-primary/50 transition-all text-left whitespace-normal"
+                                variant="outline"
+                                onClick={() => setAdEligible(true)}
+                            >
+                                <div className={`p-1.5 rounded-full ${adEligible ? 'bg-primary shadow-lg shadow-primary/20 text-primary-foreground' : 'bg-slate-800 text-slate-400'}`}>
+                                    <CheckCircle2 className="h-5 w-5" />
+                                </div>
+                                <div className="text-left flex-1 min-w-0">
+                                    <p className={`font-bold transition-colors ${adEligible ? 'text-primary' : 'text-slate-300'}`}>광고 영상으로 전환/승인</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5 break-keep">이 제출물 품질이 우수하여 마케팅/광고 소재로 활용합니다.</p>
+                                </div>
                             </Button>
                             <Button
-                                onClick={confirmAction}
-                                disabled={reviewMutation.isPending || (actionModal.type !== "APPROVE" && !rejectReason.trim())}
-                                className={cn(
-                                    "font-bold text-white",
-                                    actionModal.type === "APPROVE"
-                                        ? "bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-600/20"
-                                        : "bg-red-600 hover:bg-red-500 shadow-lg shadow-red-600/20"
-                                )}
+                                className="w-full justify-start gap-4 h-auto py-3.5 rounded-xl border border-slate-700 hover:bg-slate-800/50 hover:border-slate-600 transition-all text-left whitespace-normal"
+                                variant="outline"
+                                onClick={() => setAdEligible(false)}
                             >
-                                {reviewMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                                {actionModal.type === "APPROVE" ? "승인 확정" : "요청 보내기"}
+                                <div className={`p-1.5 rounded-full ${!adEligible ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40 text-foreground' : 'bg-slate-800 text-slate-400'}`}>
+                                    <CheckCircle2 className="h-5 w-5" />
+                                </div>
+                                <div className="text-left flex-1 min-w-0">
+                                    <p className={`font-bold transition-colors ${!adEligible ? 'text-emerald-400' : 'text-slate-300'}`}>일반 리뷰 영상으로 승인</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5 break-keep">일반적인 리뷰 목적(광고 활용 제외)으로만 승인 상태로 바꿉니다.</p>
+                                </div>
                             </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button variant="ghost" onClick={() => { setActionModal({ isOpen: false, type: null }); setRejectReason(""); setAdEligible(false); }} className="hover:bg-secondary/50">
+                            취소
+                        </Button>
+                        <Button
+                            onClick={confirmAction}
+                            disabled={reviewMutation.isPending || (actionModal.type !== "APPROVE" && !rejectReason.trim())}
+                            className={cn(
+                                "font-bold text-foreground",
+                                actionModal.type === "APPROVE"
+                                    ? "bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-600/20"
+                                    : "bg-red-600 hover:bg-red-500 shadow-lg shadow-red-600/20"
+                            )}
+                        >
+                            {reviewMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                            {actionModal.type === "APPROVE" ? "승인 확정" : "요청 보내기"}
+                        </Button>
+                    </div>
+                </ResponsiveModal>
             </div>
         </TooltipProvider>
     );

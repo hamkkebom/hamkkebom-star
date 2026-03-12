@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { MessageCircle, ArrowLeft, Inbox, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { timeAgo } from "@/lib/date-utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ConversationItem {
@@ -19,17 +20,6 @@ interface ConversationItem {
 }
 
 type Filter = "all" | "unresponded" | "mine";
-
-function timeAgo(d: string | null): string {
-    if (!d) return "";
-    const diff = Date.now() - new Date(d).getTime();
-    const m = Math.floor(diff / 60000);
-    if (m < 1) return "방금";
-    if (m < 60) return `${m}분`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}시간`;
-    return `${Math.floor(h / 24)}일`;
-}
 
 export default function AdminMessagesPage() {
     const [filter, setFilter] = useState<Filter>("all");
@@ -71,7 +61,7 @@ export default function AdminMessagesPage() {
                     <div className="flex items-center gap-2">
                         <h1 className="text-xl font-bold">💬 메시지 관리</h1>
                         {totalUnread > 0 && (
-                            <span className="min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
+                            <span className="min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-foreground flex items-center justify-center">
                                 {totalUnread}
                             </span>
                         )}
@@ -144,7 +134,7 @@ export default function AdminMessagesPage() {
                                         </p>
                                     </div>
                                     {conv.unreadCount > 0 && (
-                                        <span className="min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center flex-shrink-0">
+                                        <span className="min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-foreground flex items-center justify-center flex-shrink-0">
                                             {conv.unreadCount}
                                         </span>
                                     )}

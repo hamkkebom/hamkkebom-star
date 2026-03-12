@@ -70,6 +70,7 @@ function FinancialKpiSection({ dateRange }: { dateRange: { from: string; to: str
 
     return (
         <div className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-4 -mx-4 px-4 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:snap-none md:gap-6 md:pb-0 md:px-0 md:mx-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {data.map((kpi: any, index: number) => (
                 <div key={kpi.title} className="w-[85vw] sm:w-[300px] shrink-0 snap-center md:w-auto md:shrink">
                     <InsightKpiCard
@@ -109,7 +110,7 @@ function FinancialTrendSection() {
     });
 
     return (
-        <Card className="col-span-1 lg:col-span-2 shadow-xl border-white/40 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-3xl overflow-hidden ring-1 ring-inset ring-slate-900/5 dark:ring-white/10">
+        <Card className="col-span-1 lg:col-span-2 shadow-xl border-border dark:border-border bg-card dark:bg-slate-900/40 rounded-3xl overflow-hidden ring-1 ring-inset ring-slate-900/5 dark:ring-white/10">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <div>
                     <CardTitle className="text-xl font-black flex items-center gap-2 tracking-tight">
@@ -126,7 +127,7 @@ function FinancialTrendSection() {
                 <AnimatePresence mode="wait">
                     {isLoading ? (
                         <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-4">
-                            <Skeleton className="w-full h-full rounded-2xl bg-white/50 dark:bg-black/20" />
+                            <Skeleton className="w-full h-full rounded-2xl bg-card dark:bg-card" />
                         </motion.div>
                     ) : (
                         <motion.div
@@ -157,13 +158,13 @@ function FinancialTrendSection() {
                                         content={({ active, payload, label }) => {
                                             if (active && payload && payload.length) {
                                                 return (
-                                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xl">
+                                                    <div className="bg-muted dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xl">
                                                         <p className="font-bold text-sm text-slate-700 dark:text-slate-300 mb-2">{label}</p>
                                                         {payload.map((entry, index) => (
                                                             <div key={index} className="flex items-center gap-2 text-xs font-medium mt-1">
                                                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
                                                                 <span className="text-slate-500 dark:text-slate-400">{entry.name === 'total' ? '총 정산액' : '지급 완료'}:</span>
-                                                                <span className="text-slate-900 dark:text-white font-bold">₩{new Intl.NumberFormat("ko-KR").format(Number(entry.value))}</span>
+                                                                <span className="text-slate-900 dark:text-foreground font-bold">₩{new Intl.NumberFormat("ko-KR").format(Number(entry.value))}</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -197,8 +198,8 @@ function TopEarningStarsSection({ dateRange }: { dateRange: { from: string; to: 
     });
 
     return (
-        <Card className="col-span-1 shadow-xl border-white/40 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-3xl rounded-3xl overflow-hidden flex flex-col ring-1 ring-inset ring-slate-900/5 dark:ring-white/10">
-            <CardHeader className="pb-4 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/30 dark:bg-black/20">
+        <Card className="col-span-1 shadow-xl border-border dark:border-border bg-card dark:bg-slate-900/60 rounded-3xl overflow-hidden flex flex-col ring-1 ring-inset ring-slate-900/5 dark:ring-white/10">
+            <CardHeader className="pb-4 border-b border-slate-200/50 dark:border-slate-800/50 bg-accent dark:bg-card">
                 <CardTitle className="text-xl font-black flex items-center gap-2 tracking-tight">
                     <Trophy className="w-5 h-5 text-amber-500" />
                     최고 수익 STAR (Top 5)
@@ -217,13 +218,14 @@ function TopEarningStarsSection({ dateRange }: { dateRange: { from: string; to: 
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-200/50 dark:divide-slate-800/50">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {data?.topStars?.map((star: any, index: number) => {
                             const max = data.topStars[0]?.totalAmount || 1;
                             const percent = Math.max(5, (star.totalAmount / max) * 100);
 
                             return (
                                 <motion.div key={star.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1, duration: 0.4 }}
-                                    className="px-6 py-4 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-4">
+                                    className="px-6 py-4 hover:bg-secondary/500 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-4">
                                     <div className="relative">
                                         <Avatar className="h-10 w-10 border-2 border-white dark:border-slate-800 shadow-md">
                                             <AvatarImage src={star.image || ""} />
@@ -236,7 +238,7 @@ function TopEarningStarsSection({ dateRange }: { dateRange: { from: string; to: 
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-end mb-1">
-                                            <p className="text-sm font-bold text-slate-800 dark:text-white truncate tracking-tight">{star.name}</p>
+                                            <p className="text-sm font-bold text-slate-800 dark:text-foreground truncate tracking-tight">{star.name}</p>
                                             <span className="text-[10px] font-bold text-slate-400">{star.videoCount}건</span>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -281,8 +283,8 @@ function TopEarningVideosSection({ dateRange }: { dateRange: { from: string; to:
     });
 
     return (
-        <Card className="col-span-1 shadow-xl border-white/40 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-3xl rounded-3xl overflow-hidden flex flex-col ring-1 ring-inset ring-slate-900/5 dark:ring-white/10">
-            <CardHeader className="pb-4 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/30 dark:bg-black/20">
+        <Card className="col-span-1 shadow-xl border-border dark:border-border bg-card dark:bg-slate-900/60 rounded-3xl overflow-hidden flex flex-col ring-1 ring-inset ring-slate-900/5 dark:ring-white/10">
+            <CardHeader className="pb-4 border-b border-slate-200/50 dark:border-slate-800/50 bg-accent dark:bg-card">
                 <CardTitle className="text-xl font-black flex items-center gap-2 tracking-tight">
                     <Film className="w-5 h-5 text-rose-500" />
                     최고 수익 영상 (Top 5)
@@ -301,13 +303,14 @@ function TopEarningVideosSection({ dateRange }: { dateRange: { from: string; to:
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-200/50 dark:divide-slate-800/50">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {data?.topVideos?.map((video: any, index: number) => {
                             const max = data.topVideos[0]?.totalAmount || 1;
                             const percent = Math.max(5, (video.totalAmount / max) * 100);
 
                             return (
                                 <motion.div key={video.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1, duration: 0.4 }}
-                                    className="px-6 py-4 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-4">
+                                    className="px-6 py-4 hover:bg-secondary/500 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-4">
                                     <div className="relative w-16 h-10 rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 flex-shrink-0 shadow-md">
                                         {video.thumbnail ? (
                                             <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
@@ -320,7 +323,7 @@ function TopEarningVideosSection({ dateRange }: { dateRange: { from: string; to:
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-end mb-1">
-                                            <p className="text-sm font-bold text-slate-800 dark:text-white truncate tracking-tight">{video.title}</p>
+                                            <p className="text-sm font-bold text-slate-800 dark:text-foreground truncate tracking-tight">{video.title}</p>
                                             <span className="text-[10px] font-bold text-slate-400 flex-shrink-0 ml-2">{video.starName}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -392,7 +395,7 @@ export default function FinancialInsightsPage() {
                         key={p.value}
                         onClick={() => setDatePreset(p.value)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${datePreset === p.value
-                            ? "bg-amber-500 text-white shadow-md shadow-amber-500/30"
+                            ? "bg-amber-500 text-foreground shadow-md shadow-amber-500/30"
                             : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
                             }`}
                     >

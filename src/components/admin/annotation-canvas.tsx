@@ -37,22 +37,6 @@ export function AnnotationCanvas({ videoRef, currentTime, onSave }: AnnotationCa
 
     const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#eab308", "#ffffff", "#000000"];
 
-    // ─── Canvas 크기 동기화 ───
-    const syncSize = useCallback(() => {
-        const canvas = canvasRef.current;
-        const container = containerRef.current;
-        if (!canvas || !container) return;
-        const rect = container.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        canvas.style.width = `${rect.width}px`;
-        canvas.style.height = `${rect.height}px`;
-        const ctx = canvas.getContext("2d");
-        if (ctx) ctx.scale(dpr, dpr);
-        redraw();
-    }, []);
-
     // ─── 전체 다시 그리기 ───
     const redraw = useCallback(() => {
         const canvas = canvasRef.current;
@@ -71,6 +55,22 @@ export function AnnotationCanvas({ videoRef, currentTime, onSave }: AnnotationCa
             drawStroke(ctx, currentStrokeRef.current);
         }
     }, []);
+
+    // ─── Canvas 크기 동기화 ───
+    const syncSize = useCallback(() => {
+        const canvas = canvasRef.current;
+        const container = containerRef.current;
+        if (!canvas || !container) return;
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.scale(dpr, dpr);
+        redraw();
+    }, [redraw]);
 
     // ─── 마우스/터치 → 캔버스 좌표 ───
     const getPos = (e: React.MouseEvent | React.TouchEvent): { x: number; y: number } => {
@@ -221,10 +221,10 @@ export function AnnotationCanvas({ videoRef, currentTime, onSave }: AnnotationCa
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-2 bg-[#1a1a24]/90 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl"
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-2 bg-[#1a1a24]/90 border border-border rounded-2xl shadow-2xl"
             >
                 {/* 도구 버튼 */}
-                <div className="flex gap-1 pr-2 border-r border-white/10">
+                <div className="flex gap-1 pr-2 border-r border-border">
                     <ToolBtn icon={<MousePointer2 className="w-4 h-4" />} active={tool === "select"} onClick={() => setTool("select")} tip="선택 (V)" />
                     <ToolBtn icon={<Pen className="w-4 h-4" />} active={tool === "pen"} onClick={() => setTool("pen")} tip="펜 (P)" />
                     <ToolBtn icon={<Square className="w-4 h-4" />} active={tool === "rect"} onClick={() => setTool("rect")} tip="상자 (R)" />
@@ -232,7 +232,7 @@ export function AnnotationCanvas({ videoRef, currentTime, onSave }: AnnotationCa
                 </div>
 
                 {/* 색상 팔레트 */}
-                <div className="flex gap-1.5 px-2 border-r border-white/10">
+                <div className="flex gap-1.5 px-2 border-r border-border">
                     {COLORS.map((c) => (
                         <button
                             key={c}
@@ -248,10 +248,10 @@ export function AnnotationCanvas({ videoRef, currentTime, onSave }: AnnotationCa
 
                 {/* Undo / Redo / Clear */}
                 <div className="flex gap-1 pl-2">
-                    <Button variant="ghost" size="icon" onClick={undo} className="w-8 h-8 rounded-lg text-slate-300 hover:text-white hover:bg-white/10">
+                    <Button variant="ghost" size="icon" onClick={undo} className="w-8 h-8 rounded-lg text-slate-300 hover:text-foreground hover:bg-secondary">
                         <Undo className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={redo} className="w-8 h-8 rounded-lg text-slate-300 hover:text-white hover:bg-white/10">
+                    <Button variant="ghost" size="icon" onClick={redo} className="w-8 h-8 rounded-lg text-slate-300 hover:text-foreground hover:bg-secondary">
                         <Redo className="w-4 h-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={handleClear} className="w-8 h-8 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-500/10">
@@ -261,10 +261,10 @@ export function AnnotationCanvas({ videoRef, currentTime, onSave }: AnnotationCa
 
                 {/* 취소 / 적용 */}
                 <div className="flex gap-2 pl-4">
-                    <Button variant="ghost" size="sm" onClick={handleCancel} className="text-slate-300 hover:text-white rounded-xl">
+                    <Button variant="ghost" size="sm" onClick={handleCancel} className="text-slate-300 hover:text-foreground rounded-xl">
                         <X className="w-4 h-4 mr-1.5" /> 취소
                     </Button>
-                    <Button size="sm" onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-600/20">
+                    <Button size="sm" onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-500 text-foreground rounded-xl shadow-lg shadow-indigo-600/20">
                         <Check className="w-4 h-4 mr-1.5" /> 적용
                     </Button>
                 </div>
@@ -281,7 +281,7 @@ function ToolBtn({ icon, active, onClick, tip }: { icon: React.ReactNode; active
             title={tip}
             className={cn(
                 "w-8 h-8 flex items-center justify-center rounded-lg transition-all",
-                active ? "bg-indigo-500/20 text-indigo-400" : "text-slate-400 hover:text-white hover:bg-white/10"
+                active ? "bg-indigo-500/20 text-indigo-400" : "text-slate-400 hover:text-foreground hover:bg-secondary"
             )}
         >
             {icon}

@@ -11,14 +11,7 @@ import { downloadThumbnail } from "@/lib/download-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -410,7 +403,7 @@ export default function ReviewDetailPage() {
                     <Badge className={cn("text-xs", statusColors[prevVersion.status])}>{statusLabels[prevVersion.status]}</Badge>
                   </div>
                   <div className="aspect-video rounded-lg overflow-hidden bg-black">
-                    <VideoPlayer streamUid={(prevVersion as any).streamUid || ""} />
+                    <VideoPlayer streamUid={(prevVersion as unknown as Record<string, string>).streamUid || ""} />
                   </div>
                 </div>
                 <div>
@@ -449,19 +442,19 @@ export default function ReviewDetailPage() {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 {/* 호버 시 확대 아이콘 */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-card opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <a
                     href={sub.signedThumbnailUrl || sub.video?.thumbnailUrl || ""}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 bg-white/20 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-white/30 transition-colors"
+                    className="flex items-center gap-2 bg-accent text-foreground text-xs font-medium px-4 py-2 rounded-full hover:bg-accent transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ZoomIn className="w-4 h-4" />
                     새창
                   </a>
                   <button
-                    className="flex items-center gap-2 bg-indigo-500/80 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-indigo-600 transition-colors"
+                    className="flex items-center gap-2 bg-indigo-500/80 text-foreground text-xs font-medium px-4 py-2 rounded-full hover:bg-indigo-600 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       downloadThumbnail(sub.signedThumbnailUrl || sub.video?.thumbnailUrl, sub.video?.title || "썸네일");
@@ -480,7 +473,7 @@ export default function ReviewDetailPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] flex items-center justify-center mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-border/50 flex items-center justify-center mb-4">
                 <ImageIcon className="w-8 h-8 text-slate-300 dark:text-slate-600" />
               </div>
               <p className="text-sm font-medium text-muted-foreground mb-1">등록된 썸네일이 없습니다</p>
@@ -650,11 +643,30 @@ export default function ReviewDetailPage() {
       {/* Feedback Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
-            타임코드 피드백 ({sub._count.feedbacks})
+          <CardTitle className="text-base flex items-center justify-between">
+            <span>타임코드 피드백 ({sub._count.feedbacks})</span>
+            {sub.feedbacks.length > 0 && (() => {
+              const resolvedCount = sub.feedbacks.filter((f: Feedback) => f.status === "RESOLVED").length;
+              const totalCount = sub.feedbacks.length;
+              return (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {resolvedCount}/{totalCount} 해결
+                  </span>
+                  <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(resolvedCount / totalCount) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* TODO: onPauseVideo — VideoPlayer가 Cloudflare Stream iframe이므로 직접 제어 불가.
+              향후 Stream Player API 연동 시 pause 콜백 전달 예정 */}
           <FeedbackForm
             submissionId={sub.id}
             currentTime={currentTime}
@@ -738,7 +750,7 @@ export default function ReviewDetailPage() {
       )}
 
       {/* Reassign Dialog */}
-      <Dialog
+      <ResponsiveModal
         open={reassignDialogOpen}
         onOpenChange={(open) => {
           setReassignDialogOpen(open);
@@ -748,136 +760,130 @@ export default function ReviewDetailPage() {
             setReassignReason("");
           }
         }}
+        title="다른 STAR에게 재배정"
+        description="현재 제출물을 반려하고 다른 STAR에게 재배정합니다."
+        className="sm:max-w-lg"
       >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>다른 STAR에게 재배정</DialogTitle>
-            <DialogDescription>
-              현재 제출물을 반려하고 다른 STAR에게 재배정합니다.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* STAR Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="STAR 이름 또는 이메일로 검색..."
-                value={starSearch}
-                onChange={(e) => setStarSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            {/* STAR List */}
-            <ScrollArea className="h-60 rounded-md border">
-              {starsQuery.isLoading ? (
-                <div className="space-y-2 p-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : filteredStars.length === 0 ? (
-                <div className="flex h-full items-center justify-center p-6">
-                  <p className="text-sm text-muted-foreground">
-                    {starSearch ? "검색 결과가 없습니다." : "배정 가능한 STAR가 없습니다."}
-                  </p>
-                </div>
-              ) : (
-                <div className="p-1">
-                  {filteredStars.map((star) => (
-                    <button
-                      key={star.id}
-                      type="button"
-                      onClick={() => setSelectedStarId(star.id)}
-                      className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${selectedStarId === star.id
-                        ? "bg-primary/10 ring-1 ring-primary"
-                        : "hover:bg-muted"
-                        }`}
-                    >
-                      <div
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium ${selectedStarId === star.id
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
-                          }`}
-                      >
-                        {star.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium truncate">
-                            {star.name}
-                          </span>
-                          {star.chineseName && (
-                            <span className="text-xs text-muted-foreground">
-                              {star.chineseName}
-                            </span>
-                          )}
-                          {star.grade && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              {star.grade.name}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {star.email}
-                        </p>
-                      </div>
-                      <div
-                        className={`h-4 w-4 shrink-0 rounded-full border-2 ${selectedStarId === star.id
-                          ? "border-primary bg-primary"
-                          : "border-muted-foreground/30"
-                          }`}
-                      >
-                        {selectedStarId === star.id && (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-
-            {/* Reason */}
-            <div className="space-y-2">
-              <Label htmlFor="reassign-reason">반려 사유 (선택)</Label>
-              <Textarea
-                id="reassign-reason"
-                value={reassignReason}
-                onChange={(e) => setReassignReason(e.target.value)}
-                placeholder="반려 사유를 입력하세요..."
-                rows={2}
-              />
-            </div>
+        <div className="space-y-4">
+          {/* STAR Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="STAR 이름 또는 이메일로 검색..."
+              value={starSearch}
+              onChange={(e) => setStarSearch(e.target.value)}
+              className="pl-9"
+            />
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="ghost"
-              onClick={() => setReassignDialogOpen(false)}
-              disabled={reassignMutation.isPending}
-            >
-              취소
-            </Button>
-            <Button
-              onClick={() => reassignMutation.mutate()}
-              disabled={!selectedStarId || reassignMutation.isPending}
-            >
-              {reassignMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  처리 중...
-                </>
-              ) : (
-                "재배정 확인"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {/* STAR List */}
+          <ScrollArea className="h-60 rounded-md border">
+            {starsQuery.isLoading ? (
+              <div className="space-y-2 p-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : filteredStars.length === 0 ? (
+              <div className="flex h-full items-center justify-center p-6">
+                <p className="text-sm text-muted-foreground">
+                  {starSearch ? "검색 결과가 없습니다." : "배정 가능한 STAR가 없습니다."}
+                </p>
+              </div>
+            ) : (
+              <div className="p-1">
+                {filteredStars.map((star) => (
+                  <button
+                    key={star.id}
+                    type="button"
+                    onClick={() => setSelectedStarId(star.id)}
+                    className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${selectedStarId === star.id
+                      ? "bg-primary/10 ring-1 ring-primary"
+                      : "hover:bg-muted"
+                      }`}
+                  >
+                    <div
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium ${selectedStarId === star.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                        }`}
+                    >
+                      {star.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium truncate">
+                          {star.name}
+                        </span>
+                        {star.chineseName && (
+                          <span className="text-xs text-muted-foreground">
+                            {star.chineseName}
+                          </span>
+                        )}
+                        {star.grade && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {star.grade.name}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {star.email}
+                      </p>
+                    </div>
+                    <div
+                      className={`h-4 w-4 shrink-0 rounded-full border-2 ${selectedStarId === star.id
+                        ? "border-primary bg-primary"
+                        : "border-muted-foreground/30"
+                        }`}
+                    >
+                      {selectedStarId === star.id && (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+
+          {/* Reason */}
+          <div className="space-y-2">
+            <Label htmlFor="reassign-reason">반려 사유 (선택)</Label>
+            <Textarea
+              id="reassign-reason"
+              value={reassignReason}
+              onChange={(e) => setReassignReason(e.target.value)}
+              placeholder="반려 사유를 입력하세요..."
+              rows={2}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button
+            variant="ghost"
+            onClick={() => setReassignDialogOpen(false)}
+            disabled={reassignMutation.isPending}
+          >
+            취소
+          </Button>
+          <Button
+            onClick={() => reassignMutation.mutate()}
+            disabled={!selectedStarId || reassignMutation.isPending}
+          >
+            {reassignMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                처리 중...
+              </>
+            ) : (
+              "재배정 확인"
+            )}
+          </Button>
+        </div>
+      </ResponsiveModal>
     </div>
   );
 }

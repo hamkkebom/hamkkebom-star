@@ -71,7 +71,7 @@ interface ROIData {
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number }>; label?: string }) {
     if (!active || !payload) return null;
     return (
-        <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm border rounded-xl p-3 shadow-lg text-xs">
+        <div className="bg-muted dark:bg-zinc-900/90 border rounded-xl p-3 shadow-lg text-xs">
             <p className="font-semibold mb-1">{label}</p>
             {payload.map((p, i) => (
                 <p key={i} className="text-muted-foreground">

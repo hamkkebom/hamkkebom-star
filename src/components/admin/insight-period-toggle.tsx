@@ -18,7 +18,7 @@ export function InsightPeriodToggle({ period, onChange }: InsightPeriodTogglePro
     ] as const;
 
     return (
-        <div className="flex p-1 bg-slate-100 dark:bg-slate-800/50 rounded-full border border-slate-200 dark:border-slate-700/50 backdrop-blur-md">
+        <div className="flex p-1 bg-slate-100 dark:bg-slate-800/50 rounded-full border border-slate-200 dark:border-slate-700/50">
             {options.map((option) => (
                 <button
                     key={option.id}
@@ -26,7 +26,7 @@ export function InsightPeriodToggle({ period, onChange }: InsightPeriodTogglePro
                     className={cn(
                         "relative px-4 py-1.5 text-sm font-medium rounded-full transition-colors",
                         period === option.id
-                            ? "text-slate-900 dark:text-white"
+                            ? "text-slate-900 dark:text-foreground"
                             : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
                     )}
                 >

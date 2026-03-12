@@ -67,7 +67,7 @@ function AdminCard({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
-            className="group relative overflow-hidden rounded-3xl border border-border/50 bg-background/50 p-6 backdrop-blur-md transition-all hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/10 dark:border-white/10 dark:bg-white/5"
+            className="group relative overflow-hidden rounded-3xl border border-border/50 bg-background p-6 transition-all hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/10 dark:border-border dark:bg-secondary/30"
         >
             {/* Background Gradient Animation */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
@@ -76,14 +76,14 @@ function AdminCard({
                 {/* Avatar Ring */}
                 <div className="relative mb-4">
                     <div className="absolute -inset-1 animate-pulse rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 opacity-20 blur-md transition-opacity group-hover:opacity-40" />
-                    <Avatar className="h-20 w-20 border-2 border-border shadow-xl dark:border-white/10">
+                    <Avatar className="h-20 w-20 border-2 border-border shadow-xl dark:border-border">
                         <AvatarImage src={admin.avatarUrl || undefined} />
-                        <AvatarFallback className="bg-gradient-to-br from-slate-800 to-slate-900 text-xl font-bold text-white">
+                        <AvatarFallback className="bg-gradient-to-br from-slate-800 to-slate-900 text-xl font-bold text-foreground">
                             {admin.name.substring(0, 2)}
                         </AvatarFallback>
                     </Avatar>
                     <div className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 shadow-lg ring-2 ring-slate-950">
-                        <ShieldCheck className="h-3.5 w-3.5 text-white" />
+                        <ShieldCheck className="h-3.5 w-3.5 text-foreground" />
                     </div>
                 </div>
 
@@ -111,14 +111,14 @@ function AdminCard({
                 )}
 
                 {/* Stats */}
-                <div className="mb-6 flex w-full justify-center gap-4 border-y border-border/50 py-3 dark:border-white/5">
+                <div className="mb-6 flex w-full justify-center gap-4 border-y border-border/50 py-3 dark:border-border/50">
                     <div className="flex flex-col items-center">
                         <span className="text-xs text-muted-foreground">담당 STAR</span>
                         <span className="text-lg font-bold text-indigo-500 tabular-nums dark:text-indigo-400">
                             {admin._count.managedStars}
                         </span>
                     </div>
-                    <div className="flex flex-col items-center border-l border-border/50 pl-4 dark:border-white/5">
+                    <div className="flex flex-col items-center border-l border-border/50 pl-4 dark:border-border/50">
                         <span className="text-xs text-muted-foreground">가입일</span>
                         <span className="text-xs font-medium text-foreground/80 dark:text-slate-300">
                             {new Date(admin.createdAt).toLocaleDateString()}
@@ -166,7 +166,7 @@ function CreateAdminModal({ isOpen, onClose, onCreate }: { isOpen: boolean; onCl
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 bg-background"
                     />
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -229,7 +229,7 @@ function CreateAdminModal({ isOpen, onClose, onCreate }: { isOpen: boolean; onCl
                                 <div className="pt-2">
                                     <Button
                                         type="submit"
-                                        className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold h-11 rounded-xl shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.98]"
+                                        className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-foreground font-bold h-11 rounded-xl shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.98]"
                                         disabled={isSubmitting}
                                     >
                                         {isSubmitting ? (
@@ -286,7 +286,7 @@ function DeleteAdminModal({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 bg-background"
                     />
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -492,12 +492,12 @@ export default function AdminsPage() {
                             placeholder="이름, 이메일 검색..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="h-11 w-full min-w-[300px] rounded-full bg-background/50 pl-10 ring-1 ring-border/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
+                            className="h-11 w-full min-w-[300px] rounded-full bg-background pl-10 ring-1 ring-border/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
                         />
                     </div>
                     <Button
                         onClick={() => setIsModalOpen(true)}
-                        className="h-11 rounded-full bg-indigo-500 px-6 font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-600 hover:shadow-indigo-500/40 active:scale-95"
+                        className="h-11 rounded-full bg-indigo-500 px-6 font-bold text-foreground shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-600 hover:shadow-indigo-500/40 active:scale-95"
                     >
                         <Plus className="mr-2 h-5 w-5" />
                         관리자 추가
@@ -536,9 +536,9 @@ export default function AdminsPage() {
                     <motion.button
                         layout
                         onClick={() => setIsModalOpen(true)}
-                        className="group flex h-[280px] flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-border bg-background/50 p-6 text-muted-foreground transition-all hover:border-indigo-500/50 hover:bg-indigo-500/5 hover:text-indigo-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:text-indigo-400"
+                        className="group flex h-[280px] flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-border bg-background p-6 text-muted-foreground transition-all hover:border-indigo-500/50 hover:bg-indigo-500/5 hover:text-indigo-500 dark:border-border dark:bg-secondary/30 dark:text-slate-400 dark:hover:text-indigo-400"
                     >
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted transition-all group-hover:scale-110 group-hover:bg-indigo-500/20 dark:bg-white/5">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted transition-all group-hover:scale-110 group-hover:bg-indigo-500/20 dark:bg-secondary/30">
                             <Plus className="h-8 w-8" />
                         </div>
                         <span className="font-bold">새 관리자 등록하기</span>

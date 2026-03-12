@@ -1,24 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale/ko";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { toast } from "sonner";
-import { Clock, Eye, CheckCircle2, LayoutGrid, Download, Loader2, Hand } from "lucide-react";
+import {
+  Clock,
+  Eye,
+  CheckCircle2,
+  LayoutGrid,
+  Download,
+  Loader2,
+  Hand,
+  Film,
+  X,
+  Edit,
+  TrendingUp,
+  Zap,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  AlertCircle,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -34,7 +46,11 @@ import { FeedbackList } from "@/components/feedback/feedback-list";
 import { SwipeableReviewDeck, type SwipeableItem } from "@/components/admin/swipeable-review-deck";
 import { VerticalShortsFeed } from "@/components/admin/vertical-shorts-feed";
 import { SwipeReviewSheet } from "@/components/admin/swipe-review-sheet";
+import { cn } from "@/lib/utils";
 
+// ============================================================
+//  TYPES (exported — do not change)
+// ============================================================
 export type SubmissionStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "REVISED";
 
 export type SubmissionRow = {
@@ -79,6 +95,9 @@ type SubmissionsResponse = {
   totalPages: number;
 };
 
+// ============================================================
+//  CONSTANTS
+// ============================================================
 const statusLabels: Record<SubmissionStatus, string> = {
   PENDING: "대기중",
   IN_REVIEW: "피드백중",
@@ -87,14 +106,48 @@ const statusLabels: Record<SubmissionStatus, string> = {
   REVISED: "수정됨",
 };
 
-const statusVariants: Record<SubmissionStatus, "default" | "secondary" | "destructive" | "outline"> = {
-  PENDING: "secondary",
-  IN_REVIEW: "default",
-  APPROVED: "outline",
-  REJECTED: "destructive",
-  REVISED: "secondary",
+const STATUS_CONFIG: Record<
+  SubmissionStatus,
+  { icon: typeof Clock; pillBg: string; pillText: string; animate?: boolean }
+> = {
+  PENDING: {
+    icon: Clock,
+    pillBg: "bg-amber-100 dark:bg-amber-500/15",
+    pillText: "text-amber-700 dark:text-amber-400",
+  },
+  IN_REVIEW: {
+    icon: Eye,
+    pillBg: "bg-indigo-100 dark:bg-indigo-500/15",
+    pillText: "text-indigo-700 dark:text-indigo-400",
+    animate: true,
+  },
+  APPROVED: {
+    icon: CheckCircle2,
+    pillBg: "bg-emerald-100 dark:bg-emerald-500/15",
+    pillText: "text-emerald-700 dark:text-emerald-400",
+  },
+  REJECTED: {
+    icon: X,
+    pillBg: "bg-rose-100 dark:bg-rose-500/15",
+    pillText: "text-rose-700 dark:text-rose-400",
+  },
+  REVISED: {
+    icon: Edit,
+    pillBg: "bg-slate-100 dark:bg-slate-500/15",
+    pillText: "text-slate-700 dark:text-slate-400",
+  },
 };
 
+const FILTERS = [
+  { key: "PENDING", label: "대기중", icon: Clock },
+  { key: "IN_REVIEW", label: "피드백중", icon: Eye },
+  { key: "COMPLETED", label: "승인/반려", icon: CheckCircle2 },
+  { key: "ALL", label: "전체", icon: LayoutGrid },
+];
+
+// ============================================================
+//  HELPERS
+// ============================================================
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
@@ -121,13 +174,87 @@ async function fetchAllSubmissions(status: string, page: number): Promise<Submis
   };
 }
 
-const FILTERS = [
-  { key: "PENDING", label: "대기중", icon: Clock },
-  { key: "IN_REVIEW", label: "피드백중", icon: Eye },
-  { key: "COMPLETED", label: "승인/반려", icon: CheckCircle2 },
-  { key: "ALL", label: "전체", icon: LayoutGrid },
-];
+function getThumbnailUrl(row: SubmissionRow): string | null {
+  const uid = row.streamUid || row.video?.streamUid;
+  if (!uid) return null;
+  return `https://customer-${uid}.cloudflarestream.com/${uid}/thumbnails/thumbnail.jpg?time=2s&width=120&height=68`;
+}
 
+// ============================================================
+//  STATUS PILL
+// ============================================================
+function StatusPill({ status }: { status: SubmissionStatus }) {
+  const config = STATUS_CONFIG[status];
+  const Icon = config.icon;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold",
+        config.pillBg,
+        config.pillText,
+        config.animate && "animate-pulse"
+      )}
+    >
+      <Icon className="w-3 h-3" />
+      {statusLabels[status]}
+    </span>
+  );
+}
+
+// ============================================================
+//  FEEDBACK PROGRESS BAR
+// ============================================================
+function FeedbackProgress({ feedbacks, totalCount }: { feedbacks: Array<{ id: string; status: string }>; totalCount: number }) {
+  if (totalCount === 0) {
+    return <span className="text-xs text-muted-foreground">0건</span>;
+  }
+  const resolved = feedbacks.filter(f => f.status === "RESOLVED").length;
+  const pct = Math.round((resolved / totalCount) * 100);
+  return (
+    <div className="flex items-center gap-2 min-w-[80px]">
+      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-xs font-mono font-semibold text-muted-foreground whitespace-nowrap">
+        {resolved}/{totalCount}
+      </span>
+    </div>
+  );
+}
+
+// ============================================================
+//  THUMBNAIL CELL
+// ============================================================
+function ThumbnailCell({ row }: { row: SubmissionRow }) {
+  const [imgError, setImgError] = useState(false);
+  const url = getThumbnailUrl(row);
+
+  if (!url || imgError) {
+    return (
+      <div className="w-[60px] h-[34px] rounded bg-muted flex items-center justify-center flex-shrink-0">
+        <Film className="w-4 h-4 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={url}
+      alt="thumbnail"
+      width={60}
+      height={34}
+      className="w-[60px] h-[34px] rounded object-cover flex-shrink-0"
+      onError={() => setImgError(true)}
+    />
+  );
+}
+
+// ============================================================
+//  MAIN PAGE COMPONENT
+// ============================================================
 export default function AdminReviewsPage() {
   const queryClient = useQueryClient();
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionRow | null>(null);
@@ -150,6 +277,19 @@ export default function AdminReviewsPage() {
     queryFn: () => fetchAllSubmissions(filter, page),
   });
 
+  // ── Stats computation ──
+  const stats = useMemo(() => {
+    const rows = data?.data ?? [];
+    const total = data?.total ?? 0;
+    return {
+      total,
+      pending: rows.filter(r => r.status === "PENDING").length,
+      inReview: rows.filter(r => r.status === "IN_REVIEW").length,
+      completed: rows.filter(r => ["APPROVED", "REJECTED", "REVISED"].includes(r.status)).length,
+    };
+  }, [data]);
+
+  // ── Mutations (unchanged) ──
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/submissions/${id}/approve`, { method: "PATCH" });
@@ -235,7 +375,7 @@ export default function AdminReviewsPage() {
     onSuccess: () => {
       toast.success("처리가 취소되었습니다.");
     },
-    onError: (err, id, context) => {
+    onError: (err, _id, context) => {
       if (context?.previousData) {
         queryClient.setQueryData(["admin-submissions", filter, page], context.previousData);
       }
@@ -245,7 +385,6 @@ export default function AdminReviewsPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-submissions"] });
     },
   });
-
 
   const bulkActionMutation = useMutation({
     mutationFn: async ({ action, reason }: { action: "APPROVE" | "REJECT"; reason?: string }) => {
@@ -318,94 +457,180 @@ export default function AdminReviewsPage() {
     }))
     .filter(item => !!item.streamUid);
 
-
+  // ============================================================
+  //  RENDER
+  // ============================================================
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">전체 피드백 관리</h1>
-            <p className="text-sm text-muted-foreground">
-              제출된 영상들을 부서 구분 없이 모두 확인하고 리뷰합니다.
-            </p>
+    <div className="space-y-8">
+      {/* ════════════════════ COMMAND CENTER HEADER ════════════════════ */}
+      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <div>
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl md:text-4xl font-black tracking-tight"
+          >
+            전체 피드백{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 dark:from-indigo-400 dark:via-purple-400 dark:to-cyan-400">
+              관리
+            </span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-sm text-muted-foreground mt-1.5 max-w-lg"
+          >
+            제출된 영상들을 부서 구분 없이 모두 확인하고 리뷰합니다.
+          </motion.p>
+        </div>
+
+        {/* Stat Orbs */}
+        <div className="flex gap-3 sm:gap-4 flex-wrap">
+          {[
+            { label: "전체", value: stats.total, gradient: "from-slate-500 to-slate-400", ring: "ring-slate-300/40 dark:ring-slate-500/20", icon: TrendingUp, iconColor: "text-slate-500" },
+            { label: "대기중", value: stats.pending, gradient: "from-amber-500 to-orange-400", ring: "ring-amber-300/40 dark:ring-amber-500/20", icon: Clock, iconColor: "text-amber-500" },
+            { label: "피드백중", value: stats.inReview, gradient: "from-indigo-500 to-purple-400", ring: "ring-indigo-300/40 dark:ring-indigo-500/20", icon: Zap, iconColor: "text-indigo-500" },
+            { label: "승인/반려", value: stats.completed, gradient: "from-emerald-500 to-teal-400", ring: "ring-emerald-300/40 dark:ring-emerald-500/20", icon: CheckCircle2, iconColor: "text-emerald-500" },
+          ].map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.15 + i * 0.08, type: "spring", stiffness: 220 }}
+              className={cn(
+                "relative flex flex-col items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-2xl",
+                "bg-card border border-border",
+                "hover:bg-muted transition-all duration-300 hover:scale-105 shadow-sm"
+              )}
+            >
+              <stat.icon className={cn("w-4 h-4 mb-1", stat.iconColor)} />
+              <span className={cn("text-xl sm:text-2xl font-black bg-gradient-to-r bg-clip-text text-transparent", stat.gradient)}>
+                {stat.value}
+              </span>
+              <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest mt-0.5">
+                {stat.label}
+              </span>
+            </motion.div>
+          ))}
+
+          {/* CSV export — subtle ghost */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="flex items-end"
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                window.open("/api/submissions/export", "_blank");
+                toast.success("CSV 다운로드가 시작되었습니다.");
+              }}
+            >
+              <Download className="w-3.5 h-3.5" />
+              CSV
+            </Button>
+          </motion.div>
+        </div>
+      </header>
+
+      {/* ════════════════════ FILTER TABS ════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="flex p-1 bg-card rounded-2xl border border-border shadow-sm overflow-x-auto w-full sm:w-auto scrollbar-none"
+      >
+        {FILTERS.map((tab) => {
+          const isActive = filter === tab.key;
+          const Icon = tab.icon;
+          const count = tab.key === "PENDING"
+            ? stats.pending
+            : tab.key === "IN_REVIEW"
+              ? stats.inReview
+              : tab.key === "COMPLETED"
+                ? stats.completed
+                : stats.total;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setFilter(tab.key);
+                setPage(1);
+                setSelectedIds(new Set());
+              }}
+              className={cn(
+                "relative flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap",
+                isActive
+                  ? "text-white"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="admin-reviews-filter"
+                  className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/25"
+                  transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-1.5">
+                <Icon className={cn("w-4 h-4", isActive ? "opacity-100" : "opacity-70")} />
+                {tab.label}
+                <span
+                  className={cn(
+                    "px-1.5 py-0.5 rounded-full text-[10px] font-bold min-w-[20px] text-center",
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {count}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </motion.div>
+
+      {/* ════════════════════ CONTENT ════════════════════ */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 p-4">
+              <Skeleton className="w-[60px] h-[34px] rounded" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          ))}
+        </div>
+      ) : isError ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-rose-200 dark:border-rose-500/30 bg-rose-50/80 dark:bg-rose-500/10 px-6 py-10 flex flex-col items-center gap-3 text-center"
+        >
+          <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-rose-500" />
           </div>
+          <p className="text-sm font-medium text-rose-700 dark:text-rose-400">
+            {error instanceof Error ? error.message : "데이터를 불러오지 못했습니다."}
+          </p>
           <Button
             variant="outline"
             size="sm"
-            className="gap-1.5 ml-auto shrink-0"
-            onClick={() => {
-              window.open("/api/submissions/export", "_blank");
-              toast.success("CSV 다운로드가 시작되었습니다.");
-            }}
+            onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-submissions"] })}
+            className="mt-2"
           >
-            <Download className="w-3.5 h-3.5" />
-            CSV
+            다시 시도
           </Button>
-        </div>
-
-        {/* Premium Filter Segments */}
-        <div className="flex p-1 bg-slate-100/80 dark:bg-zinc-900/80 rounded-2xl border border-black/5 dark:border-white/5 backdrop-blur-xl shadow-sm overflow-x-auto w-full sm:w-auto scrollbar-none">
-          {FILTERS.map((tab) => {
-            const isActive = filter === tab.key;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => {
-                  setFilter(tab.key);
-                  setPage(1);
-                }}
-                className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap
-                  ${isActive ? "text-slate-900 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
-              >
-                {isActive && (
-                  <div
-                    className="absolute inset-0 bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-black/[0.04] dark:border-white/[0.04] transition-all duration-300"
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  <Icon className={`w-4 h-4 ${isActive ? "opacity-100" : "opacity-70"}`} />
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border mb-4 transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-top-2">
-          <span className="text-sm font-medium">{selectedIds.size}건 선택됨</span>
-          <Button
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => bulkActionMutation.mutate({ action: "APPROVE" })}
-            disabled={bulkActionMutation.isPending}
-          >
-            일괄 승인
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => setIsBulkRejectDialogOpen(true)}
-            disabled={bulkActionMutation.isPending}
-          >
-            일괄 반려
-          </Button>
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      ) : isError ? (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-6 text-sm text-destructive">
-          {error instanceof Error ? error.message : "데이터를 불러오지 못했습니다."}
-        </div>
+        </motion.div>
       ) : (
         <>
           {/* 모바일 스와이프 심사 FAB 버튼 */}
@@ -440,10 +665,10 @@ export default function AdminReviewsPage() {
           {filter !== "PENDING" && rows.length > 0 && (
             <div className="block md:hidden mb-8">
               <div className="mb-4">
-                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1">
                   Reels View
                 </span>
-                <p className="text-lg font-black text-slate-800 dark:text-slate-200 mt-0.5 pl-1">
+                <p className="text-lg font-black mt-0.5 pl-1">
                   숏폼 모니터링 모드
                 </p>
               </div>
@@ -457,48 +682,73 @@ export default function AdminReviewsPage() {
             </div>
           )}
 
-          <Card className={rows.length > 0 ? "hidden md:block" : ""}>
-            <CardContent className="p-2 overflow-x-auto">
+          {/* ═══════════ TABLE ═══════════ */}
+          <Card className={cn(
+            "border-border bg-card overflow-hidden shadow-sm",
+            rows.length > 0 ? "hidden md:block" : ""
+          )}>
+            <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
+                  <TableRow className="border-border hover:bg-transparent bg-muted/50">
+                    <TableHead className="w-12 pl-4">
                       <Checkbox
                         checked={isAllSelected}
                         onCheckedChange={toggleSelectAll}
                         disabled={selectableRows.length === 0}
                       />
                     </TableHead>
+                    <TableHead className="w-[76px]">미리보기</TableHead>
                     <TableHead>프로젝트</TableHead>
                     <TableHead>STAR</TableHead>
                     <TableHead>버전</TableHead>
                     <TableHead>상태</TableHead>
                     <TableHead>피드백</TableHead>
                     <TableHead>제출일</TableHead>
-                    <TableHead className="text-right">관리</TableHead>
+                    <TableHead className="text-right pr-4">관리</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
-                        제출된 영상이 없습니다.
+                      <TableCell colSpan={9} className="py-20">
+                        <div className="flex flex-col items-center gap-3 text-center">
+                          <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+                            <Inbox className="w-7 h-7 text-muted-foreground" />
+                          </div>
+                          <p className="text-sm font-medium text-muted-foreground">
+                            제출된 영상이 없습니다.
+                          </p>
+                          <p className="text-xs text-muted-foreground/60">
+                            다른 필터 탭을 확인해보세요.
+                          </p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
                     rows.map((row) => {
                       const projectTitle = row.versionTitle || row.assignment?.request?.title || row.video?.title || `v${row.version.replace(/^v/i, "")}`;
                       const showSubtitle = row.assignment?.request?.title && row.versionTitle;
+                      const feedbacks = row.feedbacks || [];
 
                       return (
-                        <TableRow key={row.id}>
-                          <TableCell>
+                        <TableRow
+                          key={row.id}
+                          className={cn(
+                            "group/row border-border transition-all duration-200",
+                            "hover:bg-muted/50"
+                          )}
+                        >
+                          <TableCell className="pl-4">
                             {["PENDING", "IN_REVIEW", "REVISED"].includes(row.status) ? (
                               <Checkbox
                                 checked={selectedIds.has(row.id)}
                                 onCheckedChange={() => toggleSelect(row.id)}
                               />
                             ) : null}
+                          </TableCell>
+                          <TableCell>
+                            <ThumbnailCell row={row} />
                           </TableCell>
                           <TableCell className="max-w-[200px] font-medium">
                             <div className="truncate" title={projectTitle}>
@@ -513,47 +763,49 @@ export default function AdminReviewsPage() {
                           <TableCell>
                             <Link
                               href={`/admin/stars/${row.star.id}`}
-                              className="hover:underline text-primary"
+                              className="hover:underline text-primary text-sm"
                             >
                               {row.star.chineseName || row.star.name}
                             </Link>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="font-mono text-xs font-semibold bg-slate-50 dark:bg-slate-900">
+                            <Badge
+                              variant="outline"
+                              className="font-mono text-xs font-bold bg-muted border-border px-2"
+                            >
                               v{row.version.replace(/^v/i, "")}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <Badge variant={statusVariants[row.status] ?? "secondary"}>
-                                {statusLabels[row.status] ?? row.status}
-                              </Badge>
+                              <StatusPill status={row.status} />
                               {row.status === "APPROVED" && row.video && (
-                                <Badge className={row.video.adEligible ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400 border-none shadow-none text-xs" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border-none shadow-none text-xs"}>
+                                <Badge className={cn(
+                                  "border-none shadow-none text-xs",
+                                  row.video.adEligible
+                                    ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400"
+                                    : "bg-muted text-muted-foreground"
+                                )}>
                                   {row.video.adEligible ? "광고 가능" : "광고 불가"}
                                 </Badge>
                               )}
                             </div>
                           </TableCell>
                           <TableCell>
-                            {(() => {
-                              const feedbacks = row.feedbacks || [];
-                              const resolved = feedbacks.filter(f => f.status === "RESOLVED").length;
-                              const total = row._count.feedbacks;
-                              return total > 0 ? `${resolved}/${total} 해결` : "0건";
-                            })()}
+                            <FeedbackProgress feedbacks={feedbacks} totalCount={row._count.feedbacks} />
                           </TableCell>
                           <TableCell>
-                            <div>{formatDate(row.createdAt)}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
+                            <div className="text-sm">{formatDate(row.createdAt)}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
                               {formatDistanceToNow(new Date(row.createdAt), { addSuffix: true, locale: ko })}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right pr-4">
                             <Link href={`/admin/reviews/${row.id}`}>
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className="rounded-lg text-xs font-semibold"
                               >
                                 리뷰
                               </Button>
@@ -570,24 +822,24 @@ export default function AdminReviewsPage() {
         </>
       )}
 
-      {/* Pagination Controls */}
+      {/* ════════════════════ PAGINATION ════════════════════ */}
       {data && data.totalPages > 1 && (
         <div className="flex items-center justify-between sm:justify-end gap-4 mt-2 mb-8">
-          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-            총 <span className="text-slate-900 dark:text-slate-100">{data.total}</span>건 ({data.page} / {data.totalPages})
+          <span className="text-sm font-medium text-muted-foreground">
+            총 <span className="font-bold text-foreground">{data.total}</span>건 ({data.page} / {data.totalPages})
           </span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               disabled={data.page <= 1}
               onClick={() => {
                 setPage(p => Math.max(1, p - 1));
                 setSelectedIds(new Set());
               }}
-              className="px-3 hidden sm:flex"
+              className="w-9 h-9 p-0 rounded-xl hidden sm:flex"
             >
-              이전
+              <ChevronLeft className="w-4 h-4" />
             </Button>
 
             {/* Page Numbers */}
@@ -604,18 +856,23 @@ export default function AdminReviewsPage() {
               const pageNum = startPage + i;
               if (pageNum > endPage) return null;
 
-              const isActive = data.page === pageNum;
+              const isActivePage = data.page === pageNum;
 
               return (
                 <Button
                   key={pageNum}
-                  variant={isActive ? "default" : "outline"}
+                  variant="ghost"
                   size="sm"
                   onClick={() => {
                     setPage(pageNum);
                     setSelectedIds(new Set());
                   }}
-                  className={`w-9 h-9 p-0 ${isActive ? "pointer-events-none" : ""}`}
+                  className={cn(
+                    "w-9 h-9 p-0 rounded-xl text-sm font-semibold",
+                    isActivePage
+                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:text-white hover:from-indigo-700 hover:to-purple-700 pointer-events-none"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
                 >
                   {pageNum}
                 </Button>
@@ -623,158 +880,240 @@ export default function AdminReviewsPage() {
             })}
 
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               disabled={data.page >= data.totalPages}
               onClick={() => {
                 setPage(p => p + 1);
                 setSelectedIds(new Set());
               }}
-              className="px-3 hidden sm:flex"
+              className="w-9 h-9 p-0 rounded-xl hidden sm:flex"
             >
-              다음
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
       )}
 
-      {/* 리뷰 다이얼로그 */}
-      <Dialog
-        open={Boolean(selectedSubmission)}
-        onOpenChange={(open) => !open && setSelectedSubmission(null)}
+      {/* ════════════════════ FLOATING BULK ACTION BAR ════════════════════ */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 60 }}
+            transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-5 py-3 bg-card/95 backdrop-blur-xl border border-border rounded-full shadow-xl"
+          >
+            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-sm font-bold">
+              {selectedIds.size}
+            </span>
+            <span className="text-sm font-medium text-muted-foreground">건 선택</span>
+
+            <div className="w-px h-6 bg-border mx-1" />
+
+            <Button
+              size="sm"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-5 font-bold shadow-lg shadow-emerald-500/20"
+              onClick={() => bulkActionMutation.mutate({ action: "APPROVE" })}
+              disabled={bulkActionMutation.isPending}
+            >
+              일괄 승인
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="rounded-full px-5 font-bold shadow-lg shadow-red-500/20"
+              onClick={() => setIsBulkRejectDialogOpen(true)}
+              disabled={bulkActionMutation.isPending}
+            >
+              일괄 반려
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ════════════════════ BULK REJECT DIALOG ════════════════════ */}
+      <ResponsiveModal
+        open={isBulkRejectDialogOpen}
+        onOpenChange={setIsBulkRejectDialogOpen}
+        title="일괄 반려"
+        description={`${selectedIds.size}건의 제출물을 반려합니다.`}
       >
-        <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-5xl">
-          {selectedSubmission && (
-            <>
-              <DialogHeader>
-                <DialogTitle>
-                  {(() => {
-                    const title = selectedSubmission.versionTitle || selectedSubmission.assignment?.request?.title || selectedSubmission.video?.title || `v${selectedSubmission.version.replace(/^v/i, "")}`;
-                    const subtitle = selectedSubmission.assignment?.request?.title && selectedSubmission.versionTitle ? selectedSubmission.assignment.request.title : null;
-                    return subtitle ? `${title} — ${subtitle}` : `${title} — v${selectedSubmission.version.replace(/^v/i, "")}`;
-                  })()}
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedSubmission.star.chineseName || selectedSubmission.star.name} ({selectedSubmission.star.email})
-                </DialogDescription>
-              </DialogHeader>
+        <div className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <label htmlFor="bulk-reject-reason" className="text-sm font-semibold text-foreground">
+              반려 사유
+            </label>
+            <textarea
+              id="bulk-reject-reason"
+              className="w-full rounded-xl border border-border bg-muted px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+              rows={3}
+              placeholder="반려 사유를 입력하세요..."
+              value={bulkRejectReason}
+              onChange={(e) => setBulkRejectReason(e.target.value)}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsBulkRejectDialogOpen(false)}>
+              취소
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => bulkActionMutation.mutate({ action: "REJECT", reason: bulkRejectReason || "관리자 일괄 반려" })}
+              disabled={bulkActionMutation.isPending}
+              className="rounded-lg"
+            >
+              {bulkActionMutation.isPending ? "처리 중..." : "반려 확인"}
+            </Button>
+          </div>
+        </div>
+      </ResponsiveModal>
 
-              <div className="space-y-4">
-                <VideoPlayer
-                  streamUid={selectedSubmission.streamUid}
-                  onTimeUpdate={handleTimeUpdate}
-                  seekTo={seekTo}
-                />
+      {/* ════════════════════ REVIEW MODAL ════════════════════ */}
+      {selectedSubmission && (
+        <ResponsiveModal
+          open={Boolean(selectedSubmission)}
+          onOpenChange={(open) => !open && setSelectedSubmission(null)}
+          title={(() => {
+            const title = selectedSubmission.versionTitle || selectedSubmission.assignment?.request?.title || selectedSubmission.video?.title || `v${selectedSubmission.version.replace(/^v/i, "")}`;
+            const subtitle = selectedSubmission.assignment?.request?.title && selectedSubmission.versionTitle ? selectedSubmission.assignment.request.title : null;
+            return subtitle ? `${title} — ${subtitle}` : `${title} — v${selectedSubmission.version.replace(/^v/i, "")}`;
+          })()}
+          description={`${selectedSubmission.star.chineseName || selectedSubmission.star.name} (${selectedSubmission.star.email})`}
+          className="max-h-[95vh] overflow-y-auto sm:max-w-5xl"
+        >
+          <div className="space-y-5">
+            <VideoPlayer
+              streamUid={selectedSubmission.streamUid}
+              onTimeUpdate={handleTimeUpdate}
+              seekTo={seekTo}
+            />
 
-                <div className="flex gap-2 items-center">
-                  {(selectedSubmission.status === "PENDING" ||
-                    selectedSubmission.status === "IN_REVIEW" ||
-                    selectedSubmission.status === "REVISED") && (
-                      <>
-                        <Button
-                          onClick={() => approveMutation.mutate(selectedSubmission.id)}
-                          disabled={approveMutation.isPending}
-                        >
-                          {approveMutation.isPending ? "승인 중..." : "승인"}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          onClick={() => rejectMutation.mutate({ id: selectedSubmission.id, reason: rejectReason })}
-                          disabled={rejectMutation.isPending || !rejectReason.trim()}
-                        >
-                          {rejectMutation.isPending ? "반려 중..." : "반려"}
-                        </Button>
-                      </>
-                    )}
+            {/* ─── Action Toolbar ─── */}
+            <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-muted border border-border">
+              {(selectedSubmission.status === "PENDING" ||
+                selectedSubmission.status === "IN_REVIEW" ||
+                selectedSubmission.status === "REVISED") && (
+                  <>
+                    <Button
+                      size="sm"
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold shadow-sm"
+                      onClick={() => approveMutation.mutate(selectedSubmission.id)}
+                      disabled={approveMutation.isPending}
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                      {approveMutation.isPending ? "승인 중..." : "승인"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="rounded-lg font-semibold shadow-sm"
+                      onClick={() => rejectMutation.mutate({ id: selectedSubmission.id, reason: rejectReason })}
+                      disabled={rejectMutation.isPending || !rejectReason.trim()}
+                    >
+                      <X className="w-4 h-4 mr-1.5" />
+                      {rejectMutation.isPending ? "반려 중..." : "반려"}
+                    </Button>
+                  </>
+                )}
 
-                  {(selectedSubmission.status === "APPROVED" ||
-                    selectedSubmission.status === "REJECTED") && (
-                      <Button
-                        variant="secondary"
-                        onClick={() => cancelReviewMutation.mutate(selectedSubmission.id)}
-                        disabled={cancelReviewMutation.isPending}
-                      >
-                        {cancelReviewMutation.isPending
-                          ? "취소 중..."
-                          : selectedSubmission.status === "APPROVED"
-                            ? "승인 취소"
-                            : "반려 취소"}
-                      </Button>
-                    )}
-
+              {(selectedSubmission.status === "APPROVED" ||
+                selectedSubmission.status === "REJECTED") && (
                   <Button
-                    variant="outline"
-                    onClick={async () => {
-                      setIsDownloading(true);
-                      try {
-                        // 서버사이드 프록시 — API가 직접 mp4 파일을 반환합니다
-                        const a = document.createElement("a");
-                        a.href = `/api/submissions/${selectedSubmission.id}/download`;
-                        a.download = "";
-                        a.click();
-                        toast.success("다운로드가 시작되었습니다.");
-                      } catch (err) {
-                        toast.error(err instanceof Error ? err.message : "다운로드에 실패했습니다.");
-                      } finally {
-                        setIsDownloading(false);
-                      }
-                    }}
-                    disabled={isDownloading}
+                    size="sm"
+                    variant="secondary"
+                    className="rounded-lg font-semibold"
+                    onClick={() => cancelReviewMutation.mutate(selectedSubmission.id)}
+                    disabled={cancelReviewMutation.isPending}
                   >
-                    {isDownloading ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />다운로드 중...</>
-                    ) : (
-                      <><Download className="mr-2 h-4 w-4" />영상 다운로드</>
-                    )}
+                    {cancelReviewMutation.isPending
+                      ? "취소 중..."
+                      : selectedSubmission.status === "APPROVED"
+                        ? "승인 취소"
+                        : "반려 취소"}
                   </Button>
-                </div>
+                )}
 
-                <div className="space-y-2">
-                  <label htmlFor="reject-reason" className="text-sm font-medium">반려 사유</label>
-                  <textarea
-                    id="reject-reason"
-                    className="w-full rounded-md border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                    rows={2}
-                    placeholder="반려 사유를 입력하세요..."
-                    value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
-                  />
-                </div>
+              <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">피드백 작성</CardTitle>
-                    <CardDescription>현재 시점에 피드백을 남기세요.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <FeedbackForm
-                      submissionId={selectedSubmission.id}
-                      currentTime={currentTime}
-                      onSubmitted={() => {
-                        queryClient.invalidateQueries({
-                          queryKey: ["feedbacks", selectedSubmission.id],
-                        });
-                      }}
-                    />
-                  </CardContent>
-                </Card>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-lg font-semibold"
+                onClick={async () => {
+                  setIsDownloading(true);
+                  try {
+                    const a = document.createElement("a");
+                    a.href = `/api/submissions/${selectedSubmission.id}/download`;
+                    a.download = "";
+                    a.click();
+                    toast.success("다운로드가 시작되었습니다.");
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "다운로드에 실패했습니다.");
+                  } finally {
+                    setIsDownloading(false);
+                  }
+                }}
+                disabled={isDownloading}
+              >
+                {isDownloading ? (
+                  <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />다운로드 중...</>
+                ) : (
+                  <><Download className="mr-1.5 h-4 w-4" />영상 다운로드</>
+                )}
+              </Button>
+            </div>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">피드백 목록</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FeedbackList
-                      submissionId={selectedSubmission.id}
-                      onTimecodeClick={setSeekTo}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+            {/* ─── Reject Reason ─── */}
+            <div className="space-y-2">
+              <label htmlFor="reject-reason" className="text-sm font-semibold text-foreground">
+                반려 사유
+              </label>
+              <textarea
+                id="reject-reason"
+                className="w-full rounded-xl border border-border bg-muted px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                rows={2}
+                placeholder="반려 사유를 입력하세요..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+              />
+            </div>
+
+            {/* ─── Feedback Form ─── */}
+            <Card className="border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-bold">피드백 작성</CardTitle>
+                <CardDescription>현재 시점에 피드백을 남기세요.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FeedbackForm
+                  submissionId={selectedSubmission.id}
+                  currentTime={currentTime}
+                  onSubmitted={() => {
+                    queryClient.invalidateQueries({
+                      queryKey: ["feedbacks", selectedSubmission.id],
+                    });
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            {/* ─── Feedback List ─── */}
+            <Card className="border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-bold">피드백 목록</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FeedbackList
+                  submissionId={selectedSubmission.id}
+                  onTimecodeClick={setSeekTo}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </ResponsiveModal>
+      )}
     </div>
   );
 }

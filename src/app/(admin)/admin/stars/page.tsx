@@ -47,14 +47,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -145,7 +138,7 @@ const StarCard = memo(function StarCard({
       )}
     >
       <div className="flex items-center gap-3">
-        <div className="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+        <div className="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-foreground text-xs font-bold">
           {displayName.charAt(0)}
         </div>
         <div className="flex-1 min-w-0">
@@ -396,50 +389,48 @@ function UnassignedRateDialog({
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>미배정 단가 일괄 설정</DialogTitle>
-          <DialogDescription>
-            현재 미배정 상태인 STAR {starsCount}명의 단가를 일괄 변경합니다.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="baseRate"
-              rules={{ required: "단가를 입력해주세요", min: { value: 0, message: "0 이상이어야 합니다" } }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>일괄 단가 (원)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="예: 40000"
-                      {...field}
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(e.target.value ? Number(e.target.value) : undefined)
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                취소
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "반영 중..." : "일괄 적용"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <ResponsiveModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="미배정 단가 일괄 설정"
+      description={`현재 미배정 상태인 STAR ${starsCount}명의 단가를 일괄 변경합니다.`}
+      className="sm:max-w-md"
+    >
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="baseRate"
+            rules={{ required: "단가를 입력해주세요", min: { value: 0, message: "0 이상이어야 합니다" } }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>일괄 단가 (원)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="예: 40000"
+                    {...field}
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(e.target.value ? Number(e.target.value) : undefined)
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              취소
+            </Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? "반영 중..." : "일괄 적용"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </ResponsiveModal>
   );
 }
 
@@ -493,80 +484,78 @@ function GradeFormDialog({
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "등급 수정" : "새 등급 추가"}</DialogTitle>
-          <DialogDescription>
-            {isEdit ? "등급 정보를 수정합니다." : "새로운 등급을 생성합니다."}
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>등급 이름</FormLabel>
-                  <FormControl>
-                    <Input placeholder="예: S등급" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="baseRate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>단가 (원)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="예: 50000"
-                      {...field}
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(e.target.value ? Number(e.target.value) : undefined)
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                  {isEdit && grade && grade.users.length > 0 && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
-                      소속 STAR {grade.users.length}명의 단가가 함께 변경됩니다
-                    </p>
-                  )}
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>색상</FormLabel>
-                  <FormControl>
-                    <ColorSelector value={field.value} onChange={field.onChange} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                취소
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "저장 중..." : isEdit ? "수정" : "추가"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <ResponsiveModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEdit ? "등급 수정" : "새 등급 추가"}
+      description={isEdit ? "등급 정보를 수정합니다." : "새로운 등급을 생성합니다."}
+      className="sm:max-w-md"
+    >
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>등급 이름</FormLabel>
+                <FormControl>
+                  <Input placeholder="예: S등급" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="baseRate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>단가 (원)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="예: 50000"
+                    {...field}
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(e.target.value ? Number(e.target.value) : undefined)
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+                {isEdit && grade && grade.users.length > 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    소속 STAR {grade.users.length}명의 단가가 함께 변경됩니다
+                  </p>
+                )}
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="color"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>색상</FormLabel>
+                <FormControl>
+                  <ColorSelector value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              취소
+            </Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? "저장 중..." : isEdit ? "수정" : "추가"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </ResponsiveModal>
   );
 }
 

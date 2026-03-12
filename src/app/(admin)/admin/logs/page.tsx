@@ -138,13 +138,13 @@ function ExpandableChanges({ changes }: { changes: Record<string, { from?: unkno
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="mt-1.5 p-2 rounded-lg bg-muted/50 text-xs font-mono space-y-1">
+            <div className="mt-1.5 p-2 rounded-lg bg-muted/50 text-[10px] md:text-xs font-mono space-y-1 overflow-x-auto">
               {Object.entries(changes).map(([field, { from, to }]) => (
-                <div key={field} className="flex items-center gap-2">
-                  <span className="text-muted-foreground">{field}:</span>
-                  <span className="text-red-500 line-through">{String(from ?? "—")}</span>
-                  <span className="text-muted-foreground">→</span>
-                  <span className="text-emerald-500">{String(to ?? "—")}</span>
+                <div key={field} className="flex items-center gap-1.5 md:gap-2 min-w-0">
+                  <span className="text-muted-foreground shrink-0">{field}:</span>
+                  <span className="text-red-500 line-through truncate">{String(from ?? "—")}</span>
+                  <span className="text-muted-foreground shrink-0">→</span>
+                  <span className="text-emerald-500 truncate">{String(to ?? "—")}</span>
                 </div>
               ))}
             </div>
@@ -227,7 +227,7 @@ export default function AdminLogsPage() {
   }, [logs]);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-8">
+    <div className="p-3 md:p-6 max-w-6xl mx-auto space-y-6 md:space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">활동 로그</h1>
         <p className="text-muted-foreground mt-2">시스템 내 모든 관리자 및 주요 활동 내역을 확인합니다.</p>
@@ -431,7 +431,7 @@ export default function AdminLogsPage() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.03, duration: 0.2 }}
-                className="relative z-10 flex items-start gap-3 p-3 rounded-xl hover:bg-accent/50 border border-transparent hover:border-border/30 transition-all duration-200"
+                className="relative z-10 flex items-start gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl hover:bg-accent/50 border border-transparent hover:border-border/30 transition-all duration-200"
               >
                 <div className={cn(
                   "mt-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-background flex-shrink-0",
@@ -439,7 +439,8 @@ export default function AdminLogsPage() {
                 )} />
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                  {/* 데스크톱 헤더 */}
+                  <div className="hidden md:flex items-center gap-2 flex-wrap mb-1">
                     <span className="font-semibold text-sm">{log.actor.name}</span>
                     <GlowBadge label={getActionLabel(log.action)} variant={getActionVariant(log.action)} size="sm" />
                     <span className="text-xs text-muted-foreground ml-auto">
@@ -450,13 +451,27 @@ export default function AdminLogsPage() {
                     </span>
                   </div>
 
-                  <p className="text-sm text-foreground/90">
+                  {/* 모바일 헤더 — 2줄 구조로 overflow 방지 */}
+                  <div className="md:hidden space-y-1 mb-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-semibold text-sm truncate max-w-[120px]">{log.actor.name}</span>
+                      <GlowBadge label={getActionLabel(log.action)} variant={getActionVariant(log.action)} size="sm" />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground block">
+                      {new Intl.DateTimeFormat("ko-KR", {
+                        month: "2-digit", day: "2-digit",
+                        hour: "2-digit", minute: "2-digit"
+                      }).format(new Date(log.createdAt))}
+                    </span>
+                  </div>
+
+                  <p className="text-xs md:text-sm text-foreground/90 break-words">
                     <span className="font-medium text-foreground">{log.actor.name}</span>님이{" "}
                     {Boolean(log.metadata?.targetName) ? <span className="text-blue-500 font-medium">{String(log.metadata!.targetName)}</span> : null}
                     {Boolean(log.metadata?.targetName) ? " 스타의 " : ""}
-                    {Boolean(log.metadata?.targetTitle) ? <span className="font-medium">"{String(log.metadata!.targetTitle)}"</span> : null}
+                    {Boolean(log.metadata?.targetTitle) ? <span className="font-medium break-all">&ldquo;{String(log.metadata!.targetTitle)}&rdquo;</span> : null}
                     {Boolean(log.metadata?.targetTitle) ? " " : ""}
-                    <span className="text-muted-foreground">{getEntityLabel(log.entityType)} [{log.entityId.slice(0, 8)}...]</span>을(를){" "}
+                    <span className="text-muted-foreground">{getEntityLabel(log.entityType)} <span className="hidden md:inline">[{log.entityId.slice(0, 8)}...]</span></span>을(를){" "}
                     <span className="font-medium">{getActionVerb(log.action)}</span>했습니다
                   </p>
 

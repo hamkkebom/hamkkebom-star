@@ -47,7 +47,7 @@ export function UserSwipeDeck({ users, onApprove, onReject, onViewDetail }: User
                 <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-500/10 rounded-full flex items-center justify-center mb-5">
                     <ShieldCheck className="w-10 h-10 text-emerald-500 opacity-80" />
                 </div>
-                <p className="font-bold text-xl text-slate-900 dark:text-white">모든 처리가 완료되었습니다!</p>
+                <p className="font-bold text-xl text-slate-900 dark:text-foreground">모든 처리가 완료되었습니다!</p>
                 <p className="text-sm mt-2 text-slate-500 text-balance">더 이상 승인 대기 중인 가입자가 없습니다.</p>
             </div>
         );
@@ -105,7 +105,7 @@ export function UserSwipeDeck({ users, onApprove, onReject, onViewDetail }: User
 
                                 {/* Info */}
                                 <div className="text-center w-full space-y-1 mb-6">
-                                    <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white truncate">
+                                    <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-foreground truncate">
                                         {user.name}
                                     </h3>
                                     {user.chineseName && (
@@ -115,7 +115,7 @@ export function UserSwipeDeck({ users, onApprove, onReject, onViewDetail }: User
                                     )}
                                 </div>
 
-                                <div className="w-full mt-auto bg-white/50 dark:bg-black/20 rounded-2xl p-4 flex items-center gap-3 border border-slate-100 dark:border-slate-800 backdrop-blur-sm">
+                                <div className="w-full mt-auto bg-card dark:bg-card rounded-2xl p-4 flex items-center gap-3 border border-slate-100 dark:border-slate-800">
                                     <Mail className="w-5 h-5 text-indigo-400 shrink-0" />
                                     <div className="flex-1 min-w-0 text-left">
                                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">이메일</p>

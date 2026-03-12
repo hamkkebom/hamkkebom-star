@@ -9,11 +9,13 @@ vi.mock("@/lib/auth-helpers", () => ({
 
 const mockFindMany = vi.fn();
 const mockCount = vi.fn();
+const mockGroupBy = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: {
       findMany: (...args: unknown[]) => mockFindMany(...args),
       count: (...args: unknown[]) => mockCount(...args),
+      groupBy: (...args: unknown[]) => mockGroupBy(...args),
     },
   },
 }));
@@ -71,6 +73,10 @@ describe("GET /api/admin/users", () => {
     mockGetAuthUser.mockResolvedValue(adminUser);
     mockFindMany.mockResolvedValue(mockUsers);
     mockCount.mockResolvedValue(2);
+    mockGroupBy.mockResolvedValue([
+      { role: "STAR", isApproved: true, _count: { id: 1 } },
+      { role: "STAR", isApproved: false, _count: { id: 1 } },
+    ]);
 
     const res = await GET(makeRequest({ page: "1", pageSize: "10" }));
     const json = await res.json();
@@ -80,12 +86,17 @@ describe("GET /api/admin/users", () => {
     expect(json.total).toBe(2);
     expect(json.page).toBe(1);
     expect(json.totalPages).toBe(1);
+    expect(json.stats).toBeDefined();
+    expect(json.stats.total).toBe(2);
   });
 
   it("200 — 검색 필터 전달 확인", async () => {
     mockGetAuthUser.mockResolvedValue(adminUser);
     mockFindMany.mockResolvedValue([mockUsers[0]]);
     mockCount.mockResolvedValue(1);
+    mockGroupBy.mockResolvedValue([
+      { role: "STAR", isApproved: true, _count: { id: 1 } },
+    ]);
 
     const res = await GET(makeRequest({ search: "홍길동" }));
     const json = await res.json();
@@ -98,6 +109,9 @@ describe("GET /api/admin/users", () => {
     mockGetAuthUser.mockResolvedValue(adminUser);
     mockFindMany.mockResolvedValue([mockUsers[1]]);
     mockCount.mockResolvedValue(1);
+    mockGroupBy.mockResolvedValue([
+      { role: "STAR", isApproved: false, _count: { id: 1 } },
+    ]);
 
     const res = await GET(makeRequest({ approved: "false" }));
     const json = await res.json();

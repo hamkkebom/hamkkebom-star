@@ -114,7 +114,7 @@ function DraggableStar({ star, isOverlay = false }: { star: StarUser; isOverlay?
                 className={cn(
                     "relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all duration-300",
                     isOverlay
-                        ? "bg-background/95 backdrop-blur-xl border-primary/50 cursor-grabbing ring-2 ring-primary/30 shadow-2xl"
+                        ? "bg-card border-primary/50 cursor-grabbing ring-2 ring-primary/30 shadow-2xl"
                         : "bg-card/60 hover:bg-card/90 border-border/40 hover:border-primary/30 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-lg hover:-translate-y-0.5",
                     !!star.managerId && "opacity-60 cursor-not-allowed bg-muted/20 border-transparent hover:bg-muted/20 hover:translate-y-0 shadow-none"
                 )}
@@ -124,7 +124,7 @@ function DraggableStar({ star, isOverlay = false }: { star: StarUser; isOverlay?
                     <div className="absolute -top-2 -right-2 z-10 flex h-6 min-w-6 items-center justify-center">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-30" />
                         <span className="relative flex h-6 min-w-6 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-500/30 ring-2 ring-background">
-                            <span className="text-[10px] font-black text-white px-1.5 tabular-nums">{pendingCount}</span>
+                            <span className="text-[10px] font-black text-foreground px-1.5 tabular-nums">{pendingCount}</span>
                         </span>
                     </div>
                 )}
@@ -146,7 +146,7 @@ function DraggableStar({ star, isOverlay = false }: { star: StarUser; isOverlay?
                     )}>
                         <Avatar className="h-10 w-10 border-2 border-background">
                             <AvatarImage src={star.avatarUrl || undefined} />
-                            <AvatarFallback className="text-[10px] font-bold bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                            <AvatarFallback className="text-[10px] font-bold bg-gradient-to-br from-indigo-500 to-purple-600 text-foreground">
                                 {star.name.substring(0, 2)}
                             </AvatarFallback>
                         </Avatar>
@@ -213,7 +213,7 @@ function DropZone({
                 "flex flex-col h-full rounded-[24px] border-2 transition-all duration-500 relative overflow-hidden",
                 isOver
                     ? cn("bg-primary/5 border-primary/50 shadow-[0_0_30px_rgba(124,58,237,0.1)] scale-[1.01]", colorClass.replace("bg-", "text-").replace("/10", ""))
-                    : "bg-background/40 border-border/60 hover:border-border/80 backdrop-blur-md"
+                    : "bg-background/40 border-border/60 hover:border-border/80"
             )}
         >
             {/* Dynamic Background Gradient */}
@@ -291,23 +291,23 @@ function MobileDropDock({ activeStar }: { activeStar: StarUser | null }) {
                             <div
                                 ref={setMyZoneRef}
                                 className={cn(
-                                    "w-40 h-40 rounded-full flex flex-col items-center justify-center border-[6px] shadow-[0_20px_60px_rgba(34,197,94,0.4)] backdrop-blur-3xl transition-all duration-300",
+                                    "w-40 h-40 rounded-full flex flex-col items-center justify-center border-[6px] shadow-[0_20px_60px_rgba(34,197,94,0.4)] transition-all duration-300",
                                     isMyOver ? "bg-green-500 border-white scale-[1.15]" : "bg-green-900/90 border-green-500/80"
                                 )}
                             >
-                                <CheckCircle2 className={cn("w-12 h-12 mb-1.5 transition-all duration-300", isMyOver ? "text-white scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "text-green-300")} />
-                                <span className={cn("font-black text-sm tracking-tight", isMyOver ? "text-white" : "text-green-200")}>내 담당 가져오기</span>
+                                <CheckCircle2 className={cn("w-12 h-12 mb-1.5 transition-all duration-300", isMyOver ? "text-foreground scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "text-green-300")} />
+                                <span className={cn("font-black text-sm tracking-tight", isMyOver ? "text-foreground" : "text-green-200")}>내 담당 가져오기</span>
                             </div>
                         ) : (
                             <div
                                 ref={setUnassignedRef}
                                 className={cn(
-                                    "w-40 h-40 rounded-full flex flex-col items-center justify-center border-[6px] shadow-[0_20px_60px_rgba(239,68,68,0.4)] backdrop-blur-3xl transition-all duration-300",
+                                    "w-40 h-40 rounded-full flex flex-col items-center justify-center border-[6px] shadow-[0_20px_60px_rgba(239,68,68,0.4)] transition-all duration-300",
                                     isUnassignedOver ? "bg-red-500 border-white scale-[1.15]" : "bg-zinc-900/90 border-red-500/80"
                                 )}
                             >
-                                <UserX className={cn("w-12 h-12 mb-1.5 transition-all duration-300", isUnassignedOver ? "text-white scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "text-zinc-400")} />
-                                <span className={cn("font-black text-sm tracking-tight", isUnassignedOver ? "text-white" : "text-zinc-300")}>담당 해제</span>
+                                <UserX className={cn("w-12 h-12 mb-1.5 transition-all duration-300", isUnassignedOver ? "text-foreground scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "text-zinc-400")} />
+                                <span className={cn("font-black text-sm tracking-tight", isUnassignedOver ? "text-foreground" : "text-zinc-300")}>담당 해제</span>
                             </div>
                         )}
                     </motion.div>
@@ -433,7 +433,7 @@ export default function AssignmentPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                         <Input
                             placeholder="이름 또는 이메일 검색..."
-                            className="pl-10 h-10 rounded-full bg-background/50 border-border/50 focus:bg-background focus:ring-2 ring-primary/20 transition-all font-medium shadow-sm"
+                            className="pl-10 h-10 rounded-full bg-background border-border/50 focus:bg-background focus:ring-2 ring-primary/20 transition-all font-medium shadow-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
