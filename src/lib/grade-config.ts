@@ -22,10 +22,10 @@ export const GRADE_COLOR_PRESETS = {
   },
   violet: {
     label: "퍼플",
-    bg: "bg-violet-50 dark:bg-violet-950/20",
-    border: "border-t-4 border-violet-500",
-    badge: "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300",
-    dot: "bg-violet-500",
+    bg: "bg-primary/5 dark:bg-primary/10",
+    border: "border-t-4 border-primary",
+    badge: "bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary",
+    dot: "bg-primary",
   },
   rose: {
     label: "핑크",

@@ -17,6 +17,10 @@ function getS3Client() {
             accessKeyId: config.accessKeyId,
             secretAccessKey: config.secretAccessKey,
         },
+        // R2 presigned URL 호환성: x-amz-checksum-mode 헤더를 서명에 포함시키지 않음.
+        // 브라우저 <img> 태그는 이 헤더를 보낼 수 없어서 서명 불일치 → 403 발생 방지.
+        requestChecksumCalculation: "WHEN_REQUIRED",
+        responseChecksumValidation: "WHEN_REQUIRED",
     });
 
     return s3Client;

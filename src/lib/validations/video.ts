@@ -11,5 +11,10 @@ export const videoUploadUrlSchema = z.object({
   maxDurationSeconds: z.number().int().min(1).max(3600).optional().default(600),
 });
 
+export const videoRatingSchema = z.object({
+  value: z.number().int().min(1, "최소 1점 이상이어야 합니다.").max(5, "최대 5점까지 가능합니다."),
+});
+
 export type UpdateVideoInput = z.infer<typeof updateVideoSchema>;
 export type VideoUploadUrlInput = z.infer<typeof videoUploadUrlSchema>;
+export type VideoRatingInput = z.infer<typeof videoRatingSchema>;

@@ -15,21 +15,28 @@ import {
     ShieldCheck,
     Share2,
     BookOpen,
-    TrendingUp,
     Activity,
     BadgeDollarSign,
     ScrollText,
-    Mail,
     BarChart3,
     Target,
     Brain,
     Award,
+    LayoutDashboard,
+    Shield,
+    Flag,
+    FileText,
+    MessageCircle,
+    UserX,
+    Megaphone,
+    HelpCircle,
 } from "lucide-react";
 
 export type NavChild = {
     href: string;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
+    exact?: boolean;
 };
 
 export type NavGroup = {
@@ -41,6 +48,36 @@ export type NavGroup = {
 };
 
 export const navGroups: NavGroup[] = [
+    {
+        id: "operations",
+        label: "운영",
+        icon: Activity,
+        color: "indigo",
+        children: [
+            { href: "/admin", label: "대시보드", icon: LayoutDashboard, exact: true },
+            { href: "/admin/insights/operational", label: "운영 지표", icon: Activity },
+            { href: "/admin/insights/financial", label: "재무 지표", icon: BadgeDollarSign },
+            { href: "/admin/insights/scorecard", label: "스코어카드", icon: Award },
+            { href: "/admin/insights/trends", label: "트렌드 분석", icon: BarChart3 },
+            { href: "/admin/insights/roi", label: "ROI 분석", icon: Target },
+            { href: "/admin/insights/ai-quality", label: "AI 품질 분석", icon: Brain },
+            { href: "/admin/logs", label: "활동 로그", icon: ScrollText },
+            { href: "/admin/announcements", label: "공지사항 관리", icon: Megaphone },
+            { href: "/admin/faq", label: "FAQ 관리", icon: HelpCircle },
+        ],
+    },
+    {
+        id: "community",
+        label: "커뮤니티",
+        icon: Shield,
+        color: "sky",
+        children: [
+            { href: "/admin/reports", label: "신고 관리", icon: Flag },
+            { href: "/admin/board-posts", label: "게시글 관리", icon: FileText },
+            { href: "/admin/comments", label: "댓글 관리", icon: MessageCircle },
+            { href: "/admin/sanctions", label: "유저 제재", icon: UserX },
+        ],
+    },
     {
         id: "project",
         label: "프로젝트",
@@ -55,16 +92,16 @@ export const navGroups: NavGroup[] = [
         id: "video",
         label: "영상",
         icon: Clapperboard,
-        color: "cyan",
+        color: "rose",
         children: [
+            { href: "/admin/videos", label: "영상 관리", icon: Film },
             { href: "/admin/reviews/my", label: "담당 피드백 작성", icon: PenTool },
             { href: "/admin/reviews", label: "전체 피드백 관리", icon: MessageSquare },
-            { href: "/admin/videos", label: "영상 관리", icon: Film },
             { href: "/admin/placements", label: "매체별 영상 현황", icon: Share2 },
         ],
     },
     {
-        id: "account",
+        id: "creator",
         label: "계정",
         icon: UsersRound,
         color: "emerald",
@@ -85,38 +122,6 @@ export const navGroups: NavGroup[] = [
             { href: "/admin/settlements/guide", label: "정산 가이드", icon: BookOpen },
         ],
     },
-    {
-        id: "message",
-        label: "메시지",
-        icon: Mail,
-        color: "cyan",
-        children: [
-            { href: "/admin/messages", label: "메시지 관리", icon: MessageSquare },
-        ],
-    },
-    {
-        id: "insight",
-        label: "지표",
-        icon: TrendingUp,
-        color: "indigo",
-        children: [
-            { href: "/admin/insights/operational", label: "운영 지표", icon: Activity },
-            { href: "/admin/insights/financial", label: "재무 지표", icon: BadgeDollarSign },
-            { href: "/admin/insights/scorecard", label: "스코어카드", icon: Award },
-            { href: "/admin/insights/trends", label: "트렌드 분석", icon: BarChart3 },
-            { href: "/admin/insights/roi", label: "ROI 분석", icon: Target },
-            { href: "/admin/insights/ai-quality", label: "AI 품질 분석", icon: Brain },
-        ],
-    },
-    {
-        id: "monitoring",
-        label: "모니터링",
-        icon: ScrollText,
-        color: "rose",
-        children: [
-            { href: "/admin/logs", label: "활동 로그", icon: Activity },
-        ],
-    },
 ];
 
 export const externalItems = [
@@ -125,25 +130,18 @@ export const externalItems = [
 
 export const colorMap: Record<string, { bg: string; text: string; glow: string; dot: string; line: string }> = {
     indigo: {
-        bg: "bg-indigo-500/8 dark:bg-indigo-500/10",
-        text: "text-indigo-600 dark:text-indigo-400",
-        glow: "shadow-[0_0_12px_rgba(99,102,241,0.3)]",
-        dot: "bg-indigo-500",
-        line: "border-indigo-500/20 dark:border-indigo-400/15",
+        bg: "bg-primary/8 dark:bg-primary/10",
+        text: "text-primary dark:text-primary",
+        glow: "shadow-[0_0_12px_oklch(0.5_0.15_230/0.3)]",
+        dot: "bg-primary",
+        line: "border-primary/20 dark:border-primary/15",
     },
     violet: {
-        bg: "bg-violet-500/8 dark:bg-violet-500/10",
-        text: "text-violet-600 dark:text-violet-400",
-        glow: "shadow-[0_0_12px_rgba(139,92,246,0.3)]",
-        dot: "bg-violet-500",
-        line: "border-violet-500/20 dark:border-violet-400/15",
-    },
-    cyan: {
-        bg: "bg-cyan-500/8 dark:bg-cyan-500/10",
-        text: "text-cyan-600 dark:text-cyan-400",
-        glow: "shadow-[0_0_12px_rgba(6,182,212,0.3)]",
-        dot: "bg-cyan-500",
-        line: "border-cyan-500/20 dark:border-cyan-400/15",
+        bg: "bg-primary/8 dark:bg-primary/10",
+        text: "text-primary dark:text-primary",
+        glow: "shadow-[0_0_12px_oklch(0.5_0.15_230/0.3)]",
+        dot: "bg-primary",
+        line: "border-primary/20 dark:border-primary/15",
     },
     emerald: {
         bg: "bg-emerald-500/8 dark:bg-emerald-500/10",
@@ -165,5 +163,12 @@ export const colorMap: Record<string, { bg: string; text: string; glow: string; 
         glow: "shadow-[0_0_12px_rgba(244,63,94,0.3)]",
         dot: "bg-rose-500",
         line: "border-rose-500/20 dark:border-rose-400/15",
+    },
+    sky: {
+        bg: "bg-sky-500/8 dark:bg-sky-500/10",
+        text: "text-sky-600 dark:text-sky-400",
+        glow: "shadow-[0_0_12px_rgba(14,165,233,0.3)]",
+        dot: "bg-sky-500",
+        line: "border-sky-500/20 dark:border-sky-400/15",
     },
 };
