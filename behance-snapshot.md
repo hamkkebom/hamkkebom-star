@@ -1,0 +1,836 @@
+- generic [ref=e3]:
+  - progressbar
+  - generic [ref=e6]:
+    - navigation "사이트 전체":
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - button "로그인" [ref=e10] [cursor=pointer]
+          - generic [ref=e11]:
+            - list "기본 탐색 모바일 메뉴" [ref=e12]:
+              - listitem [ref=e13]:
+                - link "둘러보기" [ref=e14] [cursor=pointer]:
+                  - /url: /?tracking_source=nav20
+                  - generic [ref=e15]: 둘러보기
+              - listitem [ref=e16]:
+                - link "직업" [ref=e17] [cursor=pointer]:
+                  - /url: /joblist?tracking_source=nav20
+                  - generic [ref=e18]: 직업
+              - listitem [ref=e19]:
+                - button "리소스" [ref=e20] [cursor=pointer]:
+                  - generic [ref=e21]:
+                    - text: 리소스
+                    - img [ref=e22]
+              - listitem [ref=e24]:
+                - button "채용" [ref=e25] [cursor=pointer]:
+                  - generic [ref=e26]:
+                    - text: 채용
+                    - img [ref=e27]
+            - list [ref=e30]:
+              - listitem [ref=e31]:
+                - link "App Store에서 다운로드" [ref=e32] [cursor=pointer]:
+                  - /url: https://itunes.apple.com/us/app/behance/id489667151
+              - listitem [ref=e33]:
+                - link "Google Play에서 받기" [ref=e34] [cursor=pointer]:
+                  - /url: https://play.google.com/store/apps/details?id=com.behance.behance
+            - heading "Behance 추가 정보" [level=3] [ref=e36]:
+              - button "Behance 추가 정보" [ref=e37] [cursor=pointer]:
+                - generic [ref=e39]: Behance 추가 정보
+                - img [ref=e41]
+            - generic [ref=e43]:
+              - combobox "원하는 언어로 Behance 보기" [ref=e44]:
+                - option "English"
+                - option "Čeština"
+                - option "Dansk"
+                - option "Deutsch"
+                - option "Español"
+                - option "Français"
+                - option "Italiano"
+                - option "Nederlands"
+                - option "Norsk"
+                - option "Polski"
+                - option "Português"
+                - option "Pусский"
+                - option "Suomi"
+                - option "Svenska"
+                - option "Türkçe"
+                - option "日本語"
+                - option "한국어" [selected]
+                - option "中文(简体)"
+                - option "中文(繁體)"
+              - img
+            - link "사용약관" [ref=e46] [cursor=pointer]:
+              - /url: https://www.adobe.com/legal/terms.html
+            - link "개인정보" [ref=e48] [cursor=pointer]:
+              - /url: https://www.adobe.com/privacy.html
+            - link "커뮤니티" [ref=e50] [cursor=pointer]:
+              - /url: /misc/community
+            - link "도움말" [ref=e52] [cursor=pointer]:
+              - /url: https://help.behance.net/
+            - button "쿠키 환경 설정" [ref=e54] [cursor=pointer]
+            - link "내 개인 정보를 판매하거나 공유하지 말 것" [ref=e56] [cursor=pointer]:
+              - /url: https://www.adobe.com/privacy/us-rights.html
+            - generic [ref=e57]:
+              - img "Adobe, Inc." [ref=e58]
+              - list [ref=e68]:
+                - listitem [ref=e69]:
+                  - link "adobe.com으로 이동" [ref=e70] [cursor=pointer]:
+                    - /url: https://www.adobe.com?promoid=TTGWL148
+                - listitem [ref=e71]:
+                  - link "Adobe Express 무료 다운로드" [ref=e72] [cursor=pointer]:
+                    - /url: https://www.adobe.com/express/?geocheck=on&mv=other&promoid=8WLD4Y3J
+        - generic [ref=e73]:
+          - link "메인 콘텐츠로 건너뛰기" [ref=e74] [cursor=pointer]:
+            - /url: javascript:void(0)
+          - link "바닥글로 건너뛰기" [ref=e75] [cursor=pointer]:
+            - /url: javascript:void(0)
+          - button "모바일 기본 탐색 메뉴" [ref=e77] [cursor=pointer]
+          - list "기본 탐색 데스크탑 메뉴" [ref=e82]:
+            - listitem [ref=e83]:
+              - link "behance.net으로 이동" [ref=e84] [cursor=pointer]:
+                - /url: /
+                - img [ref=e86]
+                - generic [ref=e92]: behance.net으로 이동
+          - link "search magnifying glass" [ref=e94] [cursor=pointer]:
+            - /url: /search/projects?tracking_source=nav20
+            - img "search magnifying glass" [ref=e95]
+    - generic [ref=e98]:
+      - main [ref=e99]:
+        - generic [ref=e102]:
+          - generic [ref=e104]:
+            - generic [ref=e105]:
+              - generic [ref=e106]:
+                - link "Boo Republic® 님의 프로필" [ref=e111] [cursor=pointer]:
+                  - /url: https://www.behance.net/boorepublic
+                  - img "Boo Republic® 님의 프로필" [ref=e112]
+                - button "팔로우" [ref=e116] [cursor=pointer]:
+                  - img [ref=e118]
+              - generic [ref=e121] [cursor=pointer]: 팔로우
+            - generic [ref=e127] [cursor=pointer]:
+              - button "채용" [ref=e128]:
+                - img [ref=e131]
+              - generic [ref=e136]: 채용
+            - generic "툴" [ref=e137] [cursor=pointer]:
+              - link "툴" [ref=e139]:
+                - /url: /search/projects?tools=185308071
+                - img "Adobe Illustrator" [ref=e140]
+            - generic [ref=e141] [cursor=pointer]: 툴
+            - button "저장" [ref=e144] [cursor=pointer]:
+              - img [ref=e145]
+            - generic [ref=e147] [cursor=pointer]: 저장
+            - generic [ref=e148]:
+              - button "좋아요" [ref=e152] [cursor=pointer]:
+                - img [ref=e153]
+              - generic [ref=e156] [cursor=pointer]: 좋아요
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - link "Boo Republic® 님의 프로필" [ref=e164] [cursor=pointer]:
+                - /url: https://www.behance.net/boorepublic
+                - img "Boo Republic® 님의 프로필" [ref=e166]
+              - generic [ref=e167]:
+                - heading "72H flour line" [level=1] [ref=e169]
+                - generic [ref=e170]:
+                  - link "Boo Republic®" [ref=e171] [cursor=pointer]:
+                    - /url: https://www.behance.net/boorepublic
+                    - generic [ref=e174]: Boo Republic®
+                  - generic [ref=e175]: •
+                  - 'button "Boo Republic®: 팔로우: 클릭하여 팔로우" [ref=e178] [cursor=pointer]':
+                    - generic [ref=e179]: 팔로우
+              - generic [ref=e180]:
+                - link "패키징" [ref=e184] [cursor=pointer]:
+                  - /url: https://www.behance.net/galleries/graphic-design/packaging
+                  - img "패키징" [ref=e185]
+                - link "Illustrator" [ref=e189] [cursor=pointer]:
+                  - /url: https://www.behance.net/galleries/Illustrator
+                  - img "Illustrator" [ref=e190]
+            - generic [ref=e191]:
+              - generic [ref=e195]:
+                - region "Project Module 0" [ref=e196]:
+                  - link "프로젝트 모듈 1218967495 퍼머링크" [ref=e200] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1218967495
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 1" [ref=e202]:
+                  - generic [ref=e206]:
+                    - generic [ref=e208]: Flour, reimagined.
+                    - generic [ref=e213]: Our design process for 72H flour packaging sought to encapsulate the perfect interplay of tradition and innovation. Spanning retail-friendly 1kg packs of general-purpose flour, Tipo 00, and sourdough bread-making blends, to bulk 25kg bags of croissant flour, semolina, and baguette blends, each package was crafted with intention and precision.
+                    - generic [ref=e217]: We embraced bold color coding across the packaging to establish a clear and intuitive system for distinguishing between flour types, ensuring practicality and ease of use for everyone from home bakers to professional chefs. Complementing this vibrant approach, we employed a sleek, tech-inspired monospaced font that imbues a contemporary aesthetic, creating a striking contrast to the deeply traditional nature of the product inside.
+                    - generic [ref=e221]: The result is packaging that merges analog sensibility with modern design language. While the flours themselves reflect the art of time-honored craftsmanship, their wrapping speaks to a future-forward vision. The sharp, minimalist visuals and technological design cues are a nod to the digital world, offering a visual metaphor for the emergence of traditional, artisanal quality in a modern context.
+                    - generic [ref=e225]: Whether on a kitchen shelf or a professional workspace, 72H flour packaging bridges the gap between past and present—bold, innovative, and unmistakably artisanal.
+                    - generic [ref=e228]: Boo Republic® 2024
+                - region "Project Module 2" [ref=e230]:
+                  - link "프로젝트 모듈 1327499219 퍼머링크" [ref=e234] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1327499219
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 3" [ref=e236]:
+                  - link "프로젝트 모듈 1217570177 퍼머링크" [ref=e240] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1217570177
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 4" [ref=e242]:
+                  - link "프로젝트 모듈 1218952865 퍼머링크" [ref=e246] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1218952865
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 5" [ref=e249]:
+                  - link "프로젝트 모듈 1217586061 퍼머링크" [ref=e253] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1217586061
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 6" [ref=e256]:
+                  - link "프로젝트 모듈 1218967497 퍼머링크" [ref=e260] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1218967497
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 7" [ref=e263]
+                - region "Project Module 8" [ref=e272]:
+                  - link "프로젝트 모듈 1217609951 퍼머링크" [ref=e276] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1217609951
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 9" [ref=e279]:
+                  - link "프로젝트 모듈 1217688965 퍼머링크" [ref=e283] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1217688965
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 10" [ref=e286]:
+                  - link "프로젝트 모듈 1218967491 퍼머링크" [ref=e290] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1218967491
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 11" [ref=e293]:
+                  - link "프로젝트 모듈 1218967493 퍼머링크" [ref=e297] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1218967493
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 12" [ref=e300]
+                - region "Project Module 13" [ref=e309]:
+                  - link "프로젝트 모듈 1217692605 퍼머링크" [ref=e313] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1217692605
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 14" [ref=e316]:
+                  - link "프로젝트 모듈 1218967489 퍼머링크" [ref=e320] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1218967489
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 15" [ref=e323]:
+                  - generic [ref=e329]: "3D renders: Kleon Zissimopoulos / photos provided by Ergon marketing team"
+                - region "Project Module 16" [ref=e331]:
+                  - link "프로젝트 모듈 1214472889 퍼머링크" [ref=e335] [cursor=pointer]:
+                    - /url: /gallery/213493019/72H-flour-line/modules/1214472889
+                    - img "flour Packaging sourdough Pizza product ergon bread bakery Retail commercial"
+                - region "Project Module 17" [ref=e338]:
+                  - generic [ref=e344]:
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: https://www.boorepublic.com/
+                    - generic [ref=e346]:
+                      - link "The Boo Shop" [ref=e347] [cursor=pointer]:
+                        - /url: https://www.shop.boorepublic.com/
+                      - text: • I
+                      - link "nstagram" [ref=e348] [cursor=pointer]:
+                        - /url: https://www.instagram.com/boorepublic/
+                      - text: •
+                      - link "boorepublic.com" [ref=e349] [cursor=pointer]:
+                        - /url: http://www.boorepublic.com/
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: https://www.boorepublic.com/
+              - alert [ref=e1065]:
+                - button "토스트 구성 요소에 대한 닫기 버튼" [ref=e1066] [cursor=pointer]:
+                  - img [ref=e1067]
+                - generic [ref=e1069]:
+                  - link "Boo Republic® 님의 프로필" [ref=e1071] [cursor=pointer]:
+                    - /url: https://www.behance.net/boorepublic
+                    - img "Boo Republic® 님의 프로필" [ref=e1072]
+                  - generic [ref=e1073]:
+                    - paragraph [ref=e1074]: Boo 님 채용 가능
+                    - generic [ref=e1075]:
+                      - paragraph [ref=e1076]:
+                        - strong [ref=e1077]: "가용성:"
+                        - text: 한 달 이내
+                      - generic [ref=e1080]: 빠르게 응답
+                  - button "Boo 님 채용" [ref=e1083] [cursor=pointer]:
+                    - generic [ref=e1084]: Boo 님 채용
+              - generic [ref=e352]:
+                - button "좋아요" [ref=e356] [cursor=pointer]:
+                  - img [ref=e357]
+                - generic [ref=e360]:
+                  - generic [ref=e361]: 72H flour line
+                  - generic [ref=e362]:
+                    - group "815개 평가" [ref=e363]:
+                      - img [ref=e364]
+                      - generic [ref=e367]: "815"
+                    - group "조회수 NaN회" [ref=e368]:
+                      - img [ref=e369]
+                      - generic [ref=e371]: 6.1천
+                    - group "119개 댓글" [ref=e372]:
+                      - img [ref=e373]
+                      - generic [ref=e376]: "119"
+                  - generic [ref=e377]:
+                    - text: "게시:"
+                    - time [ref=e378]: 2024년 12월 5일
+              - generic [ref=e379]:
+                - generic [ref=e380]:
+                  - link "Boo Republic® 님의 프로필" [ref=e386] [cursor=pointer]:
+                    - /url: https://www.behance.net/boorepublic
+                    - img "Boo Republic® 님의 프로필" [ref=e388]
+                  - generic [ref=e389]:
+                    - link "Boo Republic®" [ref=e394] [cursor=pointer]:
+                      - /url: https://www.behance.net/boorepublic
+                    - generic "Boo Republic® 팔로우" [ref=e396]:
+                      - button "팔로우" [ref=e397] [cursor=pointer]:
+                        - generic [ref=e398]: 팔로우
+                - generic [ref=e400]:
+                  - button "항목을 왼쪽으로 슬라이드" [ref=e401] [cursor=pointer]:
+                    - img [ref=e402]
+                  - list [ref=e405]:
+                    - listitem [ref=e406]:
+                      - generic "Velomont chocolate drink" [ref=e407]:
+                        - generic [ref=e409]:
+                          - generic [ref=e410]:
+                            - generic:
+                              - img "Velomont chocolate drink"
+                          - generic [ref=e412]:
+                            - link "패키징" [ref=e415] [cursor=pointer]:
+                              - /url: https://www.behance.net/galleries/graphic-design/packaging
+                              - img "패키징" [ref=e416]
+                            - link "프로젝트로의 링크 - Velomont chocolate drink" [ref=e417] [cursor=pointer]:
+                              - /url: /gallery/243388987/Velomont-chocolate-drink?tracking_source=project_owner_other_projects
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - link "제목" [ref=e418] [cursor=pointer]:
+                                    - /url: /gallery/243388987/Velomont-chocolate-drink
+                                    - text: Velomont chocolate drink
+                                  - link "Boo Republic®, 새 탭에서 열기" [ref=e424] [cursor=pointer]:
+                                    - /url: https://www.behance.net/boorepublic
+                                    - text: Boo Republic®
+                              - generic:
+                                - img
+                                - generic: "276"
+                                - generic: Velomont chocolate drink에 대해 276개 평가
+                                - img
+                                - generic: 2.4천
+                                - generic: Velomont chocolate drink에 대해 조회수 2,417회
+                    - listitem [ref=e425]:
+                      - generic "Rookie" [ref=e426]:
+                        - generic [ref=e428]:
+                          - generic [ref=e429]:
+                            - generic:
+                              - img "Rookie"
+                          - generic [ref=e431]:
+                            - link "프로젝트로의 링크 - Rookie" [ref=e432] [cursor=pointer]:
+                              - /url: /gallery/233417865/Rookie?tracking_source=project_owner_other_projects
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - link "제목" [ref=e433] [cursor=pointer]:
+                                    - /url: /gallery/233417865/Rookie
+                                    - text: Rookie
+                                  - link "Boo Republic®, 새 탭에서 열기" [ref=e439] [cursor=pointer]:
+                                    - /url: https://www.behance.net/boorepublic
+                                    - text: Boo Republic®
+                              - generic:
+                                - img
+                                - generic: "62"
+                                - generic: Rookie에 대해 62개 평가
+                                - img
+                                - generic: "403"
+                                - generic: Rookie에 대해 조회수 403회
+                    - listitem [ref=e440]:
+                      - generic "La Machina" [ref=e441]:
+                        - generic [ref=e443]:
+                          - generic [ref=e444]:
+                            - generic:
+                              - img "La Machina"
+                          - generic [ref=e446]:
+                            - link "프로젝트로의 링크 - La Machina" [ref=e447] [cursor=pointer]:
+                              - /url: /gallery/242374787/La-Machina?tracking_source=project_owner_other_projects
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - link "제목" [ref=e448] [cursor=pointer]:
+                                    - /url: /gallery/242374787/La-Machina
+                                    - text: La Machina
+                                  - link "Boo Republic®, 새 탭에서 열기" [ref=e454] [cursor=pointer]:
+                                    - /url: https://www.behance.net/boorepublic
+                                    - text: Boo Republic®
+                              - generic:
+                                - img
+                                - generic: "56"
+                                - generic: La Machina에 대해 56개 평가
+                                - img
+                                - generic: "277"
+                                - generic: La Machina에 대해 조회수 277회
+                    - listitem [ref=e455]:
+                      - generic "Balboa Dope Rubz" [ref=e456]:
+                        - generic [ref=e458]:
+                          - generic [ref=e459]:
+                            - generic:
+                              - img "Balboa Dope Rubz"
+                          - generic [ref=e461]:
+                            - link "프로젝트로의 링크 - Balboa Dope Rubz" [ref=e462] [cursor=pointer]:
+                              - /url: /gallery/242632353/Balboa-Dope-Rubz?tracking_source=project_owner_other_projects
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - link "제목" [ref=e463] [cursor=pointer]:
+                                    - /url: /gallery/242632353/Balboa-Dope-Rubz
+                                    - text: Balboa Dope Rubz
+                                  - link "Boo Republic®, 새 탭에서 열기" [ref=e469] [cursor=pointer]:
+                                    - /url: https://www.behance.net/boorepublic
+                                    - text: Boo Republic®
+                              - generic:
+                                - img
+                                - generic: "29"
+                                - generic: Balboa Dope Rubz에 대해 29개 평가
+                                - img
+                                - generic: "202"
+                                - generic: Balboa Dope Rubz에 대해 조회수 202회
+              - generic [ref=e471]:
+                - generic [ref=e472]:
+                  - generic [ref=e474]:
+                    - heading [level=2]
+                    - generic [ref=e475]: 대화에 참여하려면 로그인
+                    - generic [ref=e476]: 로그인하거나 등록하여 Boo Republic® 님의 프로젝트에 대해 피드백을 제공해 주세요.
+                    - generic [ref=e478]:
+                      - button "로그인" [ref=e479] [cursor=pointer]:
+                        - generic [ref=e480]: 로그인
+                      - generic [ref=e481] [cursor=pointer]: 또는
+                      - link "Apple로 로그인" [ref=e482] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e483]
+                      - link "Facebook으로 로그인" [ref=e489] [cursor=pointer]:
+                        - /url: "#"
+                        - img "SuSiFacebook" [ref=e490]
+                      - link "Google로 로그인" [ref=e498] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e499]
+                  - list [ref=e506]:
+                    - listitem [ref=e507]:
+                      - generic [ref=e508]:
+                        - link "Mayank Gambhir 님의 프로필" [ref=e514] [cursor=pointer]:
+                          - /url: https://www.behance.net/madebymayank
+                          - img "Mayank Gambhir 님의 프로필" [ref=e516]
+                        - generic [ref=e517]:
+                          - generic [ref=e518]:
+                            - link "Mayank Gambhir" [ref=e522] [cursor=pointer]:
+                              - /url: https://www.behance.net/madebymayank
+                            - generic [ref=e523]: •26분 전
+                          - generic [ref=e524]: The monospaced font against such a traditional product is a genuinely smart contrast, color coding across the range is clean and practical too.
+                    - listitem [ref=e525]:
+                      - generic [ref=e526]:
+                        - link "Habibur Rahman 님의 프로필" [ref=e532] [cursor=pointer]:
+                          - /url: https://www.behance.net/Habibur11
+                          - img "Habibur Rahman 님의 프로필" [ref=e534]
+                        - generic [ref=e535]:
+                          - generic [ref=e536]:
+                            - link "Habibur Rahman" [ref=e540] [cursor=pointer]:
+                              - /url: https://www.behance.net/Habibur11
+                            - generic [ref=e541]: •39분 전
+                          - generic [ref=e542]: nice design
+                    - listitem [ref=e543]:
+                      - generic [ref=e544]:
+                        - link "Brandglow Studio 님의 프로필" [ref=e550] [cursor=pointer]:
+                          - /url: https://www.behance.net/Brandglow
+                          - img "Brandglow Studio 님의 프로필" [ref=e552]
+                        - generic [ref=e553]:
+                          - generic [ref=e554]:
+                            - link "Brandglow Studio" [ref=e558] [cursor=pointer]:
+                              - /url: https://www.behance.net/Brandglow
+                            - generic [ref=e559]: •2026년 1월 14일
+                          - generic [ref=e560]: So nice!
+                    - listitem [ref=e561]:
+                      - generic [ref=e562]:
+                        - link "Brand Designer /ua en pl/ Natali Yakubovych 님의 프로필" [ref=e568] [cursor=pointer]:
+                          - /url: https://www.behance.net/nahachka
+                          - img "Brand Designer /ua en pl/ Natali Yakubovych 님의 프로필" [ref=e570]
+                        - generic [ref=e571]:
+                          - generic [ref=e572]:
+                            - link "Brand Designer /ua en pl/ Natali Yakubovych" [ref=e576] [cursor=pointer]:
+                              - /url: https://www.behance.net/nahachka
+                            - generic [ref=e577]: •2025년 8월 15일
+                          - generic [ref=e578]: Amazing
+                    - listitem [ref=e579]:
+                      - generic [ref=e580]:
+                        - link "Jonathan Loe 님의 프로필" [ref=e586] [cursor=pointer]:
+                          - /url: https://www.behance.net/jonathanloe10
+                          - img "Jonathan Loe 님의 프로필" [ref=e588]
+                        - generic [ref=e589]:
+                          - generic [ref=e590]:
+                            - link "Jonathan Loe" [ref=e594] [cursor=pointer]:
+                              - /url: https://www.behance.net/jonathanloe10
+                            - button "Pro 멤버십 배지. Behance PRO에 대해 자세히 알아보세요." [ref=e598]: Pro
+                            - generic [ref=e599]: •2025년 3월 13일
+                          - generic [ref=e600]: I like the concept
+                    - listitem [ref=e601]:
+                      - generic [ref=e602]:
+                        - link "Isabel de Peque 님의 프로필" [ref=e608] [cursor=pointer]:
+                          - /url: https://www.behance.net/isabeldepeque
+                          - img "Isabel de Peque 님의 프로필" [ref=e610]
+                        - generic [ref=e611]:
+                          - generic [ref=e612]:
+                            - link "Isabel de Peque" [ref=e616] [cursor=pointer]:
+                              - /url: https://www.behance.net/isabeldepeque
+                            - generic [ref=e617]: •2025년 3월 3일
+                          - generic [ref=e618]: Good work
+                    - listitem [ref=e619]:
+                      - generic [ref=e620]:
+                        - link "Lana B 님의 프로필" [ref=e626] [cursor=pointer]:
+                          - /url: https://www.behance.net/lanaburlachuk
+                          - img "Lana B 님의 프로필" [ref=e628]
+                        - generic [ref=e629]:
+                          - generic [ref=e630]:
+                            - link "Lana B" [ref=e634] [cursor=pointer]:
+                              - /url: https://www.behance.net/lanaburlachuk
+                            - button "Pro 멤버십 배지. Behance PRO에 대해 자세히 알아보세요." [ref=e638]: Pro
+                            - generic [ref=e639]: •2025년 2월 22일
+                          - generic [ref=e640]: Awesome 🤩
+                    - listitem [ref=e641]:
+                      - generic [ref=e642]:
+                        - link "Karyna Budaieva 님의 프로필" [ref=e648] [cursor=pointer]:
+                          - /url: https://www.behance.net/karynabudaieva
+                          - img "Karyna Budaieva 님의 프로필" [ref=e650]
+                        - generic [ref=e651]:
+                          - generic [ref=e652]:
+                            - link "Karyna Budaieva" [ref=e656] [cursor=pointer]:
+                              - /url: https://www.behance.net/karynabudaieva
+                            - generic [ref=e657]: •2025년 2월 20일
+                          - generic [ref=e658]: Amazing design
+                    - listitem [ref=e659]:
+                      - generic [ref=e660]:
+                        - link "george moraitis 님의 프로필" [ref=e666] [cursor=pointer]:
+                          - /url: https://www.behance.net/georgemoraitis
+                          - img "george moraitis 님의 프로필" [ref=e668]
+                        - generic [ref=e669]:
+                          - generic [ref=e670]:
+                            - link "george moraitis" [ref=e674] [cursor=pointer]:
+                              - /url: https://www.behance.net/georgemoraitis
+                            - generic [ref=e675]: •2025년 2월 9일
+                          - generic [ref=e676]: "Love the design. I will choose this flour next time for sure (:"
+                    - listitem [ref=e677]:
+                      - generic [ref=e678]:
+                        - link "Felipe Holman 님의 프로필" [ref=e684] [cursor=pointer]:
+                          - /url: https://www.behance.net/felipeholman
+                          - img "Felipe Holman 님의 프로필" [ref=e686]
+                        - generic [ref=e687]:
+                          - generic [ref=e688]:
+                            - link "Felipe Holman" [ref=e692] [cursor=pointer]:
+                              - /url: https://www.behance.net/felipeholman
+                            - button "Pro 멤버십 배지. Behance PRO에 대해 자세히 알아보세요." [ref=e696]: Pro
+                            - generic [ref=e697]: •2025년 1월 28일
+                          - generic [ref=e698]: Outstanding work! Amazing packaging design. Congrats!
+                  - button "댓글 더 보기" [ref=e699] [cursor=pointer]:
+                    - text: 댓글 더 보기
+                    - img [ref=e700]
+                - generic [ref=e702]:
+                  - generic [ref=e703]:
+                    - heading "소유자" [level=2] [ref=e704]
+                    - generic [ref=e705]:
+                      - link "Boo Republic® 님의 프로필" [ref=e711] [cursor=pointer]:
+                        - /url: https://www.behance.net/boorepublic
+                        - img "Boo Republic® 님의 프로필" [ref=e713]
+                      - generic [ref=e714]:
+                        - link "Boo Republic®" [ref=e719] [cursor=pointer]:
+                          - /url: https://www.behance.net/boorepublic
+                        - link "Thessaloniki, Greece" [ref=e720] [cursor=pointer]:
+                          - /url: https://www.behance.net/search/users?country=GR&city=Thessaloniki
+                          - img [ref=e721]
+                          - text: Thessaloniki, Greece
+                      - generic [ref=e727] [cursor=pointer]:
+                        - img [ref=e729]
+                        - generic [ref=e731]: 팔로우
+                    - button "채용" [ref=e737] [cursor=pointer]:
+                      - img [ref=e738]
+                      - generic [ref=e743]: 채용
+                  - generic [ref=e744]:
+                    - heading "72H flour line" [level=2] [ref=e745]
+                    - heading "Our design process for 72H flour packaging sought to encapsulate the perfect interplay of tradition and innovation. Spanning retail-friendly 1kg 자세히 보기" [level=2] [ref=e746]:
+                      - text: Our design process for 72H flour packaging sought to encapsulate the perfect interplay of tradition and innovation. Spanning retail-friendly 1kg
+                      - generic [ref=e747] [cursor=pointer]: 자세히 보기
+                    - generic [ref=e748]:
+                      - group "815개 평가" [ref=e749]:
+                        - img [ref=e750]
+                        - generic [ref=e753]: "815"
+                      - group "조회수 NaN회" [ref=e754]:
+                        - img [ref=e755]
+                        - generic [ref=e757]: 6.1천
+                      - group "119개 댓글" [ref=e758]:
+                        - img [ref=e759]
+                        - generic [ref=e762]: "119"
+                    - generic [ref=e763]:
+                      - text: "게시:"
+                      - time [ref=e764]: 2024년 12월 5일
+                  - generic [ref=e765]:
+                    - generic [ref=e766]:
+                      - heading "툴" [level=2] [ref=e767]
+                      - list [ref=e768]:
+                        - listitem [ref=e769]:
+                          - link "Illustrator" [ref=e770] [cursor=pointer]:
+                            - /url: /search/projects?tools=185308071
+                            - paragraph [ref=e772]: Illustrator
+                        - listitem
+                    - generic [ref=e773]:
+                      - heading "크리에이티브 분야" [level=2] [ref=e774]
+                      - list [ref=e775]:
+                        - listitem [ref=e776]:
+                          - link "그래픽 디자인" [ref=e777] [cursor=pointer]:
+                            - /url: /search/projects?field=Graphic Design
+                            - paragraph [ref=e779]: 그래픽 디자인
+                        - listitem [ref=e780]:
+                          - link "브랜딩" [ref=e781] [cursor=pointer]:
+                            - /url: /search/projects?field=Branding
+                            - paragraph [ref=e783]: 브랜딩
+                        - listitem [ref=e784]:
+                          - link "패키징" [ref=e785] [cursor=pointer]:
+                            - /url: /search/projects?field=Packaging
+                            - paragraph [ref=e787]: 패키징
+                  - list [ref=e788]:
+                    - listitem [ref=e789]:
+                      - link "flour" [ref=e790] [cursor=pointer]:
+                        - /url: /search/projects/flour?tracking_source=project_tag
+                    - listitem [ref=e791]:
+                      - link "Packaging" [ref=e792] [cursor=pointer]:
+                        - /url: /search/projects/Packaging?tracking_source=project_tag
+                    - listitem [ref=e793]:
+                      - link "sourdough" [ref=e794] [cursor=pointer]:
+                        - /url: /search/projects/sourdough?tracking_source=project_tag
+                    - listitem [ref=e795]:
+                      - link "Pizza" [ref=e796] [cursor=pointer]:
+                        - /url: /search/projects/Pizza?tracking_source=project_tag
+                    - listitem [ref=e797]:
+                      - link "product" [ref=e798] [cursor=pointer]:
+                        - /url: /search/projects/product?tracking_source=project_tag
+                    - listitem [ref=e799]:
+                      - link "ergon" [ref=e800] [cursor=pointer]:
+                        - /url: /search/projects/ergon?tracking_source=project_tag
+                    - listitem [ref=e801]:
+                      - link "bread" [ref=e802] [cursor=pointer]:
+                        - /url: /search/projects/bread?tracking_source=project_tag
+                    - listitem [ref=e803]:
+                      - link "bakery" [ref=e804] [cursor=pointer]:
+                        - /url: /search/projects/bakery?tracking_source=project_tag
+                    - listitem [ref=e805]:
+                      - link "Retail" [ref=e806] [cursor=pointer]:
+                        - /url: /search/projects/Retail?tracking_source=project_tag
+                    - listitem [ref=e807]:
+                      - link "commercial" [ref=e808] [cursor=pointer]:
+                        - /url: /search/projects/commercial?tracking_source=project_tag
+                  - generic [ref=e809]:
+                    - generic [ref=e812]: © All Rights Reserved
+                    - link "신고" [ref=e815] [cursor=pointer]:
+                      - /url: /gallery/213493019/72H-flour-line#report
+                      - generic [ref=e816]:
+                        - img [ref=e817]
+                        - text: 신고
+      - contentinfo "기본" [ref=e1085]:
+        - generic [ref=e1086]:
+          - link "메인 콘텐츠로 이동" [ref=e1087] [cursor=pointer]:
+            - /url: javascript:void(0)
+          - button "Behance 추가 정보" [ref=e1091] [cursor=pointer]
+          - 'button "현재 선택된 언어: 한국어" [ref=e1095] [cursor=pointer]':
+            - generic [ref=e1100]: 한국어
+          - list [ref=e1102]:
+            - listitem [ref=e1103] [cursor=pointer]:
+              - link "Behance Pro 사용해 보기" [ref=e1104]:
+                - /url: /pro?tracking_source=footer_pro_marketing_page_gallery
+                - paragraph [ref=e1105]: Behance Pro 사용해 보기
+          - list [ref=e1107]:
+            - listitem [ref=e1108]:
+              - link "사용약관" [ref=e1109] [cursor=pointer]:
+                - /url: https://www.adobe.com/legal/terms.html
+                - paragraph [ref=e1110]: 사용약관
+            - listitem [ref=e1111]:
+              - link "개인정보" [ref=e1112] [cursor=pointer]:
+                - /url: https://www.adobe.com/privacy.html
+                - paragraph [ref=e1113]: 개인정보
+            - listitem [ref=e1114]:
+              - link "커뮤니티" [ref=e1115] [cursor=pointer]:
+                - /url: /misc/community?tracking_source=footer_infinity_gallery
+                - paragraph [ref=e1116]: 커뮤니티
+            - listitem [ref=e1117]:
+              - link "도움말" [ref=e1118] [cursor=pointer]:
+                - /url: https://help.behance.net/
+                - paragraph [ref=e1119]: 도움말
+            - listitem [ref=e1120]:
+              - button "쿠키 환경 설정" [ref=e1121] [cursor=pointer]
+            - listitem [ref=e1122]:
+              - link "내 개인 정보를 판매하거나 공유하지 말 것" [ref=e1123] [cursor=pointer]:
+                - /url: https://www.adobe.com/privacy/us-rights.html
+                - paragraph [ref=e1124]: 내 개인 정보를 판매하거나 공유하지 말 것
+          - generic [ref=e1125]:
+            - link "adobe.com으로 이동" [ref=e1128] [cursor=pointer]:
+              - /url: https://www.adobe.com?promoid=RYGDMYVW
+              - img [ref=e1129]
+              - generic [ref=e1139]: adobe.com으로 이동
+            - generic:
+              - generic:
+                - button "Adobe 옵션 열기"
+      - contentinfo "기본" [ref=e878]:
+        - generic [ref=e881]:
+          - generic [ref=e882]:
+            - generic [ref=e883]:
+              - generic [ref=e887]:
+                - generic: Pro
+              - heading "Behance Pro 사용해 보기" [level=2] [ref=e888]
+              - generic [ref=e889]:
+                - paragraph [ref=e890]:
+                  - generic [ref=e891]:
+                    - text: 고급 분석, 나만의 맞춤형 포트폴리오 웹 사이트 및
+                    - link "다양한 기능" [ref=e892] [cursor=pointer]:
+                      - /url: /pro?tracking_source=pro_footer_banner
+                    - text: 을 사용하여 크리에이티브 경력을 쌓으세요.
+                - paragraph
+            - button "지금 구매" [ref=e894] [cursor=pointer]:
+              - generic [ref=e896]: 지금 구매
+          - img "고급 분석의 예" [ref=e899]
+        - generic [ref=e903]:
+          - link "메인 콘텐츠로 이동" [ref=e904] [cursor=pointer]:
+            - /url: javascript:void(0)
+          - generic [ref=e905]:
+            - link "Behance" [ref=e907] [cursor=pointer]:
+              - /url: /
+              - img "Behance" [ref=e908]
+            - generic [ref=e911]:
+              - generic [ref=e912]:
+                - heading "크리에이티브를 위한 서비스" [level=2] [ref=e913]
+                - list [ref=e915]:
+                  - listitem [ref=e916]:
+                    - link "Behance Pro 사용해 보기" [ref=e917] [cursor=pointer]:
+                      - /url: /pro?tracking_source=footer_static_gallery
+                      - paragraph [ref=e918]: Behance Pro 사용해 보기
+                  - listitem [ref=e919]:
+                    - link "영감 찾기" [ref=e920] [cursor=pointer]:
+                      - /url: /galleries?tracking_source=footer_static_gallery
+                      - paragraph [ref=e921]: 영감 찾기
+                  - listitem [ref=e922]:
+                    - link "신규 채용" [ref=e923] [cursor=pointer]:
+                      - /url: /updates/get-hired-on-behance?tracking_source=footer_static_gallery
+                      - paragraph [ref=e924]: 신규 채용
+                  - listitem [ref=e925]:
+                    - link "크리에이티브 자산 판매" [ref=e926] [cursor=pointer]:
+                      - /url: /updates/behance-assets?tracking_source=footer_static_gallery
+                      - paragraph [ref=e927]: 크리에이티브 자산 판매
+                  - listitem [ref=e928]:
+                    - link "프리랜스 서비스 판매" [ref=e929] [cursor=pointer]:
+                      - /url: /updates/get-hired-on-behance-with-services?tracking_source=footer_static_gallery
+                      - paragraph [ref=e930]: 프리랜스 서비스 판매
+              - generic [ref=e931]:
+                - heading "인재 찾기" [level=2] [ref=e932]
+                - list [ref=e934]:
+                  - listitem [ref=e935]:
+                    - link "채용 공고" [ref=e936] [cursor=pointer]:
+                      - /url: /joblist?tracking_source=footer_static_gallery
+                      - paragraph [ref=e937]: 채용 공고
+                  - listitem [ref=e938]:
+                    - link "그래픽 디자이너" [ref=e939] [cursor=pointer]:
+                      - /url: /hire/graphic-designers?tracking_source=footer_static_gallery
+                      - paragraph [ref=e940]: 그래픽 디자이너
+                  - listitem [ref=e941]:
+                    - link "포토그래퍼" [ref=e942] [cursor=pointer]:
+                      - /url: /hire/photographers?tracking_source=footer_static_gallery
+                      - paragraph [ref=e943]: 포토그래퍼
+                  - listitem [ref=e944]:
+                    - link "비디오 편집자" [ref=e945] [cursor=pointer]:
+                      - /url: /hire/video-editors?tracking_source=footer_static_gallery
+                      - paragraph [ref=e946]: 비디오 편집자
+                  - listitem [ref=e947]:
+                    - link "웹 디자이너" [ref=e948] [cursor=pointer]:
+                      - /url: /hire/web-designers?tracking_source=footer_static_gallery
+                      - paragraph [ref=e949]: 웹 디자이너
+                  - listitem [ref=e950]:
+                    - link "일러스트레이터" [ref=e951] [cursor=pointer]:
+                      - /url: /hire/illustrators?tracking_source=footer_static_gallery
+                      - paragraph [ref=e952]: 일러스트레이터
+              - generic [ref=e953]:
+                - heading "Behance" [level=2] [ref=e954]
+                - list [ref=e956]:
+                  - listitem [ref=e957]:
+                    - link "Behance 정보" [ref=e958] [cursor=pointer]:
+                      - /url: /about?tracking_source=footer_static_gallery
+                      - paragraph [ref=e959]: Behance 정보
+                  - listitem [ref=e960]:
+                    - link "Adobe Portfolio" [ref=e961] [cursor=pointer]:
+                      - /url: https://portfolio.adobe.com/
+                      - paragraph [ref=e962]: Adobe Portfolio
+                  - listitem [ref=e963]:
+                    - button "앱 다운로드" [ref=e964] [cursor=pointer]
+                  - listitem [ref=e965]:
+                    - link "블로그" [ref=e966] [cursor=pointer]:
+                      - /url: /blog?tracking_source=footer_static_gallery
+                      - paragraph [ref=e967]: 블로그
+                  - listitem [ref=e968]:
+                    - link "Behance에서의 채용 정보" [ref=e969] [cursor=pointer]:
+                      - /url: https://www.adobe.com/careers.html
+                      - paragraph [ref=e970]: Behance에서의 채용 정보
+                  - listitem [ref=e971]:
+                    - link "도움말 센터" [ref=e972] [cursor=pointer]:
+                      - /url: https://help.behance.net/
+                      - paragraph [ref=e973]: 도움말 센터
+                  - listitem [ref=e974]:
+                    - link "문의" [ref=e975] [cursor=pointer]:
+                      - /url: https://help.behance.net/hc/en-us/requests/new?ticket_form_id=4164
+                      - paragraph [ref=e976]: 문의
+                  - listitem [ref=e977]:
+                    - link "인기 검색어" [ref=e978] [cursor=pointer]:
+                      - /url: /tags?tracking_source=footer_static_gallery
+                      - paragraph [ref=e979]: 인기 검색어
+                  - listitem [ref=e980]:
+                    - link "로그인" [ref=e981] [cursor=pointer]:
+                      - /url: /login?tracking_source=footer_static_gallery
+                      - paragraph [ref=e982]: 로그인
+              - generic [ref=e983]:
+                - heading "소셜" [level=2] [ref=e984]
+                - list [ref=e986]:
+                  - listitem [ref=e987]:
+                    - link "Instagram" [ref=e988] [cursor=pointer]:
+                      - /url: http://instagram.com/behance
+                      - paragraph [ref=e989]:
+                        - img [ref=e991]
+                        - text: Instagram
+                  - listitem [ref=e993]:
+                    - link "트위터" [ref=e994] [cursor=pointer]:
+                      - /url: http://twitter.com/behance
+                      - paragraph [ref=e995]:
+                        - img [ref=e997]
+                        - text: 트위터
+                  - listitem [ref=e1000]:
+                    - link "Pinterest" [ref=e1001] [cursor=pointer]:
+                      - /url: http://www.pinterest.com/behance
+                      - paragraph [ref=e1002]:
+                        - img [ref=e1004]
+                        - text: Pinterest
+                  - listitem [ref=e1008]:
+                    - link "Facebook" [ref=e1009] [cursor=pointer]:
+                      - /url: http://www.facebook.com/Behance
+                      - paragraph [ref=e1010]:
+                        - img [ref=e1012]
+                        - text: Facebook
+                  - listitem [ref=e1015]:
+                    - link "LinkedIn" [ref=e1016] [cursor=pointer]:
+                      - /url: https://www.linkedin.com/company/151575
+                      - paragraph [ref=e1017]:
+                        - img [ref=e1019]
+                        - text: LinkedIn
+          - separator [ref=e1024]
+          - generic [ref=e1025]:
+            - generic [ref=e1026]:
+              - link "adobe.com으로 이동 새 탭에서 열기" [ref=e1028] [cursor=pointer]:
+                - /url: https://www.adobe.com?promoid=RYGDMYVW
+                - img [ref=e1029]
+                - generic [ref=e1039]: adobe.com으로 이동 새 탭에서 열기
+              - generic [ref=e1040]: © 2026 Adobe Inc. All rights reserved.
+            - list [ref=e1041]:
+              - listitem [ref=e1042]:
+                - 'button "현재 선택된 언어: 한국어" [ref=e1045] [cursor=pointer]':
+                  - generic [ref=e1050]: 한국어
+              - listitem [ref=e1051]:
+                - link "사용약관" [ref=e1052] [cursor=pointer]:
+                  - /url: https://www.adobe.com/legal/terms.html
+                  - paragraph [ref=e1053]: 사용약관
+              - listitem [ref=e1054]:
+                - link "개인정보" [ref=e1055] [cursor=pointer]:
+                  - /url: https://www.adobe.com/privacy.html
+                  - paragraph [ref=e1056]: 개인정보
+              - listitem [ref=e1057]:
+                - link "커뮤니티" [ref=e1058] [cursor=pointer]:
+                  - /url: /misc/community?tracking_source=footer_static_gallery
+                  - paragraph [ref=e1059]: 커뮤니티
+              - listitem [ref=e1060]:
+                - button "쿠키 환경 설정" [ref=e1061] [cursor=pointer]
+              - listitem [ref=e1062]:
+                - link "내 개인 정보를 판매하거나 공유하지 말 것" [ref=e1063] [cursor=pointer]:
+                  - /url: https://www.adobe.com/privacy/us-rights.html
+                  - paragraph [ref=e1064]: 내 개인 정보를 판매하거나 공유하지 말 것
