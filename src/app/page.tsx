@@ -84,7 +84,9 @@ export default function Home() {
         <FaqPreview />
       </main>
 
-      <PublicFooter />
+      <div className="mb-16 md:mb-0">
+        <PublicFooter />
+      </div>
     </div>
   );
 }

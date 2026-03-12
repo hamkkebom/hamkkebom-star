@@ -261,7 +261,67 @@ export default function ScorecardPage() {
                 error={error ? "데이터를 불러오지 못했습니다" : null}
                 isEmpty={data?.stars.length === 0}
             >
-                <div className="overflow-x-auto -mx-5 px-5">
+                {/* Mobile Card View */}
+                <div className="block md:hidden space-y-2">
+                    {data?.stars.map((star, i) => (
+                        <motion.div
+                            key={star.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            onClick={() => setSelectedStar(star)}
+                            className="rounded-xl bg-muted/30 p-3 cursor-pointer hover:bg-muted/50 transition-colors flex items-center gap-3"
+                        >
+                            <div className="flex flex-col items-center gap-1 shrink-0">
+                                <Avatar className="w-8 h-8">
+                                    <AvatarImage src={star.avatarUrl ?? undefined} />
+                                    <AvatarFallback className="text-[10px] bg-purple-100 text-purple-700">
+                                        {star.name.slice(0, 2)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs font-medium truncate max-w-[60px]">{star.name}</span>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
+                                    {star.grade}
+                                </span>
+                            </div>
+                            <div className="flex-1 flex flex-wrap gap-1.5">
+                                <div className="bg-background/50 rounded px-2 py-1 text-[10px] flex items-center gap-1">
+                                    <span className="text-muted-foreground">납기</span>
+                                    <span className={cn("font-medium", star.metrics.deadlineRate >= 80 ? "text-emerald-600" : star.metrics.deadlineRate >= 50 ? "text-amber-600" : "text-red-500")}>
+                                        {star.metrics.deadlineRate}%
+                                    </span>
+                                </div>
+                                <div className="bg-background/50 rounded px-2 py-1 text-[10px] flex items-center gap-1">
+                                    <span className="text-muted-foreground">피드백</span>
+                                    <span className={cn("font-medium", star.metrics.feedbackRate >= 80 ? "text-emerald-600" : "text-amber-600")}>
+                                        {star.metrics.feedbackRate}%
+                                    </span>
+                                </div>
+                                <div className="bg-background/50 rounded px-2 py-1 text-[10px] flex items-center gap-1">
+                                    <span className="text-muted-foreground">품질</span>
+                                    <span className={cn("font-medium", star.metrics.qualityScore >= 70 ? "text-purple-600" : "text-amber-600")}>
+                                        {star.metrics.qualityScore}
+                                    </span>
+                                </div>
+                                <div className="bg-background/50 rounded px-2 py-1 text-[10px] flex items-center gap-1">
+                                    <span className="text-muted-foreground">1차승인</span>
+                                    <span className="font-medium">{star.metrics.firstApprovalRate}%</span>
+                                </div>
+                                <div className="bg-background/50 rounded px-2 py-1 text-[10px] flex items-center gap-1">
+                                    <span className="text-muted-foreground">수정</span>
+                                    <span className="font-medium">{star.metrics.avgRevisions}</span>
+                                </div>
+                                <div className="bg-background/50 rounded px-2 py-1 text-[10px] flex items-center gap-1">
+                                    <span className="text-muted-foreground">건수</span>
+                                    <span className="font-medium">{star.metrics.totalApproved}/{star.metrics.totalSubmissions}</span>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto -mx-5 px-5">
                     <table className="w-full text-xs">
                         <thead>
                             <tr className="border-b text-muted-foreground">

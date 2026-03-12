@@ -189,8 +189,46 @@ export default function TrendsPage() {
                     description="상위 10명 STAR의 기간별 생산량"
                     isLoading={isLoading}
                 >
-                    <div className="overflow-x-auto -mx-5 px-5">
-                        <table className="w-full text-[10px]">
+                    {/* Mobile View */}
+                    <div className="block md:hidden space-y-3">
+                        {data.starHeatmap.map((star, i) => (
+                            <motion.div
+                                key={star.name}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                                className="rounded-xl bg-muted/30 p-3"
+                            >
+                                <div className="font-medium text-sm mb-2">{star.name}</div>
+                                <div className="flex gap-2 overflow-x-auto pb-1">
+                                    {data.periods.slice(-6).map((p) => {
+                                        const val = star.months[p.period] || 0;
+                                        const max = Math.max(...Object.values(star.months), 1);
+                                        const opacity = val / max;
+                                        return (
+                                            <div key={p.period} className="flex flex-col items-center gap-1 min-w-[32px]">
+                                                <span className="text-[9px] text-muted-foreground">{p.period.slice(-2)}</span>
+                                                <div
+                                                    className="w-8 h-8 rounded-md flex items-center justify-center text-[10px] font-medium"
+                                                    style={{
+                                                        backgroundColor: val > 0 ? `rgba(124, 58, 237, ${0.15 + opacity * 0.7})` : "transparent",
+                                                        color: val > 0 ? (opacity > 0.5 ? "white" : "#7C3AED") : "#9ca3af",
+                                                    }}
+                                                >
+                                                    {val || "·"}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Desktop View */}
+                    <div className="hidden md:block">
+                        <div className="overflow-x-auto -mx-5 px-5">
+                            <table className="w-full text-[10px]">
                             <thead>
                                 <tr className="border-b">
                                     <th className="text-left py-1.5 pr-2 sticky left-0 bg-card">STAR</th>
@@ -229,6 +267,7 @@ export default function TrendsPage() {
                                 ))}
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </ChartContainer>
             )}

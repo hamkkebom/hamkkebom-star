@@ -29,6 +29,8 @@ import {
   Users,
   Wallet,
   Search,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -617,20 +619,217 @@ function GradeDeleteDialog({
   );
 }
 
+// --- Mobile Components ---
+
+function MobileStarCard({
+  star,
+  currentGradeId,
+  grades,
+  onMove,
+}: {
+  star: Star;
+  currentGradeId: string;
+  grades: Grade[];
+  onMove: (starId: string, targetGradeId: string | null) => void;
+}) {
+  const displayName = star.chineseName || star.name;
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border bg-card p-3">
+      <div className="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-foreground text-xs font-bold">
+        {displayName.charAt(0)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <Link
+          href={`/admin/stars/${star.id}`}
+          className="text-sm font-medium hover:underline truncate block"
+        >
+          {displayName}
+        </Link>
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {star.baseRate
+            ? `₩${Number(star.baseRate).toLocaleString()}`
+            : "단가 미설정"}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        {star._count.videos > 0 && (
+          <Badge variant="outline" className="text-xs px-1.5 py-0">
+            {star._count.videos}건
+          </Badge>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+              이동할 등급 선택
+            </div>
+            {currentGradeId !== "unassigned" && (
+              <DropdownMenuItem onClick={() => onMove(star.id, null)}>
+                미배정
+              </DropdownMenuItem>
+            )}
+            {grades.map((g) => (
+              g.id !== currentGradeId && (
+                <DropdownMenuItem key={g.id} onClick={() => onMove(star.id, g.id)}>
+                  {g.name}
+                </DropdownMenuItem>
+              )
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+}
+
+function MobileGradeSection({
+  title,
+  count,
+  baseRate,
+  stars,
+  gradeId,
+  grades,
+  onMove,
+  config,
+  onEdit,
+  onDelete,
+  onBulkRate,
+}: {
+  title: string;
+  count: number;
+  baseRate?: number;
+  stars: Star[];
+  gradeId: string;
+  grades: Grade[];
+  onMove: (starId: string, targetGradeId: string | null) => void;
+  config: { bg: string; border: string; badge: string };
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onBulkRate?: () => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className={cn("rounded-2xl border overflow-hidden", config.bg, config.border)}>
+      <div
+        className="flex items-center justify-between p-4 cursor-pointer select-none"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <Badge className={cn(config.badge, "font-semibold shrink-0")}>
+            {title}
+          </Badge>
+          {baseRate !== undefined && (
+            <span className="text-sm font-medium tabular-nums truncate">
+              ₩{Number(baseRate).toLocaleString()}
+            </span>
+          )}
+          <span className="text-xs text-muted-foreground shrink-0">
+            {count}명
+          </span>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {(onEdit || onDelete || onBulkRate) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {onBulkRate && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onBulkRate(); }}>
+                    <Wallet className="h-4 w-4 mr-2" />
+                    단가 일괄 설정
+                  </DropdownMenuItem>
+                )}
+                {onEdit && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    수정
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem
+                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    삭제
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button variant="ghost" size="icon" className="h-8 w-8 pointer-events-none">
+            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
+      </div>
+      
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 space-y-2">
+              {stars.length > 0 ? (
+                stars.map((star) => (
+                  <MobileStarCard
+                    key={star.id}
+                    star={star}
+                    currentGradeId={gradeId}
+                    grades={grades}
+                    onMove={onMove}
+                  />
+                ))
+              ) : (
+                <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 text-center bg-background/50">
+                  <p className="text-xs text-muted-foreground">
+                    {gradeId === "unassigned" ? "모든 STAR가 등급에 배정되었습니다" : "배정된 STAR가 없습니다"}
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // --- BoardSkeleton ---
 
 function BoardSkeleton() {
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
-      {[1, 2, 3, 4].map((i) => (
-        <div key={`col-sk-${i}`} className="min-w-[280px] w-[280px] space-y-3">
-          <Skeleton className="h-10 w-full rounded-lg" />
-          {[1, 2, 3].map((j) => (
-            <Skeleton key={`card-sk-${i}-${j}`} className="h-16 w-full rounded-lg" />
-          ))}
-        </div>
-      ))}
-    </div>
+    <>
+      {/* Desktop Skeleton */}
+      <div className="hidden md:flex gap-4 overflow-x-auto pb-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={`col-sk-${i}`} className="min-w-[280px] w-[280px] space-y-3">
+            <Skeleton className="h-10 w-full rounded-lg" />
+            {[1, 2, 3].map((j) => (
+              <Skeleton key={`card-sk-${i}-${j}`} className="h-16 w-full rounded-lg" />
+            ))}
+          </div>
+        ))}
+      </div>
+      {/* Mobile Skeleton */}
+      <div className="flex md:hidden flex-col gap-3">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={`mob-sk-${i}`} className="h-14 w-full rounded-2xl" />
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -772,6 +971,81 @@ export default function AdminStarsPage() {
     [data, queryClient, assignMutation]
   );
 
+  const handleMobileMove = useCallback(
+    (starId: string, targetGradeId: string | null) => {
+      if (!data) return;
+
+      // Find the star
+      let star: Star | undefined;
+      let fromGradeId: string | undefined;
+
+      const unassignedStar = data.data.unassigned.find((s) => s.id === starId);
+      if (unassignedStar) {
+        star = unassignedStar;
+        fromGradeId = "unassigned";
+      } else {
+        for (const grade of data.data.grades) {
+          const gradeStar = grade.users.find((s) => s.id === starId);
+          if (gradeStar) {
+            star = gradeStar;
+            fromGradeId = grade.id;
+            break;
+          }
+        }
+      }
+
+      if (!star || !fromGradeId || fromGradeId === (targetGradeId ?? "unassigned")) return;
+
+      // Optimistic update
+      queryClient.setQueryData<BoardData>(["admin-grades-board"], (old) => {
+        if (!old) return old;
+        const newData = structuredClone(old);
+
+        // Remove from source
+        if (fromGradeId === "unassigned") {
+          newData.data.unassigned = newData.data.unassigned.filter((s) => s.id !== starId);
+        } else {
+          const srcGrade = newData.data.grades.find((g) => g.id === fromGradeId);
+          if (srcGrade) srcGrade.users = srcGrade.users.filter((s) => s.id !== starId);
+        }
+
+        // Add to target
+        if (targetGradeId === null) {
+          newData.data.unassigned.push(star!);
+        } else {
+          const tgtGrade = newData.data.grades.find((g) => g.id === targetGradeId);
+          if (tgtGrade) {
+            tgtGrade.users.push({ ...star!, baseRate: Number(tgtGrade.baseRate) });
+          }
+        }
+
+        return newData;
+      });
+
+      // Toast + API call
+      const targetGrade = targetGradeId ? data.data.grades.find((g) => g.id === targetGradeId) : null;
+      const starName = star.chineseName || star.name;
+      const targetName = targetGradeId === null ? "미배정" : targetGrade?.name ?? "등급";
+
+      assignMutation.mutate(
+        { starId, gradeId: targetGradeId },
+        {
+          onSuccess: () => {
+            if (targetGrade) {
+              toast.success(
+                `${starName}님이 ${targetName}(으)로 변경되었습니다 (단가: ₩${Number(targetGrade.baseRate).toLocaleString()})`
+              );
+            } else {
+              toast.success(`${starName}님이 미배정으로 변경되었습니다`);
+            }
+            queryClient.invalidateQueries({ queryKey: ["admin-grades-board"] });
+          },
+        }
+      );
+    },
+    [data, queryClient, assignMutation]
+  );
+
   const grades = data?.data.grades ?? [];
   const unassigned = data?.data.unassigned ?? [];
   const totalStars = grades.reduce((sum, g) => sum + g.users.length, 0) + unassigned.length;
@@ -812,26 +1086,26 @@ export default function AdminStarsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex-1">
           <h1 className="text-2xl font-bold">단가 설정</h1>
           <p className="text-sm text-muted-foreground">
             STAR를 등급으로 드래그하여 단가를 관리하세요. ({totalStars}명)
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:flex-none">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="이름으로 검색..."
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9 w-64"
+              className="pl-9 w-full md:w-64"
             />
           </div>
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            등급 추가
+          <Button onClick={() => setCreateOpen(true)} className="shrink-0">
+            <Plus className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">등급 추가</span>
           </Button>
         </div>
       </div>
@@ -860,7 +1134,8 @@ export default function AdminStarsPage() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex overflow-x-auto gap-4 pb-4">
+          {/* Desktop View */}
+          <div className="hidden md:flex overflow-x-auto gap-4 pb-4">
             <UnassignedColumn stars={filteredUnassigned} onBulkRate={() => setBulkRateOpen(true)} />
             {filteredGrades.map((grade) => (
               <GradeColumn
@@ -868,6 +1143,35 @@ export default function AdminStarsPage() {
                 grade={grade}
                 onEdit={(g) => setEditGrade(g)}
                 onDelete={(g) => setDeleteGrade(g)}
+              />
+            ))}
+          </div>
+
+          {/* Mobile View */}
+          <div className="flex md:hidden flex-col gap-3 pb-4">
+            <MobileGradeSection
+              title={UNASSIGNED_CONFIG.label}
+              count={filteredUnassigned.length}
+              stars={filteredUnassigned}
+              gradeId="unassigned"
+              grades={grades}
+              onMove={handleMobileMove}
+              config={UNASSIGNED_CONFIG}
+              onBulkRate={() => setBulkRateOpen(true)}
+            />
+            {filteredGrades.map((grade) => (
+              <MobileGradeSection
+                key={grade.id}
+                title={grade.name}
+                count={grade.users.length}
+                baseRate={grade.baseRate}
+                stars={grade.users}
+                gradeId={grade.id}
+                grades={grades}
+                onMove={handleMobileMove}
+                config={getGradeColor(grade.color)}
+                onEdit={() => setEditGrade(grade)}
+                onDelete={() => setDeleteGrade(grade)}
               />
             ))}
           </div>

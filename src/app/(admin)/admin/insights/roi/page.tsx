@@ -249,7 +249,44 @@ export default function ROIPage() {
                 isLoading={isLoading}
                 isEmpty={!data?.projects.length}
             >
-                <div className="overflow-x-auto -mx-5 px-5">
+                {/* Mobile Card View */}
+                <div className="block md:hidden space-y-3">
+                    {data?.projects.slice(0, 15).map((p, i) => (
+                        <motion.div
+                            key={p.requestId}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            className="rounded-xl bg-muted/30 p-3"
+                        >
+                            <div className="mb-2">
+                                <div className="font-medium truncate">{p.title}</div>
+                                <div className="text-[10px] text-muted-foreground">
+                                    {p.categories.join(", ") || "미분류"}
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                                <div className="flex flex-col">
+                                    <span className="text-muted-foreground text-[10px]">비용</span>
+                                    <span className="font-medium">{p.totalCost.toLocaleString()}원</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-muted-foreground text-[10px]">승인 건수</span>
+                                    <span className={cn("font-medium", p.approvedCount > 0 ? "text-emerald-600" : "text-muted-foreground")}>
+                                        {p.approvedCount}/{p.totalSubmissions}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <span className="text-muted-foreground text-[10px]">품질 점수</span>
+                                    <span className="font-medium">{p.avgQualityScore || "-"}</span>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto -mx-5 px-5">
                     <table className="w-full text-xs">
                         <thead>
                             <tr className="border-b text-muted-foreground">
