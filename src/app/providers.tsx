@@ -1,6 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -25,8 +26,10 @@ export function Providers({ children }: { children: ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthInitializer>{children}</AuthInitializer>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark" disableTransitionOnChange>
+      <QueryClientProvider client={queryClient}>
+        <AuthInitializer>{children}</AuthInitializer>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
