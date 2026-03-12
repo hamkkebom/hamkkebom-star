@@ -49,7 +49,7 @@ function HelpCenterContent() {
   useEffect(() => {
     const tab = searchParams.get("tab");
     if (tab && ["announcements", "faq", "guide"].includes(tab)) {
-      setActiveTab(tab);
+      setActiveTab(tab); // eslint-disable-line react-hooks/set-state-in-effect -- sync from URL params
     }
   }, [searchParams]);
 

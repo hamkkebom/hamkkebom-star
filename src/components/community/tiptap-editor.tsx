@@ -23,6 +23,34 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+function ToolbarButton({
+  onClick,
+  active,
+  children,
+  title,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  children: React.ReactNode;
+  title: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        "p-2 md:p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-md transition-colors active:bg-primary/30",
+        active
+          ? "bg-primary/20 text-primary"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 interface TiptapEditorProps {
   content?: object;
   onChange: (json: object, html: string) => void;
@@ -133,32 +161,6 @@ export function TiptapEditor({
   }, [editor]);
 
   if (!editor) return null;
-
-  const ToolbarButton = ({
-    onClick,
-    active,
-    children,
-    title,
-  }: {
-    onClick: () => void;
-    active?: boolean;
-    children: React.ReactNode;
-    title: string;
-  }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={cn(
-        "p-2 md:p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-md transition-colors active:bg-primary/30",
-        active
-          ? "bg-primary/20 text-primary"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-      )}
-    >
-      {children}
-    </button>
-  );
 
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card">

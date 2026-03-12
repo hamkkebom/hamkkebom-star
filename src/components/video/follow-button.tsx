@@ -27,11 +27,6 @@ export function FollowButton({
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Self-follow prevention
-  if (targetUserId === user?.id) {
-    return null;
-  }
-
   const mutation = useMutation({
     mutationFn: async () => {
       if (!user) {
@@ -77,6 +72,11 @@ export function FollowButton({
       queryClient.invalidateQueries({ queryKey: ["video-detail"] });
     },
   });
+
+  // Self-follow prevention
+  if (targetUserId === user?.id) {
+    return null;
+  }
 
   // Determine button visual state
   const showUnfollow = isFollowing && isHovered;

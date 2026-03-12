@@ -13,6 +13,7 @@ import { ReportDialog } from "@/components/community/report-dialog";
 
 type CommentSectionProps = {
   postId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   comments: any[];
   isQnA: boolean;
   isPostAuthor: boolean;
@@ -141,6 +142,7 @@ export function CommentSection({
       </div>
 
       <div className="space-y-6">
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {comments?.map((comment: any) => (
           <div key={comment.id} className={cn("group", isQnA && acceptedId === comment.id && "rounded-lg border-2 border-green-500/50 bg-green-500/5 p-4 -mx-4")}>
             {isQnA && acceptedId === comment.id && (
@@ -231,6 +233,7 @@ export function CommentSection({
 
             {comment.children?.length > 0 && (
               <div className="mt-4 space-y-4 ml-11">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {comment.children.map((reply: any) => (
                   <div key={reply.id} className="flex gap-3">
                     <CornerDownRight className="w-4 h-4 text-muted-foreground shrink-0 mt-2" />
