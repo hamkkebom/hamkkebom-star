@@ -54,6 +54,10 @@ export async function GET(request: Request) {
     ...(statusParam && statusParam !== "ALL" && !isAppliedFilter
       ? { status: statusParam as RequestStatus }
       : {}),
+    // OPEN 필터 시 마감일 지난 프로젝트 제외
+    ...(statusParam === "OPEN"
+      ? { deadline: { gte: new Date() } }
+      : {}),
     ...(isAppliedFilter && user.role === "STAR"
       ? { assignments: { some: { starId: user.id, status: { notIn: [AssignmentStatus.REJECTED, AssignmentStatus.CANCELLED] } } } }
       : {}),

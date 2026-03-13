@@ -131,7 +131,6 @@ function ProjectCard({
   const isCompleted = assignment.status === "COMPLETED";
   const isClosed = req.status === "CLOSED" || req.status === "CANCELLED";
   const isUploadDisabled = isExpired || isClosed || isCompleted;
-  const latestSub = assignment.submissions?.[0];
 
   return (
     <motion.div
@@ -222,59 +221,61 @@ function ProjectCard({
             </div>
           )}
 
-          {/* Latest Submission Preview */}
-          {latestSub && (
+          {/* Submission Previews */}
+          {assignment.submissions && assignment.submissions.length > 0 && (
             <div
-              className="block mb-4"
+              className="space-y-2 mb-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <Link href={`/stars/my-videos/${latestSub.id}`}>
-                <div className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-secondary/20 hover:bg-secondary/40 transition-colors">
-                  <div className="relative w-16 h-10 rounded-lg overflow-hidden bg-black shrink-0">
-                    {latestSub.thumbnailUrl ? (
-                      <Image
-                        src={latestSub.thumbnailUrl}
-                        alt="thumbnail"
-                        fill
-                        unoptimized
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Play className="w-4 h-4 text-white/30" />
-                      </div>
-                    )}
+              {assignment.submissions.map((sub) => (
+                <Link key={sub.id} href={`/stars/my-videos/${sub.id}`}>
+                  <div className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-secondary/20 hover:bg-secondary/40 transition-colors">
+                    <div className="relative w-16 h-10 rounded-lg overflow-hidden bg-black shrink-0">
+                      {sub.thumbnailUrl ? (
+                        <Image
+                          src={sub.thumbnailUrl}
+                          alt="thumbnail"
+                          fill
+                          unoptimized
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Play className="w-4 h-4 text-white/30" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">
+                        {sub.versionTitle ?? `버전 ${sub.version}`}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {sub.version} · {formatDate(sub.createdAt)} ·{" "}
+                        <span
+                          className={cn(
+                            "font-medium",
+                            sub.status === "APPROVED" && "text-emerald-500",
+                            sub.status === "REJECTED" && "text-red-500",
+                            sub.status === "IN_REVIEW" && "text-blue-500"
+                          )}
+                        >
+                          {sub.status === "PENDING"
+                            ? "대기중"
+                            : sub.status === "IN_REVIEW"
+                              ? "검토중"
+                              : sub.status === "APPROVED"
+                                ? "승인됨"
+                                : sub.status === "REJECTED"
+                                  ? "반려"
+                                  : sub.status === "REVISED"
+                                    ? "수정됨"
+                                    : sub.status}
+                        </span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-foreground truncate">
-                      {latestSub.versionTitle ?? `버전 ${latestSub.version}`}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {latestSub.version} · {formatDate(latestSub.createdAt)} ·{" "}
-                      <span
-                        className={cn(
-                          "font-medium",
-                          latestSub.status === "APPROVED" && "text-emerald-500",
-                          latestSub.status === "REJECTED" && "text-red-500",
-                          latestSub.status === "IN_REVIEW" && "text-blue-500"
-                        )}
-                      >
-                        {latestSub.status === "PENDING"
-                          ? "대기중"
-                          : latestSub.status === "IN_REVIEW"
-                            ? "검토중"
-                            : latestSub.status === "APPROVED"
-                              ? "승인됨"
-                              : latestSub.status === "REJECTED"
-                                ? "반려"
-                                : latestSub.status === "REVISED"
-                                  ? "수정됨"
-                                  : latestSub.status}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </Link>
+                </Link>
+              ))}
             </div>
           )}
 
