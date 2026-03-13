@@ -31,8 +31,8 @@ async function resolveThumbnail(
   submissionId: string,
   subThumbUrl: string | null,
   videoThumbUrl: string | null,
-  streamUid: string | null,
-  videoStreamUid: string | null
+  _streamUid: string | null,
+  _videoStreamUid: string | null
 ): Promise<string | null> {
   const cacheKey = `sub-thumb:${submissionId}`;
   const cached = getCachedThumbnail(cacheKey);
@@ -54,17 +54,8 @@ async function resolveThumbnail(
     }
   }
 
-  if (!url) {
-    const uid = streamUid || videoStreamUid;
-    if (uid) {
-      try {
-        const token = await getSignedPlaybackToken(uid);
-        if (token) {
-          url = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
-        }
-      } catch { /* ignore */ }
-    }
-  }
+  // CF Stream 토큰 기반 썸네일은 424 에러 발생하므로 사용하지 않음
+  // R2 썸네일이 없으면 null 반환 → 클라이언트에서 Film 아이콘 fallback
 
   if (url) setCachedThumbnail(cacheKey, url);
   return url;
@@ -310,7 +301,14 @@ export async function GET(request: Request) {
       : {}),
   };
 
-  const [rows, total] = await Promise.all([
+  // 상태 필터 무관하게 전체 카운트 조회용 (requestId/starId/assignmentId만 유지)
+  const baseWhere = {
+    ...(starId ? { starId } : {}),
+    ...(assignmentId ? { assignmentId } : {}),
+    ...(requestId ? { assignment: { requestId } } : {}),
+  };
+
+  const [rows, total, pendingCount, inReviewCount, approvedCount, rejectedCount, revisedCount] = await Promise.all([
     prisma.submission.findMany({
       where,
       include: {
@@ -356,6 +354,11 @@ export async function GET(request: Request) {
       take: pageSize,
     }),
     prisma.submission.count({ where }),
+    prisma.submission.count({ where: { ...baseWhere, status: SubmissionStatus.PENDING } }),
+    prisma.submission.count({ where: { ...baseWhere, status: SubmissionStatus.IN_REVIEW } }),
+    prisma.submission.count({ where: { ...baseWhere, status: SubmissionStatus.APPROVED } }),
+    prisma.submission.count({ where: { ...baseWhere, status: SubmissionStatus.REJECTED } }),
+    prisma.submission.count({ where: { ...baseWhere, status: SubmissionStatus.REVISED } }),
   ]);
 
   // ✅ 썸네일 생성 — 최대 5개씩 병렬 처리 (외부 API 과부하 방지)
@@ -389,5 +392,11 @@ export async function GET(request: Request) {
     page,
     pageSize,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    statusCounts: {
+      pending: pendingCount,
+      inReview: inReviewCount,
+      completed: approvedCount + rejectedCount + revisedCount,
+      total: pendingCount + inReviewCount + approvedCount + rejectedCount + revisedCount,
+    },
   });
 }

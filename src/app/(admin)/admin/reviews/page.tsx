@@ -93,6 +93,12 @@ type SubmissionsResponse = {
   page: number;
   pageSize: number;
   totalPages: number;
+  statusCounts?: {
+    pending: number;
+    inReview: number;
+    completed: number;
+    total: number;
+  };
 };
 
 // ============================================================
@@ -276,6 +282,15 @@ export default function AdminReviewsPage() {
 
   // ── Stats computation ──
   const stats = useMemo(() => {
+    if (data?.statusCounts) {
+      return {
+        total: data.statusCounts.total,
+        pending: data.statusCounts.pending,
+        inReview: data.statusCounts.inReview,
+        completed: data.statusCounts.completed,
+      };
+    }
+    // fallback: 현재 페이지 데이터로 계산
     const rows = data?.data ?? [];
     const total = data?.total ?? 0;
     return {
@@ -541,7 +556,7 @@ export default function AdminReviewsPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="flex p-1 bg-card rounded-2xl border border-border shadow-sm overflow-x-auto w-full sm:w-auto scrollbar-none"
+        className="hidden md:flex p-1 bg-card rounded-2xl border border-border shadow-sm overflow-x-auto w-full sm:w-auto scrollbar-none"
       >
         {FILTERS.map((tab) => {
           const isActive = filter === tab.key;

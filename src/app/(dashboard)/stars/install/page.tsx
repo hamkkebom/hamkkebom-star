@@ -27,6 +27,7 @@ export default function InstallAppPage() {
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [isInstalled, setIsInstalled] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const [isPushSubscribed, setIsPushSubscribed] = useState(false);
     const [pushLoading, setPushLoading] = useState(false);
     const [isOnline, setIsOnline] = useState(true);
@@ -34,8 +35,10 @@ export default function InstallAppPage() {
     useEffect(() => {
         const ua = navigator.userAgent;
         const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !("MSStream" in window);
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
         const isStandalone = window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as unknown as Record<string, unknown>).standalone);
         setIsIOS(isIOSDevice);
+        setIsMobile(isMobileDevice);
         setIsInstalled(isStandalone);
         setIsOnline(navigator.onLine);
 
@@ -159,14 +162,16 @@ export default function InstallAppPage() {
                         ) : (
                             <>
                                 <Download className="w-5 h-5 text-violet-500" />
-                                앱 설치하기
+                                {isMobile ? "앱 설치하기" : "📱 모바일 앱 설치"}
                             </>
                         )}
                     </CardTitle>
                     <CardDescription>
                         {isInstalled
                             ? "홈 화면에서 앱을 실행할 수 있습니다."
-                            : "홈 화면에 추가하면 네이티브 앱처럼 빠르게 사용할 수 있어요."}
+                            : isMobile
+                                ? "홈 화면에 추가하면 네이티브 앱처럼 빠르게 사용할 수 있어요."
+                                : "휴대폰에서 이 페이지에 접속하면 앱을 설치할 수 있습니다."}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -174,7 +179,7 @@ export default function InstallAppPage() {
                         <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
                             ✅ 설치 완료 — 홈 화면에서 별들에게 물어봐 아이콘을 확인하세요!
                         </p>
-                    ) : deferredPrompt ? (
+                    ) : deferredPrompt && isMobile ? (
                         <Button
                             size="lg"
                             onClick={handleInstall}
@@ -208,9 +213,18 @@ export default function InstallAppPage() {
                             </div>
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground">
-                            Chrome 또는 Edge 브라우저의 주소창 오른쪽에 있는 설치(⊕) 아이콘을 눌러 설치할 수 있습니다.
-                        </p>
+                        <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                                {isMobile
+                                    ? "Chrome 또는 Edge 브라우저의 메뉴에서 \"홈 화면에 추가\"를 선택하세요."
+                                    : "📱 휴대폰 브라우저에서 이 페이지에 접속하여 설치해주세요."}
+                            </p>
+                            {!isMobile && (
+                                <p className="text-xs text-amber-500 dark:text-amber-400 font-medium">
+                                    💡 데스크탑에서는 아래 알림 설정만 이용 가능합니다
+                                </p>
+                            )}
+                        </div>
                     )}
                 </CardContent>
             </Card>
