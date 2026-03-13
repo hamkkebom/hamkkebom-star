@@ -86,6 +86,12 @@ model User {
   appeals             Appeal[]       @relation("UserAppeals")
   reviewedAppeals     Appeal[]       @relation("ReviewedAppeals")
 
+  @@index([role])
+  @@index([isApproved])
+  @@index([createdAt])
+  @@index([role, isApproved])
+  @@index([managerId])
+  @@index([gradeId])
   @@map("users")
 }
 
@@ -107,6 +113,10 @@ model ProjectRequest {
   createdBy       User                @relation("CreatedRequests", fields: [createdById], references: [id])
   bookmarks       ProjectBookmark[]
 
+  @@index([status])
+  @@index([createdById])
+  @@index([createdAt])
+  @@index([status, createdAt])
   @@map("project_requests")
 }
 
@@ -136,6 +146,11 @@ model ProjectAssignment {
   reviewedBy       User?            @relation("ReviewedAssignments", fields: [reviewedById], references: [id])
   star             User             @relation(fields: [starId], references: [id])
   submissions Submission[]
+  @@index([starId])
+  @@index([status])
+  @@index([requestId])
+  @@index([requestId, status])
+  @@index([starId, status])
   @@map("project_assignments")
 }
 
@@ -181,6 +196,8 @@ model Submission {
   @@index([assignmentId])
   @@index([starId, createdAt])
   @@index([starId, status])
+  @@index([videoId])
+  @@index([status, createdAt])
   @@map("submissions")
 }
 
@@ -224,6 +241,8 @@ model Feedback {
   @@index([submissionId])
   @@index([authorId])
   @@index([submissionId, seenByStarAt])
+  @@index([status])
+  @@index([submissionId, status])
   @@map("feedbacks")
 }
 
@@ -264,6 +283,9 @@ model Video {
   @@index([ownerId])
   @@index([status, createdAt])
   @@index([ownerId, status])
+  @@index([categoryId])
+  @@index([counselorId])
+  @@index([createdAt])
   @@map("videos")
 }
 
@@ -315,6 +337,7 @@ model VideoEventLog {
   createdAt DateTime @default(now())
   video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
+  @@index([videoId])
   @@map("video_event_logs")
 }
 
@@ -372,6 +395,8 @@ model SettlementItem {
   star           User       @relation(fields: [starId], references: [id])
   submission     Submission? @relation(fields: [submissionId], references: [id])
 
+  @@index([starId])
+  @@index([settlementId])
   @@map("settlement_items")
 }
 
@@ -477,6 +502,8 @@ model MediaPlacement {
   updatedAt     DateTime        @updatedAt
   video         Video           @relation(fields: [videoId], references: [id])
 
+  @@index([videoId])
+  @@index([status])
   @@map("media_placements")
 }
 
@@ -737,6 +764,7 @@ model VideoComment {
 
   @@index([videoId, createdAt])
   @@index([authorId])
+  @@index([parentId])
   @@map("video_comments")
 }
 
@@ -841,6 +869,8 @@ model BoardComment {
   likes     BoardCommentLike[]
 
   @@index([postId, createdAt])
+  @@index([authorId])
+  @@index([parentId])
   @@map("board_comments")
 }
 

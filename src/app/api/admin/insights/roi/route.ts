@@ -17,6 +17,8 @@ export async function GET(request: Request) {
         // 프로젝트별 데이터
         const projects = await prisma.projectRequest.findMany({
             where: dateFilter ? { createdAt: dateFilter } : {},
+            take: 200,
+            orderBy: { createdAt: "desc" },
             select: {
                 id: true,
                 title: true,

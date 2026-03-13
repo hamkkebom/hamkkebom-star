@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +71,13 @@ export function RequestCard({
   bookmarked?: boolean;
   onToggleBookmark?: () => void;
 }) {
+  const displayStatus: RequestStatus = useMemo(() => {
+    const deadlineDate = request.deadline instanceof Date ? request.deadline : new Date(String(request.deadline));
+    // eslint-disable-next-line react-hooks/purity -- Date.now()는 마감 판별을 위해 렌더 시 필요
+    const isPastDeadline = !Number.isNaN(deadlineDate.getTime()) && deadlineDate.getTime() < Date.now();
+    return (request.status === "OPEN" && isPastDeadline) ? "CLOSED" : request.status;
+  }, [request.deadline, request.status]);
+
   return (
     <div className="relative group">
       {onToggleBookmark && (
@@ -95,7 +103,7 @@ export function RequestCard({
           <CardHeader className="gap-3">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="line-clamp-1 text-lg pr-6">{request.title}</CardTitle>
-              <Badge variant={statusMap[request.status].variant}>{statusMap[request.status].label}</Badge>
+              <Badge variant={statusMap[displayStatus].variant}>{statusMap[displayStatus].label}</Badge>
             </div>
             <CardDescription>
               마감일 {formatDeadline(request.deadline)}

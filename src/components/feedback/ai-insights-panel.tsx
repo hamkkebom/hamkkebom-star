@@ -27,11 +27,12 @@ export function AiInsightsPanel({ submissionId }: { submissionId: string }) {
     const { data: analysis } = useQuery<AiAnalysis | null>({
         queryKey: ["ai-analysis", submissionId],
         queryFn: async () => {
-            const res = await fetch(`/api/ai/analyze/${submissionId}`, { cache: "no-store" });
+            const res = await fetch(`/api/ai/analyze/${submissionId}`);
             if (!res.ok) return null;
             const json = await res.json();
             return json.data ?? null;
         },
+        staleTime: 30 * 60 * 1000, // 30분 — AI 분석 결과는 불변 데이터
     });
 
     // 분석 결과가 없거나 완료되지 않았으면 요약만 숨김 처리

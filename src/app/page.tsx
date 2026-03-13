@@ -1,5 +1,6 @@
 import { PublicHeader } from "@/components/layout/public-header";
 import { PublicFooter } from "@/components/layout/public-footer";
+import { PublicBottomNav } from "@/components/layout/public-bottom-nav";
 import { AnnouncementBanner } from "@/components/home/announcement-banner";
 import { HeroBanner } from "@/components/home/hero-banner";
 import { WeeklyChart } from "@/components/home/weekly-chart";
@@ -12,7 +13,7 @@ import { Film, Users, Star, Search } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background overflow-x-hidden">
       {/* 공지사항 배너 */}
       <AnnouncementBanner />
 
@@ -87,6 +88,7 @@ export default function Home() {
       <div className="mb-16 md:mb-0">
         <PublicFooter />
       </div>
+      <PublicBottomNav />
     </div>
   );
 }

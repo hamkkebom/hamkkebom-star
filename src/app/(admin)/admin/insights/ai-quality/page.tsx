@@ -7,19 +7,30 @@ import {
     Sparkles, ArrowLeft, Trophy, AlertTriangle, TrendingUp
 } from "lucide-react";
 import Link from "next/link";
-import {
-    RadialBarChart, RadialBar, ResponsiveContainer,
-    BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
-    LineChart, Line,
-    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-} from "recharts";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const QualityGauge = dynamic(
+    () => import("@/components/charts/ai-quality-charts").then((m) => ({ default: m.QualityGauge })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[180px]" /> }
+);
+const CategoryRadarChart = dynamic(
+    () => import("@/components/charts/ai-quality-charts").then((m) => ({ default: m.CategoryRadarChart })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[240px]" /> }
+);
+const DistributionChart = dynamic(
+    () => import("@/components/charts/ai-quality-charts").then((m) => ({ default: m.DistributionChart })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[180px]" /> }
+);
+const MonthlyTrendChart = dynamic(
+    () => import("@/components/charts/ai-quality-charts").then((m) => ({ default: m.MonthlyTrendChart })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[180px]" /> }
+);
 import { cn } from "@/lib/utils";
 import { KpiCard } from "@/components/analytics/kpi-card";
 import { DateRangePicker, getDateRange, type DatePreset } from "@/components/analytics/date-range-picker";
 import { ChartContainer } from "@/components/analytics/chart-container";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-const DIST_COLORS = ["#EF4444", "#F59E0B", "#FBBF24", "#10B981", "#7C3AED"];
 
 interface AIQualityData {
     avgOverall: number;
@@ -29,47 +40,6 @@ interface AIQualityData {
     monthlyTrend: Array<{ month: string; avgScore: number; count: number }>;
     lowQuality: Array<{ submissionTitle: string; starName: string; overall: number; categories: Record<string, number> }>;
     totalAnalyzed: number;
-}
-
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number }>; label?: string }) {
-    if (!active || !payload) return null;
-    return (
-        <div className="bg-muted dark:bg-zinc-900/90 border rounded-xl p-3 shadow-lg text-xs">
-            <p className="font-semibold mb-1">{label}</p>
-            {payload.map((p, i) => (
-                <p key={i} className="text-muted-foreground">{p.name}: {p.value}</p>
-            ))}
-        </div>
-    );
-}
-
-function QualityGauge({ score }: { score: number }) {
-    const data = [{ name: "score", value: score, fill: score >= 70 ? "#10B981" : score >= 50 ? "#F59E0B" : "#EF4444" }];
-    return (
-        <div className="relative">
-            <ResponsiveContainer width="100%" height={180}>
-                <RadialBarChart
-                    cx="50%" cy="55%"
-                    innerRadius="65%"
-                    outerRadius="95%"
-                    startAngle={210}
-                    endAngle={-30}
-                    data={data}
-                    barSize={14}
-                >
-                    <RadialBar
-                        dataKey="value"
-                        cornerRadius={10}
-                        background={{ fill: "#e5e7eb" }}
-                    />
-                </RadialBarChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pt-6">
-                <span className="text-3xl font-bold">{score}</span>
-                <span className="text-xs text-muted-foreground">전체 평균</span>
-            </div>
-        </div>
-    );
 }
 
 export default function AIQualityPage() {
@@ -132,18 +102,7 @@ export default function AIQualityPage() {
                     description="각 품질 카테고리 비교"
                     isLoading={isLoading}
                 >
-                    <ResponsiveContainer width="100%" height={240}>
-                        <RadarChart data={radarData}>
-                            <PolarGrid stroke="#e5e7eb" />
-                            <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: "#6b7280" }} />
-                            <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                            <Radar
-                                dataKey="value" name="평균 점수"
-                                stroke="#EC4899" fill="#EC4899" fillOpacity={0.2} strokeWidth={2}
-                                animationDuration={800}
-                            />
-                        </RadarChart>
-                    </ResponsiveContainer>
+                    <CategoryRadarChart data={radarData} />
 
                     {/* Category mini cards */}
                     <div className="grid grid-cols-2 gap-2 mt-3">
@@ -169,19 +128,7 @@ export default function AIQualityPage() {
                 isLoading={isLoading}
                 isEmpty={!data?.distribution.length}
             >
-                <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={data?.distribution}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="range" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Bar dataKey="count" name="영상 수" radius={[6, 6, 0, 0]} animationDuration={800}>
-                            {data?.distribution.map((_, i) => (
-                                <Cell key={i} fill={DIST_COLORS[i]} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
+                <DistributionChart data={data?.distribution} />
             </ChartContainer>
 
             {/* Monthly Trend */}
@@ -191,19 +138,7 @@ export default function AIQualityPage() {
                 isLoading={isLoading}
                 isEmpty={!data?.monthlyTrend.length}
             >
-                <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={data?.monthlyTrend}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Line
-                            type="monotone" dataKey="avgScore" name="평균 점수"
-                            stroke="#7C3AED" strokeWidth={2} dot={{ r: 3, fill: "#7C3AED" }}
-                            animationDuration={800}
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
+                <MonthlyTrendChart data={data?.monthlyTrend} />
             </ChartContainer>
 
             {/* STAR Quality Ranking */}

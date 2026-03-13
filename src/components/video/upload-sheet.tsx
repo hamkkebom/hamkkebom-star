@@ -115,6 +115,7 @@ export function UploadSheet({ open, onOpenChange, assignment }: UploadSheetProps
       const json = await res.json();
       return json.data ?? [];
     },
+    staleTime: 60 * 60 * 1000, // 1시간 — 카테고리는 거의 변경되지 않음
   });
 
   const { data: counselors } = useQuery<CounselorItem[]>({
@@ -126,6 +127,7 @@ export function UploadSheet({ open, onOpenChange, assignment }: UploadSheetProps
       return json.data ?? [];
     },
     enabled: videoSubject === "COUNSELOR",
+    staleTime: 30 * 60 * 1000, // 30분 — 상담사 목록은 드물게 변경됨
   });
 
   // ── Derived ──

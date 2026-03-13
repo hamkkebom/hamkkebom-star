@@ -56,16 +56,16 @@ export function CategoryShowcase() {
     <div className="container mx-auto px-4 py-12 md:py-16">
       <div className="flex items-end justify-between mb-8">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             다양한 분야의 영상
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             원하는 카테고리의 영상을 찾아보세요
           </p>
         </div>
         <Link
           href="/categories"
-          className="hidden md:flex items-center text-sm font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+          className="hidden md:flex items-center text-sm font-medium text-violet-600 hover:text-violet-700 transition-colors"
         >
           전체 카테고리 보기 <ChevronRight className="ml-1 h-4 w-4" />
         </Link>
@@ -92,23 +92,23 @@ export function CategoryShowcase() {
                 <div className="relative z-10 flex flex-col h-full justify-between gap-4">
                   <div className="flex items-start justify-between">
                     <div className="rounded-xl bg-white/50 dark:bg-black/20 p-3 backdrop-blur-sm">
-                      <Icon className="h-6 w-6 text-slate-700 dark:text-slate-200" />
+                      <Icon className="h-6 w-6 text-foreground/70" />
                     </div>
                     {category._count?.videos !== undefined && (
-                      <span className="rounded-full bg-white/50 dark:bg-black/20 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 backdrop-blur-sm">
+                      <span className="rounded-full bg-white/50 dark:bg-black/20 px-2.5 py-1 text-xs font-medium text-foreground/70 backdrop-blur-sm">
                         {category._count.videos}
                       </span>
                     )}
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">
+                    <h3 className="font-bold text-foreground group-hover:text-violet-600 transition-colors">
                       {category.name}
                     </h3>
                   </div>
                 </div>
                 
                 {/* Decorative background icon */}
-                <Icon className="absolute -bottom-4 -right-4 h-24 w-24 text-slate-900/5 dark:text-white/5 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-12" />
+                <Icon className="absolute -bottom-4 -right-4 h-24 w-24 text-foreground/5 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-12" />
               </Link>
             );
           })}
@@ -118,7 +118,7 @@ export function CategoryShowcase() {
       <div className="mt-6 flex justify-center md:hidden">
         <Link
           href="/categories"
-          className="flex items-center text-sm font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+          className="flex items-center text-sm font-medium text-violet-600 hover:text-violet-700 transition-colors"
         >
           전체 카테고리 보기 <ChevronRight className="ml-1 h-4 w-4" />
         </Link>

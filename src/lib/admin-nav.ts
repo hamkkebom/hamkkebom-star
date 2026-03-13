@@ -30,6 +30,7 @@ import {
     UserX,
     Megaphone,
     HelpCircle,
+    Smartphone,
 } from "lucide-react";
 
 export type NavChild = {
@@ -125,6 +126,7 @@ export const navGroups: NavGroup[] = [
 ];
 
 export const externalItems = [
+    { href: "/admin/install", label: "앱 설치 · 설정", icon: Smartphone },
     { href: "/", label: "메인으로 돌아가기", icon: ExternalLink, exact: true },
 ];
 

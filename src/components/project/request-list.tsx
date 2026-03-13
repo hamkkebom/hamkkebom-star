@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RequestCard, type RequestCardItem } from "@/components/project/request-card";
@@ -83,7 +84,10 @@ export function RequestList({ status, search }: { status: string; search: string
     },
   });
 
-  const bookmarkedIds = new Set(bookmarkData?.data.map((b) => b.requestId) ?? []);
+  const bookmarkedIds = useMemo(
+    () => new Set(bookmarkData?.data.map((b) => b.requestId) ?? []),
+    [bookmarkData],
+  );
 
   const toggleBookmark = useMutation({
     mutationFn: async ({ requestId, bookmarked }: { requestId: string; bookmarked: boolean }) => {

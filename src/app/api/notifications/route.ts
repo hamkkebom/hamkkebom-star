@@ -26,33 +26,100 @@ export async function GET() {
   const items: NotificationItem[] = [];
 
   if (user.role === "STAR") {
-    // Recent feedbacks on my submissions
-    const feedbacks = await prisma.feedback.findMany({
-      where: {
-        submission: { starId: user.id },
-        status: FeedbackStatus.PENDING,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: {
-        id: true,
-        content: true,
-        type: true,
-        createdAt: true,
-        submission: {
-          select: {
-            id: true,
-            versionTitle: true,
-            version: true,
-            assignment: {
-              select: {
-                request: { select: { title: true } },
+    // Parallel fetch: all 5 STAR notification queries
+    const [feedbacks, settlements, recentAssignments, recentComments, recentLikes] = await Promise.all([
+      // Recent feedbacks on my submissions
+      prisma.feedback.findMany({
+        where: {
+          submission: { starId: user.id },
+          status: FeedbackStatus.PENDING,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          content: true,
+          type: true,
+          createdAt: true,
+          submission: {
+            select: {
+              id: true,
+              versionTitle: true,
+              version: true,
+              assignment: {
+                select: {
+                  request: { select: { title: true } },
+                },
               },
             },
           },
         },
-      },
-    });
+      }),
+      // Recent settlement status changes
+      prisma.settlement.findMany({
+        where: { starId: user.id },
+        orderBy: { updatedAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          startDate: true,
+          totalAmount: true,
+          status: true,
+          updatedAt: true,
+        },
+      }),
+      // Recent assignment approval/rejection (last 7 days)
+      prisma.projectAssignment.findMany({
+        where: {
+          starId: user.id,
+          reviewedAt: {
+            not: null,
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          },
+          status: { in: ["ACCEPTED", "REJECTED"] },
+        },
+        orderBy: { reviewedAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          status: true,
+          rejectionReason: true,
+          reviewedAt: true,
+          request: { select: { title: true } },
+        },
+      }),
+      // Recent board comments on my posts
+      prisma.boardComment.findMany({
+        where: {
+          post: { authorId: user.id },
+          authorId: { not: user.id },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          author: { select: { name: true } },
+          post: { select: { id: true, title: true } },
+        },
+      }),
+      // Recent board post likes
+      prisma.boardPostLike.findMany({
+        where: {
+          post: { authorId: user.id },
+          user: { id: { not: user.id } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          createdAt: true,
+          user: { select: { name: true } },
+          post: { select: { id: true, title: true } },
+        },
+      }),
+    ]);
 
     for (const fb of feedbacks) {
       const subTitle = fb.submission.versionTitle || `v${fb.submission.version}`;
@@ -66,20 +133,6 @@ export async function GET() {
         link: `/stars/feedback`,
       });
     }
-
-    // Recent settlement status changes
-    const settlements = await prisma.settlement.findMany({
-      where: { starId: user.id },
-      orderBy: { updatedAt: "desc" },
-      take: 5,
-      select: {
-        id: true,
-        startDate: true,
-        totalAmount: true,
-        status: true,
-        updatedAt: true,
-      },
-    });
 
     const settlementStatusLabels: Record<string, string> = {
       PENDING: "대기중",
@@ -99,27 +152,6 @@ export async function GET() {
         link: `/stars/earnings`,
       });
     }
-
-    // Recent assignment approval/rejection (last 7 days)
-    const recentAssignments = await prisma.projectAssignment.findMany({
-      where: {
-        starId: user.id,
-        reviewedAt: {
-          not: null,
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        },
-        status: { in: ["ACCEPTED", "REJECTED"] },
-      },
-      orderBy: { reviewedAt: "desc" },
-      take: 10,
-      select: {
-        id: true,
-        status: true,
-        rejectionReason: true,
-        reviewedAt: true,
-        request: { select: { title: true } },
-      },
-    });
 
     for (const assignment of recentAssignments) {
       if (assignment.status === "ACCEPTED") {
@@ -143,23 +175,6 @@ export async function GET() {
       }
     }
 
-    // Recent board comments on my posts
-    const recentComments = await prisma.boardComment.findMany({
-      where: {
-        post: { authorId: user.id },
-        authorId: { not: user.id },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      select: {
-        id: true,
-        content: true,
-        createdAt: true,
-        author: { select: { name: true } },
-        post: { select: { id: true, title: true } },
-      },
-    });
-
     for (const comment of recentComments) {
       items.push({
         id: comment.id,
@@ -170,22 +185,6 @@ export async function GET() {
         link: `/community/posts/${comment.post.id}`,
       });
     }
-
-    // Recent board post likes
-    const recentLikes = await prisma.boardPostLike.findMany({
-      where: {
-        post: { authorId: user.id },
-        user: { id: { not: user.id } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      select: {
-        id: true,
-        createdAt: true,
-        user: { select: { name: true } },
-        post: { select: { id: true, title: true } },
-      },
-    });
 
     for (const like of recentLikes) {
       items.push({
@@ -200,24 +199,52 @@ export async function GET() {
   }
 
   if (user.role === "ADMIN") {
-    // Pending submissions needing review
-    const submissions = await prisma.submission.findMany({
-      where: { status: SubmissionStatus.PENDING },
-      orderBy: { createdAt: "desc" },
-      take: 15,
-      select: {
-        id: true,
-        versionTitle: true,
-        version: true,
-        createdAt: true,
-        star: { select: { name: true } },
-        assignment: {
-          select: {
-            request: { select: { title: true } },
+    // Parallel fetch: all 3 ADMIN notification queries
+    const [submissions, settlements, pendingAssignments] = await Promise.all([
+      // Pending submissions needing review
+      prisma.submission.findMany({
+        where: { status: SubmissionStatus.PENDING },
+        orderBy: { createdAt: "desc" },
+        take: 15,
+        select: {
+          id: true,
+          versionTitle: true,
+          version: true,
+          createdAt: true,
+          star: { select: { name: true } },
+          assignment: {
+            select: {
+              request: { select: { title: true } },
+            },
           },
         },
-      },
-    });
+      }),
+      // Pending settlements
+      prisma.settlement.findMany({
+        where: { status: SettlementStatus.PENDING },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          startDate: true,
+          totalAmount: true,
+          createdAt: true,
+          star: { select: { name: true } },
+        },
+      }),
+      // Pending assignment approvals
+      prisma.projectAssignment.findMany({
+        where: { status: "PENDING_APPROVAL" },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          createdAt: true,
+          star: { select: { name: true } },
+          request: { select: { title: true } },
+        },
+      }),
+    ]);
 
     for (const sub of submissions) {
       const subTitle = sub.versionTitle || `v${sub.version}`;
@@ -231,20 +258,6 @@ export async function GET() {
       });
     }
 
-    // Pending settlements
-    const settlements = await prisma.settlement.findMany({
-      where: { status: SettlementStatus.PENDING },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      select: {
-        id: true,
-        startDate: true,
-        totalAmount: true,
-        createdAt: true,
-        star: { select: { name: true } },
-      },
-    });
-
     for (const s of settlements) {
       const date = new Date(s.startDate);
       items.push({
@@ -256,19 +269,6 @@ export async function GET() {
         link: `/admin/settlements`,
       });
     }
-
-    // Pending assignment approvals
-    const pendingAssignments = await prisma.projectAssignment.findMany({
-      where: { status: "PENDING_APPROVAL" },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      select: {
-        id: true,
-        createdAt: true,
-        star: { select: { name: true } },
-        request: { select: { title: true } },
-      },
-    });
 
     for (const assignment of pendingAssignments) {
       items.push({

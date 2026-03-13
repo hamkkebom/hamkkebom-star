@@ -174,10 +174,9 @@ async function fetchAllSubmissions(status: string, page: number): Promise<Submis
   };
 }
 
-function getThumbnailUrl(row: SubmissionRow): string | null {
-  const uid = row.streamUid || row.video?.streamUid;
-  if (!uid) return null;
-  return `https://customer-${uid}.cloudflarestream.com/${uid}/thumbnails/thumbnail.jpg?time=2s&width=120&height=68`;
+function getThumbnailUrl(_row: SubmissionRow): string | null {
+  // CF Stream 서명 없이 접근 시 401 에러 발생하므로 null 반환
+  return null;
 }
 
 // ============================================================

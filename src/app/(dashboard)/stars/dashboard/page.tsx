@@ -34,16 +34,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const DashboardChart = dynamic(
+  () => import("@/components/charts/dashboard-chart").then((m) => ({ default: m.DashboardChart })),
+  { ssr: false, loading: () => <div className="h-52 w-full"><Skeleton className="w-full h-full" /></div> }
+);
 
 // --- Types ---
 import type { MySubmissionDashboard as MySubmission } from "@/types/shared";
@@ -660,37 +657,7 @@ export default function StarDashboardPage() {
                   승인율 {videoStats.summary.approvalRate}%
                 </div>
               </div>
-              <div className="h-52">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={videoStats.data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(v: string) => v.split("-")[1] + "월"}
-                      stroke="var(--muted-foreground)"
-                      opacity={0.5}
-                    />
-                    <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" opacity={0.5} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "var(--popover)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                      }}
-                      labelFormatter={(label: any) => {
-                        const [y, m] = String(label).split("-");
-                        return `${y}년 ${parseInt(m)}월`;
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "11px" }} />
-                    <Bar dataKey="submitted" name="제출" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="approved" name="승인" fill="#10b981" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="feedbacks" name="피드백" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <DashboardChart data={videoStats.data} />
             </CardContent>
           </Card>
         </motion.div>
