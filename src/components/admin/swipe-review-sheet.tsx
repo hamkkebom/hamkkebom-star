@@ -614,6 +614,7 @@ export function SwipeReviewSheet({
                                                         />
                                                         <button
                                                             type="button"
+                                                            onPointerDown={(e) => e.stopPropagation()}
                                                             onClick={() => {
                                                                 handleManualReject();
                                                                 setShowRejectInput(false);
@@ -637,6 +638,7 @@ export function SwipeReviewSheet({
                                                         "flex-1 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950 active:scale-95 transition-all font-bold h-11 rounded-xl",
                                                         showRejectInput && "bg-rose-50 dark:bg-rose-950"
                                                     )}
+                                                    onPointerDown={(e) => e.stopPropagation()}
                                                     onClick={() => {
                                                         setShowRejectInput(v => !v);
                                                         if (!showRejectInput) {
@@ -651,6 +653,7 @@ export function SwipeReviewSheet({
                                                     variant="ghost"
                                                     size="sm"
                                                     className="text-muted-foreground active:scale-95 transition-all h-11 px-3 rounded-xl"
+                                                    onPointerDown={(e) => e.stopPropagation()}
                                                     onClick={handleSkip}
                                                 >
                                                     <SkipForward className="w-4 h-4 mr-1" />
@@ -659,6 +662,7 @@ export function SwipeReviewSheet({
                                                 <Button
                                                     size="sm"
                                                     className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-all font-bold h-11 rounded-xl shadow-lg shadow-emerald-500/20"
+                                                    onPointerDown={(e) => e.stopPropagation()}
                                                     onClick={handleManualApprove}
                                                 >
                                                     <CheckCircle2 className="w-4 h-4 mr-1.5" />
@@ -670,6 +674,7 @@ export function SwipeReviewSheet({
                                             <button
                                                 type="button"
                                                 onClick={() => setFeedbackMode(true)}
+                                                onPointerDown={(e) => e.stopPropagation()}
                                                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-sm font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 active:scale-[0.98] transition-all"
                                             >
                                                 <MessageSquare className="w-4 h-4" />
