@@ -12,9 +12,11 @@ export const dynamic = "force-dynamic";
  * 새 공지사항 작성 (ADMIN 전용)
  */
 export async function GET(request: NextRequest) {
-    const user = await getAuthUser();
-    if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let user = null;
+    try {
+        user = await getAuthUser();
+    } catch {
+        // 비인증 사용자 — 공개 콘텐츠만 표시
     }
 
     const { searchParams } = new URL(request.url);
@@ -28,10 +30,9 @@ export async function GET(request: NextRequest) {
         ],
         include: {
             author: { select: { name: true, avatarUrl: true } },
-            reads: {
-                where: { userId: user.id },
-                select: { readAt: true },
-            },
+            reads: user
+                ? { where: { userId: user.id }, select: { readAt: true } }
+                : { where: { userId: "___none___" }, select: { readAt: true } },
         },
     });
 

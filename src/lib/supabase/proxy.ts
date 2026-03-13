@@ -82,9 +82,11 @@ export async function updateSession(request: NextRequest) {
     "/community", "/explore",           // 커뮤니티 공개 접근
     "/api/board", "/api/search",        // 게시판/검색 API 공개
     "/api/reports", "/api/users",       // 신고/팔로우 API
-    "/api/announcements", "/api/faq",   // 공지/FAQ API
-    "/announcements", "/faq", "/guide", // 공지/FAQ/가이드 페이지
+    "/api/announcements", "/api/faq", "/api/guide",  // 공지/FAQ/가이드 API
+    "/announcements", "/faq", "/guide", "/help",      // 공지/FAQ/가이드/지원센터 페이지
     "/portfolio",                       // 포트폴리오 공개
+    "/showcase", "/best", "/categories", "/counselors", // 공개 콘텐츠 페이지
+    "/about", "/terms", "/privacy", "/recruit", "/updates", "/install", // 정보 페이지
   ];
   const isPublicRoute =
     pathname === "/" ||

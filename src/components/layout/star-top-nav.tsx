@@ -16,7 +16,7 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import dynamic from "next/dynamic";
+import { Header } from "@/components/layout/header";
 import { ExploreSubTabs, WorkspaceSubTabs } from "@/components/layout/star-sub-tabs";
 import {
   Sheet,
@@ -26,16 +26,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
-
-const Header = dynamic(
-  () => import("@/components/layout/header").then((m) => ({ default: m.Header })),
-  {
-    ssr: false,
-    loading: () => (
-      <header className="flex h-14 shrink-0 items-center border-b border-border bg-card px-4 md:px-6" />
-    ),
-  }
-);
 
 type NavCounts = {
   pendingApplications: number;

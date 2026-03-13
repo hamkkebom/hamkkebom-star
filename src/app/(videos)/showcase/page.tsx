@@ -109,8 +109,8 @@ export default function ShowcasePage() {
             className="bg-card border rounded-xl p-4 flex items-center justify-between shadow-sm"
           >
             <div>
-              <p className="text-sm text-muted-foreground font-medium mb-1">{stat.label}</p>
-              <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : stat.count}</p>
+              <div className="text-sm text-muted-foreground font-medium mb-1">{stat.label}</div>
+              <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : stat.count}</div>
             </div>
             <div className="text-muted-foreground/50 bg-muted p-2 rounded-full">{stat.icon}</div>
           </motion.div>
