@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Download, Bell, BellOff, Smartphone, Share, CheckCircle2, Wifi, WifiOff } from "lucide-react";
+import { Download, Bell, BellOff, Smartphone, Share, CheckCircle2, Wifi, WifiOff, Menu } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -212,18 +212,38 @@ export default function InstallAppPage() {
                                 ))}
                             </div>
                         </div>
+                    ) : isMobile ? (
+                        <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground font-medium">아래 단계를 따라 설치하세요:</p>
+                            <div className="space-y-3">
+                                {[
+                                    { step: 1, text: "Chrome 오른쪽 상단 ⋮ 메뉴를 누르세요", icon: <Menu className="w-4 h-4" /> },
+                                    { step: 2, text: '"홈 화면에 추가" 또는 "앱 설치"를 선택하세요', icon: <Download className="w-4 h-4" /> },
+                                    { step: 3, text: '"설치" 또는 "추가"를 눌러 완료!', icon: <CheckCircle2 className="w-4 h-4" /> },
+                                ].map((item) => (
+                                    <motion.div
+                                        key={item.step}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: item.step * 0.1 }}
+                                        className="flex items-center gap-3"
+                                    >
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-sm font-black text-violet-600">
+                                            {item.step}
+                                        </div>
+                                        <span className="text-sm flex items-center gap-1.5">{item.icon} {item.text}</span>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
                     ) : (
                         <div className="space-y-2">
                             <p className="text-sm text-muted-foreground">
-                                {isMobile
-                                    ? "Chrome 또는 Edge 브라우저의 메뉴에서 \"홈 화면에 추가\"를 선택하세요."
-                                    : "📱 휴대폰 브라우저에서 이 페이지에 접속하여 설치해주세요."}
+                                📱 휴대폰 브라우저에서 이 페이지에 접속하여 설치해주세요.
                             </p>
-                            {!isMobile && (
-                                <p className="text-xs text-amber-500 dark:text-amber-400 font-medium">
-                                    💡 데스크탑에서는 아래 알림 설정만 이용 가능합니다
-                                </p>
-                            )}
+                            <p className="text-xs text-amber-500 dark:text-amber-400 font-medium">
+                                💡 데스크탑에서는 아래 알림 설정만 이용 가능합니다
+                            </p>
                         </div>
                     )}
                 </CardContent>
