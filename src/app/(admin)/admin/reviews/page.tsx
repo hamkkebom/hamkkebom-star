@@ -15,7 +15,6 @@ import {
   LayoutGrid,
   Download,
   Loader2,
-  Hand,
   Film,
   X,
   Edit,
@@ -43,9 +42,8 @@ import {
 import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { FeedbackList } from "@/components/feedback/feedback-list";
-import { SwipeableReviewDeck, type SwipeableItem } from "@/components/admin/swipeable-review-deck";
-import { VerticalShortsFeed } from "@/components/admin/vertical-shorts-feed";
-import { SwipeReviewSheet } from "@/components/admin/swipe-review-sheet";
+import { MobileReviewList, type MobileSubmissionRow } from "@/components/admin/mobile-review-list";
+import { MobileReviewSkeleton } from "@/components/admin/mobile-review-skeleton";
 import { cn } from "@/lib/utils";
 
 // ============================================================
@@ -59,6 +57,8 @@ export type SubmissionRow = {
   version: string;
   versionTitle: string | null;
   streamUid: string;
+  thumbnailUrl?: string | null;
+  signedThumbnailUrl?: string | null;
   status: SubmissionStatus;
   createdAt: string;
   star: {
@@ -269,8 +269,6 @@ export default function AdminReviewsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkRejectDialogOpen, setIsBulkRejectDialogOpen] = useState(false);
   const [bulkRejectReason, setBulkRejectReason] = useState("");
-  const [isSwipeSheetOpen, setIsSwipeSheetOpen] = useState(false);
-
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-submissions", filter, page],
     queryFn: () => fetchAllSubmissions(filter, page),
@@ -442,19 +440,20 @@ export default function AdminReviewsPage() {
     setSelectedIds(newSet);
   };
 
-  const pendingRowsForDeck: SwipeableItem[] = selectableRows
-    .map(row => ({
-      id: row.id,
-      projectTitle: row.versionTitle || row.assignment?.request?.title || row.video?.title || `v${row.version.replace(/^v/i, "")}`,
-      subTitle: row.assignment?.request?.title && row.versionTitle ? row.assignment.request.title : undefined,
-      starName: row.star.chineseName || row.star.name,
-      starEmail: row.star.email,
-      version: row.version,
-      createdAt: formatDate(row.createdAt),
-      status: row.status,
-      streamUid: row.streamUid || row.video?.streamUid || undefined,
-    }))
-    .filter(item => !!item.streamUid);
+  // Mobile list rows — mapped for MobileReviewList
+  const mobileRows: MobileSubmissionRow[] = rows.map(row => ({
+    id: row.id,
+    version: row.version,
+    versionTitle: row.versionTitle,
+    status: row.status,
+    createdAt: row.createdAt,
+    streamUid: row.streamUid,
+    thumbnailUrl: row.signedThumbnailUrl ?? null,
+    star: row.star,
+    assignment: row.assignment,
+    video: row.video,
+    _count: row._count,
+  }));
 
   // ============================================================
   //  RENDER
@@ -632,56 +631,16 @@ export default function AdminReviewsPage() {
         </motion.div>
       ) : (
         <>
-          {/* 모바일 스와이프 심사 FAB 버튼 */}
-          {filter === "PENDING" && pendingRowsForDeck.length > 0 && (
-            <div className="block md:hidden mb-4">
-              <button
-                onClick={() => setIsSwipeSheetOpen(true)}
-                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-base shadow-lg shadow-violet-500/30 hover:shadow-xl active:scale-[0.98] transition-all"
-              >
-                <Hand className="w-6 h-6" />
-                스와이프 심사 시작
-                <span className="ml-auto bg-white/20 text-white text-xs font-black px-2.5 py-1 rounded-full">
-                  {pendingRowsForDeck.length}건
-                </span>
-              </button>
-            </div>
-          )}
-
-          {/* 모바일 스와이프 심사 바텀시트 */}
-          <SwipeReviewSheet
-            open={isSwipeSheetOpen}
-            onOpenChange={setIsSwipeSheetOpen}
-            items={pendingRowsForDeck}
-            onApprove={(id) => approveMutation.mutate(id)}
-            onReject={(id) => rejectMutation.mutate({ id, reason: "관리자 반려" })}
-            onViewDetail={(id) => {
-              const sub = rows.find(r => r.id === id);
-              if (sub) setSelectedSubmission(sub);
-            }}
+          {/* ════════ MOBILE LIST (md 미만) ════════ */}
+          <MobileReviewList
+            rows={mobileRows}
+            filter={filter}
+            onFilterChange={(f) => { setFilter(f); setPage(1); }}
+            stats={stats}
+            queryKey={["admin-submissions"]}
           />
 
-          {filter !== "PENDING" && rows.length > 0 && (
-            <div className="block md:hidden mb-8">
-              <div className="mb-4">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1">
-                  Reels View
-                </span>
-                <p className="text-lg font-black mt-0.5 pl-1">
-                  숏폼 모니터링 모드
-                </p>
-              </div>
-              <VerticalShortsFeed
-                items={rows}
-                onViewDetail={(id) => {
-                  const sub = rows.find(r => r.id === id);
-                  if (sub) setSelectedSubmission(sub);
-                }}
-              />
-            </div>
-          )}
-
-          {/* ═══════════ TABLE ═══════════ */}
+          {/* ═══════════ TABLE (md 이상) ═══════════ */}
           <Card className={cn(
             "border-border bg-card overflow-hidden shadow-sm",
             rows.length > 0 ? "hidden md:block" : ""

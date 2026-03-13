@@ -4,7 +4,71 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { createSubmissionSchema } from "@/lib/validations/submission";
 import { triggerAiAnalysis } from "@/lib/ai/trigger";
+import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
+import { extractR2Key, getPresignedGetUrl } from "@/lib/cloudflare/r2-upload";
 export const dynamic = "force-dynamic";
+
+// ── 썸네일 URL 메모리 캐시 (TTL 50분) ──
+const thumbnailCache = new Map<string, { url: string; expiresAt: number }>();
+const CACHE_TTL_MS = 50 * 60 * 1000;
+
+function getCachedThumbnail(key: string): string | null {
+  const cached = thumbnailCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+  if (cached) thumbnailCache.delete(key);
+  return null;
+}
+
+function setCachedThumbnail(key: string, url: string): void {
+  thumbnailCache.set(key, { url, expiresAt: Date.now() + CACHE_TTL_MS });
+  if (thumbnailCache.size > 500) {
+    const firstKey = thumbnailCache.keys().next().value;
+    if (firstKey) thumbnailCache.delete(firstKey);
+  }
+}
+
+async function resolveThumbnail(
+  submissionId: string,
+  subThumbUrl: string | null,
+  videoThumbUrl: string | null,
+  streamUid: string | null,
+  videoStreamUid: string | null
+): Promise<string | null> {
+  const cacheKey = `sub-thumb:${submissionId}`;
+  const cached = getCachedThumbnail(cacheKey);
+  if (cached) return cached;
+
+  let url: string | null = null;
+
+  if (subThumbUrl) {
+    const r2Key = extractR2Key(subThumbUrl);
+    if (r2Key) {
+      try { url = await getPresignedGetUrl(r2Key); } catch { /* ignore */ }
+    }
+  }
+
+  if (!url && videoThumbUrl) {
+    const r2Key = extractR2Key(videoThumbUrl);
+    if (r2Key) {
+      try { url = await getPresignedGetUrl(r2Key); } catch { /* ignore */ }
+    }
+  }
+
+  if (!url) {
+    const uid = streamUid || videoStreamUid;
+    if (uid) {
+      try {
+        const token = await getSignedPlaybackToken(uid);
+        if (token) {
+          url = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  if (url) setCachedThumbnail(cacheKey, url);
+  return url;
+}
 
 type ApiError = {
   code: string;
@@ -272,6 +336,7 @@ export async function GET(request: Request) {
           select: {
             title: true,
             streamUid: true,
+            thumbnailUrl: true,
           },
         },
         feedbacks: {
@@ -293,8 +358,33 @@ export async function GET(request: Request) {
     prisma.submission.count({ where }),
   ]);
 
+  // ✅ 썸네일 생성 — 최대 5개씩 병렬 처리 (외부 API 과부하 방지)
+  const BATCH_SIZE = 5;
+  const allThumbnails: (string | null)[] = new Array(rows.length).fill(null);
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const thumbs = await Promise.all(
+      batch.map((row) =>
+        resolveThumbnail(
+          row.id,
+          row.thumbnailUrl ?? null,
+          row.video?.thumbnailUrl ?? null,
+          row.streamUid ?? null,
+          row.video?.streamUid ?? null
+        )
+      )
+    );
+    thumbs.forEach((t, j) => { allThumbnails[i + j] = t; });
+  }
+
+  const rowsWithThumbnails = rows.map((row, idx) => ({
+    ...row,
+    signedThumbnailUrl: allThumbnails[idx],
+  }));
+
   return NextResponse.json({
-    data: rows,
+    data: rowsWithThumbnails,
     total,
     page,
     pageSize,

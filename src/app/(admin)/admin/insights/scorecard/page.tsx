@@ -8,10 +8,17 @@ import {
     GitBranch, ArrowLeft, Medal, Crown, Award
 } from "lucide-react";
 import Link from "next/link";
-import {
-    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-    ResponsiveContainer, RadialBarChart, RadialBar, Legend, Tooltip,
-} from "recharts";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const GaugeChart = dynamic(
+    () => import("@/components/charts/scorecard-charts").then((m) => ({ default: m.GaugeChart })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[120px]" /> }
+);
+const StarRadarChart = dynamic(
+    () => import("@/components/charts/scorecard-charts").then((m) => ({ default: m.StarRadarChart })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[220px]" /> }
+);
 import { cn } from "@/lib/utils";
 import { KpiCard } from "@/components/analytics/kpi-card";
 import { DateRangePicker, getDateRange, type DatePreset } from "@/components/analytics/date-range-picker";
@@ -51,61 +58,6 @@ const rankIcons = [
     <Medal key="2" className="w-5 h-5 text-zinc-400" />,
     <Award key="3" className="w-5 h-5 text-amber-700" />,
 ];
-
-function GaugeChart({ value, max = 100, color }: { value: number; max?: number; color: string }) {
-    const data = [{ name: "score", value, fill: color }];
-    return (
-        <ResponsiveContainer width="100%" height={120}>
-            <RadialBarChart
-                cx="50%" cy="50%"
-                innerRadius="70%"
-                outerRadius="100%"
-                startAngle={180}
-                endAngle={0}
-                data={data}
-                barSize={10}
-            >
-                <RadialBar
-                    dataKey="value"
-                    cornerRadius={8}
-                    background={{ fill: "#e5e7eb" }}
-                />
-                <text x="50%" y="55%" textAnchor="middle" className="text-lg font-bold fill-foreground">
-                    {value}%
-                </text>
-            </RadialBarChart>
-        </ResponsiveContainer>
-    );
-}
-
-function StarRadarChart({ star }: { star: StarMetrics }) {
-    const radarData = [
-        { metric: "납기", value: star.metrics.deadlineRate, fullMark: 100 },
-        { metric: "피드백", value: star.metrics.feedbackRate, fullMark: 100 },
-        { metric: "품질", value: star.metrics.qualityScore, fullMark: 100 },
-        { metric: "1차 승인", value: star.metrics.firstApprovalRate, fullMark: 100 },
-        { metric: "효율", value: Math.max(0, 100 - star.metrics.avgRevisions * 30), fullMark: 100 },
-    ];
-
-    return (
-        <ResponsiveContainer width="100%" height={220}>
-            <RadarChart data={radarData}>
-                <PolarGrid stroke="#e5e7eb" />
-                <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: "#6b7280" }} />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar
-                    name={star.name}
-                    dataKey="value"
-                    stroke="#7C3AED"
-                    fill="#7C3AED"
-                    fillOpacity={0.2}
-                    strokeWidth={2}
-                    animationDuration={800}
-                />
-            </RadarChart>
-        </ResponsiveContainer>
-    );
-}
 
 export default function ScorecardPage() {
     const [datePreset, setDatePreset] = useState<DatePreset>("90d");

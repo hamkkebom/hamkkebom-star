@@ -8,10 +8,17 @@ import {
     TrendingUp
 } from "lucide-react";
 import Link from "next/link";
-import {
-    BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-    AreaChart, Area, CartesianGrid, Cell, Legend,
-} from "recharts";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const MonthlyCostTrendChart = dynamic(
+    () => import("@/components/charts/roi-charts").then((m) => ({ default: m.MonthlyCostTrendChart })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[220px]" /> }
+);
+const CategoryROIChart = dynamic(
+    () => import("@/components/charts/roi-charts").then((m) => ({ default: m.CategoryROIChart })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[200px]" /> }
+);
 import { cn } from "@/lib/utils";
 import { KpiCard } from "@/components/analytics/kpi-card";
 import { DateRangePicker, getDateRange, type DatePreset } from "@/components/analytics/date-range-picker";
@@ -66,20 +73,6 @@ interface ROIData {
         costPerApproved: number;
         roi: number;
     }>;
-}
-
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number }>; label?: string }) {
-    if (!active || !payload) return null;
-    return (
-        <div className="bg-muted dark:bg-zinc-900/90 border rounded-xl p-3 shadow-lg text-xs">
-            <p className="font-semibold mb-1">{label}</p>
-            {payload.map((p, i) => (
-                <p key={i} className="text-muted-foreground">
-                    {p.name}: {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
-                </p>
-            ))}
-        </div>
-    );
 }
 
 export default function ROIPage() {
@@ -159,25 +152,7 @@ export default function ROIPage() {
                 error={error ? "데이터를 불러오지 못했습니다" : null}
                 isEmpty={!data?.monthlyTrend.length}
             >
-                <ResponsiveContainer width="100%" height={220}>
-                    <AreaChart data={data?.monthlyTrend}>
-                        <defs>
-                            <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#7C3AED" stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Area
-                            type="monotone" dataKey="cost" name="비용"
-                            stroke="#7C3AED" fill="url(#costGradient)" strokeWidth={2}
-                            animationDuration={800}
-                        />
-                    </AreaChart>
-                </ResponsiveContainer>
+                <MonthlyCostTrendChart data={data?.monthlyTrend} />
             </ChartContainer>
 
             {/* Category ROI */}
@@ -187,19 +162,7 @@ export default function ROIPage() {
                 isLoading={isLoading}
                 isEmpty={!data?.byCategory.length}
             >
-                <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={data?.byCategory} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
-                        <YAxis type="category" dataKey="category" tick={{ fontSize: 10 }} width={60} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Bar dataKey="cost" name="비용" radius={[0, 4, 4, 0]} animationDuration={800}>
-                            {data?.byCategory.map((_, i) => (
-                                <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
+                <CategoryROIChart data={data?.byCategory} />
             </ChartContainer>
 
             {/* Grade ROI */}

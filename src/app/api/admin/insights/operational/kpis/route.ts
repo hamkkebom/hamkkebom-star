@@ -55,34 +55,53 @@ export async function GET(req: Request) {
         const prevFrom = new Date(from.getTime() - durationMs);
         const prevTo = new Date(from.getTime() - 1);
 
-        // 1. 신규 프로젝트 (ProjectRequest) 수
-        const currentProjects = await prisma.projectRequest.count({
-            where: { createdAt: { gte: from, lte: to } },
-        });
-        const prevProjects = await prisma.projectRequest.count({
-            where: { createdAt: { gte: prevFrom, lte: prevTo } },
-        });
-
-        // 2. 처리된 영상 (Submission with APPROVED or REJECTED status)
-        const currentVideos = await prisma.submission.count({
-            where: {
-                updatedAt: { gte: from, lte: to },
-                status: { in: ["APPROVED", "REJECTED"] },
-            },
-        });
-        const prevVideos = await prisma.submission.count({
-            where: {
-                updatedAt: { gte: prevFrom, lte: prevTo },
-                status: { in: ["APPROVED", "REJECTED"] },
-            },
-        });
-
-        // 3. 피드백 응답 시간 (Feedback createdAt - Submission createdAt)
-        const recentFeedbacks = await prisma.feedback.findMany({
-            where: { createdAt: { gte: from, lte: to } },
-            select: { createdAt: true, submission: { select: { createdAt: true } } },
-            take: 200,
-        });
+        // Parallel fetch: all 8 queries for current + previous period
+        const [currentProjects, prevProjects, currentVideos, prevVideos, recentFeedbacks, prevFeedbacks, currentActiveStars, prevActiveStars] = await Promise.all([
+            // 1. 신규 프로젝트 (ProjectRequest) 수
+            prisma.projectRequest.count({
+                where: { createdAt: { gte: from, lte: to } },
+            }),
+            prisma.projectRequest.count({
+                where: { createdAt: { gte: prevFrom, lte: prevTo } },
+            }),
+            // 2. 처리된 영상 (Submission with APPROVED or REJECTED status)
+            prisma.submission.count({
+                where: {
+                    updatedAt: { gte: from, lte: to },
+                    status: { in: ["APPROVED", "REJECTED"] },
+                },
+            }),
+            prisma.submission.count({
+                where: {
+                    updatedAt: { gte: prevFrom, lte: prevTo },
+                    status: { in: ["APPROVED", "REJECTED"] },
+                },
+            }),
+            // 3. 피드백 응답 시간 (Feedback createdAt - Submission createdAt)
+            prisma.feedback.findMany({
+                where: { createdAt: { gte: from, lte: to } },
+                select: { createdAt: true, submission: { select: { createdAt: true } } },
+                take: 200,
+            }),
+            prisma.feedback.findMany({
+                where: { createdAt: { gte: prevFrom, lte: prevTo } },
+                select: { createdAt: true, submission: { select: { createdAt: true } } },
+                take: 200,
+            }),
+            // 4. 활동 STAR (STARs who submitted at least 1 submission in the period)
+            prisma.user.count({
+                where: {
+                    role: "STAR",
+                    submissions: { some: { createdAt: { gte: from, lte: to } } },
+                },
+            }),
+            prisma.user.count({
+                where: {
+                    role: "STAR",
+                    submissions: { some: { createdAt: { gte: prevFrom, lte: prevTo } } },
+                },
+            }),
+        ]);
 
         let currentAvgTime = 0;
         if (recentFeedbacks.length > 0) {
@@ -93,12 +112,6 @@ export async function GET(req: Request) {
             currentAvgTime = Number((totalHours / recentFeedbacks.length).toFixed(1));
         }
 
-        const prevFeedbacks = await prisma.feedback.findMany({
-            where: { createdAt: { gte: prevFrom, lte: prevTo } },
-            select: { createdAt: true, submission: { select: { createdAt: true } } },
-            take: 200,
-        });
-
         let prevAvgTime = 0;
         if (prevFeedbacks.length > 0) {
             const totalHours = prevFeedbacks.reduce((sum, fb) => {
@@ -107,20 +120,6 @@ export async function GET(req: Request) {
             }, 0);
             prevAvgTime = Number((totalHours / prevFeedbacks.length).toFixed(1));
         }
-
-        // 4. 활동 STAR (STARs who submitted at least 1 submission in the period)
-        const currentActiveStars = await prisma.user.count({
-            where: {
-                role: "STAR",
-                submissions: { some: { createdAt: { gte: from, lte: to } } },
-            },
-        });
-        const prevActiveStars = await prisma.user.count({
-            where: {
-                role: "STAR",
-                submissions: { some: { createdAt: { gte: prevFrom, lte: prevTo } } },
-            },
-        });
 
         const calculateTrend = (current: number, last: number) => {
             if (last === 0) return current > 0 ? 100 : 0;

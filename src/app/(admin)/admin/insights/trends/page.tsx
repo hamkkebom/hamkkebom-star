@@ -7,15 +7,24 @@ import {
     TrendingUp, ArrowLeft, CalendarDays, FileText, Percent
 } from "lucide-react";
 import Link from "next/link";
-import {
-    AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-    CartesianGrid, BarChart, Bar, LineChart, Line, Cell,
-} from "recharts";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const ProductionTrendChart = dynamic(
+    () => import("@/components/charts/trends-charts").then((m) => ({ default: m.ProductionTrendChart })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[220px]" /> }
+);
+const CategoryStackChart = dynamic(
+    () => import("@/components/charts/trends-charts").then((m) => ({ default: m.CategoryStackChart })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[220px]" /> }
+);
+const GrowthRateChart = dynamic(
+    () => import("@/components/charts/trends-charts").then((m) => ({ default: m.GrowthRateChart })),
+    { ssr: false, loading: () => <Skeleton className="w-full h-[180px]" /> }
+);
 import { cn } from "@/lib/utils";
 import { KpiCard } from "@/components/analytics/kpi-card";
 import { ChartContainer } from "@/components/analytics/chart-container";
-
-const STACK_COLORS = ["#7C3AED", "#EC4899", "#10B981", "#F59E0B", "#3B82F6", "#EF4444", "#8B5CF6", "#06B6D4"];
 
 interface TrendData {
     periods: Array<{ period: string; total: number; approved: number; approvalRate: number }>;
@@ -29,21 +38,6 @@ interface TrendData {
         latestPeriodTotal: number;
         avgPerPeriod: number;
     };
-}
-
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
-    if (!active || !payload) return null;
-    return (
-        <div className="bg-muted dark:bg-zinc-900/90 border rounded-xl p-3 shadow-lg text-xs max-w-[200px]">
-            <p className="font-semibold mb-1">{label}</p>
-            {payload.map((p, i) => (
-                <div key={i} className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-                    <span className="text-muted-foreground">{p.name}: {p.value.toLocaleString()}</span>
-                </div>
-            ))}
-        </div>
-    );
 }
 
 export default function TrendsPage() {
@@ -109,26 +103,7 @@ export default function TrendsPage() {
                 error={error ? "데이터를 불러오지 못했습니다" : null}
                 isEmpty={!data?.periods.length}
             >
-                <ResponsiveContainer width="100%" height={220}>
-                    <AreaChart data={data?.periods}>
-                        <defs>
-                            <linearGradient id="totalGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#7C3AED" stopOpacity={0} />
-                            </linearGradient>
-                            <linearGradient id="approvedGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="period" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Area type="monotone" dataKey="total" name="전체" stroke="#7C3AED" fill="url(#totalGrad)" strokeWidth={2} animationDuration={800} />
-                        <Area type="monotone" dataKey="approved" name="승인" stroke="#10B981" fill="url(#approvedGrad)" strokeWidth={2} animationDuration={800} />
-                    </AreaChart>
-                </ResponsiveContainer>
+                <ProductionTrendChart data={data?.periods} />
             </ChartContainer>
 
             {/* Category Stack Chart */}
@@ -139,24 +114,7 @@ export default function TrendsPage() {
                     isLoading={isLoading}
                     isEmpty={!data.categoryTrend.length}
                 >
-                    <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={data.categoryTrend}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="period" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip content={<CustomTooltip />} />
-                            {data.categories.slice(0, 8).map((cat, i) => (
-                                <Bar
-                                    key={cat}
-                                    dataKey={cat}
-                                    name={cat}
-                                    stackId="a"
-                                    fill={STACK_COLORS[i % STACK_COLORS.length]}
-                                    animationDuration={800}
-                                />
-                            ))}
-                        </BarChart>
-                    </ResponsiveContainer>
+                    <CategoryStackChart data={data.categoryTrend} categories={data.categories} />
                 </ChartContainer>
             )}
 
@@ -167,19 +125,7 @@ export default function TrendsPage() {
                 isLoading={isLoading}
                 isEmpty={!data?.growthRates.length}
             >
-                <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={data?.growthRates}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="period" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}%`} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Bar dataKey="growth" name="성장률" radius={[4, 4, 0, 0]} animationDuration={800}>
-                            {data?.growthRates.map((entry, i) => (
-                                <Cell key={i} fill={entry.growth >= 0 ? "#10B981" : "#EF4444"} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
+                <GrowthRateChart data={data?.growthRates} />
             </ChartContainer>
 
             {/* STAR Heatmap */}
