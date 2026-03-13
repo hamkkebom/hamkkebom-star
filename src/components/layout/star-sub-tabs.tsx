@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   LayoutList,
   Send,
-  Zap,
+  Upload,
   LayoutDashboard,
   Film,
   MessageCircleHeart,
@@ -58,22 +58,22 @@ const EXPLORE_TABS: SubTab[] = [
     icon: LayoutList,
   },
   {
+    id: "active",
+    label: "영상 제출",
+    href: "/stars/active-projects",
+    match: ["/stars/active-projects"],
+    icon: Upload,
+    badgeKey: "activeProjects",
+    badgeColor: "bg-violet-500",
+  },
+  {
     id: "applications",
-    label: "지원한 의뢰",
+    label: "지원 현황",
     href: "/stars/my-applications",
     match: ["/stars/my-applications"],
     icon: Send,
     badgeKey: "pendingApplications",
     badgeColor: "bg-amber-500",
-  },
-  {
-    id: "active",
-    label: "진행 중",
-    href: "/stars/active-projects",
-    match: ["/stars/active-projects"],
-    icon: Zap,
-    badgeKey: "activeProjects",
-    badgeColor: "bg-violet-500",
   },
 ];
 

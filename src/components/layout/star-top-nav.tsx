@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Clapperboard,
-  Compass,
+  ClipboardList,
   User,
   Wallet,
   Menu,
@@ -43,8 +43,8 @@ const TABS = [
   },
   {
     id: "explore",
-    label: "탐색",
-    icon: Compass,
+    label: "의뢰",
+    icon: ClipboardList,
     href: "/stars/project-board",
     match: ["/stars/project-board", "/stars/request-detail", "/stars/my-applications", "/stars/active-projects"],
   },

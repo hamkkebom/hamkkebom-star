@@ -16,7 +16,10 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+      if (event === "SIGNED_IN") {
+        // 계정 전환 시 이전 유저 데이터가 남아있을 수 있으므로 강제 갱신
+        fetchUser(true);
+      } else if (event === "TOKEN_REFRESHED") {
         fetchUser();
       } else if (event === "SIGNED_OUT") {
         clearUser();

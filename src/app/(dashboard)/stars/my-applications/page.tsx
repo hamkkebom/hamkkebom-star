@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -49,11 +49,14 @@ type AssignmentResponse = {
 
 // --- Constants ---
 const STATUS_TABS = [
-  { id: "ALL", label: "전체" },
-  { id: "PENDING_APPROVAL", label: "승인 대기" },
-  { id: "ACCEPTED", label: "배정됨" },
-  { id: "REJECTED", label: "거절됨" },
-  { id: "CANCELLED", label: "마감/취소" },
+  { id: "ALL", label: "전체", dot: "", badgeColor: "", gradient: "from-amber-500 to-orange-500", group: "all" },
+  { id: "PENDING_APPROVAL", label: "승인 대기", dot: "bg-amber-500", badgeColor: "bg-amber-500", gradient: "from-amber-400 to-orange-500", group: "apply" },
+  { id: "ACCEPTED", label: "배정됨", dot: "bg-emerald-500", badgeColor: "bg-emerald-500", gradient: "from-emerald-400 to-emerald-600", group: "work" },
+  { id: "IN_PROGRESS", label: "작업중", dot: "bg-blue-500", badgeColor: "bg-blue-500", gradient: "from-blue-400 to-indigo-600", group: "work" },
+  { id: "SUBMITTED", label: "제출됨", dot: "bg-violet-500", badgeColor: "bg-violet-500", gradient: "from-violet-400 to-purple-600", group: "work" },
+  { id: "COMPLETED", label: "완료", dot: "bg-teal-500", badgeColor: "bg-teal-500", gradient: "from-teal-400 to-cyan-600", group: "done" },
+  { id: "REJECTED", label: "거절됨", dot: "bg-red-500", badgeColor: "bg-red-500", gradient: "from-red-400 to-rose-600", group: "end" },
+  { id: "CANCELLED", label: "취소됨", dot: "bg-zinc-400", badgeColor: "bg-zinc-400", gradient: "from-zinc-400 to-zinc-500", group: "end" },
 ] as const;
 
 const assignmentStatusConfig: Record<
@@ -114,13 +117,7 @@ async function fetchMyAssignments(
     pageSize: "20",
   });
   if (status !== "ALL") {
-    // CANCELLED 탭은 CANCELLED + COMPLETED 합산
-    if (status === "CANCELLED") {
-      // 백엔드가 단일 상태만 지원하므로 ALL로 가져오고 프론트에서 필터
-      params.set("status", "ALL");
-    } else {
-      params.set("status", status);
-    }
+    params.set("status", status);
   }
 
   const res = await fetch(
@@ -281,13 +278,8 @@ export default function MyApplicationsPage() {
     queryFn: () => fetchMyAssignments(statusFilter, 1),
   });
 
-  // 클라이언트사이드 필터링 (검색 + CANCELLED 합산)
+  // 클라이언트사이드 필터링 (검색만)
   const filteredAssignments = data?.data.filter((a) => {
-    // CANCELLED 탭: CANCELLED + COMPLETED + REJECTED 이외는 제외... 아니 "마감/취소" 탭
-    if (statusFilter === "CANCELLED") {
-      if (!["CANCELLED", "COMPLETED"].includes(a.status)) return false;
-    }
-
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return a.request.title.toLowerCase().includes(q);
@@ -295,7 +287,7 @@ export default function MyApplicationsPage() {
     return true;
   });
 
-  // 상태별 카운트 (ALL일 때 계산)
+  // 상태별 개별 카운트 (ALL 데이터 기반)
   const { data: allData } = useQuery({
     queryKey: ["my-assignments", "ALL"],
     queryFn: () => fetchMyAssignments("ALL", 1),
@@ -304,19 +296,13 @@ export default function MyApplicationsPage() {
 
   const countSource = statusFilter === "ALL" ? data : allData;
   const statusCounts = {
-    PENDING_APPROVAL:
-      countSource?.data.filter((a) => a.status === "PENDING_APPROVAL").length ??
-      0,
-    ACCEPTED:
-      countSource?.data.filter(
-        (a) => a.status === "ACCEPTED" || a.status === "IN_PROGRESS" || a.status === "SUBMITTED"
-      ).length ?? 0,
-    REJECTED:
-      countSource?.data.filter((a) => a.status === "REJECTED").length ?? 0,
-    CANCELLED:
-      countSource?.data.filter(
-        (a) => a.status === "CANCELLED" || a.status === "COMPLETED"
-      ).length ?? 0,
+    PENDING_APPROVAL: countSource?.data.filter((a) => a.status === "PENDING_APPROVAL").length ?? 0,
+    ACCEPTED: countSource?.data.filter((a) => a.status === "ACCEPTED").length ?? 0,
+    IN_PROGRESS: countSource?.data.filter((a) => a.status === "IN_PROGRESS").length ?? 0,
+    SUBMITTED: countSource?.data.filter((a) => a.status === "SUBMITTED").length ?? 0,
+    COMPLETED: countSource?.data.filter((a) => a.status === "COMPLETED").length ?? 0,
+    REJECTED: countSource?.data.filter((a) => a.status === "REJECTED").length ?? 0,
+    CANCELLED: countSource?.data.filter((a) => a.status === "CANCELLED").length ?? 0,
   };
 
   return (
@@ -335,7 +321,7 @@ export default function MyApplicationsPage() {
         </motion.div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <h1 className="text-3xl sm:text-4xl font-black tracking-tighter">
-            지원한 의뢰
+             지원 현황
             <span className="text-amber-500">.</span>
           </h1>
 
@@ -357,10 +343,40 @@ export default function MyApplicationsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+      <div className="space-y-3 border-b border-border pb-4">
+        {/* 워크플로우 요약 */}
+        <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-semibold">
+          <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <Hourglass className="w-3 h-3" />
+            지원 {statusCounts.PENDING_APPROVAL}
+          </span>
+          <ArrowRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
+          <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <Clock className="w-3 h-3" />
+            진행 {statusCounts.ACCEPTED + statusCounts.IN_PROGRESS + statusCounts.SUBMITTED}
+          </span>
+          <ArrowRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
+          <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-400">
+            <CheckCircle2 className="w-3 h-3" />
+            완료 {statusCounts.COMPLETED}
+          </span>
+          <div className="hidden sm:block w-px h-4 bg-border/50 mx-1" />
+          <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-zinc-500/10 text-muted-foreground">
+            <XCircle className="w-3 h-3" />
+            종료 {statusCounts.REJECTED + statusCounts.CANCELLED}
+          </span>
+          <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+            <Filter className="w-3.5 h-3.5" />
+            {filteredAssignments?.length ?? 0}건
+          </span>
+        </div>
+
+        {/* 필터 칩바 */}
         <div className="w-[calc(100vw-32px)] sm:w-auto overflow-x-auto pb-2 -mb-2 scrollbar-hide">
-          <div className="flex p-1 sm:p-1.5 bg-zinc-100 dark:bg-card rounded-full border border-zinc-200 dark:border-border w-max">
-            {STATUS_TABS.map((tab) => {
+          <div className="flex p-1 sm:p-1.5 bg-zinc-100 dark:bg-card rounded-2xl border border-zinc-200 dark:border-border w-max gap-0.5">
+            {STATUS_TABS.map((tab, index) => {
+              const prevGroup = index > 0 ? STATUS_TABS[index - 1].group : null;
+              const showSeparator = prevGroup !== null && prevGroup !== tab.group;
               const isActive = statusFilter === tab.id;
               const count =
                 tab.id === "ALL"
@@ -368,44 +384,52 @@ export default function MyApplicationsPage() {
                   : statusCounts[tab.id as keyof typeof statusCounts] ?? 0;
 
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => setStatusFilter(tab.id)}
-                  className={cn(
-                    "relative px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 select-none active:scale-95 whitespace-nowrap",
-                    isActive
-                      ? "text-white shadow-lg"
-                      : "text-muted-foreground hover:text-foreground"
+                <Fragment key={tab.id}>
+                  {showSeparator && (
+                    <div className="w-px h-5 bg-border/60 mx-0.5 self-center shrink-0" />
                   )}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="applicationFilterBg"
-                      className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500 to-orange-500"
-                      transition={{
-                        type: "spring",
-                        bounce: 0.2,
-                        duration: 0.6,
-                      }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-1">
-                    {tab.label}
-                    {count !== null && count > 0 && !isActive && (
-                      <span className="ml-0.5 min-w-4 h-4 px-1 text-[9px] font-black bg-amber-500 text-white rounded-full inline-flex items-center justify-center">
-                        {count}
-                      </span>
+                  <button
+                    onClick={() => setStatusFilter(tab.id)}
+                    className={cn(
+                      "relative px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-300 flex items-center gap-1.5 select-none active:scale-95 whitespace-nowrap",
+                      isActive
+                        ? "text-white shadow-lg"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
-                  </span>
-                </button>
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="applicationFilterBg"
+                        className={cn(
+                          "absolute inset-0 rounded-xl bg-gradient-to-r shadow-lg",
+                          tab.gradient
+                        )}
+                        transition={{
+                          type: "spring",
+                          bounce: 0.2,
+                          duration: 0.6,
+                        }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      {tab.dot && !isActive && (
+                        <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", tab.dot)} />
+                      )}
+                      {tab.label}
+                      {count !== null && count > 0 && !isActive && (
+                        <span className={cn(
+                          "ml-0.5 min-w-4 h-4 px-1 text-[9px] font-black text-white rounded-full inline-flex items-center justify-center",
+                          tab.badgeColor
+                        )}>
+                          {count}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                </Fragment>
               );
             })}
           </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium shrink-0">
-          <Filter className="w-3.5 h-3.5" />
-          {filteredAssignments?.length ?? 0}건
         </div>
       </div>
 
@@ -448,7 +472,7 @@ export default function MyApplicationsPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-500/10 mb-4">
                 <Inbox className="w-8 h-8 text-amber-500" />
               </div>
-              <h3 className="text-xl font-bold mb-1">지원한 의뢰가 없습니다</h3>
+              <h3 className="text-xl font-bold mb-1">지원 내역이 없습니다</h3>
               <p className="text-muted-foreground text-sm mb-4">
                 의뢰 게시판에서 프로젝트를 찾아 지원해보세요!
               </p>

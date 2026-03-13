@@ -7,7 +7,7 @@ interface AuthState {
   isLoading: boolean;
   setUser: (user: User | null) => void;
   clearUser: () => void;
-  fetchUser: () => Promise<void>;
+  fetchUser: (force?: boolean) => Promise<void>;
 }
 
 // fetchUser 중복 호출 방지 플래그
@@ -21,9 +21,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   clearUser: () => set({ user: null, isLoading: false }),
 
-  fetchUser: async () => {
+  fetchUser: async (force?: boolean) => {
     // 이미 user가 있으면 스킵 (서버에서 인증 완료)
-    if (get().user && !get().isLoading) return;
+    // force=true이면 무조건 다시 fetch (계정 전환 시)
+    if (!force && get().user && !get().isLoading) return;
+
+    // 강제 갱신 시 기존 fetch를 무시하고 새로 시작
+    if (force) {
+      fetchInProgress = null;
+    }
 
     // 중복 호출 방지 — 이미 진행 중이면 같은 Promise 대기
     if (fetchInProgress) {
@@ -33,6 +39,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     fetchInProgress = (async () => {
       try {
+        set({ isLoading: true });
+
         // Supabase 세션이 있을 때만 API 호출
         const supabase = createClient();
         const {
