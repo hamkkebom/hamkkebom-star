@@ -890,6 +890,9 @@ export default function AdminStarsPage() {
       }
       return res.json();
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-grades-board"] });
+    },
     onError: () => {
       toast.error("등급 변경에 실패했습니다.");
       queryClient.invalidateQueries({ queryKey: ["admin-grades-board"] });

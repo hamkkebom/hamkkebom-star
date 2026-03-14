@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { VideoSubject } from "@/generated/prisma/client";
 import {
@@ -92,6 +92,7 @@ export function UploadPageClient({
   counselors?: CounselorItem[];
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   const [versionTitle, setVersionTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -140,6 +141,9 @@ export function UploadPageClient({
       toast.success("프로젝트 지원이 완료되었습니다!", {
         description: "관리자 승인 후 작업을 시작할 수 있습니다.",
       });
+      queryClient.invalidateQueries({ queryKey: ["my-submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["my-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["open-requests"] });
       router.refresh();
       setMainTab("my-projects"); // 내 프로젝트 탭으로 이동
     },
