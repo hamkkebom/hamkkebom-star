@@ -60,6 +60,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
 
         const data = (await response.json()) as { data: User };
+
+        // 세션 유저와 API 응답 유저가 일치하는지 검증
+        // 계정 전환 중 race condition으로 이전 유저 데이터가 반환될 수 있음
+        if (data.data.authId !== session.user.id) {
+          set({ user: null, isLoading: false });
+          return;
+        }
+
         set({ user: data.data, isLoading: false });
       } catch {
         set({ user: null, isLoading: false });

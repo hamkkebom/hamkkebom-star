@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
+import { useAuthStore } from "@/stores/auth-store";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 
 type MeResponse = {
@@ -44,6 +45,14 @@ export function LoginForm() {
     const supabase = createClient();
 
     try {
+      // 계정 전환 시 이전 유저 데이터가 보이는 것을 방지
+      // signIn 전에 기존 세션/상태를 완전히 정리
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      if (existingSession) {
+        await supabase.auth.signOut();
+        useAuthStore.getState().clearUser();
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
