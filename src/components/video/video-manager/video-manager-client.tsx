@@ -9,7 +9,7 @@ import type { VideoSubject } from "@/generated/prisma/client";
 import {
     ArrowLeft, ChevronRight,
     History, Sparkles, Activity, Save, Play,
-    Calendar, Clock, CheckCircle2, Loader2
+    Calendar, Clock, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,6 +144,7 @@ export function VideoManagerClient({
     /* eslint-enable react-hooks/set-state-in-effect */
 
     // Bump Modal State Initialization
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (showBumpModal && data) {
             setBumpTitle(data.versionTitle ?? "");
@@ -154,6 +155,7 @@ export function VideoManagerClient({
             setBumpCounselorId(data.video?.counselorId ?? "");
         }
     }, [showBumpModal, data]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // Date Formatting (moved before early returns to comply with React hooks rules)
     const { absoluteDate, relativeDate } = useMemo(() => {
@@ -221,9 +223,10 @@ export function VideoManagerClient({
             }
             return res.json();
         },
-        onSuccess: (data) => {
+    onSuccess: (data) => {
             toast.success(data.message || "새로운 버전이 생성되었습니다! 🚀");
             setShowBumpModal(false);
+            queryClient.invalidateQueries({ queryKey: ["my-submissions"] });
             // 새 버전으로 이동
             if (data.data?.id) {
                 router.push(`/stars/my-videos/${data.data.id}`);
