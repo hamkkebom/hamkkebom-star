@@ -226,7 +226,7 @@ export default function SettingsPage() {
       if (!res.ok) { const json = await res.json(); throw new Error(json.error || "이메일 변경 실패"); }
       toast.success("이메일이 변경되었습니다. 다시 로그인해주세요.", { duration: 5000 });
       await supabase.auth.signOut();
-      router.push("/auth/login");
+      window.location.href = "/auth/login";
     } catch (err) { toast.error(err instanceof Error ? err.message : "이메일 변경 요청에 실패했습니다."); }
     finally { setChangingEmail(false); setShowConfirmDialog(false); }
   }
@@ -469,7 +469,7 @@ export default function SettingsPage() {
                 setLoggingOut(true);
                 try {
                   await supabase.auth.signOut();
-                  router.push("/auth/login");
+                  window.location.href = "/auth/login";
                 } catch {
                   toast.error("로그아웃에 실패했습니다.");
                   setLoggingOut(false);

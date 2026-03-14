@@ -141,7 +141,7 @@ export default function AdminSettingsPage() {
                 duration: 5000,
             });
             await supabase.auth.signOut();
-            router.push("/auth/login");
+            window.location.href = "/auth/login";
         } catch (err) {
             toast.error(
                 err instanceof Error ? err.message : "이메일 변경 요청에 실패했습니다."
@@ -364,7 +364,7 @@ export default function AdminSettingsPage() {
                             setLoggingOut(true);
                             try {
                                 await supabase.auth.signOut();
-                                router.push("/auth/login");
+                                window.location.href = "/auth/login";
                             } catch {
                                 toast.error("로그아웃에 실패했습니다.");
                                 setLoggingOut(false);

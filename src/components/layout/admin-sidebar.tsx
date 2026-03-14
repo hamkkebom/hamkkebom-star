@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -223,7 +223,6 @@ function SidebarGroup({
 // --- 메인 사이드바 ---
 export function AdminSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const supabase = createClient();
 
   // pathname 기반 자동 펼침: 해당 그룹 ID 찾기
@@ -272,7 +271,8 @@ export function AdminSidebar() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    router.push("/auth/login");
+    // 전체 페이지 리로드로 모든 클라이언트 상태(TanStack Query, Zustand) 완전 초기화
+    window.location.href = "/auth/login";
   }
 
   const isDashboardActive = pathname === "/admin";

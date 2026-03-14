@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { NotificationBadge } from "@/components/layout/notification-badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, User, Settings, Smartphone, LogOut } from "lucide-react";
@@ -18,7 +18,6 @@ import {
 
 export function Header({ isAdmin = false, children }: { isAdmin?: boolean, children?: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const supabase = createClient();
 
   const { data: userData } = useQuery({
@@ -34,7 +33,8 @@ export function Header({ isAdmin = false, children }: { isAdmin?: boolean, child
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    router.push("/auth/login");
+    // 전체 페이지 리로드로 모든 클라이언트 상태(TanStack Query, Zustand) 완전 초기화
+    window.location.href = "/auth/login";
   }
 
   return (

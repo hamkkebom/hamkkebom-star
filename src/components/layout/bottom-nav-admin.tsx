@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import {
@@ -36,12 +36,12 @@ const navItems = [
 
 export function BottomNavAdmin() {
     const pathname = usePathname();
-    const router = useRouter();
     const supabase = createClient();
 
     async function handleLogout() {
         await supabase.auth.signOut();
-        router.push("/auth/login");
+        // 전체 페이지 리로드로 모든 클라이언트 상태(TanStack Query, Zustand) 완전 초기화
+        window.location.href = "/auth/login";
     }
 
     const { data: counts } = useQuery({
