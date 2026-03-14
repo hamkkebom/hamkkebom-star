@@ -73,9 +73,8 @@ export function LoginForm() {
         return;
       }
 
-      // Role 기반으로 올바른 대시보드로 즉시 이동
-      const redirectPath = data.data.role === "ADMIN" ? "/admin" : "/stars/dashboard";
-      window.location.href = redirectPath;
+      // 로그인 후 메인 페이지로 이동 (헤더에서 마이페이지 접근 가능)
+      window.location.href = "/";
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "로그인 중 오류가 발생했습니다.";
