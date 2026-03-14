@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
     try {
         const user = await getAuthUser();
         if (!user || user.role !== "ADMIN") {
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
             recentSubmissions,
             approvedSubmissions,
             totalSettlementAmount,
-            aiAnalysisCount,
+            _aiAnalysisCount,
             avgQualityResult,
         ] = await Promise.all([
             // 활동 STAR 수

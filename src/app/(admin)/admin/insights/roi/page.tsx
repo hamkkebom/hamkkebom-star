@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-    Wallet, CheckCircle2, BarChart3, Hash, ArrowLeft,
-    TrendingUp
+    Wallet, CheckCircle2, BarChart3, Hash, ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";

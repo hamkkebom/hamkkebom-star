@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { SubmissionStatus } from "@/generated/prisma/client";
 export const dynamic = "force-dynamic";
 
 // POST /api/admin/reviews/action
@@ -22,27 +23,26 @@ export async function POST(req: NextRequest) {
 
         // 트랜잭션 처리
         const result = await prisma.$transaction(async (tx) => {
-            let newStatus = "PENDING";
+            let newStatus: SubmissionStatus = SubmissionStatus.PENDING;
             let reviewedAt: Date | null = new Date();
             let reviewerId: string | null = user.id;
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            let summaryFeedback: string | undefined = feedback || undefined;
+            let _summaryFeedback: string | undefined = feedback || undefined;
 
-            if (action === "APPROVE") newStatus = "APPROVED";
-            else if (action === "REJECT") newStatus = "REJECTED";
-            else if (action === "REQUEST_CHANGES") newStatus = "REVISED";
+            if (action === "APPROVE") newStatus = SubmissionStatus.APPROVED;
+            else if (action === "REJECT") newStatus = SubmissionStatus.REJECTED;
+            else if (action === "REQUEST_CHANGES") newStatus = SubmissionStatus.REVISED;
             else if (action === "UNDO") {
-                newStatus = "IN_REVIEW";
+                newStatus = SubmissionStatus.IN_REVIEW;
                 reviewedAt = null;
                 reviewerId = null;
-                summaryFeedback = undefined;
+                _summaryFeedback = undefined;
             }
 
             // 1. 상태 업데이트
             const updatedSubmission = await tx.submission.update({
                 where: { id: submissionId },
                 data: {
-                    status: newStatus as any,
+                    status: newStatus,
                     reviewedAt,
                     reviewerId,
                 },

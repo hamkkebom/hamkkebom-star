@@ -17,7 +17,7 @@ const supabaseAdmin = createClient(
 
 export async function DELETE(
     req: NextRequest,
-    context: any // id is the manager's prisma user.id
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         const params = await context.params;
@@ -85,10 +85,10 @@ export async function DELETE(
         });
 
         return NextResponse.json({ success: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Delete Admin API Error:", err);
         // Prisma 연관관계 제약조건 에러 (P2003) 또는 일반적인 오류 메시지 노출
-        const errorMessage = err?.message || "Internal Server Error";
+        const errorMessage = err instanceof Error ? err.message : "Internal Server Error";
         if (errorMessage.includes("Foreign key constraint")) {
             return NextResponse.json({ error: "해당 관리자에게 배정된 별(STAR)이 있어 삭제할 수 없습니다. 별 배정을 해제한 후 다시 시도해주세요." }, { status: 400 });
         }

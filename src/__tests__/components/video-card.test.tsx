@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 
 // We need to mock Next.js modules before importing components
@@ -80,11 +80,11 @@ describe("VideoCard", () => {
     expect(link?.className).toContain("shrink-0");
   });
 
-  it("hides date in compact mode", () => {
+  it("renders date in compact mode (hidden via CSS)", () => {
     render(<VideoCard {...defaultProps} compact />);
-    // In compact mode, date should not be rendered
+    // Date is always rendered in DOM but hidden via CSS (max-h-0 opacity-0) until hover
     const dateText = screen.queryByText(/2026/);
-    expect(dateText).toBeNull();
+    expect(dateText).toBeInTheDocument();
   });
 });
 

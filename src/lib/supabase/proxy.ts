@@ -62,6 +62,12 @@ function getAuthIdFromCookies(request: NextRequest): string | null {
       Buffer.from(parts[1], "base64url").toString("utf-8")
     );
 
+    // JWT 만료 검증: 만료된 토큰은 인증되지 않은 것으로 처리
+    // (만료 토큰으로 보호 페이지 접근 방지)
+    if (typeof payload.exp === "number" && payload.exp * 1000 < Date.now()) {
+      return null;
+    }
+
     return typeof payload.sub === "string" ? payload.sub : null;
   } catch {
     return null;
@@ -131,6 +137,9 @@ export async function updateSession(request: NextRequest) {
   // 하지만 이것은 미들웨어의 주 목적(세션 유지)을 위한 것이지
   // 인증 가드를 위한 것이 아님 → 인증 가드는 위에서 로컬 JWT 파싱으로 완료
   await supabase.auth.getUser();
+
+  // CDN/프록시 캐싱 방지: Set-Cookie가 캐시되면 다른 유저 세션 유출 위험
+  supabaseResponse.headers.set("Cache-Control", "private, no-store");
 
   return supabaseResponse;
 }

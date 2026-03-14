@@ -8,7 +8,7 @@ import { AuthCardWrapper } from "@/components/auth/auth-card-wrapper";
 
 export default function PendingApprovalPage() {
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function checkStatus() {

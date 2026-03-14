@@ -2,8 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import { CheckCircle2, XCircle, Volume2, VolumeX, SkipForward } from "lucide-react";
-import { SubmissionStatus } from "@/generated/prisma/client";
+import { CheckCircle2, XCircle, SkipForward } from "lucide-react";
 import { VideoPlayer } from "@/components/video/video-player";
 
 export type SwipeableItem = {

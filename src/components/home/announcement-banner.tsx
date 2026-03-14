@@ -21,7 +21,11 @@ type AnnouncementItem = {
 };
 
 export function AnnouncementBanner() {
-    const [dismissed, setDismissed] = useState(false);
+    const [dismissed, setDismissed] = useState(() => {
+        if (typeof window === "undefined") return false;
+        const hiddenUntil = localStorage.getItem("announcement-hidden");
+        return !!(hiddenUntil && Date.now() < Number(hiddenUntil));
+    });
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const { data } = useQuery({
@@ -45,14 +49,6 @@ export function AnnouncementBanner() {
         }, 4000);
         return () => clearInterval(timer);
     }, [items.length]);
-
-    // 24시간 숨김 체크
-    useEffect(() => {
-        const hiddenUntil = localStorage.getItem("announcement-hidden");
-        if (hiddenUntil && Date.now() < Number(hiddenUntil)) {
-            setDismissed(true);
-        }
-    }, []);
 
     if (dismissed || items.length === 0) return null;
 

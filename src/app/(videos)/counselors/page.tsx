@@ -106,7 +106,7 @@ export default function CounselorsPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {data?.data?.map((counselor: any) => (
+            {data?.data?.map((counselor: { id: string; displayName: string; imageUrl?: string; category?: string; specialties?: string; hashtags?: string; _count?: { videos: number } }) => (
               <Link
                 key={counselor.id}
                 href={`/counselors/${counselor.id}`}

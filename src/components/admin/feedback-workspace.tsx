@@ -6,11 +6,11 @@ import {
     Play, Clock, CheckCircle2, MessageSquare,
     X, ThumbsUp, ThumbsDown,
     Sparkles, Send, Loader2, FileVideo,
-    Search, Filter, Command, User,
-    Maximize2, Settings, AlertTriangle,
-    Zap, Type, Music, Scissors, Palette, Tag, Flag,
+    Search, Command, User,
+    AlertTriangle,
+    Tag, Flag,
     ChevronLeft, Edit2, Trash2, MoreHorizontal, Download, Brush,
-    ImageIcon, ZoomIn, ExternalLink
+    ImageIcon, ZoomIn
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,7 +31,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Undo2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { formatDistanceToNow } from "date-fns";

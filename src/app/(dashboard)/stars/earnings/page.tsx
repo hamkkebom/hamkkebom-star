@@ -31,7 +31,7 @@ import { AnimatedCard } from "@/components/settlement/animated-card";
 import { GlowBadge } from "@/components/settlement/glow-badge";
 import { NumberTicker } from "@/components/settlement/number-ticker";
 import { formatKRW, formatDateRange } from "@/lib/settlement-utils";
-import { cn } from "@/lib/utils";
+
 
 // ---------------------------------------------------------------------------
 // Types

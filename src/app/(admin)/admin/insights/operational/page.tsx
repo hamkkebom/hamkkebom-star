@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { startOfMonth, differenceInDays } from "date-fns";
+import { startOfMonth } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { Film, UserSquare2, Users, Clock, AlertCircle, TrendingUp, Zap, ServerCrash } from "lucide-react";
 import { InsightKpiCard } from "@/components/admin/insight-kpi-card";

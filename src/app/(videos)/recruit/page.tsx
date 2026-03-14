@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Briefcase, MessageSquare, Wallet, FileText, Film, MessageCircle, CheckCircle, CreditCard, ChevronDown, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const faqs = [
   {

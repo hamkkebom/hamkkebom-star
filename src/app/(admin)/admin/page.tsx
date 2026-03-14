@@ -5,13 +5,8 @@ import { WorkflowDashboard } from "@/components/admin/workflow-dashboard";
 import { AdminMobileDashboard } from "@/components/admin/mobile-dashboard";
 import { SubmissionStatus } from "@/generated/prisma/client";
 import {
-  CheckCircle2,
-  XCircle,
   Users,
-  UserCheck,
-  Clock,
   CreditCard,
-  TrendingUp,
   FileText,
   Video,
 } from "lucide-react";

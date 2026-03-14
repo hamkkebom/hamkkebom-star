@@ -79,7 +79,7 @@ function HelpCenterContent() {
   });
 
   // Fetch Guide
-  const { data: guideData, isLoading: isLoadingGuide, error: guideError } = useQuery({
+  const { data: guideData, isLoading: isLoadingGuide } = useQuery({
     queryKey: ["help-center", "guide"],
     queryFn: async () => {
       const res = await fetch("/api/guide");

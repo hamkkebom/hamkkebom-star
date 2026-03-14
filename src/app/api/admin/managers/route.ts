@@ -41,7 +41,7 @@ export async function GET(_req: NextRequest) {
         });
 
         return NextResponse.json({ data: admins });
-    } catch (err) {
+    } catch {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

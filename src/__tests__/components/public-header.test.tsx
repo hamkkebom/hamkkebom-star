@@ -29,6 +29,22 @@ vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({ auth: { signOut: mockSignOut } }),
 }));
 
+// Mock DropdownMenu to render children directly (Radix portals don't render in test)
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuItem: ({ children, ...props }: { children: React.ReactNode;[key: string]: unknown }) => <div {...props}>{children}</div>,
+  DropdownMenuSeparator: () => <hr />,
+  DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+// Mock Avatar components
+vi.mock("@/components/ui/avatar", () => ({
+  Avatar: ({ children, ...props }: { children: React.ReactNode;[key: string]: unknown }) => <div {...props}>{children}</div>,
+  AvatarImage: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
+  AvatarFallback: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+}));
 
 const { PublicHeader } = await import("@/components/layout/public-header");
 
@@ -58,12 +74,12 @@ describe("PublicHeader", () => {
     expect(screen.queryByText("설명회")).toBeNull();
   });
 
-  it("'/videos' 링크가 존재하지 않는다", () => {
+  it("'/videos' 링크가 존재한다 (탐색)", () => {
     render(<PublicHeader />);
     const header = screen.getByRole("banner");
     const links = header.querySelectorAll("a");
     const videoLinks = Array.from(links).filter((link) => link.getAttribute("href") === "/videos");
-    expect(videoLinks).toHaveLength(0);
+    expect(videoLinks.length).toBeGreaterThanOrEqual(1);
   });
 
   it("isLoading=true일 때 로그인 버튼과 Avatar 모두 미표시", () => {
@@ -81,11 +97,12 @@ describe("PublicHeader", () => {
     expect(screen.getByText("로그인")).toBeInTheDocument();
   });
 
-  it("로그인 상태에서 마이페이지 버튼 표시, 로그인 버튼 미표시", () => {
+  it("로그인 상태에서 아바타 드롭다운 표시, 로그인 버튼 미표시", () => {
     mockUser = { id: "1", name: "Test User", role: "STAR", email: "test@test.com" };
     mockIsLoading = false;
     render(<PublicHeader />);
     expect(screen.queryByText("로그인")).toBeNull();
+    // 드롭다운 메뉴 안에 마이페이지 링크 존재
     expect(screen.getByText("마이페이지")).toBeInTheDocument();
   });
 

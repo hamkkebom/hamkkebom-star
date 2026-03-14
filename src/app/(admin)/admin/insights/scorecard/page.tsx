@@ -4,14 +4,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Trophy, Target, MessageSquare, Sparkles, CheckCircle2,
-    GitBranch, ArrowLeft, Medal, Crown, Award
+    Target, MessageSquare, Sparkles, CheckCircle2,
+    ArrowLeft, Medal, Crown, Award
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const GaugeChart = dynamic(
+const _GaugeChart = dynamic(
     () => import("@/components/charts/scorecard-charts").then((m) => ({ default: m.GaugeChart })),
     { ssr: false, loading: () => <Skeleton className="w-full h-[120px]" /> }
 );

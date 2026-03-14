@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useCallback, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
     ReactFlow,
-    MiniMap,
     Controls,
     Background,
     useNodesState,
@@ -16,7 +15,6 @@ import {
     Node,
     Edge,
     ConnectionLineType,
-    MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import dagre from "dagre";
@@ -254,8 +252,8 @@ const LayoutFlow = ({ counts, adEligibleCount, adIneligibleCount }: { counts: Re
         return getLayoutedElements(nodes, edges);
     }, [counts, adEligibleCount, adIneligibleCount]);
 
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialData.nodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialData.edges);
+    const [nodes, _setNodes, onNodesChange] = useNodesState(initialData.nodes);
+    const [edges, _setEdges, onEdgesChange] = useEdgesState(initialData.edges);
 
     const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
 

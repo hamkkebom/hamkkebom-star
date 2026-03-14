@@ -26,6 +26,9 @@ const eslintConfig = defineConfig([
     "node_modules/**",
     "coverage/**",
     "verify_existing_thumbs.js",
+    "verify_existing_thumbs.mjs",
+    "modify.js",
+    "check_titles.mjs",
   ]),
 ]);
 

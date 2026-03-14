@@ -107,7 +107,7 @@ export default function CommunityPage() {
             animate={{ opacity: 1 }}
             className={cn("divide-y divide-border", boardType === "SHOWCASE" && "grid grid-cols-2 md:grid-cols-3 gap-4 divide-y-0")}
           >
-            {posts.map((post: any, i: number) => (
+            {posts.map((post: { id: string; boardType: string; title: string; isPinned: boolean; isNotice: boolean; viewCount: number; likeCount: number; createdAt: string; thumbnailUrl?: string | null; videoId?: string | null; tags?: string[]; author: { name: string; chineseName: string | null; avatarUrl: string | null; role: string }; _count: { comments: number; likes: number } }, i: number) => (
               <motion.div
                 key={post.id}
                 initial={{ opacity: 0, y: 10 }}

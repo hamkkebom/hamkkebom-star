@@ -98,7 +98,7 @@ export function MobileReviewItem({
     const [thumbError, setThumbError] = useState(false);
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const didLongPress = useRef(false);
-    const dragStartX = useRef(0);
+
 
     const canAct = ["PENDING", "IN_REVIEW", "REVISED"].includes(item.status);
     const config = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.PENDING;

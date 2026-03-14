@@ -7,7 +7,7 @@ import {
     FileText,
     Clock,
     CheckCircle2,
-    XCircle,
+
     PlaySquare,
     Users,
     CreditCard,
@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils";
 import { SubmissionStatus } from "@/generated/prisma/client";
 
 // Types
-type ExtendedStatus = SubmissionStatus | "AD_ELIGIBLE" | "AD_INELIGIBLE";
 
 export function AdminMobileDashboard({
     counts,

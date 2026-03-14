@@ -6,31 +6,10 @@ import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard,
-  FolderKanban,
-  ClipboardList,
-  Clapperboard,
-  Film,
-  UsersRound,
-  UserCheck,
-  Users,
-  Wallet,
-  DollarSign,
-  ExternalLink,
   LogOut,
   User,
   ChevronDown,
-  UserCog,
-  PenTool,
-  MessageSquare,
-  ShieldCheck,
   Sparkles,
-  Share2,
-  BookOpen,
-  TrendingUp,
-  Activity,
-  BadgeDollarSign,
-  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -275,7 +254,6 @@ export function AdminSidebar() {
     window.location.href = "/auth/login";
   }
 
-  const isDashboardActive = pathname === "/admin";
 
   return (
     <aside className="flex h-full w-64 flex-col border-r bg-sidebar">

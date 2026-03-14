@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { MessageCircle, ArrowLeft, Inbox, User as UserIcon } from "lucide-react";
+import { ArrowLeft, Inbox } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/date-utils";

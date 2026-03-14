@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ExternalLink, PlayCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -175,7 +174,7 @@ export default function CounselorDetailPage() {
               />
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {videos.map((video: any) => (
+                {videos.map((video: { id: string; title: string; thumbnailUrl: string | null; streamUid: string | null; owner?: { name: string }; createdAt: string; viewCount: number }) => (
                   <VideoCard
                     key={video.id}
                     id={video.id}

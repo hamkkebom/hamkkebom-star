@@ -3,9 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import Image from "next/image";
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayer } from "@/components/video/video-player";
@@ -29,7 +26,6 @@ import {
   AlertCircle,
   Loader2,
   MoreVertical,
-  Maximize2,
   LayoutGrid
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -127,56 +123,7 @@ async function fetchSubmission(id: string): Promise<SubmissionDetail> {
   return json.data;
 }
 
-/** 썸네일 이미지 with onError fallback — 빈 src / 만료 URL 방어 */
-function DetailThumbnail({ src, alt }: { src: string | null | undefined; alt: string }) {
-  const [failed, setFailed] = useState(false);
 
-  if (!src || failed) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-muted/20">
-        <span className="text-xs text-muted-foreground">썸네일 없음</span>
-      </div>
-    );
-  }
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button className="relative w-full h-full block cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 rounded-2xl">
-          <Image
-            src={src}
-            alt={alt}
-            fill
-            unoptimized
-            className="object-cover transition-transform duration-700 group-hover:scale-110"
-            onError={() => setFailed(true)}
-          />
-          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-            <span className="flex items-center gap-2 text-white font-bold text-sm bg-black/50 px-3 py-1.5 rounded-full border border-white/20 hover:bg-black/70 hover:scale-105 transition-all">
-              <Maximize2 className="w-4 h-4" />
-              크게 보기
-            </span>
-          </div>
-          <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold text-white/90 uppercase tracking-wider">
-            썸네일
-          </div>
-        </button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-none max-w-[90vw] max-h-[90vh] w-auto h-auto p-0 bg-transparent border-none shadow-none flex items-center justify-center overflow-hidden outline-none">
-        <DialogTitle className="sr-only">{alt} 크게 보기</DialogTitle>
-        <div className="relative w-auto h-auto max-w-[90vw] max-h-[90vh] aspect-video min-w-[50vw]">
-          <Image
-            src={src}
-            alt={alt}
-            fill
-            unoptimized
-            className="object-contain rounded-md"
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 export function SubmissionDetailClient({ submissionId }: { submissionId: string }) {
   const [seekTo, setSeekTo] = useState<{ time: number; nonce: number } | undefined>(undefined);
@@ -185,7 +132,8 @@ export function SubmissionDetailClient({ submissionId }: { submissionId: string 
   // Zustand 스토어
   const activeAnnotation = useFeedbackViewStore((s) => s.activeAnnotation);
   const setFeedbacks = useFeedbackViewStore((s) => s.setFeedbacks);
-  const setSelectedFeedbackId = useFeedbackViewStore((s) => s.setSelectedFeedbackId);
+
+
 
   const { data: submission, isLoading, isError, error } = useQuery({
     queryKey: ["submission-detail", submissionId],

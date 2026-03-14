@@ -120,7 +120,7 @@ describe("PATCH /api/users/me", () => {
     expect(json.error.code).toBe("UNAUTHORIZED");
   });
 
-  it("404 — DB 사용자 없음", async () => {
+  it("401 — DB 사용자 없음", async () => {
     mockGetUser.mockResolvedValue({ data: { user: mockAuthUser } });
     mockFindUnique.mockResolvedValue(null);
 
@@ -131,8 +131,8 @@ describe("PATCH /api/users/me", () => {
     const res = await PATCH(req);
     const json = await res.json();
 
-    expect(res.status).toBe(404);
-    expect(json.error.code).toBe("NOT_FOUND");
+    expect(res.status).toBe(401);
+    expect(json.error.code).toBe("UNAUTHORIZED");
   });
 
   it("400 — 잘못된 JSON body", async () => {

@@ -1,14 +1,7 @@
 import Image from "next/image";
 import {
-    Wallet,
-    PlayCircle,
-    FileText,
     CheckCircle2,
-    DollarSign,
     AlertTriangle,
-    Lightbulb,
-    MousePointerClick,
-    Info
 } from "lucide-react";
 
 export default function SettlementGuidePage() {

@@ -63,13 +63,14 @@ export default function PostDetailPage() {
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ["board-post-detail", id] });
       const previousData = queryClient.getQueryData(["board-post-detail", id]);
-      queryClient.setQueryData(["board-post-detail", id], (old: any) => {
-        if (!old?.data) return old;
+      queryClient.setQueryData(["board-post-detail", id], (old: unknown) => {
+        const prev = old as { data?: { likeCount: number } } | undefined;
+        if (!prev?.data) return old;
         return {
-          ...old,
+          ...prev,
           data: {
-            ...old.data,
-            likeCount: old.data.likeCount + 1,
+            ...prev.data,
+            likeCount: prev.data.likeCount + 1,
           }
         };
       });
@@ -259,7 +260,7 @@ export default function PostDetailPage() {
         </div>
 
         <div className="space-y-6">
-          {post.comments?.map((comment: any) => (
+          {post.comments?.map((comment: { id: string; content: string; createdAt: string; author: { name: string; chineseName?: string; avatarUrl?: string }; children?: { id: string; content: string; createdAt: string; author: { name: string; chineseName?: string; avatarUrl?: string } }[] }) => (
             <div key={comment.id} className="group">
               <div className="flex gap-3">
                 <div className="w-8 h-8 rounded-full bg-muted overflow-hidden shrink-0">
@@ -321,9 +322,9 @@ export default function PostDetailPage() {
                 </div>
               )}
 
-              {comment.children?.length > 0 && (
+              {comment.children && comment.children.length > 0 && (
                 <div className="mt-4 space-y-4 ml-11">
-                  {comment.children.map((reply: any) => (
+                  {comment.children.map((reply) => (
                     <div key={reply.id} className="flex gap-3">
                       <CornerDownRight className="w-4 h-4 text-muted-foreground shrink-0 mt-2" />
                       <div className="w-6 h-6 rounded-full bg-muted overflow-hidden shrink-0 mt-1">

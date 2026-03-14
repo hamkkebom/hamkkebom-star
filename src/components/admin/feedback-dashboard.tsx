@@ -87,7 +87,7 @@ export function ThumbnailPreview({
     thumbnailUrl,
     videoTitle,
     version,
-    status
+    status: _status
 }: {
     thumbnailUrl: string | null;
     videoTitle: string;
@@ -155,7 +155,7 @@ export function FeedbackDashboard({ submissions }: { submissions: Submission[] }
     const [filter, setFilter] = useState("PENDING");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"latest" | "oldest">("latest");
-    const [particlesReady, setParticlesReady] = useState(false);
+    const [_particlesReady, _setParticlesReady] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     const bulkActionMutation = useMutation({

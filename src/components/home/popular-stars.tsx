@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Star, ChevronRight } from "lucide-react";
+import { Star } from "lucide-react";
 import Link from "next/link";
 
 type StarItem = {

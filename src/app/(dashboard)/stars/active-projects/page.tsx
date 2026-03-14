@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { UploadSheet } from "@/components/video/upload-sheet";
 import { ProjectDetailSheet } from "@/components/project/project-detail-sheet";
 import {
-  Clock,
   Calendar,
   Upload,
   MessageCircleHeart,

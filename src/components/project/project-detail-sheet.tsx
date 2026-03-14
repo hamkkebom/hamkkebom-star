@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -23,7 +23,6 @@ import {
   Link as LinkIcon,
   Play,
   Lock,
-  Clock,
   FileText,
   History,
 } from "lucide-react";

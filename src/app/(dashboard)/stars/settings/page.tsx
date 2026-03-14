@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -142,7 +141,6 @@ function CompletenessRing({ percentage }: { percentage: number }) {
 // ============================================================
 export default function SettingsPage() {
   const supabase = createClient();
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);

@@ -549,22 +549,6 @@ export default function StarProfilePage() {
   );
 }
 
-function ProfileSkeleton() {
-  return (
-    <div className="min-h-screen">
-      <div className="h-[50vh] animate-pulse bg-muted/30" />
-      <div className="relative z-10 mx-auto -mt-24 max-w-7xl px-6">
-        <Skeleton className="h-56 w-56 rounded-[2.5rem]" />
-        <div className="mt-8 max-w-xl space-y-4">
-          <Skeleton className="h-12 w-3/4" />
-          <Skeleton className="h-6 w-full" />
-          <Skeleton className="h-6 w-2/3" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function NotFoundState() {
   const router = useRouter();
   return (

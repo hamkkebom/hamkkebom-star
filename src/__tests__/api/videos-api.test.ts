@@ -9,11 +9,17 @@ vi.mock("@/lib/auth-helpers", () => ({
 
 const mockFindMany = vi.fn();
 const mockCount = vi.fn();
+const mockGroupBy = vi.fn();
+const mockSubmissionGroupBy = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     video: {
       findMany: (...args: unknown[]) => mockFindMany(...args),
       count: (...args: unknown[]) => mockCount(...args),
+      groupBy: (...args: unknown[]) => mockGroupBy(...args),
+    },
+    submission: {
+      groupBy: (...args: unknown[]) => mockSubmissionGroupBy(...args),
     },
   },
 }));
@@ -31,6 +37,23 @@ vi.mock("@/generated/prisma/client", () => ({
     BRAND: "BRAND",
     OTHER: "OTHER",
   },
+  SubmissionStatus: {
+    PENDING: "PENDING",
+    IN_REVIEW: "IN_REVIEW",
+    APPROVED: "APPROVED",
+    REJECTED: "REJECTED",
+    NEEDS_REVISION: "NEEDS_REVISION",
+    CANCELLED: "CANCELLED",
+  },
+}));
+
+vi.mock("@/lib/cloudflare/stream", () => ({
+  getSignedPlaybackToken: vi.fn().mockReturnValue("mock-token"),
+}));
+
+vi.mock("@/lib/cloudflare/r2-upload", () => ({
+  extractR2Key: vi.fn().mockReturnValue(null),
+  getPresignedGetUrl: vi.fn().mockResolvedValue("https://mock.url"),
 }));
 
 // --- Helpers ---
@@ -72,6 +95,7 @@ describe("GET /api/videos", () => {
     mockGetAuthUser.mockRejectedValue(new Error("Not authenticated"));
     mockFindMany.mockResolvedValue(mockVideos);
     mockCount.mockResolvedValue(1);
+    mockGroupBy.mockResolvedValue([]);
 
     const res = await GET(makeRequest());
     const json = await res.json();
@@ -85,6 +109,8 @@ describe("GET /api/videos", () => {
     mockGetAuthUser.mockResolvedValue(adminUser);
     mockFindMany.mockResolvedValue([]);
     mockCount.mockResolvedValue(0);
+    mockGroupBy.mockResolvedValue([]);
+    mockSubmissionGroupBy.mockResolvedValue([]);
 
     const res = await GET(makeRequest({ status: "PENDING" }));
     const json = await res.json();
@@ -117,6 +143,7 @@ describe("GET /api/videos", () => {
     mockGetAuthUser.mockRejectedValue(new Error("Not authenticated"));
     mockFindMany.mockResolvedValue(mockVideos);
     mockCount.mockResolvedValue(50);
+    mockGroupBy.mockResolvedValue([]);
 
     const res = await GET(makeRequest({ page: "2", pageSize: "10" }));
     const json = await res.json();

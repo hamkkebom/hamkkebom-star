@@ -40,7 +40,6 @@ export type Submission = {
     };
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type FeedbackItem = {
     id: string;
     type: FeedbackType;

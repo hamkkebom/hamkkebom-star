@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { MessageSquare, Heart, Eye, ChevronRight, Users } from "lucide-react";
+import { MessageSquare, Heart, ChevronRight, Users } from "lucide-react";
 import Link from "next/link";
 
 type PostPreview = {

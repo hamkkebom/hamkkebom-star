@@ -186,7 +186,7 @@ export default function TrendsPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.starHeatmap.map((star, i) => (
+{data.starHeatmap.map((star, _i) => (
                                     <tr key={star.name} className="border-b border-dashed">
                                         <td className="py-1.5 pr-2 font-medium truncate max-w-[80px] sticky left-0 bg-card">
                                             {star.name}

@@ -31,13 +31,11 @@ import {
   Search,
   Clock,
   ImageIcon,
-  Play,
-  ExternalLink,
   ZoomIn,
   FileText,
   Columns2,
 } from "lucide-react";
-import Image from "next/image";
+
 import { useCallback, useMemo, useState } from "react";
 
 type Feedback = {

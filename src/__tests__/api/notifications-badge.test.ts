@@ -11,6 +11,8 @@ const mockFeedbackCount = vi.fn();
 const mockSubmissionCount = vi.fn();
 const mockSettlementCount = vi.fn();
 const mockProjectAssignmentCount = vi.fn();
+const mockBoardCommentCount = vi.fn();
+const mockBoardPostLikeCount = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     feedback: {
@@ -24,6 +26,12 @@ vi.mock("@/lib/prisma", () => ({
     },
     projectAssignment: {
       count: (...args: unknown[]) => mockProjectAssignmentCount(...args),
+    },
+    boardComment: {
+      count: (...args: unknown[]) => mockBoardCommentCount(...args),
+    },
+    boardPostLike: {
+      count: (...args: unknown[]) => mockBoardPostLikeCount(...args),
     },
   },
 }));
@@ -62,6 +70,8 @@ describe("GET /api/notifications/badge", () => {
   it("200 — STAR 뱃지 (미읽은 피드백 수)", async () => {
     mockGetAuthUser.mockResolvedValue(starUser);
     mockFeedbackCount.mockResolvedValue(5);
+    mockBoardCommentCount.mockResolvedValue(0);
+    mockBoardPostLikeCount.mockResolvedValue(0);
 
     const res = await GET();
     const json = await res.json();

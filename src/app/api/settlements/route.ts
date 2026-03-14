@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SettlementStatus } from "@/generated/prisma/client";
+import { SettlementStatus, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { maskIdNumber } from "@/lib/settlement-utils";
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const where: any = {
+  const where: Prisma.SettlementWhereInput = {
     ...(statusParam && statusParam !== "ALL" ? { status: statusParam as SettlementStatus } : {}),
     ...(user.role === "STAR" ? { starId: user.id } : {}),
   };
@@ -95,7 +95,7 @@ export async function GET(request: Request) {
     prisma.settlement.count({ where }),
   ]);
 
-  const maskedRows = rows.map((row: any) => ({
+  const maskedRows = rows.map((row) => ({
     ...row,
     star: {
       ...row.star,

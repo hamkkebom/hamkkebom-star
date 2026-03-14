@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-    Sparkles, ArrowLeft, Trophy, AlertTriangle, TrendingUp
+    ArrowLeft, AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -27,7 +27,7 @@ const MonthlyTrendChart = dynamic(
     { ssr: false, loading: () => <Skeleton className="w-full h-[180px]" /> }
 );
 import { cn } from "@/lib/utils";
-import { KpiCard } from "@/components/analytics/kpi-card";
+
 import { DateRangePicker, getDateRange, type DatePreset } from "@/components/analytics/date-range-picker";
 import { ChartContainer } from "@/components/analytics/chart-container";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,7 +46,7 @@ export default function AIQualityPage() {
     const [datePreset, setDatePreset] = useState<DatePreset>("all");
     const dateRange = getDateRange(datePreset);
 
-    const { data, isLoading, error } = useQuery<AIQualityData>({
+    const { data, isLoading } = useQuery<AIQualityData>({
         queryKey: ["insights-ai-quality", datePreset],
         queryFn: async () => {
             const res = await fetch(

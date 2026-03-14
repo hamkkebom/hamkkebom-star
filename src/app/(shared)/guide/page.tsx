@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, Rocket, Video, MessageCircle, Wallet, Smartphone } from "lucide-react";
 import Link from "next/link";
-import { useAuthStore } from "@/stores/auth-store";
 import { PublicHeader } from "@/components/layout/public-header";
 import { PublicFooter } from "@/components/layout/public-footer";
 
@@ -25,7 +24,6 @@ interface GuideItem {
 }
 
 export default function GuidePage() {
-    const user = useAuthStore((s) => s.user);
 
     const { data, isLoading } = useQuery<{ data: Record<string, GuideItem[]> }>({
         queryKey: ["guide"],

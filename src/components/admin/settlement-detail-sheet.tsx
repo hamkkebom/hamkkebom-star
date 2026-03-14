@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Film,
@@ -110,7 +110,6 @@ export function SettlementDetailSheet({
   onRequestConfirm,
   onRequestCancel,
 }: SettlementDetailSheetProps) {
-  const queryClient = useQueryClient();
 
   // Note editing state
   const [noteEdit, setNoteEdit] = useState(false);

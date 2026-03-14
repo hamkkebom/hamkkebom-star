@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Heart, ThumbsUp, Send, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { MessageSquare, Heart, Send, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "sonner";
 

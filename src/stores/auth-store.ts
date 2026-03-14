@@ -26,8 +26,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // force=true이면 무조건 다시 fetch (계정 전환 시)
     if (!force && get().user && !get().isLoading) return;
 
-    // 강제 갱신 시 기존 fetch를 무시하고 새로 시작
-    if (force) {
+    // 강제 갱신 시: 기존 fetch 완료를 기다린 후 새로 시작
+    // (기존: null 할당 후 진행 → 동시에 2개 API 호출 race condition)
+    if (force && fetchInProgress) {
+      await fetchInProgress;
       fetchInProgress = null;
     }
 
@@ -41,13 +43,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         set({ isLoading: true });
 
-        // Supabase 세션이 있을 때만 API 호출
+        // ✅ getUser()로 서버 검증 (getSession()은 로컬 스토리지만 읽어 stale 가능)
+        // getUser()는 Supabase 서버에 토큰을 검증하므로 정확한 인증 상태 확인
         const supabase = createClient();
         const {
-          data: { session },
-        } = await supabase.auth.getSession();
+          data: { user: authUser },
+          error: authError,
+        } = await supabase.auth.getUser();
 
-        if (!session) {
+        if (authError || !authUser) {
           set({ user: null, isLoading: false });
           return;
         }
@@ -62,8 +66,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const data = (await response.json()) as { data: User };
 
         // 세션 유저와 API 응답 유저가 일치하는지 검증
-        // 계정 전환 중 race condition으로 이전 유저 데이터가 반환될 수 있음
-        if (data.data.authId !== session.user.id) {
+        // ✅ authUser.id로 비교 (서버 검증된 값이므로 신뢰 가능)
+        if (data.data.authId !== authUser.id) {
           set({ user: null, isLoading: false });
           return;
         }

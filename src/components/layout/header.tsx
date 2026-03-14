@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { NotificationBadge } from "@/components/layout/notification-badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, User, Settings, Smartphone, LogOut } from "lucide-react";
@@ -17,7 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Header({ isAdmin = false, children }: { isAdmin?: boolean, children?: React.ReactNode }) {
-  const pathname = usePathname();
   const supabase = createClient();
 
   const { data: userData } = useQuery({

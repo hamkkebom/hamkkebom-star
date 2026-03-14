@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { X, Youtube, Instagram, MonitorPlay, Loader2, Link as LinkIcon, Save, Trash2, Search, Video as VideoIcon } from "lucide-react";
+import { Youtube, Instagram, MonitorPlay, Loader2, Link as LinkIcon, Save, Trash2, Search } from "lucide-react";
 
 import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import { Button } from "@/components/ui/button";

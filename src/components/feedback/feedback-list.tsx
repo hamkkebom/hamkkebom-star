@@ -23,7 +23,7 @@ type FeedbackItem = {
   type: FeedbackType;
   priority: FeedbackPriority;
   content: string;
-  annotation: any;
+  annotation: Record<string, unknown> | null;
   startTime: number | null;
   endTime: number | null;
   status: string;
@@ -38,7 +38,7 @@ type FeedbackItem = {
 
 interface FeedbackListProps {
   submissionId: string;
-  onTimecodeClick?: (time: number, annotation?: any) => void;
+  onTimecodeClick?: (time: number, annotation?: Record<string, unknown> | null) => void;
   onFeedbacksChanged?: () => void;
 }
 

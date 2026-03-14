@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useAuthStore } from "@/stores/auth-store";
 import type { User } from "@/types/database";
 
-// Supabase client mock — fetchUser에서 getSession()으로 세션 확인 후 fetch 호출
-const mockGetSession = vi.fn();
+// Supabase client mock — fetchUser에서 getUser()로 서버 검증 후 fetch 호출
+const mockGetUser = vi.fn();
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
     auth: {
-      getSession: mockGetSession,
+      getUser: mockGetUser,
     },
   }),
 }));
@@ -17,8 +17,8 @@ describe("useAuthStore", () => {
     // 각 테스트 전에 store 초기화
     useAuthStore.setState({ user: null, isLoading: true });
     vi.clearAllMocks();
-    // 기본: 세션이 있는 상태
-    mockGetSession.mockResolvedValue({ data: { session: { access_token: "test-token" } } });
+    // 기본: 인증된 상태 (authUser.id는 fetchUser 내 authId 검증에 사용됨)
+    mockGetUser.mockResolvedValue({ data: { user: { id: "auth-1" } }, error: null });
   });
 
   afterEach(() => {
@@ -72,6 +72,7 @@ describe("useAuthStore", () => {
         updatedAt: new Date("2026-01-15"),
       } as User;
 
+      mockGetUser.mockResolvedValue({ data: { user: { id: "auth-admin-1" } }, error: null });
       global.fetch = vi.fn().mockResolvedValueOnce({
         ok: true,
         json: async () => ({ data: mockAdminUser }),
@@ -101,6 +102,7 @@ describe("useAuthStore", () => {
         updatedAt: new Date("2026-01-15"),
       } as User;
 
+      mockGetUser.mockResolvedValue({ data: { user: { id: "auth-2" } }, error: null });
       global.fetch = vi.fn().mockResolvedValueOnce({
         ok: true,
         json: async () => ({ data: mockUnapprovedUser }),
@@ -309,7 +311,7 @@ describe("useAuthStore", () => {
       const { fetchUser } = useAuthStore.getState();
       await fetchUser();
 
-      // getSession → fetch → user 설정 완료 후 상태 확인
+      // getUser → fetch → user 설정 완료 후 상태 확인
       expect(global.fetch).toHaveBeenCalledOnce();
 
       const state = useAuthStore.getState();

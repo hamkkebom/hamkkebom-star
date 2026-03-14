@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
 
     const skip = (page - 1) * pageSize;
 
-    const where: any = {
+    const where: Prisma.CounselorWhereInput = {
       status: "ACTIVE",
     };
 

@@ -16,7 +16,6 @@ import {
   Trash2,
   AlertTriangle,
   ChevronRight,
-  ChevronDown,
   Plus,
   Clock,
   Pencil,
@@ -26,13 +25,11 @@ import {
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 import type { DateRange } from "react-day-picker";
 import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import {
@@ -138,10 +135,6 @@ const STATUS_GLOW_MAP: Record<string, { label: string; variant: GlowVariant }> =
   FAILED: { label: "실패", variant: "failed" },
 };
 
-const CURRENT_YEAR = new Date().getFullYear();
-const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - 2 + i);
-const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -160,7 +153,6 @@ function formatAmount(amount: number): string {
 
 export default function AdminSettlementsPage() {
   const queryClient = useQueryClient();
-  const now = new Date();
 
   // Filter
   const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>(undefined);
@@ -363,7 +355,7 @@ export default function AdminSettlementsPage() {
   const processingCount = rows.filter((r) => r.status === "PROCESSING").length;
   const completedCount = rows.filter((r) => r.status === "COMPLETED").length;
   const totalSum = rows.reduce((sum, r) => sum + Number(r.totalAmount), 0);
-  const uniqueStars = new Set(rows.map((r) => r.star.id)).size;
+
 
   const starGroups = useMemo(() => {
     const map = new Map<string, { star: SettlementRow["star"]; settlements: SettlementRow[] }>();

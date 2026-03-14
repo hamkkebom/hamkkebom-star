@@ -3,9 +3,9 @@
 import { Suspense, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Trophy, Flame, Clock, Eye, Heart, Play } from "lucide-react";
+import { Trophy, Flame, Clock, Eye, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoCard } from "@/components/video/video-card";
 import Link from "next/link";
@@ -91,7 +91,7 @@ function BestPageContent() {
 
       if (period !== "all") {
         const now = new Date();
-        let fromDate = new Date();
+        const fromDate = new Date();
         if (period === "week") fromDate.setDate(now.getDate() - 7);
         else if (period === "month") fromDate.setDate(now.getDate() - 30);
         else if (period === "year") fromDate.setDate(now.getDate() - 365);

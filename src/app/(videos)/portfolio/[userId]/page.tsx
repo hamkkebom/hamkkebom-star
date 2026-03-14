@@ -3,7 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +13,7 @@ import {
     Film, Calendar, Copy, CheckCircle2,
 } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+
 
 type PortfolioData = {
     user: {

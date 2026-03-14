@@ -12,7 +12,7 @@ export const LOCAL_TAX_RATE = 0.003;
  */
 export function calculateTax(
   preTaxAmount: number,
-  taxRate: number = TAX_RATE,
+  _taxRate: number = TAX_RATE,
 ): {
   incomeTax: number;
   localTax: number;

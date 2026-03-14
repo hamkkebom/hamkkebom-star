@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { useCanvasStore, type DrawingTool } from "@/store/canvas-store";
+import { useCanvasStore } from "@/store/canvas-store";
 import { drawStroke, type Stroke } from "@/lib/draw-utils";
 import { Button } from "@/components/ui/button";
-import { MousePointer2, Pen, Square, ArrowRight, Undo, Redo, Trash2, X, Check, Zap } from "lucide-react";
+import { MousePointer2, Pen, Square, ArrowRight, Undo, Redo, Trash2, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -15,7 +15,7 @@ interface AnnotationCanvasProps {
     onSave?: (strokes: Stroke[], capturedTime: number) => void;
 }
 
-export function AnnotationCanvas({ videoRef, currentTime, onSave }: AnnotationCanvasProps) {
+export function AnnotationCanvas({ videoRef: _videoRef, currentTime, onSave }: AnnotationCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 

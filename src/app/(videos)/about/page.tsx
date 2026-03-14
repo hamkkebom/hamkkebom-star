@@ -149,7 +149,7 @@ export default function AboutPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {categoriesData?.data?.map((category: any, index: number) => (
+              {categoriesData?.data?.map((category: { id: string; name: string; icon?: string; _count?: { videos: number } }, index: number) => (
                 <div 
                   key={category.id}
                   className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 card-hover animate-fade-in-up"

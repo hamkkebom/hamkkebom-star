@@ -43,7 +43,7 @@ import { VideoPlayer } from "@/components/video/video-player";
 import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { FeedbackList } from "@/components/feedback/feedback-list";
 import { MobileReviewList, type MobileSubmissionRow } from "@/components/admin/mobile-review-list";
-import { MobileReviewSkeleton } from "@/components/admin/mobile-review-skeleton";
+
 import { cn } from "@/lib/utils";
 
 // ============================================================

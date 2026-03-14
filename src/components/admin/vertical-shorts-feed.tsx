@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, CheckCircle2, ChevronDown } from "lucide-react";
+import { MessageSquare, ChevronDown } from "lucide-react";
 import { VideoPlayer } from "@/components/video/video-player";
 import type { SubmissionRow } from "@/app/(admin)/admin/reviews/page";
 

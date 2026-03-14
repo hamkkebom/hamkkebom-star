@@ -136,11 +136,7 @@ const SOURCE_TYPE_LABELS: Record<"board" | "video", string> = {
   video: "영상",
 };
 
-const HIDDEN_LABELS: Record<string, string> = {
-  all: "전체 상태",
-  true: "숨김",
-  false: "공개",
-};
+
 
 // ---------------------------------------------------------------------------
 // Helpers

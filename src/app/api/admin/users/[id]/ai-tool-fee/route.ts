@@ -49,7 +49,7 @@ export async function PATCH(request: Request, { params }: Params) {
             data: { aiToolSupportFee },
         });
         return NextResponse.json({ data: updated });
-    } catch (err) {
+    } catch {
         return NextResponse.json(
             { error: { code: "INTERNAL_ERROR", message: "저장에 실패했습니다." } },
             { status: 500 }

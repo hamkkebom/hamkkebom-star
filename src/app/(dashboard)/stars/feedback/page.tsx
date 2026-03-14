@@ -22,14 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // --- Types ---
-type LatestFeedback = {
-  content: string;
-  type: string;
-  priority: string;
-  status: string;
-  annotation: unknown;
-  author: { name: string };
-};
 
 import type { MySubmissionFeedback as MySubmission } from "@/types/shared";
 

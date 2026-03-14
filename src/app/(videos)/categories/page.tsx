@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { PlayCircle, Heart, Star, Compass, BookOpen, Users, Sparkles, Video } from "lucide-react";
+import { PlayCircle, Heart, Star, Compass, BookOpen, Users, Sparkles, Video, type LucideIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   "play-circle": PlayCircle,
   "heart": Heart,
   "star": Star,

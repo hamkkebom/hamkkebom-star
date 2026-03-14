@@ -894,32 +894,4 @@ function QuickInfoRow({
   );
 }
 
-/* ─── Loading skeleton ─── */
-function LoadingSkeleton() {
-  return (
-    <div className="min-h-screen bg-[#06060e]">
-      {/* Player skeleton */}
-      <div className="mx-auto max-w-7xl">
-        <Skeleton className="aspect-video w-full bg-white/5" />
-      </div>
-      {/* Content skeleton */}
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="space-y-4">
-          <Skeleton className="h-6 w-40 bg-white/5" />
-          <Skeleton className="h-10 w-2/3 bg-white/5" />
-          <Skeleton className="h-4 w-1/3 bg-white/5" />
-        </div>
-        <div className="mt-12 grid gap-10 lg:grid-cols-[1fr_340px]">
-          <div className="space-y-6">
-            <Skeleton className="h-40 w-full rounded-2xl bg-white/5" />
-            <Skeleton className="h-60 w-full rounded-2xl bg-white/5" />
-          </div>
-          <div className="space-y-6">
-            <Skeleton className="h-48 w-full rounded-2xl bg-white/5" />
-            <Skeleton className="h-32 w-full rounded-2xl bg-white/5" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+

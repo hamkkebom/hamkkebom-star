@@ -26,68 +26,92 @@ vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({}),
 }));
 
-const { Sidebar } = await import("@/components/layout/sidebar");
+// Mock framer-motion
+vi.mock("framer-motion", () => ({
+  motion: {
+    div: ({ children, ...props }: { children?: React.ReactNode;[key: string]: unknown }) => <div {...props}>{children}</div>,
+  },
+  useMotionValue: () => ({ set: vi.fn() }),
+  useSpring: () => ({ set: vi.fn() }),
+  useTransform: () => 0,
+  useMotionTemplate: (..._args: unknown[]) => "",
+}));
 
-describe("Sidebar", () => {
+// Mock Header component
+vi.mock("@/components/layout/header", () => ({
+  Header: ({ children }: { children?: React.ReactNode }) => <header>{children}</header>,
+}));
+
+// Mock sub-tabs
+vi.mock("@/components/layout/star-sub-tabs", () => ({
+  ExploreSubTabs: () => null,
+  WorkspaceSubTabs: () => null,
+}));
+
+// Mock Sheet components
+vi.mock("@/components/ui/sheet", () => ({
+  Sheet: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  SheetContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  SheetHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  SheetTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  SheetTrigger: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
+const { StarTopNav } = await import("@/components/layout/star-top-nav");
+
+describe("StarTopNav", () => {
   afterEach(() => {
     cleanup();
     mockPathname = "/stars/dashboard";
   });
 
-  it("renders brand name", () => {
-    render(<Sidebar />);
-    expect(screen.getByText("별들에게 물어봐")).toBeInTheDocument();
-  });
-
-  it("renders brand logo character", () => {
-    render(<Sidebar />);
-    expect(screen.getByText("봄")).toBeInTheDocument();
-  });
-
-  it("renders all main navigation items", () => {
-    render(<Sidebar />);
-    expect(screen.getByText("대시보드")).toBeInTheDocument();
-    expect(screen.getByText("내 영상 관리")).toBeInTheDocument();
-    expect(screen.getByText("프로젝트 찾기 & 제출")).toBeInTheDocument();
-    expect(screen.getByText("피드백 확인")).toBeInTheDocument();
-  });
-
-  it("renders bottom navigation items", () => {
-    render(<Sidebar />);
-    expect(screen.getByText("설정")).toBeInTheDocument();
-    expect(screen.getByText("로그아웃")).toBeInTheDocument();
+  it("renders all main navigation tabs", () => {
+    render(<StarTopNav />);
+    expect(screen.getAllByText("작업실").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("의뢰").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("프로필").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("수익").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders correct nav links", () => {
-    render(<Sidebar />);
+    render(<StarTopNav />);
     const links = screen.getAllByRole("link");
     const hrefs = links.map((l) => l.getAttribute("href"));
     expect(hrefs).toContain("/stars/dashboard");
-    expect(hrefs).toContain("/stars/my-videos");
-    expect(hrefs).toContain("/stars/upload");
-    expect(hrefs).toContain("/stars/feedback");
+    expect(hrefs).toContain("/stars/project-board");
+    expect(hrefs).toContain("/stars/portfolio");
+    expect(hrefs).toContain("/stars/earnings");
+  });
+
+  it("renders menu items in sheet", () => {
+    render(<StarTopNav />);
+    expect(screen.getByText("앱 설치 · 설정")).toBeInTheDocument();
+    expect(screen.getByText("메인으로 돌아가기")).toBeInTheDocument();
+  });
+
+  it("renders logout button", () => {
+    render(<StarTopNav />);
+    expect(screen.getByText("로그아웃")).toBeInTheDocument();
+  });
+
+  it("renders mobile bottom nav with '전체' menu tab", () => {
+    render(<StarTopNav />);
+    expect(screen.getByText("전체")).toBeInTheDocument();
+  });
+
+  it("renders correct links for menu items", () => {
+    render(<StarTopNav />);
+    const links = screen.getAllByRole("link");
+    const hrefs = links.map((l) => l.getAttribute("href"));
+    expect(hrefs).toContain("/stars/install");
     expect(hrefs).toContain("/");
-    expect(hrefs).toContain("/stars/settings");
   });
 
-  it("applies active styles for current path", () => {
-    mockPathname = "/stars/my-videos";
-    const { container } = render(<Sidebar />);
-    const myVideosLink = screen.getByText("내 영상 관리").closest("a");
-    expect(myVideosLink?.className).toContain("bg-sidebar-accent/60");
-  });
-
-  it("does not apply active styles to non-matching paths", () => {
-    mockPathname = "/stars/dashboard";
-    render(<Sidebar />);
-    const myVideosLink = screen.getByText("내 영상 관리").closest("a");
-    expect(myVideosLink?.className).not.toContain("bg-sidebar-accent/60");
-  });
-
-  it("renders aside element with correct width class", () => {
-    const { container } = render(<Sidebar />);
-    const aside = container.querySelector("aside");
-    expect(aside).toBeDefined();
-    expect(aside?.className).toContain("w-64");
+  it("includes links to key star pages", () => {
+    render(<StarTopNav />);
+    const links = screen.getAllByRole("link");
+    const hrefs = links.map((l) => l.getAttribute("href"));
+    expect(hrefs).toContain("/stars/dashboard");
+    expect(hrefs).toContain("/stars/project-board");
   });
 });

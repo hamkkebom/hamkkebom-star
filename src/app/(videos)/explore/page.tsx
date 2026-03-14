@@ -256,7 +256,7 @@ function ExploreContent() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
             <Search className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-xl font-medium mb-2">'{debouncedQuery}'에 대한 검색 결과가 없습니다.</h3>
+          <h3 className="text-xl font-medium mb-2">&apos;{debouncedQuery}&apos;에 대한 검색 결과가 없습니다.</h3>
           <p className="text-muted-foreground">다른 검색어를 입력하거나 철자를 확인해보세요.</p>
         </motion.div>
       )}

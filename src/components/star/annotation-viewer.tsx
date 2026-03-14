@@ -44,27 +44,6 @@ export function AnnotationViewer({ annotation, isActive }: AnnotationViewerProps
 
     const { strokes, sourceSize } = parseAnnotation(annotation);
 
-    // ─── Canvas 크기 동기화 ───
-    const syncSize = useCallback(() => {
-        const canvas = canvasRef.current;
-        const container = containerRef.current;
-        if (!canvas || !container) return;
-
-        const rect = container.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        canvas.style.width = `${rect.width}px`;
-        canvas.style.height = `${rect.height}px`;
-
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-            ctx.scale(dpr, dpr);
-        }
-        redraw(rect.width, rect.height);
-    }, [strokes, sourceSize]);
-
     // ─── 그림 그리기 — 원본 캔버스 크기 기반 정확 스케일링 ───
     const redraw = useCallback((containerW: number, containerH: number) => {
         const canvas = canvasRef.current;
@@ -98,6 +77,27 @@ export function AnnotationViewer({ annotation, isActive }: AnnotationViewerProps
             }
         }
     }, [strokes, sourceSize]);
+
+    // ─── Canvas 크기 동기화 ───
+    const syncSize = useCallback(() => {
+        const canvas = canvasRef.current;
+        const container = containerRef.current;
+        if (!canvas || !container) return;
+
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+            ctx.scale(dpr, dpr);
+        }
+        redraw(rect.width, rect.height);
+    }, [redraw]);
 
     // ─── 초기화 및 리사이즈 ───
     useEffect(() => {

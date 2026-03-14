@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Users, User, MoreHorizontal, Bell, HelpCircle, BookOpen, Star, Film, Search } from "lucide-react";
+import { Home, Users, User, MoreHorizontal, Bell, HelpCircle, BookOpen, Star, Film, Search } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const navItems = [
     { href: "/", label: "홈", icon: Home, exact: true },

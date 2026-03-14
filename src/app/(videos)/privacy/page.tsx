@@ -102,7 +102,7 @@ export default function PrivacyPage() {
             <section id="section-6" className="scroll-mt-24 mb-10">
               <h2 className="text-xl font-bold mb-4 text-foreground">6. 이용자 및 법정대리인의 권리와 그 행사방법</h2>
               <p className="text-muted-foreground leading-relaxed">
-                이용자는 언제든지 등록되어 있는 자신의 개인정보를 조회하거나 수정할 수 있으며 가입해지를 요청할 수도 있습니다. 이용자들의 개인정보 조회, 수정을 위해서는 '개인정보변경'(또는 '회원정보수정' 등)을 가입해지(동의철회)를 위해서는 "회원탈퇴"를 클릭하여 본인 확인 절차를 거치신 후 직접 열람, 정정 또는 탈퇴가 가능합니다.
+                이용자는 언제든지 등록되어 있는 자신의 개인정보를 조회하거나 수정할 수 있으며 가입해지를 요청할 수도 있습니다. 이용자들의 개인정보 조회, 수정을 위해서는 &apos;개인정보변경&apos;(또는 &apos;회원정보수정&apos; 등)을 가입해지(동의철회)를 위해서는 &quot;회원탈퇴&quot;를 클릭하여 본인 확인 절차를 거치신 후 직접 열람, 정정 또는 탈퇴가 가능합니다.
               </p>
             </section>
 
@@ -118,14 +118,14 @@ export default function PrivacyPage() {
             <section id="section-8" className="scroll-mt-24 mb-10">
               <h2 className="text-xl font-bold mb-4 text-foreground">8. 개인정보 자동 수집 장치의 설치/운영 및 거부</h2>
               <p className="text-muted-foreground leading-relaxed">
-                회사는 이용자들에게 특화된 맞춤서비스를 제공하기 위해서 이용자들의 정보를 저장하고 수시로 불러오는 '쿠키(cookie)'를 사용합니다. 이용자는 쿠키 설치에 대한 선택권을 가지고 있습니다. 따라서, 이용자는 웹브라우저에서 옵션을 설정함으로써 모든 쿠키를 허용하거나, 쿠키가 저장될 때마다 확인을 거치거나, 아니면 모든 쿠키의 저장을 거부할 수도 있습니다.
+                회사는 이용자들에게 특화된 맞춤서비스를 제공하기 위해서 이용자들의 정보를 저장하고 수시로 불러오는 &apos;쿠키(cookie)&apos;를 사용합니다. 이용자는 쿠키 설치에 대한 선택권을 가지고 있습니다. 따라서, 이용자는 웹브라우저에서 옵션을 설정함으로써 모든 쿠키를 허용하거나, 쿠키가 저장될 때마다 확인을 거치거나, 아니면 모든 쿠키의 저장을 거부할 수도 있습니다.
               </p>
             </section>
 
             <section id="section-9" className="scroll-mt-24">
               <h2 className="text-xl font-bold mb-4 text-foreground">9. 고지의 의무</h2>
               <p className="text-muted-foreground leading-relaxed">
-                현 개인정보처리방침 내용 추가, 삭제 및 수정이 있을 시에는 개정 최소 7일전부터 홈페이지의 '공지사항'을 통해 고지할 것입니다.
+                현 개인정보처리방침 내용 추가, 삭제 및 수정이 있을 시에는 개정 최소 7일전부터 홈페이지의 &apos;공지사항&apos;을 통해 고지할 것입니다.
               </p>
             </section>
           </div>

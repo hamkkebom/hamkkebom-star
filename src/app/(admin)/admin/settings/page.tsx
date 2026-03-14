@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import {
     AlertDialog,
@@ -31,7 +30,6 @@ type UserData = {
 
 export default function AdminSettingsPage() {
     const supabase = createClient();
-    const router = useRouter();
     const queryClient = useQueryClient();
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);

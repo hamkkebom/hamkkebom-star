@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight, Home, PlayCircle, Heart, Star, Compass, BookOpen, Users, Sparkles, Video } from "lucide-react";
+import { ChevronRight, Home, PlayCircle, Heart, Star, Compass, BookOpen, Users, Sparkles, Video, type LucideIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VideoCard } from "@/components/video/video-card";
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   "play-circle": PlayCircle,
   "heart": Heart,
   "star": Star,
@@ -137,7 +137,7 @@ function CategoryDetailContent() {
         <section className="mb-16">
           <h2 className="mb-6 text-xl font-bold">이 분야의 인기 크리에이터</h2>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {creators.map((creator: any) => (
+            {creators.map((creator: { id: string; name: string; avatarUrl?: string }) => (
               <div key={creator.id} className="flex flex-col items-center rounded-xl border bg-card p-6 text-center shadow-sm">
                 <Avatar className="mb-4 h-16 w-16 border-2 border-background shadow-sm">
                   <AvatarImage src={creator.avatarUrl || ""} alt={creator.name} />
@@ -180,7 +180,7 @@ function CategoryDetailContent() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {videos.map((video: any) => (
+            {videos.map((video: { id: string; title: string; thumbnailUrl: string | null; streamUid: string | null; owner?: { name: string }; createdAt: string; viewCount: number }) => (
               <VideoCard
                 key={video.id}
                 id={video.id}
@@ -204,8 +204,8 @@ function CategoryDetailContent() {
           <h2 className="mb-4 text-sm font-medium text-muted-foreground">다른 카테고리 둘러보기</h2>
           <div className="flex gap-2 overflow-x-auto pb-4">
             {categoriesData.data
-              .filter((c: any) => c.slug !== slug)
-              .map((c: any) => (
+              .filter((c: { id: string; slug: string; name: string }) => c.slug !== slug)
+              .map((c: { id: string; slug: string; name: string }) => (
                 <Link key={c.id} href={`/categories/${c.slug}`}>
                   <Badge variant="outline" className="px-4 py-2 text-sm hover:bg-accent whitespace-nowrap">
                     {c.name}

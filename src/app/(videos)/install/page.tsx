@@ -14,17 +14,16 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function PublicInstallPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as unknown as Record<string, unknown>).standalone);
+  });
+  const [isIOS] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
+  });
 
   useEffect(() => {
-    const ua = navigator.userAgent;
-    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !("MSStream" in window);
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as unknown as Record<string, unknown>).standalone);
-    
-    setIsIOS(isIOSDevice);
-    setIsInstalled(isStandalone);
-
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);

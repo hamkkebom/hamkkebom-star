@@ -55,16 +55,16 @@ export default function TermsPage() {
             <section id="article-1" className="scroll-mt-24 mb-10">
               <h2 className="text-xl font-bold mb-4 text-foreground">제1조 (목적)</h2>
               <p className="text-muted-foreground leading-relaxed">
-                본 약관은 함께봄스타(이하 "회사"라 합니다)가 제공하는 영상 제작 의뢰, 납품, 피드백 및 정산 플랫폼 서비스(이하 "서비스"라 합니다)의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
+                본 약관은 함께봄스타(이하 &quot;회사&quot;라 합니다)가 제공하는 영상 제작 의뢰, 납품, 피드백 및 정산 플랫폼 서비스(이하 &quot;서비스&quot;라 합니다)의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
               </p>
             </section>
 
             <section id="article-2" className="scroll-mt-24 mb-10">
               <h2 className="text-xl font-bold mb-4 text-foreground">제2조 (용어의 정의)</h2>
               <p className="text-muted-foreground leading-relaxed">
-                1. "서비스"란 회사가 제공하는 영상 제작 관련 중개 및 관리 플랫폼을 의미합니다.<br />
-                2. "회원"이란 본 약관에 동의하고 서비스에 가입한 자를 말하며, "STAR(영상 제작 프리랜서)"와 "ADMIN(관리자)"으로 구분됩니다.<br />
-                3. "STAR"란 회사로부터 영상 제작을 의뢰받아 결과물을 납품하는 회원을 의미합니다.
+                1. &quot;서비스&quot;란 회사가 제공하는 영상 제작 관련 중개 및 관리 플랫폼을 의미합니다.<br />
+                2. &quot;회원&quot;이란 본 약관에 동의하고 서비스에 가입한 자를 말하며, &quot;STAR(영상 제작 프리랜서)&quot;와 &quot;ADMIN(관리자)&quot;으로 구분됩니다.<br />
+                3. &quot;STAR&quot;란 회사로부터 영상 제작을 의뢰받아 결과물을 납품하는 회원을 의미합니다.
               </p>
             </section>
 

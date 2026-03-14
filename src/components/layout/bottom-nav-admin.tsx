@@ -6,9 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import {
     LayoutDashboard,
-    UserCheck,
     ClipboardList,
-    Settings,
     Menu,
     ChevronRight,
     LogOut,

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-    Megaphone, ArrowLeft, Bell, AlertTriangle, Info, ChevronRight
+    ArrowLeft, Bell, ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";

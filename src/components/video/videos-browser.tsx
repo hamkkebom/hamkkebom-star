@@ -9,8 +9,6 @@ import {
   ChevronDown,
   X,
   Film,
-  ChevronLeft,
-  ChevronRight,
   Filter,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -220,80 +218,6 @@ function DropdownItem({
         </span>
       )}
     </button>
-  );
-}
-
-
-/* ───── SwimlaneRow Component ───── */
-function SwimlaneRow({ title, videos, page }: { title: string; videos: VideoRow[], page: number }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [showLeft, setShowLeft] = useState(false);
-  const [showRight, setShowRight] = useState(true);
-
-  const handleScroll = () => {
-    if (scrollRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      setShowLeft(scrollLeft > 0);
-      setShowRight(Math.ceil(scrollLeft + clientWidth) < scrollWidth);
-    }
-  };
-
-  const scroll = (direction: "left" | "right") => {
-    if (scrollRef.current) {
-      const { clientWidth } = scrollRef.current;
-      const scrollAmount = direction === "left" ? -clientWidth * 0.75 : clientWidth * 0.75;
-      scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
-    }
-  };
-
-  if (!videos.length) return null;
-
-  return (
-    <div className="relative group w-full pt-2 pb-6 overflow-visible">
-      <h3 className="px-4 sm:px-6 lg:px-8 xl:px-[calc((100vw-1920px)/2+2rem)] text-lg sm:text-2xl font-bold mb-4 drop-shadow-md text-foreground dark:text-white">
-        {title}
-      </h3>
-
-      {/* Scroll Arrows */}
-      <div className={`absolute left-0 top-14 bottom-14 w-12 sm:w-24 z-20 bg-gradient-to-r from-background via-background/80 dark:from-[#050505] dark:via-[#050505]/80 to-transparent pointer-events-none flex items-center shrink-0 transition-opacity duration-300 ${showLeft ? 'opacity-100' : 'opacity-0'}`}>
-        <button onClick={() => scroll("left")} className="pointer-events-auto w-10 h-10 sm:w-14 sm:h-14 ml-1 sm:ml-4 rounded-full bg-white/80 dark:bg-black/80 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:scale-110 text-black dark:text-white backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md dark:shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-          <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 -ml-1" />
-        </button>
-      </div>
-
-      <div className={`absolute right-0 top-14 bottom-14 w-16 sm:w-32 z-20 bg-gradient-to-l from-background via-background/80 dark:from-[#050505] dark:via-[#050505]/80 to-transparent pointer-events-none flex items-center justify-end shrink-0 transition-opacity duration-300 ${showRight ? 'opacity-100' : 'opacity-0'}`}>
-        <button onClick={() => scroll("right")} className="pointer-events-auto w-10 h-10 sm:w-14 sm:h-14 mr-1 sm:mr-4 rounded-full bg-white/80 dark:bg-black/80 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:scale-110 text-black dark:text-white backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md dark:shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-          <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 ml-1" />
-        </button>
-      </div>
-
-      <div
-        ref={scrollRef}
-        onScroll={handleScroll}
-        className="flex gap-4 sm:gap-5 overflow-x-auto overflow-y-visible pb-12 pt-4 scrollbar-none [&::-webkit-scrollbar]:hidden snap-x snap-mandatory px-4 sm:px-6 lg:px-8 xl:px-[calc((100vw-1920px)/2+2rem)] w-full"
-      >
-        {videos.map((video, idx) => {
-          const useSigned = !!video.signedThumbnailUrl;
-          return (
-            <div key={video.id} className="w-[75vw] sm:w-[300px] lg:w-[380px] xl:w-[420px] flex-shrink-0 snap-start">
-              <VideoCard
-                id={video.id}
-                title={video.title}
-                thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
-                streamUid={useSigned ? null : video.streamUid}
-                duration={video.technicalSpec?.duration ?? null}
-                ownerName={video.owner.chineseName || video.owner.name}
-                categoryName={video.category?.name ?? null}
-                createdAt={video.createdAt}
-                viewCount={video.viewCount}
-                priority={page === 1 && idx < 4}
-                compact={true}
-              />
-            </div>
-          )
-        })}
-      </div>
-    </div>
   );
 }
 
