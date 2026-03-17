@@ -18,6 +18,7 @@ type PostListItemProps = {
     createdAt: string;
     thumbnailUrl?: string | null;
     videoId?: string | null;
+    content?: string | null;
     tags?: string[];
     author: { name: string; chineseName: string | null; avatarUrl: string | null; role: string };
     _count: { comments: number; likes: number };
