@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-function getRedirectPath(role: "ADMIN" | "STAR") {
-  return role === "ADMIN" ? "/admin" : "/stars/dashboard";
+function getRedirectPath(_role: "ADMIN" | "STAR") {
+  return "/videos";
 }
 
 function extractNameFromMetadata(

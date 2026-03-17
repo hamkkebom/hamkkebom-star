@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useLayoutEffect, memo } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
   ChevronDown,
@@ -221,6 +221,32 @@ function DropdownItem({
   );
 }
 
+/* ───── Memoized Video Grid ───── */
+const VideoGrid = memo(function VideoGrid({ videos, page }: { videos: VideoRow[]; page: number }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
+      {videos.map((video, index) => {
+        const useSigned = !!video.signedThumbnailUrl;
+        return (
+          <div key={video.id}>
+            <VideoCard
+              id={video.id}
+              title={video.title}
+              thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
+              streamUid={useSigned ? null : video.streamUid}
+              duration={video.technicalSpec?.duration ?? null}
+              ownerName={video.owner.chineseName || video.owner.name}
+              categoryName={video.category?.name ?? null}
+              createdAt={video.createdAt}
+              viewCount={video.viewCount}
+              priority={page === 1 && index < 8}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+});
 
 /* ───── Main Component ───── */
 export function VideosBrowser() {
@@ -295,28 +321,18 @@ export function VideosBrowser() {
 
   const activeFilterCount = (categoryId ? 1 : 0) + (ownerId ? 1 : 0) + (counselorId ? 1 : 0) + (durationRange !== "all" ? 1 : 0) + (sort !== "latest" ? 1 : 0);
 
-  // ─── Data fetching: categories, owners, counselors ───
-  const { data: categoriesData } = useQuery<{ data: CategoryRow[] }>({
-    queryKey: ["video-categories"],
-    queryFn: () => fetch("/api/categories").then((r) => r.json()),
-    staleTime: 60_000,
+  // ─── Data fetching: combined filters (categories + owners + counselors) ───
+  const queryClient = useQueryClient();
+
+  const { data: filtersData } = useQuery<{ data: { categories: CategoryRow[]; owners: OwnerRow[]; counselors: CounselorRow[] } }>({
+    queryKey: ["video-filters"],
+    queryFn: () => fetch("/api/videos/filters").then((r) => r.json()),
+    staleTime: 5 * 60_000, // 5 minutes — filter data rarely changes
   });
 
-  const { data: ownersData } = useQuery<{ data: OwnerRow[] }>({
-    queryKey: ["video-owners"],
-    queryFn: () => fetch("/api/videos/owners").then((r) => r.json()),
-    staleTime: 60_000,
-  });
-
-  const { data: counselorsData } = useQuery<{ data: CounselorRow[] }>({
-    queryKey: ["video-counselors"],
-    queryFn: () => fetch("/api/videos/counselors").then((r) => r.json()),
-    staleTime: 60_000,
-  });
-
-  const categories = categoriesData?.data ?? [];
-  const owners = ownersData?.data ?? [];
-  const counselors = counselorsData?.data ?? [];
+  const categories = filtersData?.data?.categories ?? [];
+  const owners = filtersData?.data?.owners ?? [];
+  const counselors = filtersData?.data?.counselors ?? [];
 
   // ─── Build endpoint ───
   const buildEndpoint = useCallback(() => {
@@ -349,8 +365,38 @@ export function VideosBrowser() {
       if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
       return (await res.json()) as VideosResponse;
     },
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
+
+  // ─── Prefetch next page ───
+  useEffect(() => {
+    if (filteredData && page < filteredData.totalPages) {
+      const nextPage = page + 1;
+      queryClient.prefetchQuery({
+        queryKey: ["videos-browse", activeSearch, nextPage, categoryId, ownerId, counselorId, durationRange, sort],
+        queryFn: async () => {
+          const params = new URLSearchParams();
+          params.set("page", String(nextPage));
+          params.set("pageSize", "20");
+          params.set("sort", sort);
+          if (categoryId) params.set("categoryId", categoryId);
+          if (ownerId) params.set("ownerId", ownerId);
+          if (counselorId) params.set("counselorId", counselorId);
+          if (durationRange !== "all") {
+            const range = DURATION_RANGES[durationRange];
+            if (range.min !== undefined) params.set("durationMin", String(range.min));
+            if (range.max !== undefined) params.set("durationMax", String(range.max));
+          }
+          if (activeSearch.trim()) {
+            params.set("q", activeSearch.trim());
+            return fetch(`/api/videos/search?${params.toString()}`).then(r => r.json());
+          }
+          return fetch(`/api/videos?${params.toString()}`).then(r => r.json());
+        },
+        staleTime: 60_000,
+      });
+    }
+  }, [filteredData, page, activeSearch, categoryId, ownerId, counselorId, durationRange, sort, queryClient]);
 
   const isLoading = isFilteredLoading;
   const displayData = filteredData;
@@ -676,27 +722,7 @@ export function VideosBrowser() {
               <h2 className="text-xl sm:text-2xl font-bold text-foreground dark:text-white mb-6">
                 {hasActiveFilter ? "탐색 결과" : "전체 영상"}
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
-                {filteredData?.data.map((video, index) => {
-                  const useSigned = !!video.signedThumbnailUrl;
-                  return (
-                    <div key={video.id} className="animate-in fade-in slide-in-from-bottom-4 group">
-                      <VideoCard
-                        id={video.id}
-                        title={video.title}
-                        thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
-                        streamUid={useSigned ? null : video.streamUid}
-                        duration={video.technicalSpec?.duration ?? null}
-                        ownerName={video.owner.chineseName || video.owner.name}
-                        categoryName={video.category?.name ?? null}
-                        createdAt={video.createdAt}
-                        viewCount={video.viewCount}
-                        priority={page === 1 && index < 8}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+              <VideoGrid videos={filteredData!.data} page={page} />
             </div>
           </div>
         )}

@@ -2,33 +2,11 @@ import { NextResponse } from "next/server";
 import { VideoStatus, VideoSubject, SubmissionStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
-import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
-import { extractR2Key, getPresignedGetUrl } from "@/lib/cloudflare/r2-upload";
 export const dynamic = "force-dynamic";
 
 const videoStatuses = new Set(Object.values(VideoStatus));
 const videoSubjects = new Set(Object.values(VideoSubject));
 const submissionStatuses = new Set(Object.values(SubmissionStatus));
-
-// ── 서버사이드 썸네일 URL 메모리 캐시 (TTL 50분) ──
-const thumbnailCache = new Map<string, { url: string; expiresAt: number }>();
-const CACHE_TTL_MS = 50 * 60 * 1000; // 50분 (토큰 유효기간 60분보다 짧게)
-
-function getCachedThumbnail(key: string): string | null {
-  const cached = thumbnailCache.get(key);
-  if (cached && cached.expiresAt > Date.now()) return cached.url;
-  if (cached) thumbnailCache.delete(key);
-  return null;
-}
-
-function setCachedThumbnail(key: string, url: string): void {
-  thumbnailCache.set(key, { url, expiresAt: Date.now() + CACHE_TTL_MS });
-  // 캐시 크기 제한 (최대 500개)
-  if (thumbnailCache.size > 500) {
-    const firstKey = thumbnailCache.keys().next().value;
-    if (firstKey) thumbnailCache.delete(firstKey);
-  }
-}
 
 export async function GET(request: Request) {
   // 비로그인도 APPROVED/FINAL 영상 조회 가능 (공개 API)
@@ -202,69 +180,29 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  // ── 썸네일 URL 생성 (메모리 캐시 활용, 캐시 미스만 외부 호출) ──
-  const rowsWithThumbnails = await Promise.all(
-    rows.map(async (row) => {
-      let finalThumbnailUrl: string | null = null;
-      const cacheKey = `thumb:${row.id}`;
+  // ── 썸네일 URL 생성 (외부 API 호출 없이 공개 CDN URL 직접 사용) ──
+  const rowsWithThumbnails = rows.map((row) => {
+    // streamUid가 있으면 CF Stream 공개 CDN 썸네일 직접 사용 (서명 불필요)
+    // 클라이언트 VideoCard도 동일한 URL을 getStaticThumb()으로 생성 가능
+    let finalThumbnailUrl: string | null = null;
 
-      // 캐시 확인 — 히트 시 외부 API 호출 스킵
-      const cached = getCachedThumbnail(cacheKey);
-      if (cached) {
-        finalThumbnailUrl = cached;
-      } else {
-        // 1순위: 최신 Submission.thumbnailUrl (스타가 직접 업로드한 썸네일)
-        const subThumbUrl = row.submissions?.[0]?.thumbnailUrl;
-        if (subThumbUrl) {
-          const r2Key = extractR2Key(subThumbUrl);
-          if (r2Key) {
-            try {
-              finalThumbnailUrl = await getPresignedGetUrl(r2Key);
-            } catch { /* R2 실패 시 fallback */ }
-          }
-        }
+    if (row.streamUid) {
+      finalThumbnailUrl = `https://videodelivery.net/${row.streamUid}/thumbnails/thumbnail.jpg?time=1s&width=480&height=270&fit=crop`;
+    } else if (row.thumbnailUrl) {
+      // R2가 아닌 외부 URL (airtable 등)은 그대로 사용
+      finalThumbnailUrl = row.thumbnailUrl;
+    }
 
-        // 2순위: Video.thumbnailUrl (R2 URL)
-        if (!finalThumbnailUrl && row.thumbnailUrl) {
-          const r2Key = extractR2Key(row.thumbnailUrl);
-          if (r2Key) {
-            try {
-              finalThumbnailUrl = await getPresignedGetUrl(r2Key);
-            } catch { /* R2 실패 시 fallback */ }
-          }
-        }
+    const latestSubmission = row.submissions?.[0] ?? null;
+    const { submissions: _submissions, ...restRow } = row;
 
-        // 3순위: Cloudflare Stream 자동 생성 썸네일 (서명 토큰 → unsigned fallback)
-        if (!finalThumbnailUrl && row.streamUid) {
-          try {
-            const token = await getSignedPlaybackToken(row.streamUid);
-            if (token) {
-              finalThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
-            }
-          } catch { /* ignore */ }
-          // 서명 토큰 실패 시 unsigned fallback (requireSignedURLs 미설정 영상용)
-          if (!finalThumbnailUrl) {
-            finalThumbnailUrl = `https://videodelivery.net/${row.streamUid}/thumbnails/thumbnail.jpg?time=1s&width=640`;
-          }
-        }
-
-        // 캐시에 저장
-        if (finalThumbnailUrl) {
-          setCachedThumbnail(cacheKey, finalThumbnailUrl);
-        }
-      }
-
-      const latestSubmission = row.submissions?.[0] ?? null;
-      const { submissions: _submissions, ...restRow } = row;
-
-      return {
-        ...restRow,
-        signedThumbnailUrl: finalThumbnailUrl,
-        submissionId: latestSubmission?.id ?? null,
-        latestSubmissionStatus: latestSubmission?.status ?? null,
-      };
-    })
-  );
+    return {
+      ...restRow,
+      signedThumbnailUrl: finalThumbnailUrl,
+      submissionId: latestSubmission?.id ?? null,
+      latestSubmissionStatus: latestSubmission?.status ?? null,
+    };
+  });
 
   // 상태별 카운트를 { DRAFT: 0, PENDING: 5, ... } 형태로 변환
   const statusCounts: Record<string, number> = {};

@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -152,6 +152,37 @@ export default function PostDetailPage() {
   const post = data.data;
   const authorName = post.author.chineseName || post.author.name;
   const isAuthorOrAdmin = user?.id === post.author.id || user?.role === "ADMIN";
+
+  useEffect(() => {
+    if (post) {
+      try {
+        const stored = localStorage.getItem("community_recent_posts");
+        let parsed: any[] = [];
+        if (stored) {
+           parsed = JSON.parse(stored);
+        }
+        
+        // Remove existing entry for this post
+        parsed = parsed.filter(p => p.id !== post.id);
+        
+        // Add to front
+        parsed.unshift({
+          id: post.id,
+          title: post.title,
+          boardType: post.boardType,
+          viewedAt: Date.now(),
+          author: authorName
+        });
+        
+        // Keep only top 10
+        parsed = parsed.slice(0, 10);
+        
+        localStorage.setItem("community_recent_posts", JSON.stringify(parsed));
+      } catch (e) {
+        console.error("Failed to save recent post", e);
+      }
+    }
+  }, [post, authorName]);
 
   return (
     <div className="container max-w-3xl mx-auto px-4 py-6 pb-20 md:pb-8">

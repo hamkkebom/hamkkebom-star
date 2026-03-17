@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BoardTabs } from "@/components/community/board-tabs";
 import { PostListItem } from "@/components/community/post-list-item";
+import { CommunityLeftNav } from "@/components/community/left-nav/community-left-nav";
+import { CommunitySidebar } from "@/components/community/sidebar/community-sidebar";
 import { cn } from "@/lib/utils";
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -51,7 +53,16 @@ export default function CommunityPage() {
   const totalPages = data?.totalPages || 1;
 
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-6 pb-20 md:pb-8 min-h-screen flex flex-col">
+    <div className="container max-w-[1400px] mx-auto px-4 py-8 md:py-12 pb-20 md:pb-16 min-h-screen flex flex-col">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[220px_1fr_320px] gap-6 xl:gap-8 flex-1 items-start">
+        
+        {/* 1. Left Navigation (Desktop Only) */}
+        <aside className="hidden lg:block sticky top-24 h-fit">
+          <CommunityLeftNav />
+        </aside>
+
+        {/* 2. Main Content Area */}
+        <main className="min-w-0 flex flex-col w-full h-full">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-4">커뮤니티</h1>
         <BoardTabs activeTab={boardType} onChange={(tab) => { setBoardType(tab); setPage(1); }} />
@@ -77,37 +88,88 @@ export default function CommunityPage() {
           ))}
         </div>
 
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-64 md:hidden">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="게시글 검색..."
             value={searchInput}
             onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
-            className="pl-9 bg-muted/50 border-transparent focus-visible:bg-background"
+            className="pl-9 bg-muted/50 border-transparent focus-visible:bg-background h-10"
           />
         </div>
       </div>
 
-      <div className={cn("flex-1 bg-card rounded-xl border border-border overflow-hidden", boardType === "SHOWCASE" && "bg-transparent border-none")}>
+      <div className={cn("flex-1", boardType === "SHOWCASE" && "bg-transparent border-none")}>
         {isLoading ? (
-          <div className={cn("divide-y divide-border", boardType === "SHOWCASE" && "grid grid-cols-2 md:grid-cols-3 gap-4 divide-y-0")}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className={cn("p-4 flex gap-3", boardType === "SHOWCASE" && "flex-col p-0 rounded-xl border border-border overflow-hidden")}>
-                {boardType === "SHOWCASE" && <Skeleton className="aspect-video w-full" />}
-                <div className={cn("flex-1 space-y-3", boardType === "SHOWCASE" && "p-3")}>
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
+          <div className={cn(
+            boardType === "SHOWCASE" 
+              ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6" 
+              : "grid grid-cols-1 sm:grid-cols-2 gap-5 md:flex md:flex-col md:gap-0 md:bg-card md:rounded-2xl md:border md:border-border md:shadow-sm md:overflow-hidden"
+          )}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              boardType === "SHOWCASE" ? (
+                <div key={i} className="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
+                  <Skeleton className="aspect-video w-full rounded-none" />
+                  <div className="p-4 space-y-3">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-5 w-3/4" />
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/50">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div key={i} className="">
+                   <div className="md:hidden rounded-2xl border border-border bg-card flex flex-col h-[200px] shadow-sm">
+                      <div className="p-5 flex-1 space-y-3">
+                          <Skeleton className="h-5 w-16 rounded-md" />
+                          <Skeleton className="h-6 w-11/12" />
+                          <Skeleton className="h-4 w-full mt-4" />
+                          <Skeleton className="h-4 w-2/3" />
+                      </div>
+                      <div className="px-5 py-3.5 bg-muted/10 border-t border-border/50 flex justify-between">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-4 w-16" />
+                      </div>
+                   </div>
+                   <div className="hidden md:flex items-center justify-between px-5 py-4 border-b border-border/50 last:border-0 bg-card">
+                      <div className="flex items-center gap-4 flex-1 pr-4">
+                          <Skeleton className="h-5 w-16 rounded-md shrink-0" />
+                          <Skeleton className="h-5 w-3/4 max-w-md shrink-0" />
+                      </div>
+                      <div className="flex items-center gap-6 shrink-0">
+                          <Skeleton className="h-4 w-20 shrink-0" />
+                          <Skeleton className="h-4 w-16 shrink-0" />
+                          <Skeleton className="h-4 w-24 shrink-0" />
+                      </div>
+                   </div>
+                </div>
+              )
             ))}
           </div>
         ) : posts.length > 0 ? (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={cn("divide-y divide-border", boardType === "SHOWCASE" && "grid grid-cols-2 md:grid-cols-3 gap-4 divide-y-0")}
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             className={cn(
+               boardType === "SHOWCASE" 
+                 ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6" 
+                 : "grid grid-cols-1 sm:grid-cols-2 gap-5 md:flex md:flex-col md:gap-0 md:bg-card md:rounded-2xl md:border md:border-border md:shadow-sm md:overflow-hidden"
+             )}
           >
-            {posts.map((post: { id: string; boardType: string; title: string; isPinned: boolean; isNotice: boolean; viewCount: number; likeCount: number; createdAt: string; thumbnailUrl?: string | null; videoId?: string | null; tags?: string[]; author: { name: string; chineseName: string | null; avatarUrl: string | null; role: string }; _count: { comments: number; likes: number } }, i: number) => (
+            {/* Header row for desktop list */}
+            {boardType !== "SHOWCASE" && (
+                <div className="hidden md:flex items-center justify-between px-5 py-3.5 bg-muted/40 border-b border-border text-[13px] font-bold text-muted-foreground/80">
+                    <div className="flex-1 pl-[92px]">제목</div>
+                    <div className="flex items-center gap-6">
+                        <div className="w-[120px] text-left">작성자</div>
+                        <div className="w-[70px] text-right">작성일</div>
+                        <div className="w-[140px] text-right pr-1">조회 / 공감 / 댓글</div>
+                    </div>
+                </div>
+            )}
+            {posts.map((post: { id: string; boardType: string; title: string; content?: string; isPinned: boolean; isNotice: boolean; viewCount: number; likeCount: number; createdAt: string; thumbnailUrl?: string | null; videoId?: string | null; tags?: string[]; author: { name: string; chineseName: string | null; avatarUrl: string | null; role: string }; _count: { comments: number; likes: number } }, i: number) => (
               <motion.div
                 key={post.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -160,6 +222,13 @@ export default function CommunityPage() {
           </Button>
         </div>
       )}
+        </main>
+
+        {/* 3. Right Sidebar (Tablet & Desktop) */}
+        <aside className="hidden md:block sticky top-24 h-fit">
+          <CommunitySidebar searchQuery={searchInput} setSearchQuery={setSearchInput} setPage={setPage} />
+        </aside>
+      </div>
 
       <Link href="/community/write" className="fixed bottom-24 right-6 md:hidden z-50">
         <Button size="icon" className="w-14 h-14 rounded-full shadow-lg bg-violet-600 hover:bg-violet-700 text-white">

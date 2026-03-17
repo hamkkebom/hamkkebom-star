@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { memo, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Clock, User, Play, Eye } from "lucide-react";
-import { motion, useMotionValue, useSpring, useTransform, useMotionTemplate } from "framer-motion";
 
 type VideoCardProps = {
   id: string;
@@ -42,7 +41,7 @@ function formatDuration(seconds: number | null): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function VideoCard({
+export const VideoCard = memo(function VideoCard({
   id,
   title,
   thumbnailUrl,
@@ -55,35 +54,24 @@ export function VideoCard({
   priority = false,
   viewCount,
 }: VideoCardProps) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   const thumb = getStaticThumb(streamUid, thumbnailUrl);
   const [isHovered, setIsHovered] = useState(false);
   const [thumbFailed, setThumbFailed] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  // V3 Framer Motion 3D Tilt values
-  const x = useMotionValue(0.5);
-  const y = useMotionValue(0.5);
-
-  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
-  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
-
-  const rotateX = useTransform(mouseYSpring, [0, 1], [6, -6]);
-  const rotateY = useTransform(mouseXSpring, [0, 1], [-6, 6]);
-
-  const bgX = useTransform(mouseXSpring, v => `${v * 100}%`);
-  const bgY = useTransform(mouseYSpring, v => `${v * 100}%`);
-  const glowBackground = useMotionTemplate`radial-gradient(circle at ${bgX} ${bgY}, rgba(139, 92, 246, 0.15) 0%, transparent 60%)`;
-
+  // CSS 3D tilt via mouse position → CSS custom properties
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    x.set(mouseX / rect.width);
-    y.set(mouseY / rect.height);
-  }, [x, y]);
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    el.style.setProperty("--rx", `${(y - 0.5) * -12}deg`);
+    el.style.setProperty("--ry", `${(x - 0.5) * 12}deg`);
+    el.style.setProperty("--glow-x", `${x * 100}%`);
+    el.style.setProperty("--glow-y", `${y * 100}%`);
+  }, []);
 
   const handleMouseEnter = useCallback(() => {
     hoverTimer.current = setTimeout(() => setIsHovered(true), 300);
@@ -92,10 +80,12 @@ export function VideoCard({
   const handleMouseLeave = useCallback(() => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
     setIsHovered(false);
-    // Reset 3D Tilt
-    x.set(0.5);
-    y.set(0.5);
-  }, [x, y]);
+    const el = cardRef.current;
+    if (el) {
+      el.style.setProperty("--rx", "0deg");
+      el.style.setProperty("--ry", "0deg");
+    }
+  }, []);
 
   const showAnimated = isHovered && !!streamUid;
 
@@ -103,25 +93,30 @@ export function VideoCard({
     <Link
       href={`/videos/${id}`}
       className={`group block relative outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${compact ? "w-[280px] shrink-0 snap-start sm:w-[320px]" : "w-full"}`}
-      style={{ perspective: 1200 }} // Needed for 3D perspective
+      style={{ perspective: 1200 }}
     >
-      <motion.div
-        className="relative overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/5 shadow-md dark:shadow-none transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.08] hover:shadow-[0_0_50px_rgba(139,92,246,0.3)] dark:hover:shadow-[0_0_50px_rgba(139,92,246,0.5)] hover:border-black/20 dark:hover:border-white/20 hover:z-50 will-change-transform"
+      <div
+        ref={cardRef}
+        className="relative overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/5 shadow-md dark:shadow-none hover:scale-[1.08] hover:shadow-[0_0_50px_rgba(139,92,246,0.3)] dark:hover:shadow-[0_0_50px_rgba(139,92,246,0.5)] hover:border-black/20 dark:hover:border-white/20 hover:z-50 will-change-transform"
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        style={mounted ? { rotateX, rotateY, transformStyle: "preserve-3d" } : undefined}
+        style={{
+          transform: "rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))",
+          transformStyle: "preserve-3d",
+          transition: "transform 0.15s ease-out, scale 0.5s cubic-bezier(0.25,1,0.5,1), box-shadow 0.5s cubic-bezier(0.25,1,0.5,1), border-color 0.5s",
+        }}
       >
-        {/* V3 Mouse Tracking Glow Layer */}
-        {mounted && (
-          <motion.div
-            className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 mix-blend-screen dark:mix-blend-lighten"
-            style={{ background: glowBackground }}
-          />
-        )}
+        {/* Mouse Tracking Glow Layer — pure CSS */}
+        <div
+          className="pointer-events-none absolute inset-0 z-10 opacity-0 group-hover:opacity-100 mix-blend-screen dark:mix-blend-lighten transition-opacity duration-300"
+          style={{
+            background: "radial-gradient(circle at var(--glow-x, 50%) var(--glow-y, 50%), rgba(139, 92, 246, 0.15) 0%, transparent 60%)",
+          }}
+        />
 
         {/* Thumbnail */}
-        <div className="relative aspect-video overflow-hidden bg-muted" style={{ transform: 'translateZ(20px)' }}> {/* Push content forward */}
+        <div className="relative aspect-video overflow-hidden bg-muted" style={{ transform: 'translateZ(20px)' }}>
           {thumb && !thumbFailed ? (
             <>
               {/* Static thumbnail (always rendered) */}
@@ -135,15 +130,13 @@ export function VideoCard({
                 onError={() => setThumbFailed(true)}
                 priority={priority}
               />
-              {/* Animated GIF (shown on hover) */}
+              {/* Animated GIF (shown on hover after 300ms) */}
               {showAnimated && streamUid && (
-                <Image
+                <img
                   src={getAnimatedThumb(streamUid)}
                   alt={`${title} 미리보기`}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
                 />
               )}
             </>
@@ -169,7 +162,7 @@ export function VideoCard({
             </div>
           ) : null}
 
-          {/* Hover play icon (Pushed forward more for depth) */}
+          {/* Hover play icon */}
           <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ transform: 'translateZ(40px)' }}>
             <div className="flex h-14 w-14 scale-50 items-center justify-center rounded-full bg-violet-600/90 text-white shadow-[0_0_30px_rgba(139,92,246,0.6)] backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110 will-change-transform">
               <Play className="h-6 w-6 fill-current pl-1" />
@@ -180,7 +173,7 @@ export function VideoCard({
           <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-10" />
         </div>
 
-        {/* Info - Pushed forward for 3D effect */}
+        {/* Info */}
         <div className={`relative z-20 bg-gradient-to-t from-white via-white/95 to-white/0 dark:from-black dark:via-zinc-900/90 dark:to-zinc-900/0 ${compact ? "p-3" : "p-4"}`} style={{ transform: 'translateZ(15px)' }}>
           <h3 className={`line-clamp-2 font-extrabold leading-snug tracking-tight text-foreground dark:text-white transition-colors group-hover:text-violet-600 dark:group-hover:text-violet-400 ${compact ? "text-xs" : "text-base sm:text-lg"}`}>
             {title}
@@ -211,7 +204,7 @@ export function VideoCard({
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </Link>
   );
-}
+});
