@@ -186,7 +186,7 @@ export function UploadSheet({ open, onOpenChange, assignment }: UploadSheetProps
         className={cn(
           "flex flex-col gap-0 p-0",
           isMobile
-            ? "rounded-t-2xl max-h-[90dvh] overflow-y-auto"
+            ? "rounded-t-2xl h-[90dvh] overflow-y-auto"
             : "w-full max-w-[550px] overflow-y-auto"
         )}
         onInteractOutside={preventClose}
@@ -252,7 +252,10 @@ export function UploadSheet({ open, onOpenChange, assignment }: UploadSheetProps
         </SheetHeader>
 
         {/* ── Animated Step Content ───────────────────────────────────────── */}
-        <div className="flex-1 overflow-hidden relative">
+        <div className={cn(
+          "flex-1 overflow-hidden relative",
+          isMobile && "min-h-[60dvh]"
+        )}>
           <AnimatePresence mode="wait" custom={direction} initial={false}>
             {/* ── STEP 0: 메타데이터 입력 ──────────────────────────────── */}
             {step === 0 && (

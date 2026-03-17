@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useRouter } from "next/navigation";
@@ -110,6 +110,18 @@ export function UploadPageClient({
   const [resetKey, setResetKey] = useState(0); // 썸네일 업로더 초기화 키
 
   const selectedAssignment = assignments.find((a) => a.id === selectedAssignmentId);
+  const uploadFormRef = useRef<HTMLDivElement>(null);
+
+  // 모바일에서 프로젝트 선택 시 폼 영역으로 자동 스크롤
+  useEffect(() => {
+    if (selectedAssignment && uploadFormRef.current) {
+      // 약간의 딜레이 후 스크롤 (애니메이션 시작 후)
+      const timer = setTimeout(() => {
+        uploadFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedAssignment]);
 
   // 초기 카테고리 설정 (프로젝트 요청에 카테고리가 있다면 매칭 시도)
   /* 
@@ -452,7 +464,9 @@ export function UploadPageClient({
           )}
 
           {/* ─── 상세 정보 및 업로드 폼 (내 프로젝트 탭에서만 표시) ─── */}
-          <div className={cn(
+          <div
+            ref={uploadFormRef}
+            className={cn(
             "transition-all duration-500 ease-in-out",
             selectedAssignment ? "opacity-100 translate-y-0" : "opacity-50 translate-y-4 pointer-events-none grayscale hidden h-0 overflow-hidden"
           )}>
