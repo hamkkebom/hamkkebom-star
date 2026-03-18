@@ -3,8 +3,9 @@
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Film, Users, MessageSquare, Eye, Heart, X, TrendingUp } from "lucide-react";
+import { Search, Film, Users, MessageSquare, Eye, Heart, X, TrendingUp, Play } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,8 @@ type VideoResult = {
   title: string;
   viewCount: number;
   createdAt: string;
+  thumbnailUrl: string | null;
+  streamUid: string | null;
   owner: { id: string; name: string; chineseName: string | null };
   category: { name: string } | null;
 };
@@ -259,9 +262,27 @@ function ExploreContent() {
                     className="snap-start shrink-0 w-[280px] md:w-auto group"
                   >
                     <div className="aspect-video bg-muted rounded-xl mb-3 overflow-hidden relative border border-border/50">
-                      <div className="absolute inset-0 bg-secondary/20 group-hover:bg-transparent transition-colors" />
+                      {(video.thumbnailUrl || video.streamUid) ? (
+                        <Image
+                          src={video.thumbnailUrl ?? `https://videodelivery.net/${video.streamUid}/thumbnails/thumbnail.jpg?width=480&height=270&fit=crop`}
+                          alt={video.title}
+                          fill
+                          unoptimized
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/20 dark:to-indigo-900/20 flex items-center justify-center">
+                          <Play className="w-8 h-8 text-muted-foreground/30" />
+                        </div>
+                      )}
+                      {/* 재생 버튼 오버레이 */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                          <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+                        </div>
+                      </div>
                       {video.category && (
-                        <Badge className="absolute top-2 right-2 bg-black/60 hover:bg-black/60 text-white border-none backdrop-blur-sm">
+                        <Badge className="absolute top-2 right-2 bg-black/60 hover:bg-black/60 text-white border-none backdrop-blur-sm z-20">
                           {video.category.name}
                         </Badge>
                       )}

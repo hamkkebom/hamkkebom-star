@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
                 title: true,
                 viewCount: true,
                 createdAt: true,
+                thumbnailUrl: true,
+                streamUid: true,
                 owner: { select: { id: true, name: true, chineseName: true } },
                 category: { select: { name: true } },
             },
