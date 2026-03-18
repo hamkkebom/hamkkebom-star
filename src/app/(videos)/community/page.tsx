@@ -1,11 +1,8 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Search, PenSquare, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,6 +23,14 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function CommunityPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <CommunityContent />
+    </Suspense>
+  );
+}
+
+function CommunityContent() {
   const [boardType, setBoardType] = useState("");
   const [sort, setSort] = useState("latest");
   const [searchInput, setSearchInput] = useState("");
@@ -149,10 +154,9 @@ export default function CommunityPage() {
             ))}
           </div>
         ) : posts.length > 0 ? (
-          <motion.div
-             initial={{ opacity: 0 }}
-             animate={{ opacity: 1 }}
+          <div
              className={cn(
+               "animate-in fade-in-0 duration-300",
                boardType === "SHOWCASE" 
                  ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6" 
                  : "grid grid-cols-1 sm:grid-cols-2 gap-5 md:flex md:flex-col md:gap-0 md:bg-card md:rounded-2xl md:border md:border-border md:shadow-sm md:overflow-hidden"
@@ -170,16 +174,15 @@ export default function CommunityPage() {
                 </div>
             )}
             {posts.map((post: { id: string; boardType: string; title: string; content?: string; isPinned: boolean; isNotice: boolean; viewCount: number; likeCount: number; createdAt: string; thumbnailUrl?: string | null; videoId?: string | null; tags?: string[]; author: { name: string; chineseName: string | null; avatarUrl: string | null; role: string }; _count: { comments: number; likes: number } }, i: number) => (
-              <motion.div
+              <div
                 key={post.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
+                className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
+                style={{ animationDelay: `${i * 50}ms`, animationFillMode: "backwards" }}
               >
                 <PostListItem post={post} />
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center px-4 bg-card rounded-xl border border-border">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">

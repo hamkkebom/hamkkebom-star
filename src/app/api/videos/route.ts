@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { VideoStatus, VideoSubject, SubmissionStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
@@ -9,8 +10,10 @@ const videoSubjects = new Set(Object.values(VideoSubject));
 const submissionStatuses = new Set(Object.values(SubmissionStatus));
 
 export async function GET(request: Request) {
-  // 비로그인도 APPROVED/FINAL 영상 조회 가능 (공개 API)
-  const user = await getAuthUser().catch(() => null);
+  // Fast path: 세션 쿠키 없으면 Supabase auth 호출 스킵 (~100-300ms 절약)
+  const cookieStore = await cookies();
+  const hasSession = cookieStore.getAll().some(c => c.name.includes("sb-"));
+  const user = hasSession ? await getAuthUser().catch(() => null) : null;
 
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);

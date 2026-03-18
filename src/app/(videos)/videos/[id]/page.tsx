@@ -14,8 +14,25 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { VideoPlayer } from "@/components/video/video-player";
 import { LikeButton } from "@/components/video/like-button";
 import { BookmarkButton } from "@/components/video/bookmark-button";
-import { VideoComments } from "@/components/video/video-comments";
-import { ReportDialog } from "@/components/community/report-dialog";
+import dynamic from "next/dynamic";
+import { Loader2 } from "lucide-react";
+
+const VideoComments = dynamic(
+  () => import("@/components/video/video-comments").then((m) => ({ default: m.VideoComments })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
+      </div>
+    ),
+  }
+);
+
+const ReportDialog = dynamic(
+  () => import("@/components/community/report-dialog").then((m) => ({ default: m.ReportDialog })),
+  { ssr: false }
+);
 import {
   ArrowLeft,
   Calendar,

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { getVideoStatus } from "@/lib/cloudflare/stream";
@@ -25,8 +26,10 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
   try {
-    // 공개 영상(APPROVED/FINAL)은 인증 없이 조회 가능
-    const user = await getAuthUser().catch(() => null);
+    // Fast path: 세션 쿠키 없으면 Supabase auth 호출 스킵 (~100-300ms 절약)
+    const cookieStore = await cookies();
+    const hasSession = cookieStore.getAll().some(c => c.name.includes("sb-"));
+    const user = hasSession ? await getAuthUser().catch(() => null) : null;
     const { id } = await params;
 
     const video = await prisma.video.findUnique({

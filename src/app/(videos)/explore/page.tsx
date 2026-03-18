@@ -1,12 +1,9 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { Search, Film, Users, MessageSquare, Eye, Heart, X, TrendingUp } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -77,19 +74,6 @@ function formatTimeAgo(dateString: string) {
   const diffInDays = Math.floor(diffInHours / 24);
   return `${diffInDays}일 전`;
 }
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
 
 export default function ExplorePage() {
   return (
@@ -180,10 +164,8 @@ function ExploreContent() {
 
         {/* Initial State: Popular Tags */}
         {!debouncedQuery && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-8"
+          <div 
+            className="mt-8 animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
           >
             <h2 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
@@ -205,7 +187,7 @@ function ExploreContent() {
               <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
               <p>검색어를 입력하여 영상, 크리에이터, 커뮤니티 글을 찾아보세요.</p>
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
 
@@ -248,30 +230,23 @@ function ExploreContent() {
 
       {/* No Results State */}
       {data && !hasResults && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-20"
+        <div 
+          className="text-center py-20 animate-in fade-in-0 duration-300"
         >
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
             <Search className="w-8 h-8 text-muted-foreground" />
           </div>
           <h3 className="text-xl font-medium mb-2">&apos;{debouncedQuery}&apos;에 대한 검색 결과가 없습니다.</h3>
           <p className="text-muted-foreground">다른 검색어를 입력하거나 철자를 확인해보세요.</p>
-        </motion.div>
+        </div>
       )}
 
       {/* Results State */}
       {data && hasResults && (
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="space-y-12"
-        >
+        <div className="space-y-12 animate-in fade-in-0 duration-300">
           {/* Section 1: Videos */}
           {data.videos.length > 0 && (
-            <motion.section variants={itemVariants}>
+            <section className="animate-in fade-in-0 slide-in-from-bottom-5 duration-400" style={{ animationDelay: "0ms", animationFillMode: "both" }}>
               <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
                 <Film className="w-5 h-5 text-primary" />
                 🎬 영상 <span className="text-muted-foreground text-sm font-normal">{data.videos.length}</span>
@@ -303,12 +278,12 @@ function ExploreContent() {
                   </Link>
                 ))}
               </div>
-            </motion.section>
+            </section>
           )}
 
           {/* Section 2: Stars */}
           {data.stars.length > 0 && (
-            <motion.section variants={itemVariants}>
+            <section className="animate-in fade-in-0 slide-in-from-bottom-5 duration-400" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
               <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
                 <Users className="w-5 h-5 text-primary" />
                 ⭐ 크리에이터 <span className="text-muted-foreground text-sm font-normal">{data.stars.length}</span>
@@ -341,12 +316,12 @@ function ExploreContent() {
                   </Link>
                 ))}
               </div>
-            </motion.section>
+            </section>
           )}
 
           {/* Section 3: Posts */}
           {data.posts.length > 0 && (
-            <motion.section variants={itemVariants}>
+            <section className="animate-in fade-in-0 slide-in-from-bottom-5 duration-400" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
               <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
                 <MessageSquare className="w-5 h-5 text-primary" />
                 💬 커뮤니티 <span className="text-muted-foreground text-sm font-normal">{data.posts.length}</span>
@@ -388,9 +363,9 @@ function ExploreContent() {
                   </Link>
                 ))}
               </div>
-            </motion.section>
+            </section>
           )}
-        </motion.div>
+        </div>
       )}
     </main>
   );

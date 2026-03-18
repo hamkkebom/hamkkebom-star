@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { MessageSquare, Heart, Send, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "sonner";
@@ -132,8 +132,8 @@ export function VideoComments({ videoId }: { videoId: string }) {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {comments.map((comment) => (
-                        <motion.div key={comment.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                    {comments.map((comment, index) => (
+                        <div key={comment.id} className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: "backwards" }}>
                             <div className="flex gap-2.5">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
                                     {(comment.author.chineseName || comment.author.name).charAt(0)}
@@ -162,29 +162,27 @@ export function VideoComments({ videoId }: { videoId: string }) {
                                     </div>
 
                                     {/* 대댓글 입력 */}
-                                    <AnimatePresence>
-                                        {replyTo === comment.id && user && (
-                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                                                <div className="flex gap-2 mt-2">
-                                                    <input
-                                                        value={replyInput}
-                                                        onChange={(e) => setReplyInput(e.target.value)}
-                                                        placeholder="답글을 입력하세요..."
-                                                        className="flex-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
-                                                        onKeyDown={(e) => { if (e.key === "Enter" && replyInput.trim()) postComment.mutate({ content: replyInput, parentId: comment.id }); }}
-                                                        autoFocus
-                                                    />
-                                                    <button
-                                                        disabled={!replyInput.trim()}
-                                                        onClick={() => postComment.mutate({ content: replyInput, parentId: comment.id })}
-                                                        className="rounded-lg bg-violet-600 text-white text-xs px-3 py-2 disabled:opacity-50 active:scale-95"
-                                                    >
-                                                        등록
-                                                    </button>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                                    {replyTo === comment.id && user && (
+                                        <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                                            <div className="flex gap-2 mt-2">
+                                                <input
+                                                    value={replyInput}
+                                                    onChange={(e) => setReplyInput(e.target.value)}
+                                                    placeholder="답글을 입력하세요..."
+                                                    className="flex-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                                    onKeyDown={(e) => { if (e.key === "Enter" && replyInput.trim()) postComment.mutate({ content: replyInput, parentId: comment.id }); }}
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    disabled={!replyInput.trim()}
+                                                    onClick={() => postComment.mutate({ content: replyInput, parentId: comment.id })}
+                                                    className="rounded-lg bg-violet-600 text-white text-xs px-3 py-2 disabled:opacity-50 active:scale-95"
+                                                >
+                                                    등록
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* 대댓글 목록 */}
                                     {comment.children?.length > 0 && (
@@ -207,7 +205,7 @@ export function VideoComments({ videoId }: { videoId: string }) {
                                     )}
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     ))}
                 </div>
             )}
