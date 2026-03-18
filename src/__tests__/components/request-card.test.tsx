@@ -17,7 +17,7 @@ describe("RequestCard", () => {
     id: "req-001",
     title: "숏폼 브랜디드 영상 제작",
     categories: ["숏폼", "브랜딩"],
-    deadline: "2026-03-15T00:00:00Z",
+    deadline: "2027-12-31T00:00:00Z",
     estimatedBudget: 500000,
     maxAssignees: 5,
     currentAssignees: 2,

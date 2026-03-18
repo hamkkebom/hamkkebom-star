@@ -56,6 +56,12 @@ vi.mock("@/lib/cloudflare/r2-upload", () => ({
   getPresignedGetUrl: vi.fn().mockResolvedValue("https://mock.url"),
 }));
 
+vi.mock("next/headers", () => ({
+  cookies: vi.fn().mockResolvedValue({
+    getAll: vi.fn().mockReturnValue([{ name: "sb-access-token", value: "mock" }]),
+  }),
+}));
+
 // --- Helpers ---
 
 const adminUser = { id: "admin-001", role: "ADMIN", name: "관리자" };
