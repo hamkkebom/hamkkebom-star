@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { VideoStatus, VideoSubject, SubmissionStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
+import { addSignedThumbnails } from "@/lib/thumbnail";
 export const dynamic = "force-dynamic";
 
 const videoStatuses = new Set(Object.values(VideoStatus));
@@ -183,29 +184,20 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  // ── 썸네일 URL 생성 (외부 API 호출 없이 공개 CDN URL 직접 사용) ──
-  const rowsWithThumbnails = rows.map((row) => {
-    // streamUid가 있으면 CF Stream 공개 CDN 썸네일 직접 사용 (서명 불필요)
-    // 클라이언트 VideoCard도 동일한 URL을 getStaticThumb()으로 생성 가능
-    let finalThumbnailUrl: string | null = null;
-
-    if (row.streamUid) {
-      finalThumbnailUrl = `https://videodelivery.net/${row.streamUid}/thumbnails/thumbnail.jpg?time=1s&width=480&height=270&fit=crop`;
-    } else if (row.thumbnailUrl) {
-      // R2가 아닌 외부 URL (airtable 등)은 그대로 사용
-      finalThumbnailUrl = row.thumbnailUrl;
-    }
-
+  // ── 썸네일 URL 서명 (requireSignedURLs=true이므로 서명 필수) ──
+  // submissions에서 latestSubmission 추출 후 addSignedThumbnails에 넘길 형태로 변환
+  const rowsPrepped = rows.map((row) => {
     const latestSubmission = row.submissions?.[0] ?? null;
     const { submissions: _submissions, ...restRow } = row;
-
     return {
       ...restRow,
-      signedThumbnailUrl: finalThumbnailUrl,
       submissionId: latestSubmission?.id ?? null,
       latestSubmissionStatus: latestSubmission?.status ?? null,
     };
   });
+
+  // 병렬로 서명된 썸네일 URL 생성 (Promise.all 내부)
+  const rowsWithThumbnails = await addSignedThumbnails(rowsPrepped);
 
   // 상태별 카운트를 { DRAFT: 0, PENDING: 5, ... } 형태로 변환
   const statusCounts: Record<string, number> = {};

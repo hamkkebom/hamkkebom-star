@@ -98,6 +98,40 @@ export function getPublicUrl(key: string): string {
 }
 
 /**
+ * 서버사이드에서 Buffer/Uint8Array를 R2에 직접 업로드합니다.
+ * 썸네일 캐싱 등 서버에서 이미지를 다운로드→R2 업로드하는 용도.
+ * @param key 오브젝트 키 (예: "thumbnails/video-id.jpg")
+ * @param body 업로드할 데이터
+ * @param contentType MIME 타입
+ * @returns 공개 URL 또는 null (실패 시)
+ */
+export async function uploadBuffer(
+    key: string,
+    body: Buffer | Uint8Array,
+    contentType: string,
+): Promise<string | null> {
+    try {
+        const client = getS3Client();
+        const config = getR2Config();
+        if (!config) return null;
+
+        const command = new PutObjectCommand({
+            Bucket: config.bucketName,
+            Key: key,
+            Body: body,
+            ContentType: contentType,
+            CacheControl: "public, max-age=31536000, immutable",
+        });
+
+        await client.send(command);
+        return getPublicUrl(key);
+    } catch (error) {
+        console.error(`R2 업로드 실패 (${key}):`, error);
+        return null;
+    }
+}
+
+/**
  * R2 버킷에서 오브젝트를 삭제합니다.
  * @param key 오브젝트 키 (예: "thumbnails/abc.jpg")
  * @returns 삭제 성공 여부

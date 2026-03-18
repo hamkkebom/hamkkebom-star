@@ -3,6 +3,7 @@ import { SubmissionStatus, AssignmentStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { createAuditLog } from "@/lib/audit";
+import { cacheVideoThumbnail } from "@/lib/thumbnail-cache";
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
@@ -93,6 +94,18 @@ export async function PATCH(_request: Request, { params }: Params) {
       entityId: id,
       metadata: { targetName: updated.star?.name, targetTitle: updated.versionTitle || "제출물" }
     });
+
+    // 비동기 썸네일 R2 캐싱 (승인된 영상 → 공개 페이지 빠른 로딩용)
+    if (updated.videoId) {
+      prisma.video.findUnique({
+        where: { id: updated.videoId },
+        select: { streamUid: true },
+      }).then((video) => {
+        if (video?.streamUid) {
+          void cacheVideoThumbnail(updated.videoId!, video.streamUid).catch(() => {});
+        }
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ data: updated });
   } catch (error) {

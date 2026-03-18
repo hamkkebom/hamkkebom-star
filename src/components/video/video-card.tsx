@@ -126,7 +126,7 @@ export const VideoCard = memo(function VideoCard({
                 fill
                 unoptimized
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                className={`object-cover transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] will-change-transform ${showAnimated ? "opacity-0" : "opacity-100 group-hover:scale-[1.03]"}`}
+                className={`object-cover transition-transform duration-300 ease-out will-change-transform ${showAnimated ? "opacity-0" : "opacity-100 group-hover:scale-[1.03]"}`}
                 onError={() => setThumbFailed(true)}
                 priority={priority}
               />
