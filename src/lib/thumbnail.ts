@@ -15,6 +15,13 @@ import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
 
 const R2_PUBLIC_DOMAIN = "pub-r2.hamkkebom.com";
 
+/**
+ * 접근 불가능한 것으로 알려진 도메인 목록.
+ * DNS가 해석되지 않는 R2 커스텀 도메인 등.
+ * 이 목록에 포함된 도메인의 URL은 공개 URL로 취급하지 않고 CF Stream 폴백으로 전환.
+ */
+const UNREACHABLE_DOMAINS = new Set([R2_PUBLIC_DOMAIN]);
+
 /* ─── Stream Token 인메모리 캐시 ─── */
 const TOKEN_TTL_MS = 50 * 60 * 1000; // 50분 (토큰 유효기간 1시간보다 여유 10분)
 const tokenCache = new Map<string, { token: string; expiresAt: number }>();
@@ -48,6 +55,8 @@ function setCachedToken(uid: string, token: string): void {
 function isPublicUrl(url: string): boolean {
   try {
     const host = new URL(url).hostname;
+    // 접근 불가 도메인 (DNS 해석 불가 등)은 공개 URL로 취급하지 않음
+    if (UNREACHABLE_DOMAINS.has(host)) return false;
     // videodelivery.net은 requireSignedURLs 때문에 공개 아님
     // r2.cloudflarestorage.com은 private endpoint
     return host !== "videodelivery.net" && !host.includes("r2.cloudflarestorage.com");

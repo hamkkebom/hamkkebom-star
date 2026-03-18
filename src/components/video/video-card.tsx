@@ -23,10 +23,24 @@ type VideoCardProps = {
   viewCount?: number;
 };
 
+/** 접근 불가 도메인 (DNS 해석 불가 등) — 이 도메인의 URL은 무시하고 Stream 폴백 사용 */
+const UNREACHABLE_HOSTS = new Set(["pub-r2.hamkkebom.com"]);
+
+function isReachableUrl(url: string | null): boolean {
+  if (!url) return false;
+  try {
+    return !UNREACHABLE_HOSTS.has(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
 /** Static thumbnail URL */
 function getStaticThumb(streamUid: string | null, thumbnailUrl: string | null): string | null {
+  // thumbnailUrl이 접근 불가 도메인이면 무시 → streamUid 폴백
+  const usableThumbnail = isReachableUrl(thumbnailUrl) ? thumbnailUrl : null;
   if (streamUid) return `https://videodelivery.net/${streamUid}/thumbnails/thumbnail.jpg?width=480&height=270&fit=crop`;
-  return thumbnailUrl;
+  return usableThumbnail;
 }
 
 /** Animated GIF preview URL (Cloudflare Stream) */
