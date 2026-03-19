@@ -18,15 +18,30 @@ export function useAuth() {
     // Fetch user on mount - server will verify auth
     fetchUser();
 
-    // Magic link hash fragment 감지: #access_token=... 형태의 implicit flow 처리
-    // signInWithOtp()에서 발생하는 implicit flow 토큰을 세션으로 교환
+    // Magic link implicit flow 처리: #access_token=... hash fragment에서 토큰 추출
+    // @supabase/ssr의 createBrowserClient는 PKCE flow만 자동 처리하므로
+    // implicit flow 토큰은 수동으로 setSession() 호출 필요
     if (typeof window !== "undefined" && window.location.hash.includes("access_token")) {
-      supabase.auth.getSession().then(({ data }) => {
-        if (data.session) {
-          // hash fragment 제거 (URL 정리)
-          window.history.replaceState(null, "", window.location.pathname + window.location.search);
-        }
-      });
+      const hashParams = new URLSearchParams(
+        window.location.hash.substring(1)
+      );
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+
+      if (accessToken && refreshToken) {
+        supabase.auth
+          .setSession({ access_token: accessToken, refresh_token: refreshToken })
+          .then(({ data, error }) => {
+            if (!error && data.session) {
+              // hash fragment 제거 (URL 정리)
+              window.history.replaceState(
+                null,
+                "",
+                window.location.pathname + window.location.search
+              );
+            }
+          });
+      }
     }
 
     const {
