@@ -68,12 +68,16 @@ export async function POST(
     );
   }
 
+  // 앱 origin 추출 (request URL에서)
+  const origin = new URL(request.url).origin;
+
   // Supabase에서 매직링크 생성 및 이메일 발송
   const supabaseAdmin = createAdminClient();
   const { error: otpError } = await supabaseAdmin.auth.signInWithOtp({
     email,
     options: {
       shouldCreateUser: false,
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 
