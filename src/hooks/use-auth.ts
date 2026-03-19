@@ -18,6 +18,17 @@ export function useAuth() {
     // Fetch user on mount - server will verify auth
     fetchUser();
 
+    // Magic link hash fragment 감지: #access_token=... 형태의 implicit flow 처리
+    // signInWithOtp()에서 발생하는 implicit flow 토큰을 세션으로 교환
+    if (typeof window !== "undefined" && window.location.hash.includes("access_token")) {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session) {
+          // hash fragment 제거 (URL 정리)
+          window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
+      });
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
