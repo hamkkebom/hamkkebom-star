@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Star } from "lucide-react";
+import { Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -26,10 +26,67 @@ type MeResponse = {
   };
 };
 
-
-
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMagicLinkProcessing, setIsMagicLinkProcessing] = useState(false);
+
+  // 매직링크 implicit flow 처리:
+  // /auth/login#access_token=...&refresh_token=... 해시에서 토큰 추출 → 자동 로그인
+  // useAuth() hook은 auth 레이아웃에서 실행되지 않으므로 여기서 직접 처리
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (!hash.includes("access_token")) return;
+
+    const hashParams = new URLSearchParams(hash.substring(1));
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+
+    if (!accessToken || !refreshToken) return;
+
+    setIsMagicLinkProcessing(true);
+
+    const supabase = createClient();
+    supabase.auth
+      .setSession({ access_token: accessToken, refresh_token: refreshToken })
+      .then(async ({ data, error }) => {
+        if (error || !data.session) {
+          toast.error("매직링크 인증에 실패했습니다. 다시 시도해 주세요.");
+          setIsMagicLinkProcessing(false);
+          return;
+        }
+
+        // hash fragment 제거 (토큰 노출 방지)
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search
+        );
+
+        // 승인 상태 확인
+        try {
+          const response = await fetch("/api/users/me", { cache: "no-store" });
+          if (response.ok) {
+            const meData = (await response.json()) as MeResponse;
+            if (!meData.data.isApproved) {
+              await supabase.auth.signOut();
+              toast.error("관리자 승인 대기 중입니다.");
+              window.location.href = "/auth/pending-approval";
+              return;
+            }
+          }
+        } catch {
+          // /api/users/me 실패해도 로그인 자체는 성공 — 메인으로 이동
+        }
+
+        toast.success("매직링크로 로그인되었습니다!");
+        window.location.href = "/";
+      })
+      .catch(() => {
+        toast.error("매직링크 처리 중 오류가 발생했습니다.");
+        setIsMagicLinkProcessing(false);
+      });
+  }, []);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -83,6 +140,20 @@ export function LoginForm() {
       setIsSubmitting(false);
     }
   };
+
+  // 매직링크 처리 중: 로딩 UI
+  if (isMagicLinkProcessing) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-lg font-medium text-muted-foreground">
+            매직링크로 로그인 중...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
