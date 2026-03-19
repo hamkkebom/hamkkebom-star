@@ -16,6 +16,7 @@ type Video = {
   id: string;
   title: string;
   thumbnailUrl: string | null;
+  signedThumbnailUrl?: string | null;
   streamUid: string | null;
   duration: number | null;
   ownerName: string;
@@ -194,11 +195,12 @@ function BestPageContent() {
                   className="lg:col-span-8 relative group rounded-2xl overflow-hidden bg-card border shadow-sm"
                 >
                   <Link href={`/videos/${top3[0].id}`} className="block relative aspect-video md:aspect-[21/9] lg:aspect-video">
-                    {top3[0].thumbnailUrl ? (
+                    {(top3[0].signedThumbnailUrl ?? top3[0].thumbnailUrl) ? (
                       <Image
-                        src={top3[0].thumbnailUrl}
+                        src={(top3[0].signedThumbnailUrl ?? top3[0].thumbnailUrl)!}
                         alt={top3[0].title}
                         fill
+                        unoptimized
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                         priority
                       />
@@ -243,11 +245,12 @@ function BestPageContent() {
                     className="relative group rounded-xl overflow-hidden bg-card border shadow-sm h-full"
                   >
                     <Link href={`/videos/${video.id}`} className="block relative aspect-video lg:h-full">
-                      {video.thumbnailUrl ? (
+                      {(video.signedThumbnailUrl ?? video.thumbnailUrl) ? (
                         <Image
-                          src={video.thumbnailUrl}
+                          src={(video.signedThumbnailUrl ?? video.thumbnailUrl)!}
                           alt={video.title}
                           fill
+                          unoptimized
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
@@ -291,8 +294,8 @@ function BestPageContent() {
                     <VideoCard
                       id={video.id}
                       title={video.title}
-                      thumbnailUrl={video.thumbnailUrl}
-                      streamUid={video.streamUid}
+                      thumbnailUrl={video.signedThumbnailUrl ?? video.thumbnailUrl}
+                      streamUid={video.signedThumbnailUrl ? null : video.streamUid}
                       duration={video.duration}
                       ownerName={video.owner.name}
                       categoryName={video.categoryName}
@@ -320,11 +323,12 @@ function BestPageContent() {
                       {idx + 12}
                     </div>
                     <div className="relative w-24 md:w-32 aspect-video rounded-lg overflow-hidden shrink-0 bg-muted">
-                      {video.thumbnailUrl ? (
+                      {(video.signedThumbnailUrl ?? video.thumbnailUrl) ? (
                         <Image
-                          src={video.thumbnailUrl}
+                          src={(video.signedThumbnailUrl ?? video.thumbnailUrl)!}
                           alt={video.title}
                           fill
+                          unoptimized
                           className="object-cover group-hover:scale-105 transition-transform"
                         />
                       ) : (

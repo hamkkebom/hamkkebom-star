@@ -1,22 +1,15 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, memo } from "react";
+import { useState, useCallback, useRef, useEffect, useLayoutEffect, memo } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
-import Link from "next/link";
 import {
   Search,
+  ChevronDown,
   X,
   Film,
-  Play,
-  Eye,
-  Clock,
-  SlidersHorizontal,
-  Flame,
-  Sparkles,
-  ChevronLeft,
-  ChevronRight,
+  Filter,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoCard } from "@/components/video/video-card";
@@ -59,12 +52,7 @@ type VideoRow = {
   signedThumbnailUrl?: string | null;
   streamUid: string;
   createdAt: string;
-  owner: {
-    id: string;
-    name: string;
-    chineseName: string | null;
-    email: string;
-  };
+  owner: { id: string; name: string; chineseName: string | null; email: string };
   category: { id: string; name: string; slug: string } | null;
   counselor: { id: string; displayName: string } | null;
   technicalSpec: { duration: number | null } | null;
@@ -82,846 +70,692 @@ type VideosResponse = {
 
 type DurationRange = "all" | "short" | "medium" | "long";
 
-const DURATION_RANGES: Record<
-  DurationRange,
-  { label: string; min?: number; max?: number }
-> = {
-  all: { label: "전체 길이" },
+const DURATION_RANGES: Record<DurationRange, { label: string; min?: number; max?: number }> = {
+  all: { label: "전체" },
   short: { label: "~20초", max: 20 },
   medium: { label: "~40초", min: 20, max: 40 },
   long: { label: "~1분", min: 40, max: 60 },
 };
 
-/* ───── Helpers ───── */
-function formatDuration(seconds: number | null): string {
-  if (!seconds) return "";
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
-function getThumbUrl(video: VideoRow): string | null {
-  if (video.signedThumbnailUrl) return video.signedThumbnailUrl;
-  if (video.thumbnailUrl) return video.thumbnailUrl;
-  if (video.streamUid)
-    return `https://videodelivery.net/${video.streamUid}/thumbnails/thumbnail.jpg?width=1280&height=720&fit=crop`;
-  return null;
-}
-
-/* ───── HeroSection ───── */
-function HeroSection({ video }: { video: VideoRow }) {
-  const thumb = getThumbUrl(video);
-  return (
-    <Link
-      href={`/videos/${video.id}`}
-      className="block relative w-full group overflow-hidden bg-black"
-    >
-      <div className="relative w-full aspect-video sm:aspect-[21/9]">
-        {thumb ? (
-          <Image
-            src={thumb}
-            alt={video.title}
-            fill
-            unoptimized
-            priority
-            sizes="100vw"
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-950 to-slate-950" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-transparent to-transparent hidden sm:block" />
-        <div className="absolute inset-0 flex items-end sm:items-center p-5 sm:p-10 md:p-14">
-          <div className="max-w-xl">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-violet-300 bg-violet-500/25 border border-violet-500/40 rounded-full px-3 py-1 backdrop-blur-sm">
-                <Sparkles className="w-3 h-3" /> 추천 영상
-              </span>
-              {video.category && (
-                <span className="text-[11px] font-medium text-white/80 bg-white/10 rounded-full px-3 py-1 backdrop-blur-sm">
-                  {video.category.name}
-                </span>
-              )}
-            </div>
-            <h2 className="text-xl sm:text-3xl md:text-4xl font-black text-white leading-tight line-clamp-2 drop-shadow-lg mb-3 sm:mb-4">
-              {video.title}
-            </h2>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-white/70 mb-4 sm:mb-6">
-              <span className="font-semibold text-white/90">
-                {video.owner.chineseName || video.owner.name}
-              </span>
-              {video.technicalSpec?.duration && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  {formatDuration(video.technicalSpec.duration)}
-                </span>
-              )}
-              <span className="flex items-center gap-1">
-                <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                {video.viewCount.toLocaleString()}
-              </span>
-            </div>
-            <div className="inline-flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-300 group-hover:bg-violet-400 group-hover:text-white shadow-xl shadow-black/30">
-              <Play className="w-4 h-4 fill-current" /> 영상 보기
-            </div>
-          </div>
-        </div>
-        {/* Mobile center play */}
-        <div className="absolute inset-0 flex items-center justify-center sm:hidden pointer-events-none">
-          <div className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center opacity-80">
-            <Play className="w-6 h-6 text-white fill-current ml-0.5" />
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-/* ───── CategoryChips ───── */
-function CategoryChips({
-  categories,
-  activeId,
-  onChange,
+/* ───── Dropdown Component ───── */
+function FilterDropdown({
+  label,
+  icon: Icon,
+  isActive,
+  children,
+  onClear,
+  align = "right",
 }: {
-  categories: CategoryRow[];
-  activeId: string | null;
-  onChange: (id: string | null) => void;
+  label: string;
+  icon: React.ElementType;
+  isActive: boolean;
+  children: React.ReactNode;
+  onClear?: () => void;
+  align?: "left" | "right";
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
 
-  const checkScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 4);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
-  }, []);
+  // 드롭다운 위치 계산 (버튼 기준 fixed)
+  useLayoutEffect(() => {
+    if (open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const top = rect.bottom + 8;
+      const margin = 12;
+
+      // 600px 미만: 항상 풀너비 (좌우 margin)
+      if (vw < 600) {
+        setMenuStyle({ top, left: margin, right: margin });
+      } else {
+        // 데스크톱: 버튼 기준으로 정렬하되, 화면 밖 방지
+        if (align === "right") {
+          const rightVal = Math.max(margin, vw - rect.right);
+          setMenuStyle({ top, right: rightVal, maxWidth: Math.min(400, vw - margin * 2) });
+        } else {
+          const leftVal = Math.max(margin, rect.left);
+          setMenuStyle({ top, left: leftVal, maxWidth: Math.min(400, vw - margin * 2) });
+        }
+      }
+    }
+  }, [open, align]);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    checkScroll();
-    el.addEventListener("scroll", checkScroll, { passive: true });
-    window.addEventListener("resize", checkScroll);
+    if (!open) return;
+    function handleClick(e: MouseEvent | TouchEvent) {
+      const target = e.target as Node;
+      if (btnRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+    // mousedown + touchstart 둘 다 처리 → 모바일/데스크톱 호환
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("touchstart", handleClick, { passive: true });
     return () => {
-      el.removeEventListener("scroll", checkScroll);
-      window.removeEventListener("resize", checkScroll);
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("touchstart", handleClick);
     };
-  }, [checkScroll, categories]);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const active = el.querySelector(
-      "[data-active='true']",
-    ) as HTMLElement | null;
-    if (active)
-      active.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
-  }, [activeId]);
-
-  const scrollBy = (dir: "left" | "right") => {
-    scrollRef.current?.scrollBy({
-      left: dir === "left" ? -200 : 200,
-      behavior: "smooth",
-    });
-  };
+  }, [open]);
 
   return (
-    <div className="relative flex items-center">
-      {canScrollLeft && (
-        <button
-          onClick={() => scrollBy("left")}
-          className="hidden md:flex absolute left-0 z-10 w-8 h-8 items-center justify-center rounded-full bg-background/95 border border-border shadow-sm hover:bg-muted transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-      )}
-      <div
-        ref={scrollRef}
-        className="flex items-center gap-2 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden px-1 md:px-10"
-        style={{ scrollBehavior: "smooth" }}
+    <div className="relative">
+      <button
+        ref={btnRef}
+        onClick={() => setOpen((o) => !o)}
+        className={`group flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium whitespace-nowrap transition-all duration-300
+          ${isActive
+            ? "border-black bg-black text-white hover:bg-zinc-800 dark:border-white dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            : "border-border bg-background text-foreground hover:border-foreground/50 hover:bg-accent/50"
+          }`}
       >
-        <button
-          data-active={!activeId}
-          onClick={() => onChange(null)}
-          className={`whitespace-nowrap flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${!activeId ? "bg-foreground text-background shadow-sm" : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-        >
-          전체
-        </button>
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            data-active={activeId === cat.id}
-            onClick={() => onChange(activeId === cat.id ? null : cat.id)}
-            className={`whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${activeId === cat.id ? "bg-foreground text-background shadow-sm" : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+        <span className={isActive ? "opacity-100" : "opacity-50 group-hover:opacity-100 transition-opacity"}>
+          <Icon className="w-4 h-4" />
+        </span>
+        <span>{label}</span>
+        {isActive && onClear ? (
+          <span
+            role="button"
+            onClick={(e) => { e.stopPropagation(); onClear(); }}
+            className="ml-1 rounded-full p-0.5 hover:bg-white/20 transition-colors"
           >
-            {cat.name}
-            {cat._count.videos > 0 && (
-              <span
-                className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none ${activeId === cat.id ? "bg-white/20 text-white" : "bg-black/[0.08] dark:bg-white/[0.12] text-current"}`}
-              >
-                {cat._count.videos}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-      {canScrollRight && (
-        <button
-          onClick={() => scrollBy("right")}
-          className="hidden md:flex absolute right-0 z-10 w-8 h-8 items-center justify-center rounded-full bg-background/95 border border-border shadow-sm hover:bg-muted transition-colors"
+            <X className="w-3 h-3" />
+          </span>
+        ) : (
+          <ChevronDown className={`w-3 h-3 opacity-50 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+        )}
+      </button>
+
+      {open && typeof document !== "undefined" && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[9999] max-h-[60vh] overflow-y-auto rounded-2xl border border-black/5 bg-background/95 backdrop-blur-xl p-3 shadow-2xl animate-in fade-in-0 zoom-in-95 slide-in-from-top-2
+            [&::-webkit-scrollbar]:w-1.5
+            [&::-webkit-scrollbar-track]:bg-transparent
+            [&::-webkit-scrollbar-thumb]:bg-black/10
+            [&::-webkit-scrollbar-thumb]:rounded-full
+            dark:[&::-webkit-scrollbar-thumb]:bg-white/10
+            hover:[&::-webkit-scrollbar-thumb]:bg-black/20
+            dark:hover:[&::-webkit-scrollbar-thumb]:bg-white/20"
+          style={menuStyle}
         >
-          <ChevronRight className="w-4 h-4" />
-        </button>
+          {children}
+        </div>,
+        document.body,
       )}
     </div>
   );
 }
 
-/* ───── Memoized Video Grid ───── */
-const VideoGrid = memo(function VideoGrid({
-  videos,
-  page,
+function DropdownItem({
+  active,
+  onClick,
+  children,
+  count,
 }: {
-  videos: VideoRow[];
-  page: number;
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  count?: number;
 }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+    <button
+      onClick={onClick}
+      className={`group w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-left transition-all duration-200
+        ${active
+          ? "bg-black/5 text-black dark:bg-white/10 dark:text-white font-semibold"
+          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+        }`}
+    >
+      <div className="flex items-center gap-2">
+        {active && <div className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />}
+        <span className={active ? "" : "pl-3.5"}>{children}</span>
+      </div>
+      {count !== undefined && (
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${active ? "bg-black/10 text-black dark:bg-white/20 dark:text-white" : "bg-muted text-muted-foreground group-hover:bg-black/5 group-hover:text-foreground"}`}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/* ───── Memoized Video Grid ───── */
+const VideoGrid = memo(function VideoGrid({ videos, page }: { videos: VideoRow[]; page: number }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
       {videos.map((video, index) => {
         const useSigned = !!video.signedThumbnailUrl;
         return (
-          <VideoCard
-            key={video.id}
-            id={video.id}
-            title={video.title}
-            thumbnailUrl={
-              useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl
-            }
-            streamUid={useSigned ? null : video.streamUid}
-            duration={video.technicalSpec?.duration ?? null}
-            ownerName={video.owner.chineseName || video.owner.name}
-            categoryName={video.category?.name ?? null}
-            createdAt={video.createdAt}
-            viewCount={video.viewCount}
-            priority={page === 1 && index < 6}
-          />
+          <div key={video.id}>
+            <VideoCard
+              id={video.id}
+              title={video.title}
+              thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
+              streamUid={useSigned ? null : video.streamUid}
+              duration={video.technicalSpec?.duration ?? null}
+              ownerName={video.owner.chineseName || video.owner.name}
+              categoryName={video.category?.name ?? null}
+              createdAt={video.createdAt}
+              viewCount={video.viewCount}
+              priority={page === 1 && index < 8}
+            />
+          </div>
         );
       })}
     </div>
   );
 });
 
-/* ───── Skeletons ───── */
-function HeroSkeleton() {
-  return (
-    <Skeleton className="w-full aspect-video sm:aspect-[21/9] rounded-none" />
-  );
-}
-
-function GridSkeleton() {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-      {Array.from({ length: 10 }).map((_, i) => (
-        <div key={i} className="space-y-2">
-          <Skeleton className="aspect-video w-full rounded-xl" />
-          <Skeleton className="h-4 w-4/5" />
-          <Skeleton className="h-3 w-3/5" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /* ───── Main Component ───── */
 export function VideosBrowser() {
   const [search, setSearch] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [tempFilters, setTempFilters] = useState({
-    ownerId: null as string | null,
-    counselorId: null as string | null,
-    durationRange: "all" as DurationRange,
-    sort: "latest" as "latest" | "oldest",
-  });
-
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
+  // URL ?page= 파라미터에서 페이지 직접 파생 (state 불필요)
   const page = Number(searchParams.get("page")) || 1;
+
+
+  const setPage = useCallback((newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(newPage));
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [searchParams, router, pathname]);
+
+  // ─── 필터 상태를 URL searchParams에서 파생 (뒤로가기 시 유지) ───
   const categoryId = searchParams.get("categoryId") || null;
   const ownerId = searchParams.get("ownerId") || null;
   const counselorId = searchParams.get("counselorId") || null;
-  const durationRange: DurationRange =
-    (searchParams.get("duration") as DurationRange) || "all";
-  const sort: "latest" | "oldest" =
-    (searchParams.get("sort") as "latest" | "oldest") || "latest";
+  const durationRange: DurationRange = (searchParams.get("duration") as DurationRange) || "all";
+  const sort: "latest" | "oldest" = (searchParams.get("sort") as "latest" | "oldest") || "latest";
 
-  /* ── URL updaters ── */
-  const setPage = useCallback(
-    (newPage: number) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("page", String(newPage));
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    },
-    [searchParams, router, pathname],
-  );
+  const updateFilter = useCallback((key: string, value: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [searchParams, router, pathname]);
 
-  const updateFilter = useCallback(
-    (key: string, value: string | null) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value) params.set(key, value);
-      else params.delete(key);
-      params.set("page", "1");
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    },
-    [searchParams, router, pathname],
-  );
+  const setCategoryId = useCallback((v: string | null) => updateFilter("categoryId", v), [updateFilter]);
+  const setOwnerId = useCallback((v: string | null) => updateFilter("ownerId", v), [updateFilter]);
+  const setCounselorId = useCallback((v: string | null) => updateFilter("counselorId", v), [updateFilter]);
+  const setDurationRange = useCallback((v: DurationRange) => updateFilter("duration", v === "all" ? null : v), [updateFilter]);
+  const setSort = useCallback((v: "latest" | "oldest") => updateFilter("sort", v === "latest" ? null : v), [updateFilter]);
 
-  const setCategoryId = useCallback(
-    (v: string | null) => updateFilter("categoryId", v),
-    [updateFilter],
-  );
+  // Mobile Filter Sheet State
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [tempCategoryId, setTempCategoryId] = useState<string | null>(null);
+  const [tempOwnerId, setTempOwnerId] = useState<string | null>(null);
+  const [tempCounselorId, setTempCounselorId] = useState<string | null>(null);
+  const [tempDurationRange, setTempDurationRange] = useState<DurationRange>("all");
+  const [tempSort, setTempSort] = useState<"latest" | "oldest">("latest");
 
-  const setSort = useCallback(
-    (v: "latest" | "oldest") =>
-      updateFilter("sort", v === "latest" ? null : v),
-    [updateFilter],
-  );
+  const applyMobileFilters = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    // 필터 전부 덮어쓰기
+    if (tempCategoryId) params.set("categoryId", tempCategoryId); else params.delete("categoryId");
+    if (tempOwnerId) params.set("ownerId", tempOwnerId); else params.delete("ownerId");
+    if (tempCounselorId) params.set("counselorId", tempCounselorId); else params.delete("counselorId");
+    if (tempDurationRange !== "all") params.set("duration", tempDurationRange); else params.delete("duration");
+    if (tempSort !== "latest") params.set("sort", tempSort); else params.delete("sort");
+    params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    setIsMobileFilterOpen(false);
+  };
 
-  /* ── Data fetching ── */
+  const resetMobileFilters = () => {
+    setTempCategoryId(null);
+    setTempOwnerId(null);
+    setTempCounselorId(null);
+    setTempDurationRange("all");
+    setTempSort("latest");
+  };
+
+  const activeFilterCount = (categoryId ? 1 : 0) + (ownerId ? 1 : 0) + (counselorId ? 1 : 0) + (durationRange !== "all" ? 1 : 0) + (sort !== "latest" ? 1 : 0);
+
+  // ─── Data fetching: combined filters (categories + owners + counselors) ───
   const queryClient = useQueryClient();
 
-  const { data: filtersData } = useQuery<{
-    data: {
-      categories: CategoryRow[];
-      owners: OwnerRow[];
-      counselors: CounselorRow[];
-    };
-  }>({
+  const { data: filtersData } = useQuery<{ data: { categories: CategoryRow[]; owners: OwnerRow[]; counselors: CounselorRow[] } }>({
     queryKey: ["video-filters"],
     queryFn: () => fetch("/api/videos/filters").then((r) => r.json()),
-    staleTime: 5 * 60_000,
+    staleTime: 5 * 60_000, // 5 minutes — filter data rarely changes
   });
+
   const categories = filtersData?.data?.categories ?? [];
   const owners = filtersData?.data?.owners ?? [];
   const counselors = filtersData?.data?.counselors ?? [];
 
-  const buildEndpoint = useCallback(
-    (overridePage?: number) => {
-      const params = new URLSearchParams();
-      params.set("page", String(overridePage ?? page));
-      params.set("pageSize", "20");
-      params.set("sort", sort);
-      if (categoryId) params.set("categoryId", categoryId);
-      if (ownerId) params.set("ownerId", ownerId);
-      if (counselorId) params.set("counselorId", counselorId);
-      if (durationRange !== "all") {
-        const range = DURATION_RANGES[durationRange];
-        if (range.min !== undefined)
-          params.set("durationMin", String(range.min));
-        if (range.max !== undefined)
-          params.set("durationMax", String(range.max));
-      }
-      if (activeSearch.trim()) {
-        params.set("q", activeSearch.trim());
-        return `/api/videos/search?${params.toString()}`;
-      }
-      return `/api/videos?${params.toString()}`;
-    },
-    [page, sort, categoryId, ownerId, counselorId, durationRange, activeSearch],
-  );
+  // ─── Build endpoint ───
+  const buildEndpoint = useCallback(() => {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("pageSize", "20");
+    params.set("sort", sort);
+    if (categoryId) params.set("categoryId", categoryId);
+    if (ownerId) params.set("ownerId", ownerId);
+    if (counselorId) params.set("counselorId", counselorId);
+    if (durationRange !== "all") {
+      const range = DURATION_RANGES[durationRange];
+      if (range.min !== undefined) params.set("durationMin", String(range.min));
+      if (range.max !== undefined) params.set("durationMax", String(range.max));
+    }
 
-  const { data: videosData, isLoading } = useQuery<VideosResponse>({
-    queryKey: [
-      "videos-browse",
-      activeSearch,
-      page,
-      categoryId,
-      ownerId,
-      counselorId,
-      durationRange,
-      sort,
-    ],
+    if (activeSearch.trim()) {
+      params.set("q", activeSearch.trim());
+      return `/api/videos/search?${params.toString()}`;
+    }
+    return `/api/videos?${params.toString()}`;
+  }, [page, sort, categoryId, ownerId, counselorId, durationRange, activeSearch]);
+
+  const hasActiveFilter = categoryId || ownerId || counselorId || durationRange !== "all" || activeSearch;
+
+  const { data: filteredData, isLoading: isFilteredLoading } = useQuery<VideosResponse>({
+    queryKey: ["videos-browse", activeSearch, page, categoryId, ownerId, counselorId, durationRange, sort],
     queryFn: async () => {
       const res = await fetch(buildEndpoint());
       if (!res.ok) throw new Error("영상을 불러오는데 실패했습니다.");
-      return res.json() as Promise<VideosResponse>;
+      return (await res.json()) as VideosResponse;
     },
     staleTime: 60_000,
   });
 
-  // Prefetch next page
+  // ─── Prefetch next page ───
   useEffect(() => {
-    if (videosData && page < videosData.totalPages) {
+    if (filteredData && page < filteredData.totalPages) {
+      const nextPage = page + 1;
       queryClient.prefetchQuery({
-        queryKey: [
-          "videos-browse",
-          activeSearch,
-          page + 1,
-          categoryId,
-          ownerId,
-          counselorId,
-          durationRange,
-          sort,
-        ],
-        queryFn: () =>
-          fetch(buildEndpoint(page + 1)).then((r) => r.json()),
+        queryKey: ["videos-browse", activeSearch, nextPage, categoryId, ownerId, counselorId, durationRange, sort],
+        queryFn: async () => {
+          const params = new URLSearchParams();
+          params.set("page", String(nextPage));
+          params.set("pageSize", "20");
+          params.set("sort", sort);
+          if (categoryId) params.set("categoryId", categoryId);
+          if (ownerId) params.set("ownerId", ownerId);
+          if (counselorId) params.set("counselorId", counselorId);
+          if (durationRange !== "all") {
+            const range = DURATION_RANGES[durationRange];
+            if (range.min !== undefined) params.set("durationMin", String(range.min));
+            if (range.max !== undefined) params.set("durationMax", String(range.max));
+          }
+          if (activeSearch.trim()) {
+            params.set("q", activeSearch.trim());
+            return fetch(`/api/videos/search?${params.toString()}`).then(r => r.json());
+          }
+          return fetch(`/api/videos?${params.toString()}`).then(r => r.json());
+        },
         staleTime: 60_000,
       });
     }
-  }, [
-    videosData,
-    page,
-    activeSearch,
-    categoryId,
-    ownerId,
-    counselorId,
-    durationRange,
-    sort,
-    queryClient,
-    buildEndpoint,
-  ]);
+  }, [filteredData, page, activeSearch, categoryId, ownerId, counselorId, durationRange, sort, queryClient]);
 
-  /* ── Derived values ── */
-  const hasActiveFilter = !!(
-    categoryId ||
-    ownerId ||
-    counselorId ||
-    durationRange !== "all" ||
-    activeSearch
-  );
-  const videos = videosData?.data ?? [];
-  const advancedFilterCount =
-    (ownerId ? 1 : 0) +
-    (counselorId ? 1 : 0) +
-    (durationRange !== "all" ? 1 : 0) +
-    (sort !== "latest" ? 1 : 0);
-  const showHero =
-    page === 1 &&
-    !activeSearch &&
-    !ownerId &&
-    !counselorId &&
-    durationRange === "all";
-  const heroVideo =
-    showHero && !isLoading && videos.length > 0 ? videos[0] : null;
-  const gridVideos = heroVideo ? videos.slice(1) : videos;
-  const activeCategoryName = categoryId
-    ? (categories.find((c) => c.id === categoryId)?.name ?? null)
-    : null;
+  const isLoading = isFilteredLoading;
+  const displayData = filteredData;
 
-  /* ── Handlers ── */
+  // ─── Handlers ───
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setActiveSearch(search);
     setPage(1);
   };
 
-  const resetFilters = useCallback(() => {
+  const resetFilters = useCallback((mode?: "home" | "grid") => {
     const params = new URLSearchParams();
+    if (mode === "grid") params.set("view", "grid");
     params.set("page", "1");
     setActiveSearch("");
     setSearch("");
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }, [pathname, router]);
 
+  // ─── Labels for active state ───
+  const catLabel = categoryId ? categories.find((c) => c.id === categoryId)?.name ?? "카테고리" : "카테고리";
+  const ownerLabel = ownerId
+    ? (() => { const o = owners.find((o) => o.id === ownerId); return o ? (o.chineseName || o.name) : "제작자"; })()
+    : "제작자";
+  const counselorLabel = counselorId
+    ? counselors.find((c) => c.id === counselorId)?.displayName ?? "상담사"
+    : "상담사";
+
   return (
-    <div className="min-h-screen pb-24 md:pb-8">
-      {/* ═══ Sticky Header ═══ */}
-      <div className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/50 shadow-sm">
-        <div className="mx-auto max-w-[1920px] px-4 sm:px-6 py-3 space-y-3">
-          {/* Row 1: Search + Sort + Filter */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Search bar */}
-            <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-2xl">
-              <div className="relative flex items-center">
-                <Search
-                  className={`absolute left-3.5 w-4 h-4 transition-colors pointer-events-none ${isSearchFocused ? "text-foreground" : "text-muted-foreground"}`}
-                />
+    <div className="min-h-screen pb-20 md:pb-0">
+      {/* ═══ Premium Search & Filter Header ═══ */}
+      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="mx-auto max-w-[1920px] px-4 py-4 sm:px-6 space-y-4">
+
+          {/* 1. Floating Search Bar */}
+          <div className="flex justify-center">
+            <form onSubmit={handleSearch} className="relative w-full max-w-2xl group">
+              <div className={`absolute inset-0 bg-black/5 rounded-full blur-xl transition-opacity duration-500 ${search ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
+              <div className="relative flex items-center bg-background rounded-full shadow-lg border border-black/5 transaction-all duration-300 focus-within:ring-2 focus-within:ring-black/10 focus-within:border-black/20 dark:bg-zinc-900 dark:border-white/10 dark:focus-within:ring-white/20">
+                <Search className="ml-5 w-5 h-5 text-muted-foreground" />
                 <input
                   type="search"
+                  inputMode="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  placeholder="무엇을 찾고 계신가요?"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                  placeholder="영상 검색..."
-                  className="w-full h-10 pl-10 pr-9 bg-muted/60 dark:bg-muted/40 border border-transparent focus:border-border/80 focus:bg-background rounded-full text-sm placeholder:text-muted-foreground/60 focus:outline-none transition-all"
+                  className="w-full bg-transparent border-none rounded-full px-4 py-3.5 text-base focus:outline-none placeholder:text-muted-foreground/70"
                 />
                 {search && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setSearch("");
-                      setActiveSearch("");
-                    }}
-                    className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => { setSearch(""); setActiveSearch(""); setPage(1); }}
+                    className="mr-2 p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
             </form>
-
-            {/* Sort (desktop) */}
-            <div className="hidden sm:flex items-center gap-0.5 p-1 bg-muted/50 rounded-full shrink-0">
-              <button
-                onClick={() => setSort("latest")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${sort === "latest" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <Flame className="w-3.5 h-3.5" /> 최신
-              </button>
-              <button
-                onClick={() => setSort("oldest")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${sort === "oldest" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <Clock className="w-3.5 h-3.5" /> 오래된순
-              </button>
-            </div>
-
-            {/* Filter Sheet */}
-            <Sheet
-              open={isMobileFilterOpen}
-              onOpenChange={(open) => {
-                setIsMobileFilterOpen(open);
-                if (open)
-                  setTempFilters({
-                    ownerId,
-                    counselorId,
-                    durationRange,
-                    sort,
-                  });
-              }}
-            >
-              <SheetTrigger asChild>
-                <button
-                  className={`relative flex shrink-0 items-center gap-2 h-10 px-3.5 sm:px-4 rounded-full border text-sm font-semibold transition-all ${advancedFilterCount > 0 ? "border-foreground bg-foreground text-background" : "border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground"}`}
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  <span className="hidden sm:inline">필터</span>
-                  {advancedFilterCount > 0 && (
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold leading-none">
-                      {advancedFilterCount}
-                    </span>
-                  )}
-                </button>
-              </SheetTrigger>
-              <SheetContent
-                side="bottom"
-                className="h-[80vh] rounded-t-3xl px-0 pb-0 flex flex-col"
-              >
-                <SheetHeader className="px-6 pb-4 border-b">
-                  <SheetTitle className="text-left">고급 필터</SheetTitle>
-                </SheetHeader>
-                <div className="flex-1 overflow-y-auto px-6 py-5 space-y-7">
-                  {/* Sort */}
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-sm text-foreground">
-                      정렬
-                    </h4>
-                    <div className="flex gap-2">
-                      {(["latest", "oldest"] as const).map((s) => (
-                        <button
-                          key={s}
-                          onClick={() =>
-                            setTempFilters((p) => ({ ...p, sort: s }))
-                          }
-                          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${tempFilters.sort === s ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                        >
-                          {s === "latest" ? "최신순" : "오래된순"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Duration */}
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-sm text-foreground">
-                      영상 길이
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {(
-                        Object.entries(DURATION_RANGES) as [
-                          DurationRange,
-                          { label: string },
-                        ][]
-                      ).map(([key, val]) => (
-                        <button
-                          key={key}
-                          onClick={() =>
-                            setTempFilters((p) => ({
-                              ...p,
-                              durationRange: key,
-                            }))
-                          }
-                          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${tempFilters.durationRange === key ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                        >
-                          {val.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Owner */}
-                  {owners.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="font-semibold text-sm text-foreground">
-                        제작자
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() =>
-                            setTempFilters((p) => ({ ...p, ownerId: null }))
-                          }
-                          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${!tempFilters.ownerId ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                        >
-                          전체
-                        </button>
-                        {owners.map((o) => (
-                          <button
-                            key={o.id}
-                            onClick={() =>
-                              setTempFilters((p) => ({ ...p, ownerId: o.id }))
-                            }
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${tempFilters.ownerId === o.id ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                          >
-                            {o.chineseName || o.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Counselor */}
-                  {counselors.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="font-semibold text-sm text-foreground">
-                        상담사
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() =>
-                            setTempFilters((p) => ({
-                              ...p,
-                              counselorId: null,
-                            }))
-                          }
-                          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${!tempFilters.counselorId ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                        >
-                          전체
-                        </button>
-                        {counselors.map((c) => (
-                          <button
-                            key={c.id}
-                            onClick={() =>
-                              setTempFilters((p) => ({
-                                ...p,
-                                counselorId: c.id,
-                              }))
-                            }
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${tempFilters.counselorId === c.id ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                          >
-                            {c.displayName}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Sheet footer */}
-                <div className="p-4 border-t flex gap-3 bg-background">
-                  <Button
-                    variant="outline"
-                    className="flex-1 h-12 rounded-xl"
-                    onClick={() =>
-                      setTempFilters({
-                        ownerId: null,
-                        counselorId: null,
-                        durationRange: "all",
-                        sort: "latest",
-                      })
-                    }
-                  >
-                    초기화
-                  </Button>
-                  <Button
-                    className="flex-1 h-12 rounded-xl"
-                    onClick={() => {
-                      const params = new URLSearchParams(
-                        searchParams.toString(),
-                      );
-                      if (tempFilters.ownerId)
-                        params.set("ownerId", tempFilters.ownerId);
-                      else params.delete("ownerId");
-                      if (tempFilters.counselorId)
-                        params.set("counselorId", tempFilters.counselorId);
-                      else params.delete("counselorId");
-                      if (tempFilters.durationRange !== "all")
-                        params.set("duration", tempFilters.durationRange);
-                      else params.delete("duration");
-                      if (tempFilters.sort !== "latest")
-                        params.set("sort", tempFilters.sort);
-                      else params.delete("sort");
-                      params.set("page", "1");
-                      router.push(`${pathname}?${params.toString()}`, {
-                        scroll: false,
-                      });
-                      setIsMobileFilterOpen(false);
-                    }}
-                  >
-                    적용하기
-                  </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            {/* Reset (desktop) */}
-            {hasActiveFilter && (
-              <button
-                onClick={resetFilters}
-                className="hidden sm:flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
-              >
-                <X className="w-3.5 h-3.5" /> 초기화
-              </button>
-            )}
           </div>
 
-          {/* Row 2: Category chips */}
-          {categories.length > 0 && (
-            <CategoryChips
-              categories={categories}
-              activeId={categoryId}
-              onChange={setCategoryId}
-            />
-          )}
+          {/* 2. Filter Controls (Segmented & Dropdowns) */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+
+            {/* Quick Filters (Segmented) */}
+            <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto">
+              <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
+                {(Object.entries(DURATION_RANGES) as [DurationRange, { label: string }][]).map(([key, val]) => (
+                  <button
+                    key={key}
+                    onClick={() => setDurationRange(key)}
+                    className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                      ${durationRange === key
+                        ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
+                        : "text-muted-foreground hover:text-foreground"
+                      }`}
+                  >
+                    {val.label}
+                  </button>
+                ))}
+              </div>
+              <div className="h-4 w-px bg-border mx-2 hidden sm:block" />
+              <div className="flex p-1 bg-muted/50 rounded-full border border-black/5 dark:bg-zinc-900 dark:border-white/5">
+                <button
+                  onClick={() => setSort("latest")}
+                  className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                      ${sort === "latest"
+                      ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                    }`}
+                >
+                  최신순
+                </button>
+                <button
+                  onClick={() => setSort("oldest")}
+                  className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                      ${sort === "oldest"
+                      ? "bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                    }`}
+                >
+                  오래된순
+                </button>
+              </div>
+            </div>
+
+            {/* Right: Detailed Filters (Dropdowns) */}
+            <div className="hidden md:flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full sm:w-auto justify-start sm:justify-end">
+
+              {/* Category Dropdown (Grid) */}
+              <FilterDropdown label={catLabel} icon={Film} isActive={!!categoryId} onClear={() => setCategoryId(null)} align="right">
+                <div className="w-full sm:w-[320px] p-1">
+                  <div className="mb-2 px-1">
+                    <DropdownItem active={!categoryId} onClick={() => setCategoryId(null)}>
+                      전체 카테고리
+                    </DropdownItem>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {categories.map((c) => (
+                      <DropdownItem key={c.id} active={categoryId === c.id} onClick={() => setCategoryId(c.id)} count={c._count.videos}>
+                        {c.name}
+                      </DropdownItem>
+                    ))}
+                  </div>
+                </div>
+              </FilterDropdown>
+
+              {/* Owner Dropdown (Grid) */}
+              <FilterDropdown label={ownerLabel} icon={Film} isActive={!!ownerId} onClear={() => setOwnerId(null)} align="right">
+                <div className="w-full sm:w-[320px] p-1">
+                  <div className="mb-2 px-1">
+                    <DropdownItem active={!ownerId} onClick={() => setOwnerId(null)}>
+                      전체 제작자
+                    </DropdownItem>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {owners.map((o) => (
+                      <DropdownItem key={o.id} active={ownerId === o.id} onClick={() => setOwnerId(o.id)} count={o.videoCount}>
+                        {o.chineseName || o.name}
+                      </DropdownItem>
+                    ))}
+                  </div>
+                </div>
+              </FilterDropdown>
+
+              {/* Counselor Dropdown (List - usually fewer items, but keeping consistent) */}
+              <FilterDropdown label={counselorLabel} icon={Film} isActive={!!counselorId} onClear={() => setCounselorId(null)} align="right">
+                <div className="w-full sm:w-[280px] p-1">
+                  <div className="mb-2 px-1">
+                    <DropdownItem active={!counselorId} onClick={() => setCounselorId(null)}>
+                      전체 상담사
+                    </DropdownItem>
+                  </div>
+                  <div className="space-y-1">
+                    {counselors.map((c) => (
+                      <DropdownItem key={c.id} active={counselorId === c.id} onClick={() => setCounselorId(c.id)} count={c.videoCount}>
+                        {c.displayName}
+                      </DropdownItem>
+                    ))}
+                  </div>
+                </div>
+              </FilterDropdown>
+
+              {/* 필터 초기화 */}
+              {hasActiveFilter && (
+                <button
+                  onClick={() => resetFilters("grid")}
+                  className="flex items-center justify-center p-2 rounded-full border border-transparent hover:bg-destructive/10 text-destructive transition-colors"
+                  title="필터 초기화"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {/* Mobile Filter Button */}
+            <div className="md:hidden flex items-center">
+              <Sheet open={isMobileFilterOpen} onOpenChange={(open) => {
+                setIsMobileFilterOpen(open);
+                if (open) {
+                  setTempCategoryId(categoryId);
+                  setTempOwnerId(ownerId);
+                  setTempCounselorId(counselorId);
+                  setTempDurationRange(durationRange);
+                  setTempSort(sort);
+                }
+              }}>
+                <SheetTrigger asChild>
+                  <button className="relative flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background text-foreground text-sm font-medium">
+                    <Filter className="w-4 h-4" />
+                    필터
+                    {activeFilterCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-[10px] font-bold text-white">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl px-0 pb-0 flex flex-col">
+                  <SheetHeader className="px-6 pb-4 border-b">
+                    <SheetTitle className="text-left">필터</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex-1 overflow-y-auto px-6 py-4 space-y-8">
+                    {/* Category */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">카테고리</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setTempCategoryId(null)} className={`px-4 py-2 rounded-full text-sm ${!tempCategoryId ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>전체</button>
+                        {categories.map(c => (
+                          <button key={c.id} onClick={() => setTempCategoryId(c.id)} className={`px-4 py-2 rounded-full text-sm ${tempCategoryId === c.id ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>{c.name}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Owner */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">제작자</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setTempOwnerId(null)} className={`px-4 py-2 rounded-full text-sm ${!tempOwnerId ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>전체</button>
+                        {owners.map(o => (
+                          <button key={o.id} onClick={() => setTempOwnerId(o.id)} className={`px-4 py-2 rounded-full text-sm ${tempOwnerId === o.id ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>{o.chineseName || o.name}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Counselor */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">상담사</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setTempCounselorId(null)} className={`px-4 py-2 rounded-full text-sm ${!tempCounselorId ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>전체</button>
+                        {counselors.map(c => (
+                          <button key={c.id} onClick={() => setTempCounselorId(c.id)} className={`px-4 py-2 rounded-full text-sm ${tempCounselorId === c.id ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>{c.displayName}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Duration */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">길이</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {(Object.entries(DURATION_RANGES) as [DurationRange, { label: string }][]).map(([key, val]) => (
+                          <button key={key} onClick={() => setTempDurationRange(key)} className={`px-4 py-2 rounded-full text-sm ${tempDurationRange === key ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>{val.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Sort */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">정렬</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setTempSort("latest")} className={`px-4 py-2 rounded-full text-sm ${tempSort === "latest" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>최신순</button>
+                        <button onClick={() => setTempSort("oldest")} className={`px-4 py-2 rounded-full text-sm ${tempSort === "oldest" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-muted text-muted-foreground"}`}>오래된순</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border-t flex gap-3 bg-background">
+                    <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={resetMobileFilters}>초기화</Button>
+                    <Button className="flex-1 h-12 rounded-xl" onClick={applyMobileFilters}>적용</Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ═══ Hero ═══ */}
-      {isLoading && page === 1 && !activeSearch ? (
-        <HeroSkeleton />
-      ) : heroVideo ? (
-        <HeroSection video={heroVideo} />
-      ) : null}
+      {/* Mobile Category Chips */}
+      <div className="md:hidden flex items-center gap-2 overflow-x-auto px-4 py-3 scrollbar-none [&::-webkit-scrollbar]:hidden border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-[140px] z-30">
+        <button
+          onClick={() => setCategoryId(null)}
+          className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${!categoryId ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground"}`}
+        >
+          전체
+        </button>
+        {categories.map(c => (
+          <button
+            key={c.id}
+            onClick={() => setCategoryId(c.id)}
+            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${categoryId === c.id ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground"}`}
+          >
+            {c.name}
+          </button>
+        ))}
+      </div>
 
-      {/* ═══ Grid ═══ */}
-      <div className="mx-auto max-w-[1920px] px-4 sm:px-6 pt-6 sm:pt-8">
-        {(activeSearch || activeCategoryName || !isLoading) && (
-          <div className="flex items-center justify-between mb-4 sm:mb-5">
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-base sm:text-lg font-bold text-foreground">
-                {activeCategoryName ??
-                  (activeSearch
-                    ? `"${activeSearch}" 검색결과`
-                    : "전체 영상")}
-              </h2>
-              {videosData && !isLoading && (
-                <span className="text-sm text-muted-foreground font-normal">
-                  {videosData.total.toLocaleString()}개
-                </span>
+      {/* ═══ Content Grid ═══ */}
+      <div className="relative z-10 w-full pb-20 bg-background text-foreground transition-all duration-500">
+
+        {/* ═══ Content Lists ═══ */}
+        {isLoading ? (
+          <div className="mx-auto max-w-[1920px] px-4 sm:px-6 pt-10">
+            <div className="flex gap-4 overflow-x-hidden">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={`skel-${i}`} className="w-[300px] shrink-0 space-y-3">
+                  <Skeleton className="aspect-video w-full rounded-xl bg-white/5" />
+                  <Skeleton className="h-4 w-3/4 bg-white/5" />
+                  <Skeleton className="h-3 w-1/2 bg-white/5" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : !filteredData?.data?.length ? (
+          <div className="mx-auto max-w-[1920px] px-4 sm:px-6 py-20">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-black/10 dark:border-white/10 py-20">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900 text-3xl">
+                <Film className="h-8 w-8 text-foreground dark:text-white" />
+              </div>
+              <h3 className="mb-1 text-lg font-semibold text-foreground dark:text-white">
+                {activeSearch || hasActiveFilter ? "조건에 맞는 영상이 없습니다" : "영상이 없습니다"}
+              </h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                {activeSearch || hasActiveFilter ? "다른 검색어나 필터 조합으로 시도해 보세요." : "아직 공개된 영상이 없습니다."}
+              </p>
+              {hasActiveFilter && (
+                <button onClick={() => resetFilters("grid")} className="mt-4 rounded-full bg-black text-white dark:bg-white px-5 py-2.5 text-sm font-bold dark:text-black hover:opacity-80 transition-opacity">
+                  필터 초기화
+                </button>
               )}
             </div>
-            {hasActiveFilter && (
-              <button
-                onClick={resetFilters}
-                className="sm:hidden flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
-              >
-                <X className="w-3.5 h-3.5" /> 초기화
-              </button>
-            )}
-          </div>
-        )}
-
-        {isLoading ? (
-          <GridSkeleton />
-        ) : !videos.length ? (
-          <div className="flex flex-col items-center justify-center py-20 sm:py-28 rounded-2xl border border-dashed text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Film className="w-8 h-8 text-muted-foreground/40" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">
-              {hasActiveFilter
-                ? "조건에 맞는 영상이 없습니다"
-                : "영상이 없습니다"}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-5 max-w-xs">
-              {hasActiveFilter
-                ? "다른 검색어나 필터를 사용해 보세요."
-                : "아직 공개된 영상이 없습니다."}
-            </p>
-            {hasActiveFilter && (
-              <Button
-                onClick={resetFilters}
-                size="sm"
-                className="rounded-full px-5"
-              >
-                전체 보기
-              </Button>
-            )}
           </div>
         ) : (
-          <VideoGrid videos={gridVideos} page={page} />
+          <div className="flex flex-col gap-6 sm:gap-10 pt-8">
+            <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground dark:text-white mb-6">
+                {hasActiveFilter ? "탐색 결과" : "전체 영상"}
+              </h2>
+              <VideoGrid videos={filteredData!.data} page={page} />
+            </div>
+          </div>
         )}
 
-        {/* ═══ Pagination ═══ */}
-        {videosData && videosData.totalPages > 1 && (
-          <div className="mt-10 sm:mt-14 flex justify-center items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => {
-                setPage(page - 1);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className="rounded-full px-5 h-10 font-semibold"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" /> 이전
-            </Button>
-            <div className="flex items-center gap-1">
-              {Array.from({
-                length: Math.min(videosData.totalPages, 5),
-              }).map((_, i) => {
-                let pageNum: number;
-                if (videosData.totalPages <= 5) pageNum = i + 1;
-                else if (page <= 3) pageNum = i + 1;
-                else if (page >= videosData.totalPages - 2)
-                  pageNum = videosData.totalPages - 4 + i;
-                else pageNum = page - 2 + i;
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => {
-                      setPage(pageNum);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                    className={`h-10 min-w-[40px] rounded-full px-3 text-sm font-bold transition-all ${pageNum === page ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
+        {/* Pagination */}
+        {displayData && displayData.totalPages > 1 && (
+          <div className="mt-12 flex flex-col items-center justify-center gap-4">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)} className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full px-4 md:px-6 h-11 md:h-9">
+                이전
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(displayData.totalPages, 5) }).map((_, i) => {
+                  let pageNum: number;
+                  if (displayData.totalPages <= 5) pageNum = i + 1;
+                  else if (page <= 3) pageNum = i + 1;
+                  else if (page >= displayData.totalPages - 2) pageNum = displayData.totalPages - 4 + i;
+                  else pageNum = page - 2 + i;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`h-11 min-w-[44px] md:h-9 md:min-w-[36px] rounded-full px-2 text-sm font-bold transition-colors ${pageNum === page ? "bg-black text-white dark:bg-white dark:text-black shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(255,255,255,0.5)]" : "text-zinc-500 hover:text-foreground dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"}`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              <Button variant="ghost" size="sm" disabled={page >= displayData.totalPages} onClick={() => setPage(page + 1)} className="text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full px-4 md:px-6 h-11 md:h-9">
+                다음
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={page >= videosData.totalPages}
-              onClick={() => {
-                setPage(page + 1);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className="rounded-full px-5 h-10 font-semibold"
-            >
-              다음 <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
           </div>
         )}
       </div>

@@ -180,13 +180,13 @@ function CategoryDetailContent() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {videos.map((video: { id: string; title: string; thumbnailUrl: string | null; streamUid: string | null; owner?: { name: string }; createdAt: string; viewCount: number }) => (
+            {videos.map((video: { id: string; title: string; thumbnailUrl: string | null; signedThumbnailUrl?: string | null; streamUid: string | null; owner?: { name: string }; createdAt: string; viewCount: number }) => (
               <VideoCard
                 key={video.id}
                 id={video.id}
                 title={video.title}
-                thumbnailUrl={video.thumbnailUrl}
-                streamUid={video.streamUid}
+                thumbnailUrl={video.signedThumbnailUrl ?? video.thumbnailUrl}
+                streamUid={video.signedThumbnailUrl ? null : video.streamUid}
                 duration={null}
                 ownerName={video.owner?.name || "알 수 없음"}
                 categoryName={category.name}

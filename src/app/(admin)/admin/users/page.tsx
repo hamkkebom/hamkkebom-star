@@ -61,6 +61,10 @@ import {
   Shield,
   Star,
   Clock,
+  Pencil,
+  Check,
+  X,
+  Send,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { maskIdNumber } from "@/lib/settlement-utils";
@@ -218,6 +222,8 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const [showSensitive, setShowSensitive] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
 
   // Bulk action dialog
   const [bulkDialog, setBulkDialog] = useState<{
@@ -353,6 +359,67 @@ export default function AdminUsersPage() {
     },
   });
 
+  // Email update
+  const emailMutation = useMutation({
+    mutationFn: async ({
+      userId,
+      email,
+    }: {
+      userId: string;
+      email: string;
+    }) => {
+      const res = await fetch(`/api/admin/users/${userId}/email`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok)
+        throw new Error(
+          (await res.json()).error?.message ?? "이메일 변경에 실패했습니다."
+        );
+      return res.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setSelectedUser((prev) =>
+        prev ? { ...prev, email: result.data.email } : null
+      );
+      setIsEditingEmail(false);
+      toast.success("이메일이 변경되었습니다.");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  // Magic link
+  const magicLinkMutation = useMutation({
+    mutationFn: async ({
+      userId,
+      email,
+    }: {
+      userId: string;
+      email: string;
+    }) => {
+      const res = await fetch(`/api/admin/users/${userId}/magic-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok)
+        throw new Error(
+          (await res.json()).error?.message ?? "매직링크 전송에 실패했습니다."
+        );
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("매직링크를 전송했습니다.");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
   // ---------------------------------------------------------------------------
   // Derived
   // ---------------------------------------------------------------------------
@@ -371,6 +438,8 @@ export default function AdminUsersPage() {
     setSelectedUser(user);
     setShowSensitive(false);
     setRejectReason("");
+    setIsEditingEmail(false);
+    setEditEmail(user.email);
   };
 
   // Checkbox helpers
@@ -1164,18 +1233,101 @@ export default function AdminUsersPage() {
                     </h3>
                   </div>
                   <div className="p-5 space-y-4">
-                    {/* Email */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    {/* Email — Editable */}
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                         <Mail className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
                           이메일 계정
                         </p>
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {selectedUser.email}
-                        </p>
+                        {isEditingEmail ? (
+                          <div className="space-y-2">
+                            <Input
+                              type="email"
+                              value={editEmail}
+                              onChange={(e) => setEditEmail(e.target.value)}
+                              placeholder="새 이메일 주소"
+                              className="h-8 text-sm"
+                              autoFocus
+                            />
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                size="sm"
+                                className="h-7 px-2.5 text-xs"
+                                disabled={
+                                  emailMutation.isPending ||
+                                  !editEmail.trim() ||
+                                  editEmail === selectedUser.email
+                                }
+                                onClick={() =>
+                                  emailMutation.mutate({
+                                    userId: selectedUser.id,
+                                    email: editEmail.trim(),
+                                  })
+                                }
+                              >
+                                {emailMutation.isPending ? (
+                                  "저장 중..."
+                                ) : (
+                                  <>
+                                    <Check className="w-3 h-3 mr-1" />
+                                    저장
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2.5 text-xs"
+                                onClick={() => {
+                                  setIsEditingEmail(false);
+                                  setEditEmail(selectedUser.email);
+                                }}
+                              >
+                                <X className="w-3 h-3 mr-1" />
+                                취소
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {selectedUser.email}
+                            </p>
+                            <button
+                              onClick={() => {
+                                setEditEmail(selectedUser.email);
+                                setIsEditingEmail(true);
+                              }}
+                              className="text-muted-foreground hover:text-primary transition-colors shrink-0"
+                              title="이메일 수정"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                        {/* Magic Link Button */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2 h-7 px-2.5 text-xs gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
+                          disabled={
+                            magicLinkMutation.isPending || isEditingEmail
+                          }
+                          onClick={() =>
+                            magicLinkMutation.mutate({
+                              userId: selectedUser.id,
+                              email: selectedUser.email,
+                            })
+                          }
+                        >
+                          <Send className="w-3 h-3" />
+                          {magicLinkMutation.isPending
+                            ? "전송 중..."
+                            : "매직링크 전송"}
+                        </Button>
                       </div>
                     </div>
 

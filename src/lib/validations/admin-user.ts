@@ -13,3 +13,23 @@ export const bulkApproveSchema = z.object({
 });
 
 export type BulkApproveInput = z.infer<typeof bulkApproveSchema>;
+
+export const updateEmailSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "이메일을 입력해주세요.")
+    .email("유효한 이메일 주소를 입력해주세요."),
+});
+
+export type UpdateEmailInput = z.infer<typeof updateEmailSchema>;
+
+export const sendMagicLinkSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "이메일을 입력해주세요.")
+    .email("유효한 이메일 주소를 입력해주세요."),
+});
+
+export type SendMagicLinkInput = z.infer<typeof sendMagicLinkSchema>;
