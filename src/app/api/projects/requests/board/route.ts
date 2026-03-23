@@ -50,14 +50,22 @@ export async function GET(request: Request) {
 
   try {
 
+  const now = new Date();
+  const baseStatusWhere = statusParam && statusParam !== "ALL" && !isAppliedFilter
+    ? statusParam === "OPEN"
+      ? { status: RequestStatus.OPEN, deadline: { gte: now } }
+      : statusParam === "CLOSED"
+        ? {
+            OR: [
+              { status: RequestStatus.CLOSED },
+              { status: RequestStatus.OPEN, deadline: { lt: now } },
+            ],
+          }
+        : { status: statusParam as RequestStatus }
+    : {};
+
   const where = {
-    ...(statusParam && statusParam !== "ALL" && !isAppliedFilter
-      ? { status: statusParam as RequestStatus }
-      : {}),
-    // OPEN 필터 시 마감일 지난 프로젝트 제외
-    ...(statusParam === "OPEN"
-      ? { deadline: { gte: new Date() } }
-      : {}),
+    ...baseStatusWhere,
     ...(isAppliedFilter && user.role === "STAR"
       ? { assignments: { some: { starId: user.id, status: { notIn: [AssignmentStatus.REJECTED, AssignmentStatus.CANCELLED] } } } }
       : {}),
@@ -119,6 +127,18 @@ export async function GET(request: Request) {
     statusCounts = Object.fromEntries(
       countRows.map((r) => [r.status, r._count.status])
     );
+
+    const expiredOpenCount = await prisma.projectRequest.count({
+      where: {
+        status: RequestStatus.OPEN,
+        deadline: { lt: now },
+      },
+    });
+
+    if (expiredOpenCount > 0) {
+      statusCounts.OPEN = Math.max(0, (statusCounts.OPEN || 0) - expiredOpenCount);
+      statusCounts.CLOSED = (statusCounts.CLOSED || 0) + expiredOpenCount;
+    }
 
     // Also count total pending approvals
     const pendingTotal = await prisma.projectAssignment.count({

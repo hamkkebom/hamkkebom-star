@@ -571,7 +571,17 @@ export function AdminRequestsPanel() {
     },
   });
 
-  const rows = useMemo(() => data?.data ?? [], [data?.data]);
+  const rows = useMemo(() => {
+    if (!data?.data) return [];
+    // eslint-disable-next-line react-hooks/purity -- Date.now()는 마감 판별을 위해 렌더 시 필요
+    const now = Date.now();
+    return data.data.map((row) => {
+      const deadlineDate = new Date(row.deadline);
+      const isPastDeadline = !Number.isNaN(deadlineDate.getTime()) && deadlineDate.getTime() < now;
+      const displayStatus = row.status === "OPEN" && isPastDeadline ? "CLOSED" : row.status;
+      return { ...row, status: displayStatus as RequestStatus };
+    });
+  }, [data?.data]);
   const totalPages = data?.totalPages ?? 1;
   const total = data?.total ?? 0;
   const statusCounts = data?.statusCounts;
@@ -647,7 +657,7 @@ export function AdminRequestsPanel() {
   // ─── Detail Query ─────────────────────────────────────────
 
   const {
-    data: detailData,
+    data: detailDataRaw,
     isLoading: isDetailLoading,
   } = useQuery({
     queryKey: ["admin-project-detail", selectedProjectId],
@@ -661,6 +671,16 @@ export function AdminRequestsPanel() {
     },
     enabled: !!selectedProjectId,
   });
+
+  const detailData = useMemo(() => {
+    if (!detailDataRaw) return undefined;
+    // eslint-disable-next-line react-hooks/purity -- Date.now()는 마감 판별을 위해 렌더 시 필요
+    const now = Date.now();
+    const deadlineDate = new Date(detailDataRaw.deadline);
+    const isPastDeadline = !Number.isNaN(deadlineDate.getTime()) && deadlineDate.getTime() < now;
+    const displayStatus = detailDataRaw.status === "OPEN" && isPastDeadline ? "CLOSED" : detailDataRaw.status;
+    return { ...detailDataRaw, status: displayStatus as RequestStatus };
+  }, [detailDataRaw]);
 
   const approveMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
