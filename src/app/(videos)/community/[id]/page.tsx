@@ -54,6 +54,33 @@ export default function PostDetailPage() {
     },
   });
 
+  // 최근 본 글 localStorage 저장 (hook은 early return 전에 호출)
+  const post = data?.data;
+  const authorName = post?.author?.chineseName || post?.author?.name || "";
+
+  useEffect(() => {
+    if (!post) return;
+    try {
+      const stored = localStorage.getItem("community_recent_posts");
+      let parsed: { id: string; title: string; boardType: string; viewedAt: number; author: string }[] = [];
+      if (stored) {
+        parsed = JSON.parse(stored);
+      }
+      parsed = parsed.filter((p: { id: string }) => p.id !== post.id);
+      parsed.unshift({
+        id: post.id,
+        title: post.title,
+        boardType: post.boardType,
+        viewedAt: Date.now(),
+        author: authorName
+      });
+      parsed = parsed.slice(0, 10);
+      localStorage.setItem("community_recent_posts", JSON.stringify(parsed));
+    } catch (e) {
+      console.error("Failed to save recent post", e);
+    }
+  }, [post, authorName]);
+
   const likeMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/board/posts/${id}/like`, { method: "POST" });
@@ -149,40 +176,7 @@ export default function PostDetailPage() {
     );
   }
 
-  const post = data.data;
-  const authorName = post.author.chineseName || post.author.name;
   const isAuthorOrAdmin = user?.id === post.author.id || user?.role === "ADMIN";
-
-  useEffect(() => {
-    if (post) {
-      try {
-        const stored = localStorage.getItem("community_recent_posts");
-        let parsed: any[] = [];
-        if (stored) {
-           parsed = JSON.parse(stored);
-        }
-        
-        // Remove existing entry for this post
-        parsed = parsed.filter(p => p.id !== post.id);
-        
-        // Add to front
-        parsed.unshift({
-          id: post.id,
-          title: post.title,
-          boardType: post.boardType,
-          viewedAt: Date.now(),
-          author: authorName
-        });
-        
-        // Keep only top 10
-        parsed = parsed.slice(0, 10);
-        
-        localStorage.setItem("community_recent_posts", JSON.stringify(parsed));
-      } catch (e) {
-        console.error("Failed to save recent post", e);
-      }
-    }
-  }, [post, authorName]);
 
   return (
     <div className="container max-w-3xl mx-auto px-4 py-6 pb-20 md:pb-8">

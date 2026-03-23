@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { History, Eye, MessageSquare } from "lucide-react";
+import { History } from "lucide-react";
 import Link from "next/link";
 import { SidebarWidget } from "./sidebar-widget";
-import { cn } from "@/lib/utils";
+
 
 interface RecentPost {
   id: string;
@@ -34,6 +34,7 @@ export function RecentPostsWidget() {
   }, []);
 
   const formatViewedTime = (timestamp: number) => {
+    // eslint-disable-next-line react-hooks/purity -- Date.now()는 시간 표시를 위해 렌더 시 필요
     const minDiff = Math.floor((Date.now() - timestamp) / (1000 * 60));
     if (minDiff < 1) return "방금 전";
     if (minDiff < 60) return `${minDiff}분 전`;
