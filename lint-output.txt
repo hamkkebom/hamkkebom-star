@@ -1,0 +1,176 @@
+﻿
+> hamkkebom-star@0.1.0 lint C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?
+> eslint
+
+node.exe : [BABEL] No
+te: The code generato
+r has deoptimised the
+ styling of C:\Users\
+jtm02\Desktop\antigra
+vity\?⑥?遊꾩뒪?\src\gen
+erated\prisma\models\
+User.ts as it exceeds
+ the max of 500KB.
+위치 C:\Program Files\n
+odejs\pnpm.ps1:16 문자:
+5
++     & "$basedir/nod
+e$exe"  "$basedir/nod
+e_modules/pnpm/bin/pn
+pm.cjs"  ...
++     ~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: ([BABEL]   
+  Note: T...e max    
+ of 500KB.:Strin    g
+) [], RemoteExc    ep
+tion
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\__tests__\components\login-form.test.tsx
+  12:5  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\__tests__\components\public-header.test.tsx
+  45:64  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\__tests__\components\video-card.test.tsx
+  12:5  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(admin)\admin\announcements\page.tsx
+  275:9  warning  The 'rows' logical expression could make the dependencies of useMemo Hook (at line 296) change on every render. To fix this, wrap the initialization of 'rows' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  275:9  warning  The 'rows' logical expression could make the dependencies of useMemo Hook (at line 305) change on every render. To fix this, wrap the initialization of 'rows' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(admin)\admin\insights\financial\page.tsx
+  283:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(admin)\admin\reviews\page.tsx
+  249:5  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(admin)\admin\settlements\page.tsx
+  353:9  warning  The 'rows' logical expression could make the dependencies of useMemo Hook (at line 371) change on every render. To fix this, wrap the initialization of 'rows' in its own useMemo() Hook      react-hooks/exhaustive-deps
+  353:9  warning  The 'rows' logical expression could make the dependencies of useCallback Hook (at line 407) change on every render. To fix this, wrap the initialization of 'rows' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  353:9  warning  The 'rows' logical expression could make the dependencies of useCallback Hook (at line 414) change on every render. To fix this, wrap the initialization of 'rows' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  353:9  warning  The 'rows' logical expression could make the dependencies of useCallback Hook (at line 430) change on every render. To fix this, wrap the initialization of 'rows' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  353:9  warning  The 'rows' logical expression could make the dependencies of useCallback Hook (at line 445) change on every render. To fix this, wrap the initialization of 'rows' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(admin)\admin\stars\page.tsx
+  1052:9  warning  The 'grades' logical expression could make the dependencies of useMemo Hook (at line 1068) change on every render. To fix this, wrap the initialization of 'grades' in its own useMemo() Hook          react-hooks/exhaustive-deps
+  1053:9  warning  The 'unassigned' logical expression could make the dependencies of useMemo Hook (at line 1088) change on every render. To fix this, wrap the initialization of 'unassigned' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(admin)\admin\videos\page.tsx
+  469:9  warning  The 'categories' logical expression could make the dependencies of useMemo Hook (at line 590) change on every render. To fix this, wrap the initialization of 'categories' in its own useMemo() Hook            react-hooks/exhaustive-deps
+  492:9  warning  The 'rows' logical expression could make the dependencies of useCallback Hook (at line 547) change on every render. To fix this, wrap the initialization of 'rows' in its own useMemo() Hook                    react-hooks/exhaustive-deps
+  496:9  warning  The 'subStatusCounts' logical expression could make the dependencies of useMemo Hook (at line 508) change on every render. To fix this, wrap the initialization of 'subStatusCounts' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(videos)\community\[id]\edit\page.tsx
+  96:29  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(videos)\community\[id]\edit\page.tsx:96:29
+  94 |   }, [post, reset]);
+  95 |
+> 96 |   const selectedBoardType = watch("boardType");
+     |                             ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  97 |
+  98 |   const editMutation = useMutation({
+  99 |     mutationFn: async (data: EditFormValues) => {  react-hooks/incompatible-library
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(videos)\community\[id]\page.tsx
+  156:3   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?                                                                                              react-hooks/rules-of-hooks
+  160:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  201:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  299:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  363:27  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(videos)\community\write\page.tsx
+  51:29  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(videos)\community\write\page.tsx:51:29
+  49 |   });
+  50 |
+> 51 |   const selectedBoardType = watch("boardType");
+     |                             ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  52 |
+  53 |   const submitMutation = useMutation({
+  54 |     mutationFn: async (data: WriteFormValues) => {  react-hooks/incompatible-library
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\app\(videos)\explore\page.tsx
+  300:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\admin\mobile-review-item.tsx
+  230:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\admin\swipe-review-sheet.tsx
+   91:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  730:69  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\admin\user-swipe-deck.tsx
+  98:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\community\comment-section.tsx
+  157:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  242:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\community\left-nav\community-left-nav.tsx
+  31:9  warning  'pathname' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\community\sidebar\announcements-widget.tsx
+  8:10  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\community\sidebar\community-stats-widget.tsx
+  7:10  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\community\sidebar\recent-posts-widget.tsx
+   4:19  warning  'Eye' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   4:24  warning  'MessageSquare' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+   7:10  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+  37:33  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\community\sidebar\recent-posts-widget.tsx:37:33
+  35 |
+  36 |   const formatViewedTime = (timestamp: number) => {
+> 37 |     const minDiff = Math.floor((Date.now() - timestamp) / (1000 * 60));
+     |                                 ^^^^^^^^^^ Cannot call impure function
+  38 |     if (minDiff < 1) return "諛⑷툑 ??;
+  39 |     if (minDiff < 60) return `${minDiff}遺???;
+  40 |     const hourDiff = Math.floor(minDiff / 60);  react-hooks/purity
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\community\sidebar\top-contributors-widget.tsx
+  6:8  warning  'Link' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\home\community-preview.tsx
+  178:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\home\hero-banner.tsx
+  108:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\home\home-dashboard.tsx
+  214:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  321:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  358:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\home\weekly-chart.tsx
+   64:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   92:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  126:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  160:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  203:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\jtm02\Desktop\antigravity\?⑥?遊꾩뒪?\src\components\video\video-card.tsx
+  149:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+??50 problems (3 errors, 47 warnings)
+
+?덭LIFECYCLE??Command failed with exit code 1.
