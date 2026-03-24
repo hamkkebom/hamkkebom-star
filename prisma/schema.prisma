@@ -365,12 +365,17 @@ model Settlement {
   startDate   DateTime
   endDate     DateTime
   totalAmount Decimal          @default(0) @db.Decimal(12, 2)
+  taxAmount   Decimal          @default(0) @db.Decimal(12, 2)
+  netAmount   Decimal          @default(0) @db.Decimal(12, 2)
   status      SettlementStatus @default(PENDING)
   note        String?
   paymentDate DateTime?
+  confirmedAt DateTime?
+  confirmedBy String?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   items       SettlementItem[]
+  history     SettlementHistory[]
   star        User             @relation(fields: [starId], references: [id])
 
   @@index([starId])
@@ -389,6 +394,7 @@ model SettlementItem {
   finalAmount    Decimal    @db.Decimal(10, 2)
   description    String?
   itemType       String     @default("SUBMISSION")
+  // itemType values: SUBMISSION | AI_TOOL_SUPPORT | BONUS | DEDUCTION | PENALTY | TRANSPORT | EQUIPMENT | OTHER
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   settlement     Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
@@ -398,6 +404,25 @@ model SettlementItem {
   @@index([starId])
   @@index([settlementId])
   @@map("settlement_items")
+}
+
+model SettlementHistory {
+  id           String     @id @default(cuid())
+  settlementId String
+  action       String     // CREATED | UPDATED | CONFIRMED | CANCELLED | ITEM_ADJUSTED | ITEM_ADDED | ITEM_DELETED | DELETED
+  field        String?
+  oldValue     String?
+  newValue     String?
+  actorId      String
+  actorName    String
+  metadata     Json?
+  createdAt    DateTime   @default(now())
+
+  settlement   Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([settlementId])
+  @@index([createdAt])
+  @@map("settlement_history")
 }
 
 model SystemSettings {

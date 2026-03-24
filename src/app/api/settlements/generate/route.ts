@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { generateSettlementSchema } from "@/lib/validations/settlement";
 import { createAuditLog } from "@/lib/audit";
+import { calculateTax } from "@/lib/settlement-utils";
 export const dynamic = "force-dynamic";
 
 type ApiError = {
@@ -258,16 +259,21 @@ export async function POST(request: Request) {
           const totalAmount = itemsData.reduce(
             (sum, item) => sum + item.finalAmount,
             0
-          ) + aiToolSupportFee;
+          ) + userAiToolSupportFee;
+
+          // 세금 계산 (3.3%: 소득세 3% + 지방소득세 0.3%)
+          const { incomeTax, localTax } = calculateTax(totalAmount);
+          const taxAmount = incomeTax + localTax;
+          const netAmount = totalAmount - taxAmount;
 
           const updatedSettlement = await tx.settlement.update({
             where: { id: createdSettlement.id },
-            data: { totalAmount },
+            data: { totalAmount, taxAmount, netAmount },
           });
 
           return {
             ...updatedSettlement,
-            itemCount: itemsData.length + (aiToolSupportFee > 0 ? 1 : 0),
+            itemCount: itemsData.length + (userAiToolSupportFee > 0 ? 1 : 0),
           };
         })
       );
@@ -308,6 +314,8 @@ export async function POST(request: Request) {
       return toErrorResponse(error);
     }
 
+    console.error("[settlements/generate] Error:", error);
+
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return NextResponse.json(
         { error: { code: "INTERNAL_ERROR", message: "정산 생성 중 데이터 오류가 발생했습니다." } },
@@ -315,8 +323,9 @@ export async function POST(request: Request) {
       );
     }
 
+    const errMsg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: { code: "INTERNAL_ERROR", message: "정산 생성 중 오류가 발생했습니다." } },
+      { error: { code: "INTERNAL_ERROR", message: `정산 생성 중 오류: ${errMsg}` } },
       { status: 500 }
     );
   }

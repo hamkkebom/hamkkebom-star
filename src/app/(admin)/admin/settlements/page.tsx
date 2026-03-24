@@ -21,6 +21,8 @@ import {
   Pencil,
   Save,
   X,
+
+  TrendingUp,
 } from "lucide-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,6 +33,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 
 import type { DateRange } from "react-day-picker";
+import { ko } from "date-fns/locale";
 import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import {
   Table,
@@ -66,6 +69,7 @@ import { ConfettiTrigger } from "@/components/settlement/confetti-trigger";
 import { NumberTicker } from "@/components/settlement/number-ticker";
 import { formatKRW, formatDateRange, getDefaultDateRange } from "@/lib/settlement-utils";
 import { SettlementDetailSheet, type SettlementDetail } from "@/components/admin/settlement-detail-sheet";
+import SettlementAnalytics from "@/components/settlement/settlement-analytics";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -76,6 +80,8 @@ type SettlementRow = {
   startDate: string;
   endDate: string;
   totalAmount: number;
+  taxAmount: number;
+  netAmount: number;
   status: string;
   paymentDate: string | null;
   note: string | null;
@@ -182,6 +188,11 @@ export default function AdminSettlementsPage() {
   // Settings edit
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+
+  // Bulk action
+  const [bulkAction, setBulkAction] = useState<string>("");
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [isBulking, setIsBulking] = useState(false);
 
   // StatCard expand
   const [expandedCard, setExpandedCard] = useState<"pending" | "processing" | null>(null);
@@ -444,6 +455,29 @@ export default function AdminSettlementsPage() {
     }
   }, [selectedIds, rows]);
 
+  const handleBulkAction = useCallback(async () => {
+    if (!bulkAction || selectedIds.size === 0) return;
+    setIsBulking(true);
+    try {
+      const res = await fetch("/api/settlements/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: bulkAction, ids: Array.from(selectedIds) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || "일괄 처리 실패");
+      toast.success(`성공 ${data.data.success}건, 실패 ${data.data.failed}건`);
+      setSelectedIds(new Set());
+      setBulkAction("");
+      setBulkConfirmOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["admin-settlements"] });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "오류가 발생했습니다.");
+    } finally {
+      setIsBulking(false);
+    }
+  }, [bulkAction, selectedIds, queryClient]);
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -459,11 +493,15 @@ export default function AdminSettlementsPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="overview" className="gap-1.5">
+      <Tabs defaultValue="dashboard" className="space-y-6">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsTrigger value="dashboard" className="gap-1.5">
+            <TrendingUp className="h-4 w-4" />
+            대시보드
+          </TabsTrigger>
+          <TabsTrigger value="list" className="gap-1.5">
             <FileText className="h-4 w-4" />
-            개요
+            정산 목록
           </TabsTrigger>
           <TabsTrigger value="stars" className="gap-1.5">
             <Users className="h-4 w-4" />
@@ -476,7 +514,10 @@ export default function AdminSettlementsPage() {
         </TabsList>
 
         {/* ======================== Overview Tab ======================== */}
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="dashboard" className="space-y-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold tracking-tight">요약 및 분석</h2>
+          </div>
           {/* Stat Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 items-start">
             <StatCard title="총 정산액" value={totalSum} suffix="원" icon={DollarSign} iconColor="text-emerald-500" delay={0} />
@@ -586,6 +627,20 @@ export default function AdminSettlementsPage() {
             <StatCard title="확정 완료" value={completedCount} suffix="건" icon={CheckCircle2} iconColor="text-cyan-500" delay={0.3} />
           </div>
 
+          {/* Analytics Charts */}
+          <SettlementAnalytics />
+        </TabsContent>
+
+        {/* ======================== List Tab ======================== */}
+        <TabsContent value="list" className="space-y-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold tracking-tight">발행된 정산 내역</h2>
+            <Button onClick={() => setGenerateOpen(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" />
+              정산 생성
+            </Button>
+          </div>
+
           {/* Filter Bar */}
           <AnimatedCard delay={0.15}>
             <div className="flex flex-wrap items-center gap-3 p-4">
@@ -624,19 +679,43 @@ export default function AdminSettlementsPage() {
                 </SelectContent>
               </Select>
 
-              <div className="ml-auto flex items-center gap-2">
+              
+              {/* Bulk Actions UI */}
+              {selectedIds.size > 0 && (
+                <div className="flex items-center gap-2 md:border-l md:pl-4 border-border/60">
+                  <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-1.5 rounded-md">
+                    {selectedIds.size}건 선택
+                  </span>
+                  <Select value={bulkAction} onValueChange={setBulkAction}>
+                    <SelectTrigger className="w-[140px] h-9">
+                      <SelectValue placeholder="상태 일괄변경..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CONFIRM">선택건 확정 처리</SelectItem>
+                      <SelectItem value="CANCEL">선택건 승인 대기로(취소)</SelectItem>
+                      <SelectItem value="DELETE">건별 영구 삭제</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    size="sm" 
+                    variant={bulkAction === "DELETE" ? "destructive" : "default"} 
+                    disabled={!bulkAction || isBulking}
+                    onClick={() => setBulkConfirmOpen(true)}
+                  >
+                    {isBulking ? "처리중..." : "적용"}
+                  </Button>
+                </div>
+              )}
+
+              <div className="ml-auto flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
                 <Button
                   variant="outline"
                   onClick={handleExcelDownload}
                   disabled={excelDownloading || rows.length === 0}
-                  className="gap-1.5"
+                  className="gap-1.5 w-full md:w-auto"
                 >
                   <Download className="h-4 w-4" />
-                  {selectedIds.size > 0 ? `${selectedIds.size}건 엑셀` : "전체 엑셀"}
-                </Button>
-                <Button onClick={() => setGenerateOpen(true)} className="gap-1.5">
-                  <Plus className="h-4 w-4" />
-                  정산 생성
+                  {selectedIds.size > 0 ? `${selectedIds.size}건 엑셀 다운로드` : "전체 엑셀 다운로드"}
                 </Button>
               </div>
             </div>
@@ -1004,6 +1083,7 @@ export default function AdminSettlementsPage() {
           <div className="flex justify-center">
             <Calendar
               mode="range"
+              locale={ko}
               selected={genDateRange}
               onSelect={setGenDateRange}
               numberOfMonths={2}
@@ -1109,6 +1189,39 @@ export default function AdminSettlementsPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      
+      {/* ======================== Bulk Confirm Dialog ======================== */}
+      <AlertDialog open={bulkConfirmOpen} onOpenChange={setBulkConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkAction === "CONFIRM" && "선택한 정산을 일괄 확정하시겠습니까?"}
+              {bulkAction === "CANCEL" && "선택한 정산의 확정을 일괄 취소하시겠습니까?"}
+              {bulkAction === "DELETE" && "선택한 정산을 영구 삭제하시겠습니까?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{selectedIds.size}건</strong>의 정산에 대해 일괄 처리를 진행합니다.
+              {bulkAction === "DELETE" && (
+                <>
+                  <br />
+                  <span className="text-destructive font-medium">이 작업은 되돌릴 수 없습니다.</span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBulkConfirmOpen(false)}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              className={bulkAction === "DELETE" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+              onClick={handleBulkAction}
+              disabled={isBulking}
+            >
+              {isBulking ? "처리 중..." : "확인"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

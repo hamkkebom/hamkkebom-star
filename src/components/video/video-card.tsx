@@ -193,8 +193,8 @@ export const VideoCard = memo(function VideoCard({
             {title}
           </h3>
 
-          {/* Metadata container - slides up and fades in on hover */}
-          <div className="overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] max-h-0 opacity-0 group-hover:max-h-[80px] group-hover:opacity-100 group-hover:mt-3">
+          {/* Metadata — always visible */}
+          <div className="mt-3">
             <div className={`flex items-center gap-2 text-zinc-600 dark:text-zinc-300 ${compact ? "text-[10px]" : "text-xs font-medium"}`}>
               <div className="flex items-center gap-1.5 bg-black/5 dark:bg-white/10 rounded-full px-2 py-1 backdrop-blur-md">
                 <User className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" />
@@ -207,7 +207,7 @@ export const VideoCard = memo(function VideoCard({
               )}
             </div>
 
-            <div className={`mt-2.5 flex items-center justify-between font-medium text-zinc-500 ${compact ? "text-[10px]" : "text-[11px]"}`}>
+            <div className={`mt-2 flex items-center justify-between font-medium text-zinc-500 ${compact ? "text-[10px]" : "text-[11px]"}`}>
               <span>
                 {new Intl.DateTimeFormat("ko-KR", {
                   year: "numeric",

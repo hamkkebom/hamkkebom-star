@@ -2,12 +2,8 @@ import { PublicHeader } from "@/components/layout/public-header";
 import { PublicFooter } from "@/components/layout/public-footer";
 import { PublicBottomNav } from "@/components/layout/public-bottom-nav";
 import { AnnouncementBanner } from "@/components/home/announcement-banner";
-import { HeroBanner } from "@/components/home/hero-banner";
-import { WeeklyChart } from "@/components/home/weekly-chart";
-import { PopularStars } from "@/components/home/popular-stars";
-import { CommunityPreview } from "@/components/home/community-preview";
+import { HomeDashboard } from "@/components/home/home-dashboard";
 import { FaqPreview } from "@/components/home/faq-preview";
-import { CategoryShowcase } from "@/components/home/category-showcase";
 import Link from "next/link";
 import { Film, Users, Star, Search } from "lucide-react";
 
@@ -21,20 +17,8 @@ export default function Home() {
       <PublicHeader />
 
       <main className="flex-1 pb-20 md:pb-0 flex flex-col">
-        {/* 히어로 배너 (인기 영상) */}
-        <HeroBanner />
-
-        {/* 인기 스타 크리에이터 */}
-        <PopularStars />
-
-        {/* 주간 인기 차트 */}
-        <WeeklyChart />
-
-        {/* 카테고리 쇼케이스 */}
-        <CategoryShowcase />
-
-        {/* 커뮤니티 미리보기 */}
-        <CommunityPreview />
+        {/* 새로운 홈 대시보드 UI */}
+        <HomeDashboard />
 
         {/* 더 둘러보기 (Quick Links) */}
         <section className="container mx-auto px-4 py-8 md:py-12">

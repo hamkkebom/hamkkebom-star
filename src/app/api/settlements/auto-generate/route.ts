@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { createAuditLog } from "@/lib/audit";
 import { SettlementStatus, SubmissionStatus } from "@/generated/prisma/client";
+import { calculateTax } from "@/lib/settlement-utils";
 export const dynamic = "force-dynamic";
 
 /**
@@ -152,10 +153,14 @@ export async function POST(request: Request) {
                     });
                 }
 
-                // 총액 업데이트
+                // 총액 업데이트 + 세금 계산
+                const { incomeTax, localTax } = calculateTax(totalAmount);
+                const taxAmount = incomeTax + localTax;
+                const netAmount = totalAmount - taxAmount;
+
                 await tx.settlement.update({
                     where: { id: settlement.id },
-                    data: { totalAmount },
+                    data: { totalAmount, taxAmount, netAmount },
                 });
 
                 created.push({

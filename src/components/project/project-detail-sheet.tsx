@@ -113,10 +113,11 @@ export function ProjectDetailSheet({
   };
   const daysLeft = getDaysLeft(req.deadline);
   const isUrgent = daysLeft <= 3 && daysLeft > 0;
-  const isExpired = daysLeft <= 0;
+  const isExpired = daysLeft < 0;
   const isClosed = req.status === "CLOSED" || req.status === "CANCELLED";
-  const isUploadDisabled = isExpired || isClosed || assignment.status === "COMPLETED";
-  const canUpload = (assignment.status === "ACCEPTED" || assignment.status === "IN_PROGRESS") && !isUploadDisabled;
+  const uploadableStatuses = ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"];
+  const isUploadDisabled = isExpired || isClosed;
+  const canUpload = uploadableStatuses.includes(assignment.status) && !isUploadDisabled;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
