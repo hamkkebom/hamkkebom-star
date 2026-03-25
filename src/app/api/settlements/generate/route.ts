@@ -285,7 +285,7 @@ export async function POST(request: Request) {
         skippedStars,
         completedStars,
       };
-    });
+    }, { maxWait: 10000, timeout: 30000 });
 
     void createAuditLog({
       actorId: user.id,
@@ -319,7 +319,7 @@ export async function POST(request: Request) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       console.error("[settlements/generate] Prisma Error:", error.code, error.meta, error.message);
       return NextResponse.json(
-        { error: { code: "INTERNAL_ERROR", message: `정산 생성 중 DB 오류: [${error.code}] ${error.message.slice(0, 200)}` } },
+        { error: { code: "INTERNAL_ERROR", message: "정산 생성 중 데이터 오류가 발생했습니다. 잠시 후 다시 시도해주세요." } },
         { status: 500 }
       );
     }
