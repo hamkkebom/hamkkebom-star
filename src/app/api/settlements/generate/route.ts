@@ -317,8 +317,9 @@ export async function POST(request: Request) {
     console.error("[settlements/generate] Error:", error);
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      console.error("[settlements/generate] Prisma Error:", error.code, error.meta, error.message);
       return NextResponse.json(
-        { error: { code: "INTERNAL_ERROR", message: "정산 생성 중 데이터 오류가 발생했습니다." } },
+        { error: { code: "INTERNAL_ERROR", message: `정산 생성 중 DB 오류: [${error.code}] ${error.message.slice(0, 200)}` } },
         { status: 500 }
       );
     }
