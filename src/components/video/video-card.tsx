@@ -23,24 +23,13 @@ type VideoCardProps = {
   viewCount?: number;
 };
 
-/** 접근 불가 도메인 (DNS 해석 불가 등) — 이 도메인의 URL은 무시하고 Stream 폴백 사용 */
-const UNREACHABLE_HOSTS = new Set(["pub-r2.hamkkebom.com"]);
-
-function isReachableUrl(url: string | null): boolean {
-  if (!url) return false;
-  try {
-    return !UNREACHABLE_HOSTS.has(new URL(url).hostname);
-  } catch {
-    return false;
-  }
-}
-
-/** Static thumbnail URL */
+/** Static thumbnail URL — 커스텀 썸네일(API에서 서명된 URL)을 CF Stream 자동 캡쳐보다 우선 */
 function getStaticThumb(streamUid: string | null, thumbnailUrl: string | null): string | null {
-  // thumbnailUrl이 접근 불가 도메인이면 무시 → streamUid 폴백
-  const usableThumbnail = isReachableUrl(thumbnailUrl) ? thumbnailUrl : null;
+  // 커스텀 썸네일 우선 (API에서 presigned/signed URL로 변환되어 옴)
+  if (thumbnailUrl) return thumbnailUrl;
+  // CF Stream 자동 썸네일 폴백
   if (streamUid) return `https://videodelivery.net/${streamUid}/thumbnails/thumbnail.jpg?width=480&height=270&fit=crop`;
-  return usableThumbnail;
+  return null;
 }
 
 /** Animated GIF preview URL (Cloudflare Stream) */
@@ -146,11 +135,12 @@ export const VideoCard = memo(function VideoCard({
               />
               {/* Animated GIF (shown on hover after 300ms) */}
               {showAnimated && streamUid && (
-                <img
+                <Image
                   src={getAnimatedThumb(streamUid)}
                   alt={`${title} 미리보기`}
+                  fill
+                  unoptimized
                   className="absolute inset-0 w-full h-full object-cover"
-                  loading="lazy"
                 />
               )}
             </>

@@ -32,6 +32,7 @@ export async function GET(request: Request) {
   const dateTo = searchParams.get("dateTo");
   const q = searchParams.get("q")?.trim(); // Global search query
   const submissionStatusParam = searchParams.get("submissionStatus")?.trim();
+  const includeVersions = searchParams.get("includeVersions") === "true";
 
   if (sort !== "latest" && sort !== "oldest" && sort !== "popular") {
     return NextResponse.json(
@@ -162,9 +163,18 @@ export async function GET(request: Request) {
           },
         },
         submissions: {
-          select: { id: true, thumbnailUrl: true, status: true },
+          select: {
+            id: true,
+            thumbnailUrl: true,
+            status: true,
+            version: true,
+            versionSlot: true,
+            versionTitle: true,
+            createdAt: true,
+            _count: { select: { feedbacks: true } },
+          },
           orderBy: { createdAt: "desc" },
-          take: 1,
+          ...(includeVersions ? {} : { take: 1 }),
         },
         _count: {
           select: {
@@ -188,11 +198,24 @@ export async function GET(request: Request) {
   // submissions에서 latestSubmission 추출 후 addSignedThumbnails에 넘길 형태로 변환
   const rowsPrepped = rows.map((row) => {
     const latestSubmission = row.submissions?.[0] ?? null;
-    const { submissions: _submissions, ...restRow } = row;
+    const { submissions, ...restRow } = row;
     return {
       ...restRow,
       submissionId: latestSubmission?.id ?? null,
       latestSubmissionStatus: latestSubmission?.status ?? null,
+      ...(includeVersions ? {
+        submissionCount: submissions.length,
+        latestVersion: latestSubmission?.version ?? null,
+        allSubmissions: submissions.slice(1).map((s) => ({
+          id: s.id,
+          version: s.version,
+          versionSlot: s.versionSlot,
+          versionTitle: s.versionTitle,
+          status: s.status,
+          createdAt: s.createdAt.toISOString(),
+          feedbackCount: s._count.feedbacks,
+        })),
+      } : {}),
     };
   });
 

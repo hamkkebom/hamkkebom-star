@@ -17,17 +17,31 @@ const THUMB_WIDTH = 640;
 const THUMB_HEIGHT = 360;
 
 /**
- * 단일 영상의 CF Stream 썸네일을 R2에 캐싱합니다.
+ * 단일 영상의 썸네일을 R2에 캐싱합니다.
+ * 커스텀 썸네일(유저 업로드)이 있으면 그것을 사용하고,
+ * 없으면 CF Stream 자동 캡쳐를 다운로드하여 캐싱합니다.
  *
  * @param videoId - 영상 DB ID
  * @param streamUid - Cloudflare Stream UID
+ * @param customThumbnailUrl - 유저가 업로드한 커스텀 썸네일 R2 URL (있으면 우선 사용)
  * @returns R2 공개 URL 또는 null (실패 시)
  */
 export async function cacheVideoThumbnail(
   videoId: string,
   streamUid: string,
+  customThumbnailUrl?: string | null,
 ): Promise<string | null> {
   try {
+    // 커스텀 썸네일이 이미 R2에 있으면 그대로 Video.thumbnailUrl에 설정
+    if (customThumbnailUrl?.includes("pub-r2.hamkkebom.com")) {
+      await prisma.video.update({
+        where: { id: videoId },
+        data: { thumbnailUrl: customThumbnailUrl },
+      });
+      return customThumbnailUrl;
+    }
+
+    // CF Stream 자동 캡쳐 다운로드 → R2 캐싱
     // 1. CF Stream signed token 발급
     const token = await getSignedPlaybackToken(streamUid);
     const thumbUrl = token

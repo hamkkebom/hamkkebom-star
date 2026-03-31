@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { Fragment, useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -15,6 +15,7 @@ import {
   Download,
   LayoutGrid,
   LayoutList,
+  Layers,
   Play,
   MoreVertical,
   FileVideo,
@@ -22,8 +23,10 @@ import {
   CheckCircle2,
   ShieldCheck,
   Eye,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -85,6 +88,16 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 // ─── Types ───────────────────────────────────────────────────
 
+type SubmissionSummary = {
+  id: string;
+  version: string;
+  versionSlot: number;
+  versionTitle: string | null;
+  status: string;
+  createdAt: string;
+  feedbackCount: number;
+};
+
 type VideoRow = {
   id: string;
   title: string;
@@ -95,6 +108,9 @@ type VideoRow = {
   createdAt: string;
   submissionId: string | null;
   latestSubmissionStatus: string | null;
+  latestVersion?: string | null;
+  submissionCount?: number;
+  allSubmissions?: SubmissionSummary[];
   owner: { id: string; name: string; chineseName?: string | null; email: string };
   category: { id: string; name: string; slug: string } | null;
   adEligible: boolean;
@@ -184,6 +200,7 @@ const VIDEO_SUBJECT_OPTIONS = [
 ];
 
 const VIEW_STORAGE_KEY = "admin-videos-view";
+const GROUP_STORAGE_KEY = "admin-videos-group";
 
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(dateStr));
@@ -433,16 +450,20 @@ export default function AdminVideosPage() {
   const [editVideo, setEditVideo] = useState<EditVideoData | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [groupMode, setGroupMode] = useState(false);
+  const [expandedVideoIds, setExpandedVideoIds] = useState<Set<string>>(new Set());
 
   const pageSize = 50;
 
-  // Restore view preference from localStorage
+  // Restore view & group preferences from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(VIEW_STORAGE_KEY);
       if (saved === "grid" || saved === "list") {
         setViewMode(saved);
       }
+      const savedGroup = localStorage.getItem(GROUP_STORAGE_KEY);
+      if (savedGroup === "true") setGroupMode(true);
     } catch {
       // SSR / localStorage unavailable
     }
@@ -455,6 +476,23 @@ export default function AdminVideosPage() {
     } catch {
       // ignore
     }
+  }, []);
+
+  const handleGroupChange = useCallback(() => {
+    setGroupMode((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(GROUP_STORAGE_KEY, String(next)); } catch { /* ignore */ }
+      setExpandedVideoIds(new Set());
+      return next;
+    });
+  }, []);
+
+  const toggleExpand = useCallback((videoId: string) => {
+    setExpandedVideoIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(videoId)) next.delete(videoId); else next.add(videoId);
+      return next;
+    });
   }, []);
 
   // 카테고리 목록 가져오기
@@ -470,7 +508,7 @@ export default function AdminVideosPage() {
 
   // 영상 목록 가져오기 (필터 적용)
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["admin-videos", page, sort, categoryId, ownerName, statusFilter, dateRange],
+    queryKey: ["admin-videos", page, sort, categoryId, ownerName, statusFilter, dateRange, groupMode],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -482,6 +520,7 @@ export default function AdminVideosPage() {
       if (dateRange?.from) params.set("dateFrom", dateRange.from.toISOString());
       if (dateRange?.to) params.set("dateTo", dateRange.to.toISOString());
       if (statusFilter !== "ALL") params.set("submissionStatus", statusFilter);
+      if (groupMode) params.set("includeVersions", "true");
 
       const res = await fetch(`/api/videos?${params.toString()}`, { cache: "no-store" });
       if (!res.ok) throw new Error("영상을 불러오지 못했습니다.");
@@ -514,9 +553,10 @@ export default function AdminVideosPage() {
     }
   }, [dynamicStatusFilters, statusFilter]);
 
-  // Clear selection when filters/page change
+  // Clear selection & expanded state when filters/page change
   useEffect(() => {
     setSelectedIds(new Set());
+    setExpandedVideoIds(new Set());
   }, [page, sort, categoryId, ownerName, statusFilter, dateRange]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -745,6 +785,17 @@ export default function AdminVideosPage() {
                     </SelectContent>
                   </Select>
 
+                  {/* Group Toggle */}
+                  <Button
+                    variant={groupMode ? "default" : "outline"}
+                    size="sm"
+                    className="h-10 gap-1.5"
+                    onClick={handleGroupChange}
+                  >
+                    <Layers className="w-4 h-4" />
+                    <span className="hidden sm:inline">{groupMode ? "버전 펼치기" : "버전 묶기"}</span>
+                  </Button>
+
                   {/* View Toggle — desktop only */}
                   <div className="hidden md:flex items-center border border-border rounded-lg overflow-hidden h-10">
                     <button
@@ -887,6 +938,11 @@ export default function AdminVideosPage() {
                             AD
                           </span>
                         )}
+                        {groupMode && (row.submissionCount ?? 0) > 1 && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-black/70 text-white text-[9px] font-bold px-1.5 py-0 shadow-md">
+                            <Layers className="w-2.5 h-2.5" /> {row.submissionCount}
+                          </span>
+                        )}
                       </div>
 
                       {/* Info */}
@@ -924,9 +980,10 @@ export default function AdminVideosPage() {
                       <TableBody>
                         {rows.map((row) => {
                           const isSelected = selectedIds.has(row.id);
+                          const isExpanded = groupMode && expandedVideoIds.has(row.id);
                           return (
+                            <Fragment key={row.id}>
                             <TableRow
-                              key={row.id}
                               className={cn(
                                 "group/row transition-all duration-150 cursor-default",
                                 isSelected && "bg-primary/5",
@@ -953,7 +1010,18 @@ export default function AdminVideosPage() {
                                 />
                               </TableCell>
                               <TableCell className="max-w-[250px]">
-                                <p className="font-medium truncate">{row.title}</p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-medium truncate">{row.title}</p>
+                                  {groupMode && (row.submissionCount ?? 0) > 1 && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); toggleExpand(row.id); }}
+                                      className="flex items-center gap-0.5 shrink-0 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-semibold hover:bg-primary/20 transition-colors"
+                                    >
+                                      <span>{row.submissionCount}개 버전</span>
+                                      <ChevronDown className={cn("w-3 h-3 transition-transform duration-200", expandedVideoIds.has(row.id) && "rotate-180")} />
+                                    </button>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell>{row.owner.chineseName || "-"}</TableCell>
                               <TableCell className="text-muted-foreground text-sm">{row.owner.name}</TableCell>
@@ -1051,6 +1119,47 @@ export default function AdminVideosPage() {
                                 </div>
                               </TableCell>
                             </TableRow>
+                            {/* ─── Version Sub-rows (expanded) ─── */}
+                            <AnimatePresence>
+                              {isExpanded && row.allSubmissions && row.allSubmissions.length > 0 && (
+                                <tr key={`${row.id}-versions`}>
+                                  <td colSpan={9} className="p-0 border-0">
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.2 }}
+                                      className="overflow-hidden"
+                                    >
+                                      <div className="border-l-2 border-l-primary/30 ml-5 bg-muted/20">
+                                        {row.allSubmissions.map((sub) => (
+                                          <Link
+                                            key={sub.id}
+                                            href={`/admin/reviews/${sub.id}`}
+                                            className="flex items-center gap-4 px-5 py-2.5 hover:bg-muted/40 transition-colors group/sub"
+                                          >
+                                            <span className="text-xs font-mono font-semibold text-muted-foreground w-12 shrink-0">v{sub.version}</span>
+                                            <span className="text-sm truncate flex-1 text-muted-foreground group-hover/sub:text-foreground transition-colors">
+                                              {sub.versionTitle || `버전 ${sub.version}`}
+                                            </span>
+                                            <StatusPill status={sub.status} />
+                                            {sub.feedbackCount > 0 && (
+                                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                <MessageSquare className="w-3 h-3" />
+                                                {sub.feedbackCount}
+                                              </span>
+                                            )}
+                                            <span className="text-xs text-muted-foreground shrink-0">{formatRelativeDate(sub.createdAt)}</span>
+                                            <Eye className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover/sub:opacity-100 transition-opacity shrink-0" />
+                                          </Link>
+                                        ))}
+                                      </div>
+                                    </motion.div>
+                                  </td>
+                                </tr>
+                              )}
+                            </AnimatePresence>
+                            </Fragment>
                           );
                         })}
                       </TableBody>
@@ -1114,6 +1223,18 @@ export default function AdminVideosPage() {
                               <div className="absolute top-2 right-2 z-10">
                                 <StatusPill status={row.latestSubmissionStatus ?? row.status} />
                               </div>
+
+                              {/* Version count badge */}
+                              {groupMode && (row.submissionCount ?? 0) > 1 && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleExpand(row.id); }}
+                                  className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-full bg-black/70 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-1 hover:bg-black/90 transition-colors"
+                                >
+                                  <Layers className="w-3 h-3" />
+                                  {row.submissionCount}
+                                  <ChevronDown className={cn("w-3 h-3 transition-transform duration-200", expandedVideoIds.has(row.id) && "rotate-180")} />
+                                </button>
+                              )}
 
                               {/* 3-dot menu */}
                               <div className="absolute bottom-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1183,6 +1304,33 @@ export default function AdminVideosPage() {
                                 </span>
                               )}
                             </div>
+
+                            {/* Expanded version panel */}
+                            <AnimatePresence>
+                              {groupMode && expandedVideoIds.has(row.id) && row.allSubmissions && row.allSubmissions.length > 0 && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="overflow-hidden border-t border-border/50"
+                                >
+                                  <div className="p-2 space-y-0.5 bg-muted/20">
+                                    {row.allSubmissions.map((sub) => (
+                                      <Link
+                                        key={sub.id}
+                                        href={`/admin/reviews/${sub.id}`}
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-xs"
+                                      >
+                                        <span className="font-mono font-semibold text-muted-foreground">v{sub.version}</span>
+                                        <StatusPill status={sub.status} />
+                                        <span className="text-muted-foreground ml-auto shrink-0">{formatRelativeDate(sub.createdAt)}</span>
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         );
                       })}
@@ -1381,6 +1529,29 @@ export default function AdminVideosPage() {
                     <Share2 className="w-4 h-4 mr-2 text-muted-foreground" /> 매체 등록
                   </Button>
                 </div>
+
+                {/* Version History (grouped mode) */}
+                {groupMode && selectedMobileVideo.allSubmissions && selectedMobileVideo.allSubmissions.length > 0 && (
+                  <div className="mb-4 rounded-2xl border border-border/50 overflow-hidden">
+                    <div className="px-4 py-2.5 bg-muted/40 border-b border-border/50">
+                      <span className="text-xs font-semibold text-muted-foreground">이전 버전 ({selectedMobileVideo.allSubmissions.length})</span>
+                    </div>
+                    <div className="divide-y divide-border/30">
+                      {selectedMobileVideo.allSubmissions.map((sub) => (
+                        <Link
+                          key={sub.id}
+                          href={`/admin/reviews/${sub.id}`}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 active:bg-muted/50 transition-colors"
+                          onClick={() => setSelectedMobileVideo(null)}
+                        >
+                          <span className="text-xs font-mono font-bold text-muted-foreground">v{sub.version}</span>
+                          <span className="text-sm truncate flex-1">{sub.versionTitle || `버전 ${sub.version}`}</span>
+                          <StatusPill status={sub.status} />
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <Button
                   className="w-full h-16 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl active:scale-[0.98] transition-all"

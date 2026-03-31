@@ -110,6 +110,13 @@ export function UploadPageClient({
   const [resetKey, setResetKey] = useState(0); // 썸네일 업로더 초기화 키
 
   const selectedAssignment = assignments.find((a) => a.id === selectedAssignmentId);
+  // eslint-disable-next-line react-hooks/purity -- 마운트 시점 1회 스냅샷 (의도적 impure)
+  const nowRef = useRef(Date.now());
+  const isSelectedExpired = useMemo(() => {
+    if (!selectedAssignment) return false;
+    const dl = new Date(selectedAssignment.deadline);
+    return !Number.isNaN(dl.getTime()) && dl.getTime() < nowRef.current;
+  }, [selectedAssignment]);
   const uploadFormRef = useRef<HTMLDivElement>(null);
 
   // 모바일에서 프로젝트 선택 시 폼 영역으로 자동 스크롤
@@ -504,6 +511,13 @@ export function UploadPageClient({
                 </CardContent>
               ) : selectedAssignment && (
                 <CardContent className="space-y-8 pt-8">
+                  {/* 마감 후 제출 경고 배너 */}
+                  {isSelectedExpired && (
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-sm font-medium">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <span>마감된 프로젝트입니다. 제출물은 <strong>마감 후 제출</strong>로 표시되며, 관리자 승인이 필요합니다.</span>
+                      </div>
+                  )}
                   {/* 프로젝트 정보 요약 */}
                   <div className="grid gap-6 md:grid-cols-2">
                     <div className="space-y-4 rounded-xl bg-orange-50/50 p-5 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/50">

@@ -187,6 +187,9 @@ model Submission {
   parent          Submission?        @relation("SubmissionHistory", fields: [parentId], references: [id])
   children        Submission[]       @relation("SubmissionHistory")
 
+  // 마감 후 제출 여부 (마감일 초과 또는 CLOSED 프로젝트에 제출)
+  isLateSubmission Boolean @default(false)
+
   // 동시 리뷰 방지 (Optimistic locking)
   lockedBy        String?
   lockedAt        DateTime?

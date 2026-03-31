@@ -160,6 +160,16 @@ export async function POST(request: Request) {
         } satisfies ApiError;
       }
 
+      // 마감 여부 자동 감지 (마감 후 제출 플래그)
+      const linkedRequest = await tx.projectRequest.findFirst({
+        where: { assignments: { some: { id: parsed.data.assignmentId } } },
+        select: { deadline: true, status: true },
+      });
+      const isLate = !!(linkedRequest && (
+        linkedRequest.status === "CLOSED" ||
+        new Date(linkedRequest.deadline) < new Date()
+      ));
+
       // 0. 카테고리 유효성 검사 (입력된 경우)
       if (parsed.data.categoryId) {
         const categoryExists = await tx.category.findUnique({ where: { id: parsed.data.categoryId } });
@@ -207,6 +217,7 @@ export async function POST(request: Request) {
           thumbnailUrl: parsed.data.thumbnailUrl,
           starId: user.id,
           videoId: newVideo.id, // Video 연결
+          isLateSubmission: isLate, // 마감 후 제출 여부
         },
       });
 

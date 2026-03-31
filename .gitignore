@@ -65,3 +65,7 @@ e2e-*.png
 users_export.csv
 계정목록.csv
 *.csv
+
+# AI editor session data
+.omc/
+changes.txt

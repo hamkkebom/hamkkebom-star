@@ -82,6 +82,7 @@ export type SubmissionRow = {
     id: string;
     status: string;
   }>;
+  isLateSubmission?: boolean;
   _count: {
     feedbacks: number;
   };
@@ -752,6 +753,11 @@ export default function AdminReviewsPage() {
                           <TableCell>
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <StatusPill status={row.status} />
+                              {row.isLateSubmission && (
+                                <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-500/40">
+                                  마감 후 제출
+                                </Badge>
+                              )}
                               {row.status === "APPROVED" && row.video && (
                                 <Badge className={cn(
                                   "border-none shadow-none text-xs",

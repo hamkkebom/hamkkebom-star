@@ -29,7 +29,7 @@ export async function PATCH(_request: Request, { params }: Params) {
     const updated = await prisma.$transaction(async (tx) => {
       const submission = await tx.submission.findUnique({
         where: { id },
-        select: { id: true, status: true, assignmentId: true, videoId: true },
+        select: { id: true, status: true, assignmentId: true, videoId: true, thumbnailUrl: true },
       });
 
       if (!submission) {
@@ -96,13 +96,18 @@ export async function PATCH(_request: Request, { params }: Params) {
     });
 
     // 비동기 썸네일 R2 캐싱 (승인된 영상 → 공개 페이지 빠른 로딩용)
+    // 유저가 업로드한 커스텀 썸네일이 있으면 그것을 우선 사용
     if (updated.videoId) {
+      const submissionThumb = await prisma.submission.findUnique({
+        where: { id },
+        select: { thumbnailUrl: true },
+      });
       prisma.video.findUnique({
         where: { id: updated.videoId },
         select: { streamUid: true },
       }).then((video) => {
         if (video?.streamUid) {
-          void cacheVideoThumbnail(updated.videoId!, video.streamUid).catch(() => {});
+          void cacheVideoThumbnail(updated.videoId!, video.streamUid, submissionThumb?.thumbnailUrl).catch(() => {});
         }
       }).catch(() => {});
     }

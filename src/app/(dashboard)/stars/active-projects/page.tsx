@@ -15,9 +15,9 @@ import {
   Layers,
   AlertTriangle,
   CheckCircle2,
+  Clock,
   Play,
   Inbox,
-  Lock,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -129,7 +129,8 @@ function ProjectCard({
   const isExpired = daysLeft <= 0;
   const isCompleted = assignment.status === "COMPLETED";
   const isClosed = req.status === "CLOSED" || req.status === "CANCELLED";
-  const isUploadDisabled = isExpired || isClosed || isCompleted;
+  const isLateUpload = (isExpired || isClosed) && !isCompleted;
+  const isUploadDisabled = isCompleted;
 
   return (
     <motion.div
@@ -145,7 +146,7 @@ function ProjectCard({
           "relative overflow-hidden rounded-2xl border bg-card transition-all duration-300",
           "hover:shadow-lg hover:border-violet-500/30 dark:hover:shadow-[0_8px_30px_-12px_rgba(124,58,237,0.3)]",
           isUrgent && !isCompleted && "border-amber-500/30",
-          isExpired && !isCompleted && "border-red-500/40 border-dashed grayscale-[0.5] opacity-90",
+          isExpired && !isCompleted && "border-amber-500/40 border-dashed",
           isCompleted && "border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/10"
         )}
       >
@@ -159,12 +160,12 @@ function ProjectCard({
           </div>
         )}
 
-        {/* Expired banner */}
+        {/* Expired banner — 뒤늦은 제출 가능 */}
         {isExpired && !isCompleted && (
-          <div className="flex items-center gap-1.5 px-4 py-1.5 bg-red-500/10 border-b border-red-500/20 text-red-600 dark:text-red-400">
+          <div className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-amber-600 dark:text-amber-400">
             <AlertTriangle className="h-3 w-3" />
             <span className="text-[10px] font-bold">
-              EXPIRED — 마감된 프로젝트입니다
+              마감된 프로젝트 · 뒤늦은 제출 가능
             </span>
           </div>
         )}
@@ -281,7 +282,7 @@ function ProjectCard({
           {/* Action Buttons */}
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             {(assignment.status === "ACCEPTED" ||
-              assignment.status === "IN_PROGRESS") && !isUploadDisabled && (
+              assignment.status === "IN_PROGRESS") && !isUploadDisabled && !isLateUpload && (
               <Button
                 variant="default"
                 size="sm"
@@ -294,15 +295,15 @@ function ProjectCard({
             )}
 
             {(assignment.status === "ACCEPTED" ||
-              assignment.status === "IN_PROGRESS") && isUploadDisabled && !isCompleted && (
+              assignment.status === "IN_PROGRESS") && isLateUpload && (
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
-                disabled
-                className="flex-1 gap-1.5 text-xs font-bold rounded-xl opacity-80"
+                className="flex-1 gap-1.5 text-xs font-bold rounded-xl border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                onClick={() => onUploadClick(assignment)}
               >
-                <Lock className="h-3.5 w-3.5" />
-                마감됨
+                <Clock className="h-3.5 w-3.5" />
+                뒤늦은 제출
               </Button>
             )}
 

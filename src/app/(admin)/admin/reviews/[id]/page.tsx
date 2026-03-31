@@ -68,6 +68,7 @@ type SubmissionDetail = {
   video: { id: string; title: string; streamUid: string | null; thumbnailUrl?: string | null } | null;
   feedbacks: Feedback[];
   _count: { feedbacks: number };
+  isLateSubmission?: boolean;
 };
 
 type VersionSibling = {
@@ -322,6 +323,11 @@ export default function ReviewDetailPage() {
         <Badge className={cn("shrink-0", statusColors[sub.status] || "")}>
           {statusLabels[sub.status] || sub.status}
         </Badge>
+        {sub.isLateSubmission && (
+          <Badge variant="outline" className="shrink-0 text-[10px] bg-amber-500/10 text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-500/40">
+            마감 후 제출
+          </Badge>
+        )}
       </div>
 
       {/* Video Player */}
