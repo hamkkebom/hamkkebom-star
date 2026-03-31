@@ -56,7 +56,9 @@ function getDday(value: string | Date): string {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   const now = new Date();
-  const diff = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const deadlineDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.round((deadlineDay.getTime() - todayDay.getTime()) / (1000 * 60 * 60 * 24));
   if (diff < 0) return "마감";
   if (diff === 0) return "D-Day";
   return `D-${diff}`;
@@ -73,8 +75,9 @@ export function RequestCard({
 }) {
   const displayStatus: RequestStatus = useMemo(() => {
     const deadlineDate = request.deadline instanceof Date ? request.deadline : new Date(String(request.deadline));
+    const endOfDeadline = new Date(deadlineDate.getFullYear(), deadlineDate.getMonth(), deadlineDate.getDate(), 23, 59, 59, 999);
     // eslint-disable-next-line react-hooks/purity -- Date.now()는 마감 판별을 위해 렌더 시 필요
-    const isPastDeadline = !Number.isNaN(deadlineDate.getTime()) && deadlineDate.getTime() < Date.now();
+    const isPastDeadline = !Number.isNaN(deadlineDate.getTime()) && endOfDeadline.getTime() < Date.now();
     return (request.status === "OPEN" && isPastDeadline) ? "CLOSED" : request.status;
   }, [request.deadline, request.status]);
 

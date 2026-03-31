@@ -412,7 +412,9 @@ export function UploadPageClient({
               {filteredAssignments.map((assignment) => {
                 const statusInfo = statusMap[assignment.status] || { label: assignment.status, variant: "secondary" };
                 const isSelected = selectedAssignmentId === assignment.id;
-                const dDay = Math.ceil((new Date(assignment.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                const _now = new Date();
+                const _dl = new Date(assignment.deadline);
+                const dDay = Math.round((new Date(_dl.getFullYear(), _dl.getMonth(), _dl.getDate()).getTime() - new Date(_now.getFullYear(), _now.getMonth(), _now.getDate()).getTime()) / (1000 * 60 * 60 * 24));
                 const isUrgent = dDay >= 0 && dDay <= 3;
 
                 return (
@@ -753,8 +755,9 @@ export function UploadPageClient({
               {filteredOpenRequests.map((req) => {
                 const now = new Date();
                 const deadlineDate = new Date(req.deadline);
-                const diffTime = deadlineDate.getTime() - now.getTime();
-                const dDay = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const deadlineDay = new Date(deadlineDate.getFullYear(), deadlineDate.getMonth(), deadlineDate.getDate());
+                const dDay = Math.round((deadlineDay.getTime() - todayDay.getTime()) / (1000 * 60 * 60 * 24));
 
                 const isUrgent = dDay >= 0 && dDay <= 3;
                 const isClosed = req.status === "CLOSED" || req.status === "FULL" || dDay < 0;

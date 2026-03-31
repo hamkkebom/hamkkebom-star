@@ -242,7 +242,9 @@ function formatBudget(value: string | number | null): string {
 function getDaysLeft(deadline: string): number {
   const now = new Date();
   const dl = new Date(deadline);
-  return Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const deadlineDay = new Date(dl.getFullYear(), dl.getMonth(), dl.getDate());
+  return Math.round((deadlineDay.getTime() - todayDay.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 function getDdayLabel(deadline: string): { text: string; className: string } {
@@ -577,7 +579,8 @@ export function AdminRequestsPanel() {
     const now = Date.now();
     return data.data.map((row) => {
       const deadlineDate = new Date(row.deadline);
-      const isPastDeadline = !Number.isNaN(deadlineDate.getTime()) && deadlineDate.getTime() < now;
+      const endOfDeadline = new Date(deadlineDate.getFullYear(), deadlineDate.getMonth(), deadlineDate.getDate(), 23, 59, 59, 999);
+      const isPastDeadline = !Number.isNaN(deadlineDate.getTime()) && endOfDeadline.getTime() < now;
       const displayStatus = row.status === "OPEN" && isPastDeadline ? "CLOSED" : row.status;
       return { ...row, status: displayStatus as RequestStatus };
     });
@@ -677,7 +680,8 @@ export function AdminRequestsPanel() {
     // eslint-disable-next-line react-hooks/purity -- Date.now()는 마감 판별을 위해 렌더 시 필요
     const now = Date.now();
     const deadlineDate = new Date(detailDataRaw.deadline);
-    const isPastDeadline = !Number.isNaN(deadlineDate.getTime()) && deadlineDate.getTime() < now;
+    const endOfDeadline = new Date(deadlineDate.getFullYear(), deadlineDate.getMonth(), deadlineDate.getDate(), 23, 59, 59, 999);
+    const isPastDeadline = !Number.isNaN(deadlineDate.getTime()) && endOfDeadline.getTime() < now;
     const displayStatus = detailDataRaw.status === "OPEN" && isPastDeadline ? "CLOSED" : detailDataRaw.status;
     return { ...detailDataRaw, status: displayStatus as RequestStatus };
   }, [detailDataRaw]);

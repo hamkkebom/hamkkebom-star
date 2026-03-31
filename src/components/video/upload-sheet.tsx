@@ -64,7 +64,9 @@ const STEPS = [
 function getDaysLeft(deadline: string): number {
   const now = new Date();
   const dl = new Date(deadline);
-  return Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const deadlineDay = new Date(dl.getFullYear(), dl.getMonth(), dl.getDate());
+  return Math.round((deadlineDay.getTime() - todayDay.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 // ─── Step slide animation variants ───────────────────────────────────────────
@@ -132,8 +134,8 @@ export function UploadSheet({ open, onOpenChange, assignment }: UploadSheetProps
 
   // ── Derived ──
   const daysLeft = getDaysLeft(assignment.deadline);
-  const isUrgent = daysLeft <= 3 && daysLeft > 0;
-  const isExpired = daysLeft <= 0;
+  const isUrgent = daysLeft <= 3 && daysLeft >= 0;
+  const isExpired = daysLeft < 0;
   const canProceed = versionTitle.trim().length > 0 && thumbnailFile !== null;
 
   // ── Handlers ──
@@ -290,7 +292,7 @@ export function UploadSheet({ open, onOpenChange, assignment }: UploadSheetProps
                               : "text-muted-foreground"
                         )}
                       >
-                        {isExpired ? "마감됨" : `D-${daysLeft}`}
+                        {isExpired ? "마감됨" : daysLeft === 0 ? "D-Day" : `D-${daysLeft}`}
                       </span>
                       <span className="text-muted-foreground/50">·</span>
                       <span className="text-muted-foreground">

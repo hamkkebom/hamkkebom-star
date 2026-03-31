@@ -97,7 +97,9 @@ async function fetchActiveProjects(): Promise<AssignmentResponse> {
 function getDaysLeft(deadline: string): number {
   const now = new Date();
   const dl = new Date(deadline);
-  return Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const deadlineDay = new Date(dl.getFullYear(), dl.getMonth(), dl.getDate());
+  return Math.round((deadlineDay.getTime() - todayDay.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 function formatDate(dateString: string) {
@@ -125,8 +127,8 @@ function ProjectCard({
     color: "bg-muted text-foreground",
   };
   const daysLeft = getDaysLeft(req.deadline);
-  const isUrgent = daysLeft <= 3 && daysLeft > 0;
-  const isExpired = daysLeft <= 0;
+  const isUrgent = daysLeft <= 3 && daysLeft >= 0;
+  const isExpired = daysLeft < 0;
   const isCompleted = assignment.status === "COMPLETED";
   const isClosed = req.status === "CLOSED" || req.status === "CANCELLED";
   const isLateUpload = (isExpired || isClosed) && !isCompleted;

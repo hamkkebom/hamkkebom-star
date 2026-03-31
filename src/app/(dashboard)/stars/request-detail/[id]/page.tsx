@@ -108,7 +108,8 @@ export default function RequestDetailPage() {
 
   const req = data.data;
   const deadline = new Date(req.deadline);
-  const isExpired = deadline < new Date();
+  const now = new Date();
+  const isExpired = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate(), 23, 59, 59, 999) < now;
 
   return (
     <div className="space-y-6">
