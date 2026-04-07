@@ -118,7 +118,7 @@ export function ProjectDetailSheet({
   const isExpired = daysLeft < 0;
   const isClosed = req.status === "CLOSED" || req.status === "CANCELLED";
   const uploadableStatuses = ["ACCEPTED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"];
-  const isUploadDisabled = isExpired || isClosed;
+  const isUploadDisabled = isClosed; // 마감(expired)은 허용, CLOSED/CANCELLED만 차단
   const canUpload = uploadableStatuses.includes(assignment.status) && !isUploadDisabled;
 
   return (
@@ -131,7 +131,7 @@ export function ProjectDetailSheet({
           isMobile
             ? "rounded-t-2xl max-h-[90dvh] overflow-y-auto"
             : "w-full max-w-[550px] overflow-y-auto",
-          (isExpired || isClosed) && "bg-muted/30"
+          isClosed && "bg-muted/30"
         )}
       >
         {/* Mobile grab handle */}
@@ -159,12 +159,21 @@ export function ProjectDetailSheet({
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Expired/Closed Banner */}
-          {(isExpired || isClosed) && (
+          {isClosed && (
             <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400">
               <AlertTriangle className="h-5 w-5 shrink-0" />
               <div className="flex-1">
+                <p className="text-sm font-bold">종료된 프로젝트</p>
+                <p className="text-xs opacity-80">종료 처리된 프로젝트에는 업로드할 수 없습니다.</p>
+              </div>
+            </div>
+          )}
+          {isExpired && !isClosed && (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              <div className="flex-1">
                 <p className="text-sm font-bold">마감된 프로젝트</p>
-                <p className="text-xs opacity-80">더 이상 영상을 업로드할 수 없습니다.</p>
+                <p className="text-xs opacity-80">제출물은 <strong>마감 후 제출</strong>로 표시되며, 관리자 승인이 필요합니다.</p>
               </div>
             </div>
           )}
@@ -172,7 +181,7 @@ export function ProjectDetailSheet({
           {/* Project Header Info */}
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-4">
-              <h2 className={cn("text-xl font-black leading-tight", (isExpired || isClosed) && "text-muted-foreground")}>
+              <h2 className={cn("text-xl font-black leading-tight", isClosed && "text-muted-foreground")}>
                 {req.title}
               </h2>
               <Badge className={cn("shrink-0 text-xs font-bold", config.color)}>
@@ -334,14 +343,17 @@ export function ProjectDetailSheet({
         <div className="p-6 border-t bg-background shrink-0 space-y-3">
           {canUpload ? (
             <Button
-              className="w-full h-12 rounded-xl font-bold text-base gap-2"
+              className={cn(
+                "w-full h-12 rounded-xl font-bold text-base gap-2",
+                isExpired && "bg-amber-600 hover:bg-amber-700"
+              )}
               onClick={() => {
                 onOpenChange(false);
                 setTimeout(() => onUploadClick(assignment), 300);
               }}
             >
               <Upload className="h-4 w-4" />
-              영상 업로드
+              {isExpired ? "마감 후 제출하기" : "영상 업로드"}
             </Button>
           ) : isUploadDisabled ? (
             <Button
@@ -350,7 +362,7 @@ export function ProjectDetailSheet({
               className="w-full h-12 rounded-xl font-bold text-base gap-2 opacity-80"
             >
               <Lock className="h-4 w-4" />
-              마감됨 — 업로드 불가
+              종료됨 — 업로드 불가
             </Button>
           ) : null}
 
