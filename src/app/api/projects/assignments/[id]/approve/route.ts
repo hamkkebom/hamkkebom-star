@@ -30,7 +30,7 @@ export async function POST(_request: Request, { params }: Params) {
       const assignment = await tx.projectAssignment.findUnique({
         where: { id },
         include: {
-          request: { select: { id: true, title: true, maxAssignees: true } },
+          request: { select: { id: true, title: true, maxAssignees: true, deadline: true, status: true } },
         },
       });
 
@@ -40,6 +40,28 @@ export async function POST(_request: Request, { params }: Params) {
 
       if (assignment.status !== AssignmentStatus.PENDING_APPROVAL) {
         throw { code: "CONFLICT", message: "승인 대기 상태가 아닙니다.", status: 409 };
+      }
+
+      // 마감일 경과 체크
+      if (assignment.request.deadline && new Date(assignment.request.deadline) < new Date()) {
+        // 자동으로 CLOSED 상태로 변경
+        if (assignment.request.status === "OPEN") {
+          await tx.projectRequest.update({
+            where: { id: assignment.requestId },
+            data: { status: RequestStatus.CLOSED },
+          });
+        }
+        // 해당 assignment를 REJECTED로 변경
+        await tx.projectAssignment.update({
+          where: { id },
+          data: { status: AssignmentStatus.REJECTED, reviewedAt: new Date(), reviewedById: user.id },
+        });
+        throw { code: "BAD_REQUEST", message: "마감일이 지난 프로젝트는 승인할 수 없습니다.", status: 400 };
+      }
+
+      // 프로젝트 상태가 OPEN이 아니면 승인 불가
+      if (assignment.request.status !== "OPEN" && assignment.request.status !== "FULL") {
+        throw { code: "BAD_REQUEST", message: "종료되거나 취소된 프로젝트는 승인할 수 없습니다.", status: 400 };
       }
 
       // Race-condition safe: count active assignments within transaction

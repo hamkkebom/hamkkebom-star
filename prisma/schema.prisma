@@ -201,6 +201,7 @@ model Submission {
   @@index([starId, status])
   @@index([videoId])
   @@index([status, createdAt])
+  @@index([parentId])
   @@map("submissions")
 }
 

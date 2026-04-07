@@ -38,6 +38,16 @@ export async function POST(_request: Request, { params }: Params) {
         throw { code: "BAD_REQUEST", message: "수락 가능한 상태가 아닙니다.", status: 400 };
       }
 
+      // 마감일 경과 체크
+      if (req.deadline && new Date(req.deadline) < new Date()) {
+        // 자동으로 CLOSED 상태로 변경
+        await tx.projectRequest.update({
+          where: { id },
+          data: { status: RequestStatus.CLOSED },
+        });
+        throw { code: "BAD_REQUEST", message: "마감일이 지난 프로젝트에는 신청할 수 없습니다.", status: 400 };
+      }
+
       const existing = await tx.projectAssignment.findFirst({
         where: { starId: user.id, requestId: id },
       });

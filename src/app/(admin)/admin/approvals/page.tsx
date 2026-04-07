@@ -298,6 +298,7 @@ function GroupSection({
   const pct = group.request.maxAssignees > 0
     ? Math.min(100, Math.round((group.request._count.assignments / group.request.maxAssignees) * 100))
     : 0;
+  const isExpired = new Date(group.request.deadline) < new Date();
 
   return (
     <section className="space-y-3">
@@ -318,11 +319,16 @@ function GroupSection({
           {group.request.title}
         </h2>
         <div className="flex items-center gap-2">
+          {isExpired && (
+            <Badge variant="destructive" className="gap-1 text-xs">
+              ⏰ 마감 경과
+            </Badge>
+          )}
           <Badge variant="outline" className="gap-1 text-xs">
             <Users className="h-3 w-3" />
             {group.request._count.assignments}/{group.request.maxAssignees}
           </Badge>
-          <Badge variant="outline" className="gap-1 text-xs">
+          <Badge variant="outline" className={cn("gap-1 text-xs", isExpired && "text-destructive border-destructive/50")}>
             <CalendarDays className="h-3 w-3" />
             {formatDate(group.request.deadline)}
           </Badge>

@@ -223,7 +223,7 @@ export default function RequestDetailPage() {
       )}
 
       {/* Accept Button */}
-      {req.status === "OPEN" && (
+      {req.status === "OPEN" && !isExpired && (
         <Button
           onClick={() => acceptMutation.mutate()}
           disabled={acceptMutation.isPending}
@@ -232,6 +232,12 @@ export default function RequestDetailPage() {
         >
           {acceptMutation.isPending ? "지원 중..." : "이 프로젝트 지원하기"}
         </Button>
+      )}
+
+      {req.status === "OPEN" && isExpired && (
+        <div className="w-full text-center py-4 px-6 rounded-lg bg-muted/50 border border-border">
+          <p className="text-sm text-muted-foreground font-medium">⏰ 마감일이 지난 프로젝트입니다</p>
+        </div>
       )}
 
       {/* Assignees */}

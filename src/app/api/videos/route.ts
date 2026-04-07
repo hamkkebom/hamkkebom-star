@@ -128,6 +128,20 @@ export async function GET(request: Request) {
     ...submissionStatusFilter,
   };
 
+  // 버전 그룹핑: root submission(parentId가 null)을 가진 Video만 표시
+  // bumped 버전의 Video가 메인 리스트에 중복 노출되는 것을 방지
+  if (includeVersions) {
+    where.submissions = {
+      ...(typeof where.submissions === "object" && where.submissions !== null ? where.submissions : {}),
+      some: {
+        ...((typeof where.submissions === "object" && where.submissions !== null && "some" in where.submissions)
+          ? (where.submissions as Record<string, unknown>).some as Record<string, unknown>
+          : {}),
+        parentId: null,
+      },
+    };
+  }
+
   // 상태별 카운트 (필터 무관, ADMIN만 전체 상태 카운트 / 비로그인은 공개 상태만)
   const statusCountWhere: Record<string, unknown> = { ...where };
   delete statusCountWhere.status; // 상태 필터 제외한 나머지 조건으로 카운트
@@ -165,6 +179,7 @@ export async function GET(request: Request) {
         submissions: {
           select: {
             id: true,
+            parentId: true,
             thumbnailUrl: true,
             status: true,
             version: true,
@@ -174,7 +189,7 @@ export async function GET(request: Request) {
             _count: { select: { feedbacks: true } },
           },
           orderBy: { createdAt: "desc" },
-          ...(includeVersions ? {} : { take: 1 }),
+          take: 1,
         },
         _count: {
           select: {
@@ -194,28 +209,116 @@ export async function GET(request: Request) {
     }),
   ]);
 
+  // ── 버전 체인 조회 (parentId 기반) ──
+  type ChainChild = {
+    id: string; parentId: string | null; version: string; versionSlot: number;
+    versionTitle: string | null; status: string;
+    createdAt: Date; thumbnailUrl: string | null; streamUid: string | null;
+    _count: { feedbacks: number };
+    video: {
+      id: string; title: string; thumbnailUrl: string | null;
+      streamUid: string | null; status: string;
+    } | null;
+  };
+  const childrenByRoot: Map<string, ChainChild[]> = new Map();
+
+  if (includeVersions) {
+    // 각 row의 root submission ID 수집 (parentId가 null인 submission = root)
+    const rootSubIds = rows
+      .map((r) => r.submissions.find((s) => !s.parentId)?.id)
+      .filter((id): id is string => !!id);
+
+    if (rootSubIds.length > 0) {
+      const children = await prisma.submission.findMany({
+        where: { parentId: { in: rootSubIds } },
+        select: {
+          id: true,
+          parentId: true,
+          version: true,
+          versionSlot: true,
+          versionTitle: true,
+          status: true,
+          createdAt: true,
+          thumbnailUrl: true,
+          streamUid: true,
+          _count: { select: { feedbacks: true } },
+          video: {
+            select: {
+              id: true, title: true, thumbnailUrl: true,
+              streamUid: true, status: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      for (const child of children) {
+        if (!child.parentId) continue;
+        const list = childrenByRoot.get(child.parentId) ?? [];
+        list.push(child);
+        childrenByRoot.set(child.parentId, list);
+      }
+    }
+  }
+
   // ── 썸네일 URL 서명 (requireSignedURLs=true이므로 서명 필수) ──
   // submissions에서 latestSubmission 추출 후 addSignedThumbnails에 넘길 형태로 변환
   const rowsPrepped = rows.map((row) => {
-    const latestSubmission = row.submissions?.[0] ?? null;
+    const rootSubmission = row.submissions.find((s) => !s.parentId) ?? null;
     const { submissions, ...restRow } = row;
+
+    if (!includeVersions) {
+      const latestSubmission = submissions[0] ?? null;
+      return {
+        ...restRow,
+        submissionId: latestSubmission?.id ?? null,
+        latestSubmissionStatus: latestSubmission?.status ?? null,
+      };
+    }
+
+    // 버전 그룹핑: root의 체인 children 가져오기
+    const chainChildren = rootSubmission ? (childrenByRoot.get(rootSubmission.id) ?? []) : [];
+    // 최신 child가 메인에 표시, 나머지(root 포함)가 allSubmissions
+    const latestChild = chainChildren.length > 0 ? chainChildren[0] : null;
+    const latestSubmission = latestChild ?? rootSubmission;
+
+    // 최신 버전의 video 정보로 row 덮어쓰기 (title, thumbnail 등)
+    const videoOverrides = latestChild?.video ? {
+      title: latestChild.video.title,
+      thumbnailUrl: latestChild.video.thumbnailUrl ?? restRow.thumbnailUrl,
+      streamUid: latestChild.video.streamUid ?? restRow.streamUid,
+    } : {};
+
+    // allSubmissions: 최신 제외한 나머지 children + root (오래된 버전들)
+    const olderVersions = [
+      ...chainChildren.slice(1).map((s) => ({
+        id: s.id,
+        version: s.version,
+        versionSlot: s.versionSlot,
+        versionTitle: s.versionTitle,
+        status: s.status,
+        createdAt: s.createdAt.toISOString(),
+        feedbackCount: s._count.feedbacks,
+      })),
+      ...(rootSubmission ? [{
+        id: rootSubmission.id,
+        version: rootSubmission.version,
+        versionSlot: rootSubmission.versionSlot,
+        versionTitle: rootSubmission.versionTitle,
+        status: rootSubmission.status,
+        createdAt: rootSubmission.createdAt.toISOString(),
+        feedbackCount: rootSubmission._count.feedbacks,
+      }] : []),
+    ];
+
     return {
       ...restRow,
+      ...videoOverrides,
       submissionId: latestSubmission?.id ?? null,
       latestSubmissionStatus: latestSubmission?.status ?? null,
-      ...(includeVersions ? {
-        submissionCount: submissions.length,
-        latestVersion: latestSubmission?.version ?? null,
-        allSubmissions: submissions.slice(1).map((s) => ({
-          id: s.id,
-          version: s.version,
-          versionSlot: s.versionSlot,
-          versionTitle: s.versionTitle,
-          status: s.status,
-          createdAt: s.createdAt.toISOString(),
-          feedbackCount: s._count.feedbacks,
-        })),
-      } : {}),
+      submissionCount: 1 + chainChildren.length,
+      latestVersion: latestSubmission?.version ?? null,
+      allSubmissions: olderVersions,
     };
   });
 
