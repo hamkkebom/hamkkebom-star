@@ -69,3 +69,6 @@ users_export.csv
 # AI editor session data
 .omc/
 changes.txt
+
+# ESLint cache
+.eslintcache

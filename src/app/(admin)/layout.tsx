@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { Header } from "@/components/layout/header";
 import { BottomNavAdmin } from "@/components/layout/bottom-nav-admin";
@@ -5,6 +6,10 @@ import { OfflineBanner } from "@/components/pwa/offline-banner";
 import { UpdatePrompt } from "@/components/pwa/update-prompt";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLayout({
   children,

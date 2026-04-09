@@ -126,7 +126,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs,cjs}": [
-      "eslint --fix"
+      "eslint --fix --cache --no-warn-ignored"
     ]
   }
 }

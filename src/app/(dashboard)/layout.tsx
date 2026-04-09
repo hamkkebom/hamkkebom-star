@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { StarTopNav } from "@/components/layout/star-top-nav";
 import { OfflineBanner } from "@/components/pwa/offline-banner";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
@@ -5,6 +6,10 @@ import { UpdatePrompt } from "@/components/pwa/update-prompt";
 import { PushPermission } from "@/components/pwa/push-permission";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function DashboardLayout({
   children,
