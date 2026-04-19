@@ -42,19 +42,28 @@ async function resolveThumbnail(
   if (subThumbUrl) {
     const r2Key = extractR2Key(subThumbUrl);
     if (r2Key) {
-      try { url = await getPresignedGetUrl(r2Key); } catch { /* ignore */ }
+      try {
+        url = await getPresignedGetUrl(r2Key);
+      } catch (err) {
+        console.error(`[submissions GET] Submission 썸네일 presign 실패 (${submissionId}):`, err);
+      }
     }
   }
 
   if (!url && videoThumbUrl) {
     const r2Key = extractR2Key(videoThumbUrl);
     if (r2Key) {
-      try { url = await getPresignedGetUrl(r2Key); } catch { /* ignore */ }
+      try {
+        url = await getPresignedGetUrl(r2Key);
+      } catch (err) {
+        console.error(`[submissions GET] Video 썸네일 presign 실패 (${submissionId}):`, err);
+      }
     }
   }
 
   // CF Stream 토큰 기반 썸네일은 424 에러 발생하므로 사용하지 않음
-  // R2 썸네일이 없으면 null 반환 → 클라이언트에서 Film 아이콘 fallback
+  // R2 썸네일이 없거나 presign 실패하면 null → UI 플레이스홀더 표시
+  // (유저가 업로드한 썸네일이 있는데 CF Stream 프레임으로 대체하지 않기 위함)
 
   if (url) setCachedThumbnail(cacheKey, url);
   return url;

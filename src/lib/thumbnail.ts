@@ -12,9 +12,7 @@
  * - 캐시 히트 시 외부 API 호출 0건
  */
 import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
-import { extractR2Key, getPresignedGetUrl } from "@/lib/cloudflare/r2-upload";
-
-const R2_PUBLIC_DOMAIN = "pub-r2.hamkkebom.com";
+import { extractR2Key, getPresignedGetUrl, isR2Url } from "@/lib/cloudflare/r2-upload";
 
 /* ─── Stream Token 인메모리 캐시 ─── */
 const TOKEN_TTL_MS = 50 * 60 * 1000; // 50분 (토큰 유효기간 1시간보다 여유 10분)
@@ -43,26 +41,14 @@ function setCachedToken(uid: string, token: string): void {
 }
 
 /**
- * URL이 R2 공개 도메인 (pub-r2.hamkkebom.com) URL인지 판별합니다.
- * DNS가 해석되지 않으므로 직접 접근 불가 → presigned URL 변환 필요.
- */
-function isR2PublicUrl(url: string): boolean {
-  try {
-    return new URL(url).hostname === R2_PUBLIC_DOMAIN;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * URL이 서명 없이 바로 접근 가능한 공개 URL인지 판별합니다.
  * airtable, 일반 이미지 호스팅 등. R2 공개 도메인은 DNS 불가이므로 제외.
  */
 function isPublicUrl(url: string): boolean {
   try {
     const host = new URL(url).hostname;
-    // R2 공개 도메인은 DNS 해석 불가 → presigned URL로 별도 처리
-    if (host === R2_PUBLIC_DOMAIN) return false;
+    // R2 공개 도메인은 presigned URL로 별도 처리 (isR2Url에서 처리)
+    if (isR2Url(url)) return false;
     // videodelivery.net은 requireSignedURLs 때문에 공개 아님
     // r2.cloudflarestorage.com은 private endpoint
     return host !== "videodelivery.net" && !host.includes("r2.cloudflarestorage.com");
@@ -74,24 +60,36 @@ function isPublicUrl(url: string): boolean {
 /**
  * 영상의 접근 가능한 썸네일 URL을 생성합니다.
  *
+ * ⚠️ 핵심 원칙: 유저가 업로드한 커스텀 썸네일(R2 URL)이 저장되어 있으면,
+ *    presign이 실패해도 CF Stream 자동 썸네일로 폴백하지 않는다.
+ *    (CF Stream 자동 썸네일은 영상의 1초 지점 프레임 = "화면 캡쳐본"처럼 보여
+ *     유저가 업로드한 썸네일이 무시된 것처럼 오해됨)
+ *
  * 우선순위:
- * 1. thumbnailUrl이 R2 URL → presigned GET URL 생성 (커스텀 썸네일 우선)
+ * 1. thumbnailUrl이 R2 URL → presigned GET URL 생성 (실패 시 null — CF 폴백 안 함)
  * 2. thumbnailUrl이 공개 URL → 그대로 반환 (airtable 등)
- * 3. Cloudflare Stream → signed playback token 기반 썸네일 (캐시 적용)
- * 4. unsigned fallback
+ * 3. thumbnailUrl이 없을 때만 → Cloudflare Stream 자동 썸네일 (캐시 적용)
  */
 export async function resolveSignedThumbnail(
   thumbnailUrl: string | null,
   streamUid: string | null,
 ): Promise<string | null> {
   // 1순위: R2 URL → presigned GET URL (유저 업로드 커스텀 썸네일)
-  if (thumbnailUrl && isR2PublicUrl(thumbnailUrl)) {
+  if (thumbnailUrl && isR2Url(thumbnailUrl)) {
     const r2Key = extractR2Key(thumbnailUrl);
     if (r2Key) {
       try {
         return await getPresignedGetUrl(r2Key, 6 * 3600); // 6시간 TTL
-      } catch { /* R2 presign 실패 → CF Stream 폴백 */ }
+      } catch (err) {
+        console.error(`[thumbnail] R2 presign 실패 (${r2Key}):`, err);
+        // ⚠️ 유저가 커스텀 썸네일을 올렸는데 CF Stream으로 폴백하면
+        //    의도하지 않은 "화면 캡쳐본"이 표시됨 → null 반환으로 UI 플레이스홀더 사용
+        return null;
+      }
     }
+    // R2 URL인데 키 추출 실패 — 스키마 손상. null 반환.
+    console.warn(`[thumbnail] R2 키 추출 실패: ${thumbnailUrl}`);
+    return null;
   }
 
   // 2순위: 공개 URL → 그대로 반환 (airtable 등 — 서명 불필요)
@@ -99,7 +97,7 @@ export async function resolveSignedThumbnail(
     return thumbnailUrl;
   }
 
-  // 3순위: Cloudflare Stream signed token (캐시 우선)
+  // 3순위: 커스텀 썸네일이 전혀 없을 때만 → CF Stream 자동 썸네일
   if (streamUid) {
     const cachedToken = getCachedToken(streamUid);
     if (cachedToken) {
@@ -124,6 +122,11 @@ export async function resolveSignedThumbnail(
 /**
  * 영상 배열에 signedThumbnailUrl 필드를 추가합니다.
  * 병렬로 처리하여 성능 최적화.
+ *
+ * ⚠️ thumbnailUrl에 signed(= null 가능)를 그대로 넣음.
+ *    signed가 null이면 원본 R2 URL(브라우저 DNS 불가)을 덮어쓰지 않도록 null을 남김.
+ *    클라이언트는 signedThumbnailUrl이 null이면 플레이스홀더를 표시해야 함.
+ *    (원본 R2 URL을 유지하면 브라우저가 로드 실패 → hover 시 CF Stream GIF로 대체되는 부작용)
  */
 export async function addSignedThumbnails<T extends { thumbnailUrl: string | null; streamUid: string | null }>(
   videos: T[],
@@ -133,7 +136,7 @@ export async function addSignedThumbnails<T extends { thumbnailUrl: string | nul
       const signed = await resolveSignedThumbnail(v.thumbnailUrl, v.streamUid);
       return {
         ...v,
-        thumbnailUrl: signed || v.thumbnailUrl,
+        thumbnailUrl: signed,
         signedThumbnailUrl: signed,
       };
     }),

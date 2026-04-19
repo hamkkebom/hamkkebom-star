@@ -67,36 +67,38 @@ export async function GET(_request: Request, { params }: Params) {
     );
   }
 
-  // 썸네일 URL 생성 (우선순위: R2 presigned → Cloudflare Stream signed)
+  // 썸네일 URL 생성
+  // ⚠️ 유저 커스텀 썸네일이 있으면 CF Stream 폴백 금지 (화면 캡쳐본 문제 방지)
   let signedThumbnailUrl: string | null = null;
-
-  // 1) Video.thumbnailUrl이 R2 URL이면 → presigned GET URL 생성
   const videoThumbUrl = submission.video?.thumbnailUrl;
-  if (videoThumbUrl) {
-    const r2Key = extractR2Key(videoThumbUrl);
-    if (r2Key) {
-      try {
-        signedThumbnailUrl = await getPresignedGetUrl(r2Key);
-      } catch {
-        // R2 실패 시 fallback
-      }
-    }
-  }
+  const hasCustomThumb = !!(videoThumbUrl || submission.thumbnailUrl);
 
-  // 1-2) Submission.thumbnailUrl이 R2 URL이면 → presigned GET URL
-  if (!signedThumbnailUrl && submission.thumbnailUrl) {
+  // 1) Submission의 커스텀 썸네일 우선 (유저가 이 버전에 올린 썸네일)
+  if (submission.thumbnailUrl) {
     const r2Key = extractR2Key(submission.thumbnailUrl);
     if (r2Key) {
       try {
         signedThumbnailUrl = await getPresignedGetUrl(r2Key);
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error(`[submissions/${id}] Submission R2 presign 실패:`, err);
       }
     }
   }
 
-  // 2) R2 실패 시 → Cloudflare Stream signed thumbnail
-  if (!signedThumbnailUrl) {
+  // 2) Video.thumbnailUrl (버전 공유 or 캐시된 것)
+  if (!signedThumbnailUrl && videoThumbUrl) {
+    const r2Key = extractR2Key(videoThumbUrl);
+    if (r2Key) {
+      try {
+        signedThumbnailUrl = await getPresignedGetUrl(r2Key);
+      } catch (err) {
+        console.error(`[submissions/${id}] Video R2 presign 실패:`, err);
+      }
+    }
+  }
+
+  // 3) 커스텀 썸네일이 없을 때만 CF Stream 자동 썸네일 사용
+  if (!signedThumbnailUrl && !hasCustomThumb) {
     const uid = submission.streamUid || submission.video?.streamUid;
     if (uid) {
       try {

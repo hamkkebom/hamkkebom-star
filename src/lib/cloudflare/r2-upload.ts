@@ -26,15 +26,42 @@ function getS3Client() {
     return s3Client;
 }
 
-const R2_PUBLIC_URL = "https://pub-r2.hamkkebom.com";
+const R2_PUBLIC_URL_DEFAULT = "https://pub-r2.hamkkebom.com";
+const R2_PUBLIC_URL = (process.env.NEXT_PUBLIC_R2_PUBLIC_URL || R2_PUBLIC_URL_DEFAULT).replace(/\/$/, "");
+
+/**
+ * URL이 R2 퍼블릭 도메인 URL인지 판별합니다.
+ * 환경변수(NEXT_PUBLIC_R2_PUBLIC_URL) 도메인과 하드코딩된 기본 도메인 모두 인식합니다.
+ */
+export function isR2Url(url: string | null | undefined): boolean {
+    if (!url) return false;
+    try {
+        const host = new URL(url).hostname;
+        const envHost = new URL(R2_PUBLIC_URL).hostname;
+        const defaultHost = new URL(R2_PUBLIC_URL_DEFAULT).hostname;
+        return host === envHost || host === defaultHost;
+    } catch {
+        return false;
+    }
+}
 
 /**
  * R2 공개 URL에서 오브젝트 키를 추출합니다.
  * 예: "https://pub-r2.hamkkebom.com/thumbnails/abc.jpg" → "thumbnails/abc.jpg"
+ * 환경변수(NEXT_PUBLIC_R2_PUBLIC_URL) 도메인과 기본 도메인 모두 지원합니다.
  */
-export function extractR2Key(url: string): string | null {
-    if (!url.includes(R2_PUBLIC_URL)) return null;
-    return url.replace(`${R2_PUBLIC_URL}/`, "");
+export function extractR2Key(url: string | null | undefined): string | null {
+    if (!url) return null;
+    try {
+        const parsed = new URL(url);
+        const envHost = new URL(R2_PUBLIC_URL).hostname;
+        const defaultHost = new URL(R2_PUBLIC_URL_DEFAULT).hostname;
+        if (parsed.hostname !== envHost && parsed.hostname !== defaultHost) return null;
+        const key = parsed.pathname.replace(/^\//, "");
+        return key || null;
+    } catch {
+        return null;
+    }
 }
 
 /**
@@ -56,7 +83,12 @@ export async function getPresignedGetUrl(
         Key: key,
     });
 
-    return getSignedUrl(client, command, { expiresIn });
+    try {
+        return await getSignedUrl(client, command, { expiresIn });
+    } catch (err) {
+        console.error(`[r2] presign GET 실패 (${key}):`, err);
+        throw err;
+    }
 }
 
 /**

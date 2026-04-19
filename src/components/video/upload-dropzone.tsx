@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UploadProgress } from "@/components/video/upload-progress";
@@ -54,6 +55,7 @@ export function UploadDropzone({
   mode = "submission",
   onUploadSuccess,
 }: UploadDropzoneProps) {
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [fileName, setFileName] = useState("");
@@ -184,9 +186,24 @@ export function UploadDropzone({
 
         if (uploadRes.ok) {
           const { data } = await uploadRes.json();
-          thumbnailUrl = data.publicUrl;
+          thumbnailUrl = data?.publicUrl;
+          if (!thumbnailUrl) {
+            throw new Error("썸네일 업로드 응답에 URL이 없습니다. 관리자에게 문의해주세요.");
+          }
         } else {
-          console.warn("썸네일 업로드 실패, 썸네일 없이 제출합니다.");
+          // ⚠️ 조용한 실패 제거 — 유저가 썸네일을 의도적으로 올렸는데
+          //    무시되면 결국 CF Stream 자동 캡쳐가 표시됨.
+          //    명시적으로 에러 노출하고 제출 차단.
+          let detail = "";
+          try {
+            const errJson = await uploadRes.json();
+            detail = errJson?.error?.message || "";
+          } catch { /* ignore parse error */ }
+          throw new Error(
+            detail
+              ? `썸네일 업로드 실패: ${detail}`
+              : `썸네일 업로드 실패 (HTTP ${uploadRes.status}). 이미지 파일을 확인하고 다시 시도해주세요.`,
+          );
         }
       }
 
@@ -219,13 +236,18 @@ export function UploadDropzone({
 
       setStatus("done");
       setShowCompleteDialog(true);
+
+      // 제출 성공 — 관련 React Query 캐시 무효화하여 리스트/상세가 최신 썸네일 반영
+      queryClient.invalidateQueries({ queryKey: ["my-submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["active-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["submissions-my"] });
     } catch (error) {
       setStatus("error");
       toast.error(
         error instanceof Error ? error.message : "제출에 실패했습니다.",
       );
     }
-  }, [assignmentId, versionSlot, versionTitle, description, lyrics, categoryId, videoSubject, counselorId, externalId, thumbnailFile, streamUid, mode, onUploadSuccess]);
+  }, [assignmentId, versionSlot, versionTitle, description, lyrics, categoryId, videoSubject, counselorId, externalId, thumbnailFile, streamUid, mode, onUploadSuccess, queryClient]);
 
   /** 팝업 확인 → 폼 초기화 */
   const handleDialogConfirm = useCallback(() => {

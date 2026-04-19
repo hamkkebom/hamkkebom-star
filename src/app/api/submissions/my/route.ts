@@ -38,23 +38,41 @@ async function resolveThumbnail(
   const cached = getCachedThumbnail(cacheKey);
   if (cached) return cached;
 
+  // 유저가 커스텀 썸네일을 올렸는지 여부 (Submission.thumbnailUrl 또는 Video.thumbnailUrl)
+  const hasCustomThumbnail = !!(subThumbUrl || videoThumbUrl);
   let url: string | null = null;
 
+  // 1순위: Submission의 커스텀 썸네일 (유저가 업로드한 R2 URL)
   if (subThumbUrl) {
     const r2Key = extractR2Key(subThumbUrl);
     if (r2Key) {
-      try { url = await getPresignedGetUrl(r2Key); } catch { /* ignore */ }
+      try {
+        url = await getPresignedGetUrl(r2Key);
+      } catch (err) {
+        console.error(`[submissions/my] Submission 썸네일 presign 실패 (${submissionId}):`, err);
+      }
+    } else {
+      console.warn(`[submissions/my] Submission 썸네일 R2 키 추출 실패 (${submissionId}): ${subThumbUrl}`);
     }
   }
 
+  // 2순위: Video의 썸네일 (버전 간 공유, 또는 Video에만 저장된 경우)
   if (!url && videoThumbUrl) {
     const r2Key = extractR2Key(videoThumbUrl);
     if (r2Key) {
-      try { url = await getPresignedGetUrl(r2Key); } catch { /* ignore */ }
+      try {
+        url = await getPresignedGetUrl(r2Key);
+      } catch (err) {
+        console.error(`[submissions/my] Video 썸네일 presign 실패 (${submissionId}):`, err);
+      }
     }
   }
 
-  if (!url) {
+  // 3순위: CF Stream 자동 썸네일
+  // ⚠️ 유저가 커스텀 썸네일을 업로드한 경우에는 절대 CF Stream으로 폴백하지 않음.
+  //    (CF Stream 자동 썸네일 = 영상 1초 지점 프레임 = "화면 캡쳐본"처럼 보임)
+  //    커스텀 썸네일이 있는데 presign만 실패한 거면 null 반환 → UI 플레이스홀더 표시.
+  if (!url && !hasCustomThumbnail) {
     const uid = streamUid || videoStreamUid;
     if (uid) {
       try {
