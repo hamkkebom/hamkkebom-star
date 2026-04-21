@@ -13,6 +13,7 @@ type VideoItem = {
   owner: { name: string; chineseName?: string | null };
   category: { name: string } | null;
   technicalSpec: { duration: number | null } | null;
+  hasCustomThumbnail?: boolean;
 };
 
 type SwimlaneRowProps = {
@@ -106,11 +107,12 @@ export function SwimlaneRow({ title, videos, icon }: SwimlaneRowProps) {
               id={v.id}
               title={v.title}
               thumbnailUrl={v.thumbnailUrl}
-              streamUid={v.streamUid}
+              streamUid={v.hasCustomThumbnail ? null : v.streamUid}
               duration={v.technicalSpec?.duration ?? null}
               ownerName={v.owner.chineseName || v.owner.name}
               categoryName={v.category?.name ?? null}
               createdAt={v.createdAt}
+              hasCustomThumbnail={v.hasCustomThumbnail}
               compact
             />
           ))}

@@ -2,63 +2,10 @@ import { NextResponse } from "next/server";
 import { AssignmentStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
-import { extractR2Key, getPresignedGetUrl } from "@/lib/cloudflare/r2-upload";
-import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
+import { resolveSignedThumbnail } from "@/lib/thumbnail";
 export const dynamic = "force-dynamic";
 
 const assignmentStatuses = new Set(Object.values(AssignmentStatus));
-
-// ── 썸네일 URL 메모리 캐시 (TTL 50분) ──
-const thumbnailCache = new Map<string, { url: string; expiresAt: number }>();
-const CACHE_TTL_MS = 50 * 60 * 1000;
-
-function getCachedThumbnail(key: string): string | null {
-  const cached = thumbnailCache.get(key);
-  if (cached && cached.expiresAt > Date.now()) return cached.url;
-  if (cached) thumbnailCache.delete(key);
-  return null;
-}
-
-function setCachedThumbnail(key: string, url: string): void {
-  thumbnailCache.set(key, { url, expiresAt: Date.now() + CACHE_TTL_MS });
-  if (thumbnailCache.size > 500) {
-    const firstKey = thumbnailCache.keys().next().value;
-    if (firstKey) thumbnailCache.delete(firstKey);
-  }
-}
-
-async function resolveThumbnail(
-  submissionId: string,
-  thumbUrl: string | null,
-  streamUid: string | null
-): Promise<string | null> {
-  const cacheKey = `assign-sub-thumb:${submissionId}`;
-  const cached = getCachedThumbnail(cacheKey);
-  if (cached) return cached;
-
-  let url: string | null = null;
-
-  // 1. R2 presigned URL
-  if (thumbUrl) {
-    const r2Key = extractR2Key(thumbUrl);
-    if (r2Key) {
-      try { url = await getPresignedGetUrl(r2Key); } catch { /* ignore */ }
-    }
-  }
-
-  // 2. CF Stream signed thumbnail fallback
-  if (!url && streamUid) {
-    try {
-      const token = await getSignedPlaybackToken(streamUid);
-      if (token) {
-        url = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
-      }
-    } catch { /* ignore */ }
-  }
-
-  if (url) setCachedThumbnail(cacheKey, url);
-  return url;
-}
 
 export async function GET(request: Request) {
   const user = await getAuthUser();
@@ -138,14 +85,15 @@ export async function GET(request: Request) {
         const batch = row.submissions.slice(i, i + BATCH_SIZE);
         const resolved = await Promise.all(
           batch.map(async (sub) => {
-            const signedUrl = await resolveThumbnail(
-              sub.id,
+            // 커스텀 썸네일이 있으면 CF Stream 폴백 금지 (streamUid=null 전달)
+            const hasCustom = sub.thumbnailUrl !== null;
+            const signedUrl = await resolveSignedThumbnail(
               sub.thumbnailUrl,
-              sub.streamUid
+              hasCustom ? null : sub.streamUid,
             );
             return {
               ...sub,
-              thumbnailUrl: signedUrl || sub.thumbnailUrl,
+              thumbnailUrl: signedUrl,
             };
           })
         );

@@ -50,7 +50,7 @@ describe("VideoCard", () => {
     expect(link).toHaveAttribute("href", "/videos/test-video-1");
   });
 
-  it("shows Cloudflare Stream thumbnail when streamUid is present", () => {
+  it("shows Cloudflare Stream thumbnail when streamUid is present and no custom thumbnail", () => {
     render(<VideoCard {...defaultProps} />);
     const imgs = screen.getAllByRole("img");
     const thumb = imgs.find((img) => img.getAttribute("alt") === "테스트 영상");
@@ -91,13 +91,14 @@ describe("VideoCard", () => {
 describe("VideoCard - thumbnail logic", () => {
   afterEach(cleanup);
 
-  it("prefers streamUid over thumbnailUrl", () => {
+  it("prefers thumbnailUrl over CF Stream fallback (server is authoritative)", () => {
     render(
       <VideoCard
         id="vid1"
         title="Test"
-        thumbnailUrl="https://old.example.com/thumb.jpg"
+        thumbnailUrl="https://signed.example.com/thumb.jpg"
         streamUid="stream123"
+        hasCustomThumbnail
         duration={null}
         ownerName="User"
         categoryName={null}
@@ -106,8 +107,25 @@ describe("VideoCard - thumbnail logic", () => {
     );
     const imgs = screen.getAllByRole("img");
     const mainImg = imgs.find((img) => img.getAttribute("alt") === "Test");
-    expect(mainImg?.getAttribute("src")).toContain("videodelivery.net/stream123");
-    expect(mainImg?.getAttribute("src")).not.toContain("old.example.com");
+    expect(mainImg?.getAttribute("src")).toBe("https://signed.example.com/thumb.jpg");
+    expect(mainImg?.getAttribute("src")).not.toContain("videodelivery.net");
+  });
+
+  it("shows placeholder when server returns null thumbnailUrl with hasCustomThumbnail=true (presign failed)", () => {
+    render(
+      <VideoCard
+        id="vid1b"
+        title="PresignFail"
+        thumbnailUrl={null}
+        streamUid="stream123"
+        hasCustomThumbnail
+        duration={null}
+        ownerName="User"
+        categoryName={null}
+        createdAt="2026-01-01T00:00:00Z"
+      />
+    );
+    expect(screen.getByText("🎬")).toBeInTheDocument();
   });
 
   it("uses thumbnailUrl when streamUid is null", () => {

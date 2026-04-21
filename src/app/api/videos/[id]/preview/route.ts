@@ -44,8 +44,13 @@ export async function GET(_request: Request, { params }: Params) {
   // HLS 재생 URL (Cloudflare Stream 기본 형식)
   const hlsUrl = `https://customer-${CF_ACCOUNT_ID}.cloudflarestream.com/${video.streamUid}/manifest/video.m3u8`;
   const dashUrl = `https://customer-${CF_ACCOUNT_ID}.cloudflarestream.com/${video.streamUid}/manifest/video.mpd`;
-  const thumbnailUrl = video.thumbnailUrl
-    || `https://customer-${CF_ACCOUNT_ID}.cloudflarestream.com/${video.streamUid}/thumbnails/thumbnail.jpg`;
+  // 커스텀 썸네일이 있으면 그것을 우선 반환.
+  // 커스텀 썸네일이 없을 때만 CF Stream 자동 캡쳐 URL을 반환.
+  // ⚠️ 이 엔드포인트는 플레이어 초기화용이므로 R2 presign 없이 원본 URL을 반환.
+  //    클라이언트(플레이어)는 thumbnailUrl이 R2 URL이면 별도 presign 처리 필요.
+  const thumbnailUrl = video.thumbnailUrl !== null
+    ? video.thumbnailUrl
+    : `https://customer-${CF_ACCOUNT_ID}.cloudflarestream.com/${video.streamUid}/thumbnails/thumbnail.jpg`;
 
   return NextResponse.json({
     data: {

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
-import { getSignedPlaybackToken } from "@/lib/cloudflare/stream";
-import { extractR2Key, getPresignedGetUrl } from "@/lib/cloudflare/r2-upload";
+import { resolveSignedThumbnail } from "@/lib/thumbnail";
 export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request) {
@@ -44,27 +43,14 @@ export async function GET(_request: Request) {
             const latestSub = assignment.submissions[0];
             if (!latestSub) return null;
 
-            let signedThumbnailUrl: string | null = null;
-
-            // Try Video R2 -> Submission R2 -> Stream
-            const videoThumbUrl = latestSub.video?.thumbnailUrl;
+            // 커스텀 썸네일 우선순위: Submission > Video > CF Stream (커스텀 없을 때만)
             const subThumbUrl = latestSub.thumbnailUrl;
-            const uid = latestSub.streamUid || latestSub.video?.streamUid;
+            const videoThumbUrl = latestSub.video?.thumbnailUrl ?? null;
+            const customThumb = subThumbUrl ?? videoThumbUrl;
+            const hasCustom = customThumb !== null;
+            const uid = hasCustom ? null : (latestSub.streamUid ?? latestSub.video?.streamUid ?? null);
 
-            if (videoThumbUrl) {
-                const r2Key = extractR2Key(videoThumbUrl);
-                if (r2Key) try { signedThumbnailUrl = await getPresignedGetUrl(r2Key); } catch { }
-            }
-            if (!signedThumbnailUrl && subThumbUrl) {
-                const r2Key = extractR2Key(subThumbUrl);
-                if (r2Key) try { signedThumbnailUrl = await getPresignedGetUrl(r2Key); } catch { }
-            }
-            if (!signedThumbnailUrl && uid) {
-                try {
-                    const token = await getSignedPlaybackToken(uid);
-                    if (token) signedThumbnailUrl = `https://videodelivery.net/${token}/thumbnails/thumbnail.jpg?time=1s&width=640`;
-                } catch { }
-            }
+            const signedThumbnailUrl = await resolveSignedThumbnail(customThumb, uid);
 
             return {
                 assignmentId: assignment.id,

@@ -120,17 +120,20 @@ export async function resolveSignedThumbnail(
 }
 
 /**
- * 영상 배열에 signedThumbnailUrl 필드를 추가합니다.
+ * 영상 배열에 signedThumbnailUrl 및 hasCustomThumbnail 필드를 추가합니다.
  * 병렬로 처리하여 성능 최적화.
  *
  * ⚠️ thumbnailUrl에 signed(= null 가능)를 그대로 넣음.
  *    signed가 null이면 원본 R2 URL(브라우저 DNS 불가)을 덮어쓰지 않도록 null을 남김.
  *    클라이언트는 signedThumbnailUrl이 null이면 플레이스홀더를 표시해야 함.
  *    (원본 R2 URL을 유지하면 브라우저가 로드 실패 → hover 시 CF Stream GIF로 대체되는 부작용)
+ *
+ * hasCustomThumbnail: 유저가 커스텀 썸네일을 업로드했음을 나타냄.
+ *    true이면 클라이언트에서 CF Stream hover GIF도 차단해야 함.
  */
 export async function addSignedThumbnails<T extends { thumbnailUrl: string | null; streamUid: string | null }>(
   videos: T[],
-): Promise<(T & { signedThumbnailUrl: string | null })[]> {
+): Promise<(T & { signedThumbnailUrl: string | null; hasCustomThumbnail: boolean })[]> {
   return Promise.all(
     videos.map(async (v) => {
       const signed = await resolveSignedThumbnail(v.thumbnailUrl, v.streamUid);
@@ -138,6 +141,7 @@ export async function addSignedThumbnails<T extends { thumbnailUrl: string | nul
         ...v,
         thumbnailUrl: signed,
         signedThumbnailUrl: signed,
+        hasCustomThumbnail: v.thumbnailUrl !== null,
       };
     }),
   );

@@ -56,11 +56,17 @@ export async function GET(request: Request) {
     // Transform to match VideoCard expected format
     const data = await Promise.all(likes.map(async (l) => {
       const v = l.video;
-      const signedThumbnailUrl = await resolveSignedThumbnail(v.thumbnailUrl, v.streamUid);
+      // 커스텀 썸네일이 있으면 CF Stream 폴백 금지 (streamUid=null 전달)
+      const hasCustom = v.thumbnailUrl !== null;
+      const signedThumbnailUrl = await resolveSignedThumbnail(
+        v.thumbnailUrl,
+        hasCustom ? null : v.streamUid,
+      );
       return {
         id: v.id,
         title: v.title,
-        thumbnailUrl: signedThumbnailUrl || v.thumbnailUrl,
+        thumbnailUrl: signedThumbnailUrl,
+        hasCustomThumbnail: hasCustom,
         streamUid: v.streamUid,
         duration: v.technicalSpec?.duration || null,
         ownerName: v.owner.name,

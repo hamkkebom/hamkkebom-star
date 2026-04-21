@@ -21,13 +21,30 @@ type VideoCardProps = {
   priority?: boolean;
   /** View count for the video */
   viewCount?: number;
+  /**
+   * When true, the user uploaded a custom thumbnail.
+   * - Suppresses client-side CF Stream static fallback (server is authoritative: null means show placeholder).
+   * - Suppresses hover animated GIF (CF Stream 4s GIF would show the same "화면 캡쳐본" on hover).
+   */
+  hasCustomThumbnail?: boolean;
 };
 
-/** Static thumbnail URL — 커스텀 썸네일(API에서 서명된 URL)을 CF Stream 자동 캡쳐보다 우선 */
-function getStaticThumb(streamUid: string | null, thumbnailUrl: string | null): string | null {
-  // 커스텀 썸네일 우선 (API에서 presigned/signed URL로 변환되어 옴)
+/**
+ * Static thumbnail URL.
+ * 서버가 이미 권위적으로 결정: thumbnailUrl이 null이면 플레이스홀더를 표시해야 함.
+ * hasCustomThumbnail=true이면 CF Stream 자동 캡쳐로 폴백하지 않음.
+ * hasCustomThumbnail=false/undefined이면 streamUid로 CF Stream 폴백 허용 (커스텀 없는 영상).
+ */
+function getStaticThumb(
+  streamUid: string | null,
+  thumbnailUrl: string | null,
+  hasCustomThumbnail?: boolean,
+): string | null {
+  // 서버에서 내려온 서명된 URL 우선
   if (thumbnailUrl) return thumbnailUrl;
-  // CF Stream 자동 썸네일 폴백
+  // 커스텀 썸네일이 있었지만 presign 실패 → null 유지 (플레이스홀더 표시, CF 폴백 금지)
+  if (hasCustomThumbnail) return null;
+  // 커스텀 썸네일 없는 영상만 CF Stream 자동 캡쳐 허용
   if (streamUid) return `https://videodelivery.net/${streamUid}/thumbnails/thumbnail.jpg?width=480&height=270&fit=crop`;
   return null;
 }
@@ -56,8 +73,9 @@ export const VideoCard = memo(function VideoCard({
   compact = false,
   priority = false,
   viewCount,
+  hasCustomThumbnail,
 }: VideoCardProps) {
-  const thumb = getStaticThumb(streamUid, thumbnailUrl);
+  const thumb = getStaticThumb(streamUid, thumbnailUrl, hasCustomThumbnail);
   const [isHovered, setIsHovered] = useState(false);
   const [thumbFailed, setThumbFailed] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,7 +108,8 @@ export const VideoCard = memo(function VideoCard({
     }
   }, []);
 
-  const showAnimated = isHovered && !!streamUid;
+  // 커스텀 썸네일이 있으면 hover GIF 차단 (CF Stream 자동 캡쳐 GIF = "화면 캡쳐본" 노출 방지)
+  const showAnimated = isHovered && !!streamUid && !hasCustomThumbnail;
 
   return (
     <Link

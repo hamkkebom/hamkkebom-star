@@ -50,6 +50,7 @@ type VideoRow = {
   status: string;
   thumbnailUrl: string | null;
   signedThumbnailUrl?: string | null;
+  hasCustomThumbnail?: boolean;
   streamUid: string;
   createdAt: string;
   owner: { id: string; name: string; chineseName: string | null; email: string };
@@ -227,18 +228,20 @@ const VideoGrid = memo(function VideoGrid({ videos, page }: { videos: VideoRow[]
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
       {videos.map((video, index) => {
         const useSigned = !!video.signedThumbnailUrl;
+        const hasCustom = video.hasCustomThumbnail ?? useSigned;
         return (
           <div key={video.id}>
             <VideoCard
               id={video.id}
               title={video.title}
               thumbnailUrl={useSigned ? video.signedThumbnailUrl! : video.thumbnailUrl}
-              streamUid={useSigned ? null : video.streamUid}
+              streamUid={hasCustom ? null : video.streamUid}
               duration={video.technicalSpec?.duration ?? null}
               ownerName={video.owner.chineseName || video.owner.name}
               categoryName={video.category?.name ?? null}
               createdAt={video.createdAt}
               viewCount={video.viewCount}
+              hasCustomThumbnail={hasCustom}
               priority={page === 1 && index < 8}
             />
           </div>
