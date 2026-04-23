@@ -63,6 +63,7 @@ export async function GET(request: Request) {
         idNumber: true,
         bankName: true,
         bankAccount: true,
+        canDirectUpload: true,
       },
       orderBy: [{ createdAt: "desc" }],
       skip: (page - 1) * pageSize,

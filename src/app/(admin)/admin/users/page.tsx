@@ -65,6 +65,7 @@ import {
   Check,
   X,
   Send,
+  Upload,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { maskIdNumber } from "@/lib/settlement-utils";
@@ -91,6 +92,7 @@ type UserRow = {
   bankName?: string | null;
   bankAccount?: string | null;
   avatarUrl?: string | null;
+  canDirectUpload: boolean;
 };
 
 type UsersResponse = {
@@ -319,6 +321,21 @@ export default function AdminUsersPage() {
     onError: (err: Error) => {
       toast.error(err.message);
     },
+  });
+
+  // Upload tier toggle
+  const uploadTierMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/admin/users/${userId}/upload-tier`, { method: "PATCH" });
+      if (!res.ok) throw new Error((await res.json()).error?.message ?? "설정 변경에 실패했습니다.");
+      return (await res.json()).data as { id: string; canDirectUpload: boolean };
+    },
+    onSuccess: (data) => {
+      toast.success(data.canDirectUpload ? "직접 업로드 권한이 부여되었습니다." : "직접 업로드 권한이 해제되었습니다.");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setSelectedUser(prev => prev ? { ...prev, canDirectUpload: data.canDirectUpload } : null);
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   // Bulk approve/reject
@@ -1439,6 +1456,49 @@ export default function AdminUsersPage() {
                         </p>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Upload Tier Card */}
+                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                  <div className="bg-muted/50 px-5 py-3 border-b border-border">
+                    <h3 className="text-sm font-bold text-foreground">업로드 권한 설정</h3>
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center shrink-0">
+                          <Upload className="w-4 h-4 text-indigo-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">직접 업로드</p>
+                          <p className="text-xs text-muted-foreground">프로젝트/승인 없이 바로 업로드 가능</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => uploadTierMutation.mutate(selectedUser.id)}
+                        disabled={uploadTierMutation.isPending}
+                        className={cn(
+                          "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+                          selectedUser.canDirectUpload ? "bg-indigo-500" : "bg-muted-foreground/30"
+                        )}
+                        role="switch"
+                        aria-checked={selectedUser.canDirectUpload}
+                      >
+                        <span className={cn(
+                          "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform",
+                          selectedUser.canDirectUpload ? "translate-x-6" : "translate-x-1"
+                        )} />
+                      </button>
+                    </div>
+                    <p className={cn(
+                      "mt-3 text-xs px-3 py-2 rounded-lg",
+                      selectedUser.canDirectUpload
+                        ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {selectedUser.canDirectUpload ? "직접 업로드 활성화됨 — 이 계정은 프로젝트 없이 영상을 즉시 등록할 수 있습니다." : "비활성화 — 일반 프로젝트 기반 업로드 방식 적용"}
+                    </p>
                   </div>
                 </div>
 

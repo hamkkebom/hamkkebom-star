@@ -25,7 +25,7 @@ type UploadStatus =
   | "error";
 
 interface UploadDropzoneProps {
-  assignmentId: string;
+  assignmentId?: string;
   versionSlot: number;
   versionTitle?: string;
   description?: string;
@@ -38,6 +38,7 @@ interface UploadDropzoneProps {
   onComplete?: () => void;
   mode?: "submission" | "upload-only";
   onUploadSuccess?: (streamUid: string) => void;
+  directUpload?: boolean;
 }
 
 export function UploadDropzone({
@@ -54,6 +55,7 @@ export function UploadDropzone({
   onComplete,
   mode = "submission",
   onUploadSuccess,
+  directUpload,
 }: UploadDropzoneProps) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<UploadStatus>("idle");
@@ -207,23 +209,42 @@ export function UploadDropzone({
         }
       }
 
-      const submitResponse = await fetch("/api/submissions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          assignmentId,
-          versionSlot,
-          versionTitle: versionTitle,
-          description: description || undefined,
-          lyrics: lyrics || undefined,
-          categoryId: categoryId || undefined,
-          videoSubject,
-          counselorId: counselorId || undefined,
-          externalId: externalId || undefined,
-          thumbnailUrl,
-          streamUid,
-        }),
-      });
+      let submitResponse: Response;
+      if (directUpload) {
+        submitResponse = await fetch("/api/videos/direct", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: versionTitle,
+            streamUid,
+            thumbnailUrl,
+            categoryId: categoryId || undefined,
+            videoSubject,
+            counselorId: counselorId || undefined,
+            description: description || undefined,
+            lyrics: lyrics || undefined,
+            externalId: externalId || undefined,
+          }),
+        });
+      } else {
+        submitResponse = await fetch("/api/submissions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assignmentId,
+            versionSlot,
+            versionTitle: versionTitle,
+            description: description || undefined,
+            lyrics: lyrics || undefined,
+            categoryId: categoryId || undefined,
+            videoSubject,
+            counselorId: counselorId || undefined,
+            externalId: externalId || undefined,
+            thumbnailUrl,
+            streamUid,
+          }),
+        });
+      }
 
       if (!submitResponse.ok) {
         const errData = (await submitResponse.json()) as {
@@ -247,7 +268,7 @@ export function UploadDropzone({
         error instanceof Error ? error.message : "제출에 실패했습니다.",
       );
     }
-  }, [assignmentId, versionSlot, versionTitle, description, lyrics, categoryId, videoSubject, counselorId, externalId, thumbnailFile, streamUid, mode, onUploadSuccess, queryClient]);
+  }, [assignmentId, versionSlot, versionTitle, description, lyrics, categoryId, videoSubject, counselorId, externalId, thumbnailFile, streamUid, mode, onUploadSuccess, directUpload, queryClient]);
 
   /** 팝업 확인 → 폼 초기화 */
   const handleDialogConfirm = useCallback(() => {
@@ -316,7 +337,7 @@ export function UploadDropzone({
             <DialogHeader>
               <DialogTitle>업로드 완료</DialogTitle>
               <DialogDescription>
-                영상이 업로드 되었습니다.
+                {directUpload ? "영상이 바로 등록되었습니다." : "영상이 업로드 되었습니다."}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

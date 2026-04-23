@@ -78,6 +78,7 @@ model User {
   suspendedUntil      DateTime?
   suspendedReason     String?
   warningCount        Int            @default(0)
+  canDirectUpload     Boolean        @default(false)
 
   // 제재 관계
   sanctions           UserSanction[] @relation("UserSanctions")

@@ -74,7 +74,13 @@ export default async function UploadPage() {
     orderBy: { displayName: "asc" },
   });
 
-  // 5. Transform assignments data with safety check
+  // 5. 직접 업로드 권한 확인
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { canDirectUpload: true },
+  });
+
+  // 6. Transform assignments data with safety check
   const formattedAssignments = assignments.map((a) => ({
     id: a.id,
     requestId: a.request?.id,
@@ -87,7 +93,7 @@ export default async function UploadPage() {
     thumbnailUrl: a.submissions[0]?.thumbnailUrl || null,
   }));
 
-  // 6. Transform open requests
+  // 7. Transform open requests
   const formattedOpenRequests = allRequests.map((req) => {
     // Use allRequests.assignments (includes PENDING_APPROVAL/REJECTED) instead of filtered assignments
     const myAssignment = req.assignments[0];
@@ -114,6 +120,7 @@ export default async function UploadPage() {
         openRequests={formattedOpenRequests}
         categories={categories}
         counselors={counselors}
+        canDirectUpload={dbUser?.canDirectUpload ?? false}
       />
     </div>
   );

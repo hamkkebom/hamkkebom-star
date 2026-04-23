@@ -29,7 +29,8 @@ import {
   AlertCircle,
   Search,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Upload,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -85,11 +86,13 @@ export function UploadPageClient({
   openRequests = [],
   categories = [],
   counselors = [],
+  canDirectUpload = false,
 }: {
   assignments: AssignmentItem[];
   openRequests?: OpenRequestItem[];
   categories?: CategoryItem[];
   counselors?: CounselorItem[];
+  canDirectUpload?: boolean;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -108,6 +111,15 @@ export function UploadPageClient({
   const [showOpenOnly, setShowOpenOnly] = useState(false); // 모집중인 프로젝트만 보기 필터
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [resetKey, setResetKey] = useState(0); // 썸네일 업로더 초기화 키
+
+  // 직접 업로드 상태
+  const [directTitle, setDirectTitle] = useState("");
+  const [directDescription, setDirectDescription] = useState("");
+  const [directThumbnailFile, setDirectThumbnailFile] = useState<File | null>(null);
+  const [directCategoryId, setDirectCategoryId] = useState("");
+  const [directVideoSubject, setDirectVideoSubject] = useState<"COUNSELOR" | "BRAND" | "OTHER">("OTHER");
+  const [directCounselorId, setDirectCounselorId] = useState("");
+  const [directResetKey, setDirectResetKey] = useState(0);
 
   const selectedAssignment = assignments.find((a) => a.id === selectedAssignmentId);
   // eslint-disable-next-line react-hooks/purity -- 마운트 시점 1회 스냅샷 (의도적 impure)
@@ -253,6 +265,123 @@ export function UploadPageClient({
           </p>
         </div>
       </div>
+
+      {/* 직접 업로드 섹션 */}
+      {canDirectUpload && (
+        <div className="rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/20 p-6 space-y-5">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center">
+              <Upload className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-indigo-700 dark:text-indigo-300">직접 업로드</h2>
+              <p className="text-xs text-indigo-500 dark:text-indigo-400">프로젝트 없이 바로 영상을 등록합니다</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-12">
+            <div className="md:col-span-8 space-y-4">
+              <div className="space-y-2">
+                <Label className="font-bold">영상 제목 <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="영상 제목을 입력하세요"
+                  value={directTitle}
+                  onChange={(e) => setDirectTitle(e.target.value)}
+                  className="h-11 rounded-xl"
+                  maxLength={100}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="font-bold">카테고리</Label>
+                  <select
+                    className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    value={directCategoryId}
+                    onChange={(e) => setDirectCategoryId(e.target.value)}
+                  >
+                    <option value="">카테고리 선택</option>
+                    {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold">영상 주제</Label>
+                  <select
+                    className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    value={directVideoSubject}
+                    onChange={(e) => setDirectVideoSubject(e.target.value as "COUNSELOR" | "BRAND" | "OTHER")}
+                  >
+                    <option value="OTHER">기타</option>
+                    <option value="COUNSELOR">상담사</option>
+                    <option value="BRAND">브랜드</option>
+                  </select>
+                </div>
+              </div>
+              {directVideoSubject === "COUNSELOR" && (
+                <div className="space-y-2">
+                  <Label className="font-bold">관련 상담사</Label>
+                  <select
+                    className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    value={directCounselorId}
+                    onChange={(e) => setDirectCounselorId(e.target.value)}
+                  >
+                    <option value="">상담사 선택</option>
+                    {counselors?.map(c => <option key={c.id} value={c.id}>{c.displayName}</option>)}
+                  </select>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label className="font-bold">설명</Label>
+                <Textarea
+                  placeholder="영상 설명을 입력하세요"
+                  value={directDescription}
+                  onChange={(e) => setDirectDescription(e.target.value)}
+                  className="resize-none rounded-xl"
+                  rows={3}
+                  maxLength={2000}
+                />
+              </div>
+            </div>
+
+            <div className="md:col-span-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="font-bold">썸네일 <span className="text-destructive">*</span></Label>
+                <NanoFileUpload
+                  key={directResetKey}
+                  onFileSelect={setDirectThumbnailFile}
+                  accept={{ "image/*": [".png", ".jpg", ".jpeg", ".webp"] }}
+                  label="썸네일 선택 (필수)"
+                />
+              </div>
+            </div>
+          </div>
+
+          {directTitle.trim() && directThumbnailFile ? (
+            <UploadDropzone
+              versionTitle={directTitle}
+              description={directDescription || undefined}
+              categoryId={directCategoryId || undefined}
+              videoSubject={directVideoSubject}
+              counselorId={directCounselorId || undefined}
+              thumbnailFile={directThumbnailFile}
+              versionSlot={0}
+              directUpload
+              onComplete={() => {
+                setDirectTitle("");
+                setDirectDescription("");
+                setDirectThumbnailFile(null);
+                setDirectCategoryId("");
+                setDirectVideoSubject("OTHER");
+                setDirectCounselorId("");
+                setDirectResetKey(prev => prev + 1);
+              }}
+            />
+          ) : (
+            <div className="rounded-xl border-2 border-dashed border-indigo-200 dark:border-indigo-800 py-8 text-center text-sm text-indigo-400">
+              {!directTitle.trim() ? "영상 제목을 입력하면 업로드 창이 열립니다" : "썸네일을 선택하면 업로드 창이 열립니다"}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 🍌 Nano-Banana Pro Workflow Guide */}
       <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm transition-all hover:shadow-md animate-fade-in group">
