@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Share2, CheckCircle2 } from "lucide-react";
+import { Share2, CheckCircle2, Eye, EyeOff, PlayCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
+type ApprovedVideo = {
+  id: string;
+  title: string;
+  signedThumbnailUrl: string | null;
+  viewCount: number;
+  isPortfolioVisible: boolean;
+  createdAt: string;
+};
 
 type PortfolioItem = {
   id: string;
@@ -106,6 +115,28 @@ export default function PortfolioPage() {
       setNewDescription("");
       setNewVideoUrl("");
       await queryClient.invalidateQueries({ queryKey: ["portfolio-me"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "오류가 발생했습니다."),
+  });
+
+  const { data: approvedVideos } = useQuery({
+    queryKey: ["portfolio-me-videos"],
+    queryFn: async () => {
+      const res = await fetch("/api/portfolios/me/videos", { cache: "no-store" });
+      if (!res.ok) return [];
+      return (await res.json()).data as ApprovedVideo[];
+    },
+  });
+
+  const toggleVideoVisibilityMutation = useMutation({
+    mutationFn: async (videoId: string) => {
+      const res = await fetch(`/api/portfolios/me/videos/${videoId}`, { method: "PATCH" });
+      if (!res.ok) throw new Error("설정 변경에 실패했습니다.");
+      return (await res.json()).data as { id: string; isPortfolioVisible: boolean };
+    },
+    onSuccess: async (updated) => {
+      toast.success(updated.isPortfolioVisible ? "공유 페이지에 표시됩니다." : "공유 페이지에서 숨겼습니다.");
+      await queryClient.invalidateQueries({ queryKey: ["portfolio-me-videos"] });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "오류가 발생했습니다."),
   });
@@ -349,6 +380,70 @@ export default function PortfolioPage() {
                   >
                     삭제
                   </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      {/* 승인된 영상 공유 설정 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">승인된 영상 공유 설정</CardTitle>
+          <CardDescription>공유 페이지에 보여줄 영상을 선택하세요. 눈 아이콘으로 표시/숨김을 전환합니다.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!approvedVideos || approvedVideos.length === 0 ? (
+            <div className="rounded-lg border border-dashed px-4 py-10 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <PlayCircle className="w-6 h-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">승인된 영상이 없습니다.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {approvedVideos.map((video) => (
+                <div
+                  key={video.id}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    {video.signedThumbnailUrl ? (
+                      <img
+                        src={video.signedThumbnailUrl}
+                        alt={video.title}
+                        className="w-16 h-9 rounded object-cover shrink-0 bg-muted"
+                      />
+                    ) : (
+                      <div className="w-16 h-9 rounded bg-muted shrink-0 flex items-center justify-center">
+                        <PlayCircle className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className={`text-sm font-medium truncate ${!video.isPortfolioVisible ? "text-muted-foreground" : ""}`}>
+                        {video.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {video.isPortfolioVisible ? "공유 페이지에 표시중" : "숨김"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => toggleVideoVisibilityMutation.mutate(video.id)}
+                    disabled={toggleVideoVisibilityMutation.isPending}
+                    className={`ml-3 shrink-0 rounded-md p-2 transition-colors ${
+                      video.isPortfolioVisible
+                        ? "text-emerald-600 hover:bg-emerald-50"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                    title={video.isPortfolioVisible ? "숨기기" : "표시하기"}
+                  >
+                    {video.isPortfolioVisible ? (
+                      <Eye className="w-4 h-4" />
+                    ) : (
+                      <EyeOff className="w-4 h-4" />
+                    )}
+                  </button>
                 </div>
               ))}
             </div>

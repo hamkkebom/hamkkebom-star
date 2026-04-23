@@ -45,6 +45,7 @@ export async function GET(_req: Request, { params }: Params) {
         where: {
             ownerId: userId,
             status: "APPROVED",
+            isPortfolioVisible: true,
         },
         select: {
             id: true,

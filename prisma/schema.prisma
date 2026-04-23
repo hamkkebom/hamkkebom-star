@@ -262,6 +262,7 @@ model Video {
   r2Key           String?
   ownerId         String
   viewCount       Int                 @default(0)
+  isPortfolioVisible Boolean          @default(true)
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   counselorId     String?
