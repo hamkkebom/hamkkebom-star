@@ -363,15 +363,27 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model SettlementFolder {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  createdBy   String
+  settlements Settlement[]
+
+  @@map("settlement_folders")
+}
+
 model Settlement {
-  id                 String           @id @default(cuid())
+  id                 String            @id @default(cuid())
   starId             String
   startDate          DateTime
   endDate            DateTime
-  totalAmount        Decimal          @default(0) @db.Decimal(12, 2)
-  taxAmount          Decimal          @default(0) @db.Decimal(12, 2)
-  netAmount          Decimal          @default(0) @db.Decimal(12, 2)
-  status             SettlementStatus @default(PENDING)
+  totalAmount        Decimal           @default(0) @db.Decimal(12, 2)
+  taxAmount          Decimal           @default(0) @db.Decimal(12, 2)
+  netAmount          Decimal           @default(0) @db.Decimal(12, 2)
+  status             SettlementStatus  @default(PENDING)
   note               String?
   paymentDate        DateTime?
   confirmedAt        DateTime?
@@ -379,16 +391,19 @@ model Settlement {
   cancellationReason String?
   failureReason      String?
   archivedAt         DateTime?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  folderId           String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
   items              SettlementItem[]
   history            SettlementHistory[]
-  star               User             @relation(fields: [starId], references: [id])
+  star               User              @relation(fields: [starId], references: [id])
+  folder             SettlementFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   @@index([starId])
   @@index([status])
   @@index([starId, startDate])
   @@index([archivedAt])
+  @@index([folderId])
   @@map("settlements")
 }
 

@@ -5,11 +5,17 @@ import { getAuthUser } from "@/lib/auth-helpers";
 import { createAuditLog } from "@/lib/audit";
 import { assertCanTransit, InvalidTransitionError } from "@/lib/settlement-state";
 import { recordSettlementHistoryTx } from "@/lib/settlement-history";
+import { z } from "zod";
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function PATCH(_request: Request, { params }: Params) {
+const completeSchema = z.object({
+  folderId: z.string().nullable().optional(),
+  newFolderName: z.string().trim().min(1).max(50).optional(),
+});
+
+export async function PATCH(request: Request, { params }: Params) {
   const user = await getAuthUser();
   if (!user) {
     return NextResponse.json(
@@ -26,6 +32,11 @@ export async function PATCH(_request: Request, { params }: Params) {
 
   const { id } = await params;
 
+  let body: unknown = {};
+  try { body = await request.json(); } catch { /* no body is fine */ }
+  const parsed = completeSchema.safeParse(body);
+  const folderInput = parsed.success ? parsed.data : {};
+
   try {
     const updated = await prisma.$transaction(async (tx) => {
       const current = await tx.settlement.findUnique({
@@ -38,6 +49,15 @@ export async function PATCH(_request: Request, { params }: Params) {
 
       assertCanTransit(current.status, SettlementStatus.COMPLETED);
 
+      // 새 폴더 생성 요청이면 먼저 생성
+      let resolvedFolderId: string | null = folderInput.folderId ?? null;
+      if (folderInput.newFolderName) {
+        const newFolder = await tx.settlementFolder.create({
+          data: { name: folderInput.newFolderName, createdBy: user.id },
+        });
+        resolvedFolderId = newFolder.id;
+      }
+
       const now = new Date();
       const result = await tx.settlement.update({
         where: { id },
@@ -46,9 +66,11 @@ export async function PATCH(_request: Request, { params }: Params) {
           confirmedAt: now,
           confirmedBy: user.id,
           archivedAt: now,
+          folderId: resolvedFolderId,
         },
         include: {
           star: { select: { id: true, name: true, email: true } },
+          folder: { select: { id: true, name: true } },
           _count: { select: { items: true } },
         },
       });
@@ -61,6 +83,7 @@ export async function PATCH(_request: Request, { params }: Params) {
         field: "status",
         oldValue: current.status,
         newValue: SettlementStatus.COMPLETED,
+        metadata: { folderId: resolvedFolderId },
       });
 
       return result;
@@ -71,6 +94,7 @@ export async function PATCH(_request: Request, { params }: Params) {
       action: "COMPLETE_SETTLEMENT",
       entityType: "Settlement",
       entityId: id,
+      metadata: { folderId: folderInput.folderId ?? null },
     });
 
     return NextResponse.json({ data: updated });
