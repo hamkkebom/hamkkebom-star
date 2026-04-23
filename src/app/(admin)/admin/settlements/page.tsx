@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { downloadSettlementsExcel } from "@/lib/settlement-excel";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -61,6 +62,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 
 import { StatCard } from "@/components/settlement/stat-card";
 import { AnimatedCard } from "@/components/settlement/animated-card";
@@ -118,6 +120,7 @@ type GenerateResponse = {
   warnings?: {
     skippedStars: { id: string; name: string; reason: string }[];
     completedStars: { id: string; name: string }[];
+    deletedCount?: number;
   };
 };
 
@@ -127,19 +130,35 @@ type GenerateResponse = {
 
 const STATUS_OPTIONS = [
   { value: "ALL", label: "전체" },
-  { value: "PENDING", label: "대기중" },
-  { value: "PROCESSING", label: "처리중" },
+  { value: "PENDING", label: "검토 대기" },
+  { value: "REVIEW", label: "검토 중" },
+  { value: "PROCESSING", label: "처리 중" },
   { value: "COMPLETED", label: "완료" },
+  { value: "FAILED", label: "실패" },
+  { value: "CANCELLED", label: "취소됨" },
 ] as const;
 
 type GlowVariant = "approved" | "pending" | "completed" | "failed" | "processing";
 
 const STATUS_GLOW_MAP: Record<string, { label: string; variant: GlowVariant }> = {
-  PENDING: { label: "대기중", variant: "pending" },
-  PROCESSING: { label: "처리중", variant: "processing" },
+  PENDING: { label: "검토 대기", variant: "pending" },
+  REVIEW: { label: "검토 중", variant: "pending" },
+  PROCESSING: { label: "처리 중", variant: "processing" },
   COMPLETED: { label: "완료", variant: "completed" },
   FAILED: { label: "실패", variant: "failed" },
+  CANCELLED: { label: "취소됨", variant: "failed" },
 };
+
+const SCOPE_TABS = [
+  { value: "active", label: "진행 중" },
+  { value: "archive", label: "아카이브" },
+  { value: "all", label: "전체" },
+] as const;
+
+type ScopeValue = (typeof SCOPE_TABS)[number]["value"];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -159,10 +178,30 @@ function formatAmount(amount: number): string {
 
 export default function AdminSettlementsPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Filter
+  // Filter — URL-synced
   const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>(undefined);
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterStatus, setFilterStatus] = useState<string>(() => searchParams.get("status") ?? "ALL");
+  const [filterScope, setFilterScope] = useState<ScopeValue>(() => {
+    const s = searchParams.get("scope");
+    return (s === "archive" || s === "all" || s === "active") ? s : "active";
+  });
+  const [filterYear, setFilterYear] = useState<string>(() => searchParams.get("year") ?? "ALL");
+
+  // Sync state -> URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filterScope !== "active") params.set("scope", filterScope);
+    if (filterStatus !== "ALL") params.set("status", filterStatus);
+    if (filterYear !== "ALL") params.set("year", filterYear);
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : "?", { scroll: false });
+  }, [filterScope, filterStatus, filterYear, router]);
+
+  // Cancel reason state
+  const [cancelReason, setCancelReason] = useState("");
 
   // Generate dialog
   const [generateOpen, setGenerateOpen] = useState(false);
@@ -197,14 +236,16 @@ export default function AdminSettlementsPage() {
   // StatCard expand
   const [expandedCard, setExpandedCard] = useState<"pending" | "processing" | null>(null);
 
-  // Query string
+  // Query string for API
   const queryString = useMemo(() => {
     const params = new URLSearchParams({ page: "1", pageSize: "50" });
+    params.set("scope", filterScope);
     if (filterDateRange?.from) params.set("startDate", filterDateRange.from.toISOString().slice(0, 10));
     if (filterDateRange?.to) params.set("endDate", filterDateRange.to.toISOString().slice(0, 10));
     if (filterStatus !== "ALL") params.set("status", filterStatus);
+    if (filterYear !== "ALL") params.set("year", filterYear);
     return params.toString();
-  }, [filterDateRange, filterStatus]);
+  }, [filterDateRange, filterStatus, filterScope, filterYear]);
 
   // ---------------------------------------------------------------------------
   // Queries
@@ -250,6 +291,7 @@ export default function AdminSettlementsPage() {
         body: JSON.stringify({
           startDate: genDateRange?.from?.toISOString().slice(0, 10),
           endDate: (genDateRange?.to ?? genDateRange?.from)?.toISOString().slice(0, 10),
+          confirmDeletePending: true,
         }),
       });
       if (!res.ok) {
@@ -272,6 +314,9 @@ export default function AdminSettlementsPage() {
       if (result.warnings?.completedStars?.length) {
         const names = result.warnings.completedStars.map((s) => s.name).join(", ");
         toast.info(`이미 확정된 정산 STAR (변경 불가): ${names}`, { duration: 5000 });
+      }
+      if ((result.warnings?.deletedCount ?? 0) > 0) {
+        toast.warning(`기존 진행 중 정산 ${result.warnings?.deletedCount}건이 재생성되었습니다.`, { duration: 6000 });
       }
       setGenerateOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["admin-settlements"] });
@@ -301,8 +346,12 @@ export default function AdminSettlementsPage() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/settlements/${id}/cancel`, { method: "PATCH" });
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const res = await fetch(`/api/settlements/${id}/cancel`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
       if (!res.ok) {
         const err = (await res.json()) as { error?: { message?: string } };
         throw new Error(err.error?.message ?? "정산 확정 취소에 실패했습니다.");
@@ -311,12 +360,12 @@ export default function AdminSettlementsPage() {
     onSuccess: async () => {
       toast.success("정산 확정이 취소되었습니다. (대기 상태로 변경됨)");
       setCancelTarget(null);
+      setCancelReason("");
       await queryClient.invalidateQueries({ queryKey: ["admin-settlements"] });
       if (detailId) await queryClient.invalidateQueries({ queryKey: ["settlement-detail", detailId] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "정산 확정 취소에 실패했습니다.");
-      setCancelTarget(null);
     },
   });
 
@@ -361,7 +410,7 @@ export default function AdminSettlementsPage() {
   // Computed
   // ---------------------------------------------------------------------------
 
-  const rows = settlementsData?.data ?? [];
+  const rows = useMemo(() => settlementsData?.data ?? [], [settlementsData]);
   const pendingCount = rows.filter((r) => r.status === "PENDING").length;
   const processingCount = rows.filter((r) => r.status === "PROCESSING").length;
   const completedCount = rows.filter((r) => r.status === "COMPLETED").length;
@@ -633,12 +682,56 @@ export default function AdminSettlementsPage() {
 
         {/* ======================== List Tab ======================== */}
         <TabsContent value="list" className="space-y-6">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-2">
             <h2 className="text-lg font-semibold tracking-tight">발행된 정산 내역</h2>
             <Button onClick={() => setGenerateOpen(true)} className="gap-1.5">
               <Plus className="h-4 w-4" />
               정산 생성
             </Button>
+          </div>
+
+          {/* Sub-tab: scope */}
+          <div className="flex items-center gap-2 border-b pb-2">
+            {SCOPE_TABS.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => {
+                  setFilterScope(t.value);
+                  // 아카이브 탭이 아닐 때는 연도 필터 리셋
+                  if (t.value !== "archive") setFilterYear("ALL");
+                }}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  filterScope === t.value
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+            <div className="ml-auto flex items-center gap-2">
+              {filterScope === "archive" && (
+                <Select value={filterYear} onValueChange={setFilterYear}>
+                  <SelectTrigger className="w-[110px] h-8">
+                    <SelectValue placeholder="연도" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">전체 연도</SelectItem>
+                    {YEAR_OPTIONS.map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}년
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {filterScope === "active" && "현재 처리 대기/진행 중인 정산"}
+                {filterScope === "archive" && "확정/실패/취소된 지난 정산"}
+                {filterScope === "all" && "모든 정산 (주의: 오래된 건까지 포함)"}
+              </span>
+            </div>
           </div>
 
           {/* Filter Bar */}
@@ -1132,33 +1225,65 @@ export default function AdminSettlementsPage() {
       </AlertDialog>
 
       {/* ======================== Cancel Dialog ======================== */}
-      <AlertDialog open={!!cancelTarget} onOpenChange={(open) => !open && setCancelTarget(null)}>
+      <AlertDialog
+        open={!!cancelTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCancelTarget(null);
+            setCancelReason("");
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               정산 확정을 취소하시겠습니까?
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              {cancelTarget && (
-                <>
-                  <strong className="text-foreground">{getStarDisplayName(cancelTarget.star)}</strong>님의{" "}
-                  {formatDateRange(new Date(cancelTarget.startDate), new Date(cancelTarget.endDate))} 정산의 확정 상태를 해제하고 다시 대기 상태로 변경합니다.
-                  <br />
-                  <br />
-                  대기 상태로 돌아가면 내역 수정이 다시 가능해집니다.
-                </>
-              )}
+            <AlertDialogDescription asChild>
+              <div>
+                {cancelTarget && (
+                  <>
+                    <strong className="text-foreground">{getStarDisplayName(cancelTarget.star)}</strong>님의{" "}
+                    {formatDateRange(new Date(cancelTarget.startDate), new Date(cancelTarget.endDate))} 정산의 확정 상태를 해제하고 다시 대기 상태로 변경합니다.
+                    <br />
+                    <br />
+                    <span className="text-xs text-amber-600 font-medium">
+                      ※ 취소 사유는 감사 로그에 영구 기록됩니다. (2자 이상)
+                    </span>
+                  </>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="py-2">
+            <Textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="예: 금액 계산 오류로 재산정 필요, STAR 요청 정정 등"
+              rows={3}
+              className="resize-none"
+              maxLength={500}
+            />
+            <p className="text-xs text-muted-foreground mt-1 text-right">{cancelReason.length} / 500</p>
+          </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCancelTarget(null)}>닫기</AlertDialogCancel>
+            <AlertDialogCancel
+              onClick={() => {
+                setCancelTarget(null);
+                setCancelReason("");
+              }}
+            >
+              닫기
+            </AlertDialogCancel>
             <AlertDialogAction
               className="bg-amber-600 hover:bg-amber-700 text-foreground"
               onClick={() => {
-                if (cancelTarget) cancelMutation.mutate(cancelTarget.id);
+                if (cancelTarget && cancelReason.trim().length >= 2) {
+                  cancelMutation.mutate({ id: cancelTarget.id, reason: cancelReason.trim() });
+                }
               }}
-              disabled={cancelMutation.isPending}
+              disabled={cancelMutation.isPending || cancelReason.trim().length < 2}
             >
               {cancelMutation.isPending ? "처리 중..." : "확정 취소"}
             </AlertDialogAction>

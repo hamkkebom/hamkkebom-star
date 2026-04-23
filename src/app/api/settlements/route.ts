@@ -6,6 +6,7 @@ import { maskIdNumber } from "@/lib/settlement-utils";
 export const dynamic = "force-dynamic";
 
 const settlementStatuses = new Set(Object.values(SettlementStatus));
+const VALID_SCOPES = new Set(["active", "archive", "all"]);
 
 export async function GET(request: Request) {
   const user = await getAuthUser();
@@ -26,11 +27,13 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
-  const pageSize = Math.min(50, Math.max(1, Number(searchParams.get("pageSize") ?? "20") || 20));
+  const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? "20") || 20));
 
   const startDateParam = searchParams.get("startDate");
   const endDateParam = searchParams.get("endDate");
   const statusParam = searchParams.get("status");
+  const scopeParam = (searchParams.get("scope") ?? "active").toLowerCase();
+  const yearParam = searchParams.get("year");
 
   if (startDateParam && isNaN(new Date(startDateParam).getTime())) {
     return NextResponse.json(
@@ -53,10 +56,42 @@ export async function GET(request: Request) {
     );
   }
 
+  if (!VALID_SCOPES.has(scopeParam)) {
+    return NextResponse.json(
+      { error: { code: "BAD_REQUEST", message: "유효하지 않은 scope 입니다." } },
+      { status: 400 }
+    );
+  }
+
+  if (yearParam && !/^\d{4}$/.test(yearParam)) {
+    return NextResponse.json(
+      { error: { code: "BAD_REQUEST", message: "연도는 4자리 숫자여야 합니다." } },
+      { status: 400 }
+    );
+  }
+
   const where: Prisma.SettlementWhereInput = {
     ...(statusParam && statusParam !== "ALL" ? { status: statusParam as SettlementStatus } : {}),
     ...(user.role === "STAR" ? { starId: user.id } : {}),
   };
+
+  // scope 필터 (archivedAt 기준)
+  if (scopeParam === "active") {
+    where.archivedAt = null;
+  } else if (scopeParam === "archive") {
+    where.archivedAt = { not: null };
+  }
+
+  // 연도 필터 — startDate 기준
+  if (yearParam) {
+    const year = Number(yearParam);
+    const yearStart = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+    const yearEnd = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+      { startDate: { gte: yearStart, lt: yearEnd } },
+    ];
+  }
 
   if (startDateParam) {
     where.endDate = { gte: new Date(startDateParam + "T00:00:00.000Z") };
@@ -88,7 +123,7 @@ export async function GET(request: Request) {
           },
         },
       },
-      orderBy: [{ startDate: "desc" }],
+      orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -109,5 +144,6 @@ export async function GET(request: Request) {
     page,
     pageSize,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    scope: scopeParam,
   });
 }
