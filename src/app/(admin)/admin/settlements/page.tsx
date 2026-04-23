@@ -22,8 +22,12 @@ import {
   Pencil,
   Save,
   X,
-
   TrendingUp,
+  Folder,
+  FolderOpen,
+  FolderPlus,
+  ArrowLeft,
+  MoreHorizontal,
 } from "lucide-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,6 +36,12 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import type { DateRange } from "react-day-picker";
 import { ko } from "date-fns/locale";
@@ -87,6 +97,8 @@ type SettlementRow = {
   status: string;
   paymentDate: string | null;
   note: string | null;
+  folderId: string | null;
+  folder: { id: string; name: string } | null;
   star: {
     id: string;
     name: string;
@@ -98,6 +110,17 @@ type SettlementRow = {
     bankAccount: string | null;
   };
   _count: { items: number };
+};
+
+type SettlementFolder = {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  count: number;
+  totalAmount: number;
+  netAmount: number;
+  taxAmount: number;
 };
 
 type SettlementsResponse = {
@@ -236,6 +259,13 @@ export default function AdminSettlementsPage() {
   // StatCard expand
   const [expandedCard, setExpandedCard] = useState<"pending" | "processing" | null>(null);
 
+  // Folder
+  const [archiveFolderView, setArchiveFolderView] = useState<string | null>(null); // null=grid, folderId|"unfiled"=detail
+  const [confirmFolderId, setConfirmFolderId] = useState<string | null | "new">(null); // null=미분류, "new"=새 폴더
+  const [confirmNewFolderName, setConfirmNewFolderName] = useState("");
+  const [folderManageTarget, setFolderManageTarget] = useState<SettlementFolder | null>(null);
+  const [folderRenameValue, setFolderRenameValue] = useState("");
+
   // Query string for API
   const queryString = useMemo(() => {
     const params = new URLSearchParams({ page: "1", pageSize: "50" });
@@ -244,8 +274,9 @@ export default function AdminSettlementsPage() {
     if (filterDateRange?.to) params.set("endDate", filterDateRange.to.toISOString().slice(0, 10));
     if (filterStatus !== "ALL") params.set("status", filterStatus);
     if (filterYear !== "ALL") params.set("year", filterYear);
+    if (filterScope === "archive" && archiveFolderView) params.set("folderId", archiveFolderView);
     return params.toString();
-  }, [filterDateRange, filterStatus, filterScope, filterYear]);
+  }, [filterDateRange, filterStatus, filterScope, filterYear, archiveFolderView]);
 
   // ---------------------------------------------------------------------------
   // Queries
@@ -276,6 +307,15 @@ export default function AdminSettlementsPage() {
       const res = await fetch("/api/settlements/config");
       if (!res.ok) throw new Error("설정을 불러오지 못했습니다.");
       return (await res.json()) as { data: SystemSetting[] };
+    },
+  });
+
+  const { data: foldersData, isLoading: foldersLoading } = useQuery({
+    queryKey: ["settlement-folders"],
+    queryFn: async () => {
+      const res = await fetch("/api/settlement-folders");
+      if (!res.ok) throw new Error("폴더 목록을 불러오지 못했습니다.");
+      return (await res.json()) as { data: SettlementFolder[] };
     },
   });
 
@@ -325,8 +365,15 @@ export default function AdminSettlementsPage() {
   });
 
   const completeMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/settlements/${id}/complete`, { method: "PATCH" });
+    mutationFn: async ({ id, folderId, newFolderName }: { id: string; folderId?: string | null; newFolderName?: string }) => {
+      const body: Record<string, unknown> = {};
+      if (folderId !== undefined) body.folderId = folderId;
+      if (newFolderName) body.newFolderName = newFolderName;
+      const res = await fetch(`/api/settlements/${id}/complete`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
       if (!res.ok) {
         const err = (await res.json()) as { error?: { message?: string } };
         throw new Error(err.error?.message ?? "정산 확정에 실패했습니다.");
@@ -336,13 +383,75 @@ export default function AdminSettlementsPage() {
       toast.success("정산이 확정되었습니다!");
       setShowConfetti(true);
       setConfirmTarget(null);
+      setConfirmFolderId(null);
+      setConfirmNewFolderName("");
       await queryClient.invalidateQueries({ queryKey: ["admin-settlements"] });
+      await queryClient.invalidateQueries({ queryKey: ["settlement-folders"] });
       if (detailId) await queryClient.invalidateQueries({ queryKey: ["settlement-detail", detailId] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "정산 확정에 실패했습니다.");
       setConfirmTarget(null);
     },
+  });
+
+  const createFolderMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await fetch("/api/settlement-folders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const err = (await res.json()) as { error?: { message?: string } };
+        throw new Error(err.error?.message ?? "폴더 생성에 실패했습니다.");
+      }
+      return (await res.json()) as { data: { id: string; name: string } };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["settlement-folders"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "폴더 생성에 실패했습니다."),
+  });
+
+  const renameFolderMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const res = await fetch(`/api/settlement-folders/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const err = (await res.json()) as { error?: { message?: string } };
+        throw new Error(err.error?.message ?? "폴더 이름 변경에 실패했습니다.");
+      }
+    },
+    onSuccess: async () => {
+      toast.success("폴더 이름이 변경되었습니다.");
+      setFolderManageTarget(null);
+      setFolderRenameValue("");
+      await queryClient.invalidateQueries({ queryKey: ["settlement-folders"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-settlements"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "폴더 이름 변경에 실패했습니다."),
+  });
+
+  const deleteFolderMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/settlement-folders/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = (await res.json()) as { error?: { message?: string } };
+        throw new Error(err.error?.message ?? "폴더 삭제에 실패했습니다.");
+      }
+    },
+    onSuccess: async () => {
+      toast.success("폴더가 삭제되었습니다. (정산은 미분류로 이동됩니다)");
+      setFolderManageTarget(null);
+      if (archiveFolderView === folderManageTarget?.id) setArchiveFolderView(null);
+      await queryClient.invalidateQueries({ queryKey: ["settlement-folders"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-settlements"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "폴더 삭제에 실패했습니다."),
   });
 
   const cancelMutation = useMutation({
@@ -698,7 +807,7 @@ export default function AdminSettlementsPage() {
                 type="button"
                 onClick={() => {
                   setFilterScope(t.value);
-                  // 아카이브 탭이 아닐 때는 연도 필터 리셋
+                  setArchiveFolderView(null);
                   if (t.value !== "archive") setFilterYear("ALL");
                 }}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
@@ -733,6 +842,154 @@ export default function AdminSettlementsPage() {
               </span>
             </div>
           </div>
+
+          {/* ========== Archive Folder Grid ========== */}
+          {filterScope === "archive" && archiveFolderView === null ? (
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">폴더를 선택하거나 새 폴더를 만드세요.</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => {
+                    const name = prompt("새 폴더 이름을 입력하세요 (예: 2024년 1월):");
+                    if (name?.trim()) createFolderMutation.mutate(name.trim());
+                  }}
+                  disabled={createFolderMutation.isPending}
+                >
+                  <FolderPlus className="h-4 w-4" />
+                  새 폴더
+                </Button>
+              </div>
+
+              {/* Folder Grid */}
+              {foldersLoading ? (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {[1,2,3].map((i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {/* 미분류 카드 */}
+                  <button
+                    type="button"
+                    onClick={() => setArchiveFolderView("unfiled")}
+                    className="text-left rounded-xl border bg-card shadow-sm hover:ring-2 hover:ring-primary/40 transition-all"
+                  >
+                    <div className="p-4 flex items-start gap-3">
+                      <Folder className="h-8 w-8 text-muted-foreground/60 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">미분류</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">폴더 없이 확정된 정산</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/50 mt-0.5" />
+                    </div>
+                  </button>
+
+                  {/* 폴더 카드 */}
+                  {(foldersData?.data ?? []).map((folder) => (
+                    <div
+                      key={folder.id}
+                      className="rounded-xl border bg-card shadow-sm hover:ring-2 hover:ring-amber-400/50 transition-all cursor-pointer"
+                      onClick={() => setArchiveFolderView(folder.id)}
+                    >
+                      <div className="p-4 flex items-start gap-3">
+                        <FolderOpen className="h-8 w-8 text-amber-500 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{folder.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {folder.count}건 · {formatAmount(folder.netAmount)} 실지급
+                          </p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 -mt-0.5 shrink-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFolderManageTarget(folder);
+                                setFolderRenameValue(folder.name);
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5 mr-2" />
+                              이름 변경
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`"${folder.name}" 폴더를 삭제하시겠습니까?\n안에 있는 정산은 미분류로 이동됩니다.`)) {
+                                  deleteFolderMutation.mutate(folder.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-2" />
+                              폴더 삭제
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 폴더 이름 변경 다이얼로그 */}
+              {folderManageTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setFolderManageTarget(null)}>
+                  <div className="bg-background rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+                    <p className="font-semibold">폴더 이름 변경</p>
+                    <Input
+                      autoFocus
+                      value={folderRenameValue}
+                      onChange={(e) => setFolderRenameValue(e.target.value)}
+                      maxLength={50}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && folderRenameValue.trim()) renameFolderMutation.mutate({ id: folderManageTarget.id, name: folderRenameValue.trim() });
+                        if (e.key === "Escape") setFolderManageTarget(null);
+                      }}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setFolderManageTarget(null)}>취소</Button>
+                      <Button
+                        size="sm"
+                        disabled={!folderRenameValue.trim() || renameFolderMutation.isPending}
+                        onClick={() => renameFolderMutation.mutate({ id: folderManageTarget.id, name: folderRenameValue.trim() })}
+                      >
+                        저장
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+          <>
+          {filterScope === "archive" && archiveFolderView && (
+            <div className="flex items-center gap-3 border-b pb-3">
+              <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setArchiveFolderView(null)}>
+                <ArrowLeft className="h-4 w-4" />
+                폴더 목록
+              </Button>
+              <Separator orientation="vertical" className="h-5" />
+              {archiveFolderView === "unfiled" ? (
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  <Folder className="h-4 w-4 text-muted-foreground" />
+                  미분류
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  <FolderOpen className="h-4 w-4 text-amber-500" />
+                  {foldersData?.data.find((f) => f.id === archiveFolderView)?.name ?? "폴더"}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Filter Bar */}
           <AnimatedCard delay={0.15}>
@@ -1006,6 +1263,8 @@ export default function AdminSettlementsPage() {
               </div>
             </>
           )}
+          </>
+          )}
         </TabsContent>
 
         {/* ======================== Stars Tab ======================== */}
@@ -1198,31 +1457,110 @@ export default function AdminSettlementsPage() {
         </div>
       </ResponsiveModal>
 
-      {/* ======================== Confirm Dialog ======================== */}
-      <AlertDialog open={!!confirmTarget} onOpenChange={(open) => !open && setConfirmTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>정산을 확정하시겠습니까?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmTarget && (
-                <>
-                  <strong>{getStarDisplayName(confirmTarget.star)}</strong>님의{" "}
-                  {formatDateRange(new Date(confirmTarget.startDate), new Date(confirmTarget.endDate))} 정산(
-                  {formatAmount(Number(confirmTarget.totalAmount))})을 확정합니다.
-                  <br />
-                  확정 후에는 삭제하거나 재생성할 수 없습니다.
-                </>
+      {/* ======================== Confirm Dialog (폴더 선택) ======================== */}
+      <ResponsiveModal
+        open={!!confirmTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmTarget(null);
+            setConfirmFolderId(null);
+            setConfirmNewFolderName("");
+          }
+        }}
+        title="정산 확정"
+        description={confirmTarget ? `${getStarDisplayName(confirmTarget.star)}님의 ${formatDateRange(new Date(confirmTarget.startDate), new Date(confirmTarget.endDate))} 정산(${formatAmount(Number(confirmTarget.totalAmount))})을 확정합니다.` : ""}
+        className="sm:max-w-[480px]"
+      >
+        {confirmTarget && (
+          <div className="space-y-5">
+            <div className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+              확정 후에는 삭제하거나 재생성할 수 없습니다.
+            </div>
+
+            {/* 폴더 선택 */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium flex items-center gap-1.5">
+                <Folder className="h-4 w-4 text-amber-500" />
+                아카이브 폴더 선택 <span className="text-muted-foreground font-normal">(선택사항)</span>
+              </p>
+
+              {/* 미분류 */}
+              <button
+                type="button"
+                onClick={() => setConfirmFolderId(null)}
+                className={`w-full flex items-center gap-3 rounded-lg border p-3 text-left transition-colors ${confirmFolderId === null ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
+              >
+                <Folder className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-sm">미분류 (폴더 없이 확정)</span>
+                {confirmFolderId === null && <CheckCircle2 className="ml-auto h-4 w-4 text-primary" />}
+              </button>
+
+              {/* 기존 폴더 목록 */}
+              {foldersLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                (foldersData?.data ?? []).map((folder) => (
+                  <button
+                    key={folder.id}
+                    type="button"
+                    onClick={() => setConfirmFolderId(folder.id)}
+                    className={`w-full flex items-center gap-3 rounded-lg border p-3 text-left transition-colors ${confirmFolderId === folder.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
+                  >
+                    <FolderOpen className="h-4 w-4 text-amber-500 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{folder.name}</p>
+                      <p className="text-xs text-muted-foreground">{folder.count}건</p>
+                    </div>
+                    {confirmFolderId === folder.id && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                  </button>
+                ))
               )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={() => confirmTarget && completeMutation.mutate(confirmTarget.id)}>
-              확정
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
+              {/* 새 폴더 만들기 */}
+              <button
+                type="button"
+                onClick={() => setConfirmFolderId("new")}
+                className={`w-full flex items-center gap-3 rounded-lg border border-dashed p-3 text-left transition-colors ${confirmFolderId === "new" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
+              >
+                <FolderPlus className="h-4 w-4 text-emerald-500 shrink-0" />
+                <span className="text-sm text-emerald-600 dark:text-emerald-400">+ 새 폴더 만들기</span>
+              </button>
+
+              {confirmFolderId === "new" && (
+                <Input
+                  autoFocus
+                  placeholder="폴더 이름 입력 (예: 2024년 1월)"
+                  value={confirmNewFolderName}
+                  onChange={(e) => setConfirmNewFolderName(e.target.value)}
+                  maxLength={50}
+                  className="mt-1"
+                />
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => { setConfirmTarget(null); setConfirmFolderId(null); setConfirmNewFolderName(""); }}>
+                취소
+              </Button>
+              <Button
+                disabled={completeMutation.isPending || (confirmFolderId === "new" && confirmNewFolderName.trim().length === 0)}
+                onClick={() => {
+                  if (!confirmTarget) return;
+                  if (confirmFolderId === "new") {
+                    completeMutation.mutate({ id: confirmTarget.id, newFolderName: confirmNewFolderName.trim() });
+                  } else {
+                    completeMutation.mutate({ id: confirmTarget.id, folderId: confirmFolderId });
+                  }
+                }}
+                className="gap-1.5"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {completeMutation.isPending ? "처리 중..." : "확정"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </ResponsiveModal>
 
       {/* ======================== Cancel Dialog ======================== */}
       <AlertDialog

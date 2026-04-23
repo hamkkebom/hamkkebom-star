@@ -34,6 +34,7 @@ export async function GET(request: Request) {
   const statusParam = searchParams.get("status");
   const scopeParam = (searchParams.get("scope") ?? "active").toLowerCase();
   const yearParam = searchParams.get("year");
+  const folderIdParam = searchParams.get("folderId");
 
   if (startDateParam && isNaN(new Date(startDateParam).getTime())) {
     return NextResponse.json(
@@ -82,6 +83,13 @@ export async function GET(request: Request) {
     where.archivedAt = { not: null };
   }
 
+  // 폴더 필터
+  if (folderIdParam === "unfiled") {
+    where.folderId = null;
+  } else if (folderIdParam) {
+    where.folderId = folderIdParam;
+  }
+
   // 연도 필터 — startDate 기준
   if (yearParam) {
     const year = Number(yearParam);
@@ -117,16 +125,26 @@ export async function GET(request: Request) {
             bankAccount: true,
           },
         },
-        _count: {
-          select: {
-            items: true,
-          },
-        },
+        folder: { select: { id: true, name: true } },
+        _count: { select: { items: true } },
       },
       orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
-    }),
+    }) as Promise<Array<{
+      id: string; starId: string; startDate: Date; endDate: Date;
+      totalAmount: import("@/generated/prisma/client").Prisma.Decimal;
+      taxAmount: import("@/generated/prisma/client").Prisma.Decimal;
+      netAmount: import("@/generated/prisma/client").Prisma.Decimal;
+      status: import("@/generated/prisma/client").SettlementStatus;
+      note: string | null; paymentDate: Date | null; confirmedAt: Date | null;
+      confirmedBy: string | null; cancellationReason: string | null;
+      failureReason: string | null; archivedAt: Date | null; folderId: string | null;
+      createdAt: Date; updatedAt: Date;
+      star: { id: string; name: string; chineseName: string | null; email: string; phone: string | null; idNumber: string | null; bankName: string | null; bankAccount: string | null };
+      folder: { id: string; name: string } | null;
+      _count: { items: number };
+    }>>,
     prisma.settlement.count({ where }),
   ]);
 
