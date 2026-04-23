@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { Prisma, SettlementStatus, SubmissionStatus } from "@/generated/prisma/client";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
 import { generateSettlementSchema } from "@/lib/validations/settlement";
 import { createAuditLog } from "@/lib/audit";
 import { calculateTax } from "@/lib/settlement-utils";
+import { recordSettlementHistoryTx } from "@/lib/settlement-history";
 export const dynamic = "force-dynamic";
 
 type ApiError = {
@@ -35,6 +37,14 @@ function isApiError(error: unknown): error is ApiError {
   );
 }
 
+const generateOptionsSchema = generateSettlementSchema
+  .and(
+    z.object({
+      dryRun: z.boolean().optional().default(false),
+      confirmDeletePending: z.boolean().optional().default(false),
+    })
+  );
+
 export async function POST(request: Request) {
   const user = await getAuthUser();
 
@@ -63,7 +73,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = generateSettlementSchema.safeParse(body);
+  const parsed = generateOptionsSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -77,7 +87,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { startDate: startDateStr, endDate: endDateStr } = parsed.data;
+  const { startDate: startDateStr, endDate: endDateStr, dryRun, confirmDeletePending } = parsed.data;
 
   // AI 툴 지원비 조회 (트랜잭션 외부 — 테스트 mock 호환)
   let aiToolSupportFee = 0;
@@ -155,24 +165,52 @@ export async function POST(request: Request) {
       const existingSettlements = await tx.settlement.findMany({
         where: {
           starId: { in: starIds },
-          status: { in: [SettlementStatus.PENDING, SettlementStatus.PROCESSING, SettlementStatus.COMPLETED] },
+          status: { in: [SettlementStatus.PENDING, SettlementStatus.REVIEW, SettlementStatus.PROCESSING, SettlementStatus.COMPLETED] },
           startDate: { lt: endDate },
           endDate: { gt: startDate },
         },
-        select: { id: true, starId: true, status: true },
+        select: { id: true, starId: true, status: true, startDate: true, endDate: true },
       });
 
-      // Skip STARs with COMPLETED overlapping settlements
-      const completedStarIds = new Set(
-        existingSettlements
-          .filter(s => s.status === SettlementStatus.COMPLETED)
-          .map(s => s.starId)
-      );
+      const conflictingActive = existingSettlements.filter(s => s.status !== SettlementStatus.COMPLETED);
+      const completedConflicts = existingSettlements.filter(s => s.status === SettlementStatus.COMPLETED);
+      const completedStarIds = new Set(completedConflicts.map(s => s.starId));
 
-      // Delete PENDING/PROCESSING overlapping settlements
-      const toDelete = existingSettlements
-        .filter(s => s.status !== SettlementStatus.COMPLETED)
-        .map(s => s.id);
+      // Dry-run: 실제 쓰기 없이 예측 결과만 반환
+      if (dryRun) {
+        const starNameById = new Map(stars.map(s => [s.id, s.name]));
+        const plan = Object.entries(groupedByStar).map(([starId, subs]) => {
+          const star = starById.get(starId);
+          const starBaseRate = star?.baseRate ?? star?.grade?.baseRate ?? null;
+          const hasAnyRate = starBaseRate !== null || subs.some(s => s.customRate !== null);
+          const willSkip = !hasAnyRate || completedStarIds.has(starId);
+          return {
+            starId,
+            starName: starNameById.get(starId) ?? starId,
+            submissionCount: subs.length,
+            willSkip,
+            skipReason: !hasAnyRate ? "기본 단가 미설정" : completedStarIds.has(starId) ? "이미 확정된 정산 존재" : null,
+          };
+        });
+        throw {
+          __dryRun: true,
+          plan,
+          willDeletePending: conflictingActive,
+          completedConflicts,
+        };
+      }
+
+      // 실제 실행 경로: 충돌 PENDING 이 있는데 confirm 하지 않으면 실패
+      if (conflictingActive.length > 0 && !confirmDeletePending) {
+        throw {
+          code: "CONFLICT_PENDING",
+          message: `기존 진행 중인 정산 ${conflictingActive.length}건이 해당 기간과 겹칩니다. 삭제 후 재생성하려면 확인이 필요합니다.`,
+          status: 409,
+        } satisfies ApiError;
+      }
+
+      // Delete PENDING/REVIEW/PROCESSING overlapping settlements
+      const toDelete = conflictingActive.map(s => s.id);
       if (toDelete.length > 0) {
         await tx.settlement.deleteMany({ where: { id: { in: toDelete } } });
       }
@@ -187,13 +225,10 @@ export async function POST(request: Request) {
           const star = starById.get(starId);
 
           if (!star) {
-            return null; // STAR 정보를 찾을 수 없으면 skip
+            return null;
           }
 
-          // STAR 기본 단가 결정: 개인 단가 > 등급 단가 > null(스킵)
           const starBaseRate = star.baseRate ?? star.grade?.baseRate ?? null;
-
-          // 모든 submission에 영상 단가가 없고 STAR 기본 단가도 없으면 스킵
           const hasAnyRate = starBaseRate !== null || submissions.some(s => s.customRate !== null);
 
           if (!hasAnyRate) {
@@ -205,7 +240,6 @@ export async function POST(request: Request) {
             return null;
           }
 
-          // Skip STARs with COMPLETED overlapping settlements
           if (completedStarIds.has(starId)) {
             completedStars.push({ id: star.id, name: star.name });
             return null;
@@ -222,7 +256,6 @@ export async function POST(request: Request) {
             },
           });
 
-          // 각 제출물마다 개별 단가 적용: 영상 단가 > STAR 기본 단가
           const itemsData = submissions.map((sub) => {
             const rate = sub.customRate ?? defaultRate;
             return {
@@ -239,7 +272,6 @@ export async function POST(request: Request) {
             data: itemsData,
           });
 
-          // AI 툴 지원비 항목 추가
           const userAiToolSupportFee = star.aiToolSupportFee !== null ? Number(star.aiToolSupportFee) : aiToolSupportFee;
           if (userAiToolSupportFee > 0) {
             await tx.settlementItem.create({
@@ -261,7 +293,6 @@ export async function POST(request: Request) {
             0
           ) + userAiToolSupportFee;
 
-          // 세금 계산 (3.3%: 소득세 3% + 지방소득세 0.3%)
           const { incomeTax, localTax } = calculateTax(totalAmount);
           const taxAmount = incomeTax + localTax;
           const netAmount = totalAmount - taxAmount;
@@ -269,6 +300,20 @@ export async function POST(request: Request) {
           const updatedSettlement = await tx.settlement.update({
             where: { id: createdSettlement.id },
             data: { totalAmount, taxAmount, netAmount },
+          });
+
+          // History 기록
+          await recordSettlementHistoryTx(tx, {
+            settlementId: createdSettlement.id,
+            action: "CREATED",
+            actorId: user.id,
+            actorName: user.name ?? user.email ?? "관리자",
+            metadata: {
+              startDate: startDateStr,
+              endDate: endDateStr,
+              itemCount: itemsData.length + (userAiToolSupportFee > 0 ? 1 : 0),
+              totalAmount,
+            },
           });
 
           return {
@@ -284,6 +329,7 @@ export async function POST(request: Request) {
         created,
         skippedStars,
         completedStars,
+        deletedCount: toDelete.length,
       };
     }, { maxWait: 10000, timeout: 30000 });
 
@@ -296,6 +342,7 @@ export async function POST(request: Request) {
         count: result.created.length,
         startDate: startDateStr,
         endDate: endDateStr,
+        deletedCount: result.deletedCount,
       },
     });
 
@@ -305,11 +352,23 @@ export async function POST(request: Request) {
         warnings: {
           skippedStars: result.skippedStars,
           completedStars: result.completedStars,
+          deletedCount: result.deletedCount,
         },
       },
       { status: 201 }
     );
   } catch (error) {
+    // Dry-run 분기는 throw 로 트랜잭션을 끝냈으므로 여기서 가로챈다
+    if (typeof error === "object" && error && "__dryRun" in error) {
+      const dry = error as unknown as { plan: unknown[]; willDeletePending: unknown[]; completedConflicts: unknown[] };
+      return NextResponse.json({
+        dryRun: true,
+        plan: dry.plan,
+        willDeletePending: dry.willDeletePending,
+        completedConflicts: dry.completedConflicts,
+      });
+    }
+
     if (isApiError(error)) {
       return toErrorResponse(error);
     }

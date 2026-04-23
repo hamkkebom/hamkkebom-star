@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,6 +13,8 @@ import {
   Wallet,
   TrendingUp,
   BarChart3,
+  Archive,
+  Inbox,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -25,6 +27,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { StatCard } from "@/components/settlement/stat-card";
 import { AnimatedCard } from "@/components/settlement/animated-card";
@@ -42,6 +52,8 @@ type SettlementRow = {
   startDate: string;
   endDate: string;
   totalAmount: number;
+  netAmount?: number;
+  taxAmount?: number;
   status: string;
   paymentDate: string | null;
   note: string | null;
@@ -92,12 +104,17 @@ type SettlementDetail = {
 
 type GlowVariant = "approved" | "pending" | "completed" | "failed" | "processing";
 
-const STATUS_GLOW_MAP: Record<string, { label: string; variant: GlowVariant }> = {
-  PENDING: { label: "대기중", variant: "pending" },
-  PROCESSING: { label: "처리중", variant: "processing" },
-  COMPLETED: { label: "완료", variant: "completed" },
-  FAILED: { label: "실패", variant: "failed" },
+const STATUS_GLOW_MAP: Record<string, { label: string; variant: GlowVariant; description: string }> = {
+  PENDING: { label: "검토 대기", variant: "pending", description: "관리자 검토를 기다리고 있습니다." },
+  REVIEW: { label: "검토 중", variant: "pending", description: "관리자가 정산 내역을 검토 중입니다." },
+  PROCESSING: { label: "처리 중", variant: "processing", description: "지급 처리 중 · 영업일 기준 3–5일 소요" },
+  COMPLETED: { label: "지급 완료", variant: "completed", description: "입금이 완료되었습니다." },
+  FAILED: { label: "지급 실패", variant: "failed", description: "지급에 실패했습니다. 관리자에게 문의하세요." },
+  CANCELLED: { label: "취소됨", variant: "failed", description: "정산이 취소되었습니다." },
 };
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
 
 // ---------------------------------------------------------------------------
 // Main
@@ -105,6 +122,8 @@ const STATUS_GLOW_MAP: Record<string, { label: string; variant: GlowVariant }> =
 
 export default function EarningsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"active" | "archive">("active");
+  const [archiveYear, setArchiveYear] = useState<string>(String(CURRENT_YEAR));
 
   // 연간 수입 차트 데이터
   type MonthlyEarning = { month: string; amount: number; count: number };
@@ -119,13 +138,27 @@ export default function EarningsPage() {
     },
   });
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["my-settlements"],
+  // 진행 중 정산 (scope=active)
+  const { data: activeData, isLoading: activeLoading, isError: activeError, error: activeErrObj } = useQuery({
+    queryKey: ["my-settlements", "active"],
     queryFn: async () => {
-      const res = await fetch("/api/settlements?page=1&pageSize=50", { cache: "no-store" });
-      if (!res.ok) throw new Error("정산 내역을 불러오지 못했습니다.");
+      const res = await fetch("/api/settlements?scope=active&page=1&pageSize=50", { cache: "no-store" });
+      if (!res.ok) throw new Error("진행 중 정산 내역을 불러오지 못했습니다.");
       return (await res.json()) as SettlementsResponse;
     },
+  });
+
+  // 지난 정산 (scope=archive + 연도)
+  const { data: archiveData, isLoading: archiveLoading, isError: archiveError } = useQuery({
+    queryKey: ["my-settlements", "archive", archiveYear],
+    queryFn: async () => {
+      const qs = new URLSearchParams({ scope: "archive", page: "1", pageSize: "100" });
+      if (archiveYear !== "ALL") qs.set("year", archiveYear);
+      const res = await fetch(`/api/settlements?${qs.toString()}`, { cache: "no-store" });
+      if (!res.ok) throw new Error("지난 정산 내역을 불러오지 못했습니다.");
+      return (await res.json()) as SettlementsResponse;
+    },
+    enabled: activeTab === "archive",
   });
 
   const { data: detailData, isLoading: detailLoading } = useQuery({
@@ -138,14 +171,41 @@ export default function EarningsPage() {
     enabled: !!expandedId,
   });
 
-  const rows = data?.data ?? [];
-  const totalEarned = rows
-    .filter((s) => s.status === "COMPLETED")
+  const activeRows = useMemo(() => activeData?.data ?? [], [activeData]);
+  const archiveRows = useMemo(() => archiveData?.data ?? [], [archiveData]);
+
+  // 상단 카드 — 진행 중 기준
+  const pendingAmount = activeRows
+    .filter((s) => s.status === "PENDING" || s.status === "REVIEW" || s.status === "PROCESSING")
     .reduce((sum, s) => sum + Number(s.totalAmount), 0);
-  const pendingAmount = rows
-    .filter((s) => s.status === "PENDING" || s.status === "PROCESSING")
-    .reduce((sum, s) => sum + Number(s.totalAmount), 0);
-  const totalCount = data?.total ?? 0;
+  const activeCount = activeData?.total ?? 0;
+
+  // 아카이브 집계
+  const archiveSummary = useMemo(() => {
+    const completed = archiveRows.filter((s) => s.status === "COMPLETED");
+    const totalCompleted = completed.reduce((sum, s) => sum + Number(s.totalAmount), 0);
+    const totalTax = completed.reduce((sum, s) => sum + Number(s.taxAmount ?? 0), 0);
+    const totalNet = completed.reduce((sum, s) => sum + Number(s.netAmount ?? 0), 0);
+    return {
+      totalCompleted,
+      totalTax,
+      totalNet,
+      completedCount: completed.length,
+      totalCount: archiveRows.length,
+    };
+  }, [archiveRows]);
+
+  // 아카이브 - 월별 그룹핑
+  const archiveByMonth = useMemo(() => {
+    const map = new Map<string, SettlementRow[]>();
+    for (const row of archiveRows) {
+      const d = new Date(row.startDate);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(row);
+    }
+    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [archiveRows]);
 
   const handleToggle = useCallback((id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -156,6 +216,9 @@ export default function EarningsPage() {
   }, []);
 
   const detail = detailData?.data;
+
+  // 전체 확정 완료액 (차트용): 진행 중 + 아카이브의 완료 합산은 annual API가 더 정확하므로 별도 계산 생략
+  const totalEarnedOverall = annualData?.summary.total ?? archiveSummary.totalCompleted;
 
   return (
     <div className="space-y-6 pb-20">
@@ -170,15 +233,15 @@ export default function EarningsPage() {
       {/* Stat Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
-          title="총 정산 완료"
-          value={totalEarned}
+          title="누적 지급 완료"
+          value={totalEarnedOverall}
           suffix="원"
           icon={CheckCircle2}
           iconColor="text-emerald-500"
           delay={0}
         />
         <StatCard
-          title="정산 대기중"
+          title="정산 진행 중"
           value={pendingAmount}
           suffix="원"
           icon={Clock}
@@ -186,8 +249,8 @@ export default function EarningsPage() {
           delay={0.1}
         />
         <StatCard
-          title="정산 건수"
-          value={totalCount}
+          title="진행 중 건수"
+          value={activeCount}
           suffix="건"
           icon={FileText}
           iconColor="text-violet-500"
@@ -226,163 +289,317 @@ export default function EarningsPage() {
         </motion.div>
       )}
 
-      {/* List */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={`earn-sk-${i}`} className="h-20 w-full rounded-xl" />
-          ))}
-        </div>
-      ) : isError ? (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-6 text-sm text-destructive">
-          {error instanceof Error ? error.message : "정산 내역을 불러오지 못했습니다."}
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="rounded-xl border border-dashed px-4 py-14 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-            <Wallet className="h-8 w-8 text-muted-foreground/60" />
+      {/* Tabs: 진행 중 / 지난 정산 */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "active" | "archive")} className="space-y-4">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="active" className="gap-1.5">
+            <Inbox className="h-4 w-4" />
+            진행 중
+          </TabsTrigger>
+          <TabsTrigger value="archive" className="gap-1.5">
+            <Archive className="h-4 w-4" />
+            지난 정산
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ============ 진행 중 탭 ============ */}
+        <TabsContent value="active" className="space-y-3">
+          {activeLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={`earn-sk-${i}`} className="h-20 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : activeError ? (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-6 text-sm text-destructive">
+              {activeErrObj instanceof Error ? activeErrObj.message : "정산 내역을 불러오지 못했습니다."}
+            </div>
+          ) : activeRows.length === 0 ? (
+            <div className="rounded-xl border border-dashed px-4 py-14 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                <Wallet className="h-8 w-8 text-muted-foreground/60" />
+              </div>
+              <h3 className="mb-1 text-lg font-semibold">현재 진행 중인 정산이 없습니다</h3>
+              <p className="text-sm text-muted-foreground">
+                영상이 승인되면 다음 정산 주기에 자동 반영됩니다.
+                <br />
+                지난 정산은 &ldquo;지난 정산&rdquo; 탭에서 확인하세요.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activeRows.map((settlement, index) => (
+                <SettlementRowCard
+                  key={settlement.id}
+                  settlement={settlement}
+                  index={index}
+                  expanded={expandedId === settlement.id}
+                  onToggle={handleToggle}
+                  onPdf={handlePdfDownload}
+                  detail={detail}
+                  detailLoading={detailLoading}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ============ 지난 정산 탭 ============ */}
+        <TabsContent value="archive" className="space-y-4">
+          {/* 연도 selector + 연간 요약 */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">연도</span>
+              <Select value={archiveYear} onValueChange={setArchiveYear}>
+                <SelectTrigger className="w-[120px] h-9">
+                  <SelectValue placeholder="연도" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">전체</SelectItem>
+                  {YEAR_OPTIONS.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}년
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground text-right">
+              {archiveYear === "ALL" ? "전체 연도" : `${archiveYear}년`} · 총 {archiveSummary.totalCount}건
+            </p>
           </div>
-          <h3 className="mb-1 text-lg font-semibold">아직 정산 내역이 없습니다</h3>
-          <p className="text-sm text-muted-foreground">
-            영상이 승인되면 정산이 자동으로 생성됩니다.
-            <br />
-            승인된 영상이 있으면 다음 정산 주기에 반영됩니다.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {rows.map((settlement, index) => {
-            const isExpanded = expandedId === settlement.id;
-            return (
-              <AnimatedCard key={settlement.id} delay={index * 0.04}>
-                {/* Row */}
-                <button
-                  type="button"
-                  className="w-full text-left active:scale-[0.98] transition-all duration-200"
-                  onClick={() => handleToggle(settlement.id)}
-                >
-                  <div className="flex items-center justify-between p-4 sm:p-5">
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col">
-                        <p className="font-semibold">
-                          {formatDateRange(new Date(settlement.startDate), new Date(settlement.endDate))}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          항목 {settlement._count.items}건
-                          {settlement.paymentDate &&
-                            ` · 지급일 ${new Intl.DateTimeFormat("ko-KR").format(new Date(settlement.paymentDate))}`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <NumberTicker
-                        value={Number(settlement.totalAmount)}
-                        suffix="원"
-                        className="text-sm sm:text-lg font-bold tabular-nums"
-                      />
-                      <GlowBadge
-                        label={STATUS_GLOW_MAP[settlement.status]?.label ?? settlement.status}
-                        variant={STATUS_GLOW_MAP[settlement.status]?.variant ?? "pending"}
-                      />
-                      <motion.div
-                        animate={{ rotate: isExpanded ? 180 : 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      </motion.div>
+
+          {/* 연간 요약 카드 */}
+          {archiveSummary.totalCount > 0 && (
+            <Card className="bg-gradient-to-br from-emerald-50 to-violet-50 dark:from-emerald-950/20 dark:to-violet-950/20">
+              <CardContent className="p-4 grid grid-cols-3 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">지급 완료 합계 (세전)</p>
+                  <p className="text-base sm:text-lg font-bold tabular-nums mt-0.5">
+                    {formatKRW(archiveSummary.totalCompleted)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">원천징수세</p>
+                  <p className="text-base sm:text-lg font-bold tabular-nums mt-0.5 text-amber-600 dark:text-amber-400">
+                    -{formatKRW(archiveSummary.totalTax)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">실 지급액</p>
+                  <p className="text-base sm:text-lg font-bold tabular-nums mt-0.5 text-emerald-600 dark:text-emerald-400">
+                    {formatKRW(archiveSummary.totalNet)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 리스트 */}
+          {archiveLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={`arch-sk-${i}`} className="h-20 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : archiveError ? (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-6 text-sm text-destructive">
+              지난 정산 내역을 불러오지 못했습니다.
+            </div>
+          ) : archiveRows.length === 0 ? (
+            <div className="rounded-xl border border-dashed px-4 py-14 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                <Archive className="h-8 w-8 text-muted-foreground/60" />
+              </div>
+              <h3 className="mb-1 text-lg font-semibold">
+                {archiveYear === "ALL" ? "지난 정산이 없습니다" : `${archiveYear}년 정산 내역이 없습니다`}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                완료 · 실패 · 취소된 정산이 이곳에 보관됩니다.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {archiveByMonth.map(([monthKey, monthRows]) => {
+                const [y, m] = monthKey.split("-");
+                return (
+                  <div key={monthKey} className="space-y-2">
+                    <h4 className="text-sm font-semibold text-muted-foreground sticky top-0 bg-background/95 backdrop-blur py-1 z-[1]">
+                      {y}년 {Number(m)}월 <span className="text-xs font-normal ml-1">({monthRows.length}건)</span>
+                    </h4>
+                    <div className="space-y-2">
+                      {monthRows.map((settlement, index) => (
+                        <SettlementRowCard
+                          key={settlement.id}
+                          settlement={settlement}
+                          index={index}
+                          expanded={expandedId === settlement.id}
+                          onToggle={handleToggle}
+                          onPdf={handlePdfDownload}
+                          detail={detail}
+                          detailLoading={detailLoading}
+                        />
+                      ))}
                     </div>
                   </div>
-                </button>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
 
-                {/* Expanded Detail */}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{
-                        height: { type: "spring", stiffness: 400, damping: 30 },
-                        opacity: { duration: 0.2 },
-                      }}
-                      className="overflow-hidden"
-                    >
-                      <Separator />
-                      <div className="p-4 space-y-3">
-                        {detailLoading || !detail || detail.id !== settlement.id ? (
-                          <div className="space-y-2">
-                            <Skeleton className="h-10 w-full rounded-lg" />
-                            <Skeleton className="h-10 w-full rounded-lg" />
-                          </div>
-                        ) : (
-                          <>
-                            {/* Items */}
-                            {detail.items.map((item) => (
-                              <div
-                                key={item.id}
-                                className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2.5"
-                              >
-                                <div>
-                                  <p className="text-sm font-medium">
-                                    {item.description ??
-                                      (item.itemType === "AI_TOOL_SUPPORT"
-                                        ? "AI 툴 지원비"
-                                        : item.submission?.versionTitle ?? "작품료")}
-                                  </p>
-                                  {item.submission && (
-                                    <p className="text-xs text-muted-foreground">
-                                      v{item.submission.version} &middot;{" "}
-                                      {new Intl.DateTimeFormat("ko-KR").format(
-                                        new Date(item.submission.createdAt),
-                                      )}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-sm font-semibold tabular-nums">
-                                    {formatKRW(Number(item.finalAmount))}
-                                  </p>
-                                  {item.adjustedAmount !== null &&
-                                    Number(item.adjustedAmount) !== Number(item.baseAmount) && (
-                                      <p className="text-xs text-muted-foreground line-through tabular-nums">
-                                        {formatKRW(Number(item.baseAmount))}
-                                      </p>
-                                    )}
-                                </div>
-                              </div>
-                            ))}
+// ---------------------------------------------------------------------------
+// Settlement Row Card (재사용)
+// ---------------------------------------------------------------------------
 
-                            {/* Note */}
-                            {detail.note && (
-                              <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
-                                메모: {detail.note}
-                              </p>
-                            )}
+function SettlementRowCard({
+  settlement,
+  index,
+  expanded,
+  onToggle,
+  onPdf,
+  detail,
+  detailLoading,
+}: {
+  settlement: SettlementRow;
+  index: number;
+  expanded: boolean;
+  onToggle: (id: string) => void;
+  onPdf: (id: string) => void;
+  detail?: SettlementDetail;
+  detailLoading: boolean;
+}) {
+  const statusInfo = STATUS_GLOW_MAP[settlement.status];
+  return (
+    <AnimatedCard delay={index * 0.03}>
+      <button
+        type="button"
+        className="w-full text-left active:scale-[0.98] transition-all duration-200"
+        onClick={() => onToggle(settlement.id)}
+      >
+        <div className="flex items-center justify-between p-4 sm:p-5">
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col">
+              <p className="font-semibold">
+                {formatDateRange(new Date(settlement.startDate), new Date(settlement.endDate))}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                항목 {settlement._count.items}건
+                {settlement.paymentDate &&
+                  ` · 지급일 ${new Intl.DateTimeFormat("ko-KR").format(new Date(settlement.paymentDate))}`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <NumberTicker
+              value={Number(settlement.totalAmount)}
+              suffix="원"
+              className="text-sm sm:text-lg font-bold tabular-nums"
+            />
+            <GlowBadge
+              label={statusInfo?.label ?? settlement.status}
+              variant={statusInfo?.variant ?? "pending"}
+            />
+            <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </motion.div>
+          </div>
+        </div>
+      </button>
 
-                            {/* PDF Download */}
-                            <Button
-                              variant="outline"
-                              size="lg"
-                              className="w-full sm:w-auto mt-2 gap-2 rounded-xl font-bold select-none active:scale-95 transition-all text-xs sm:text-sm h-11 sm:h-auto"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePdfDownload(settlement.id);
-                              }}
-                            >
-                              <Download className="h-4 w-4" />
-                              지급내역서 PDF 다운로드
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </AnimatedCard>
-            );
-          })}
+      {/* Status description banner */}
+      {statusInfo?.description && (settlement.status === "PROCESSING" || settlement.status === "FAILED") && (
+        <div
+          className={`px-4 pb-2 text-xs ${
+            settlement.status === "FAILED" ? "text-rose-600 dark:text-rose-400" : "text-blue-600 dark:text-blue-400"
+          }`}
+        >
+          {statusInfo.description}
         </div>
       )}
-    </div>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{
+              height: { type: "spring", stiffness: 400, damping: 30 },
+              opacity: { duration: 0.2 },
+            }}
+            className="overflow-hidden"
+          >
+            <Separator />
+            <div className="p-4 space-y-3">
+              {detailLoading || !detail || detail.id !== settlement.id ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                </div>
+              ) : (
+                <>
+                  {detail.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2.5"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">
+                          {item.description ??
+                            (item.itemType === "AI_TOOL_SUPPORT"
+                              ? "AI 툴 지원비"
+                              : item.submission?.versionTitle ?? "작품료")}
+                        </p>
+                        {item.submission && (
+                          <p className="text-xs text-muted-foreground">
+                            v{item.submission.version} ·{" "}
+                            {new Intl.DateTimeFormat("ko-KR").format(new Date(item.submission.createdAt))}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold tabular-nums">
+                          {formatKRW(Number(item.finalAmount))}
+                        </p>
+                        {item.adjustedAmount !== null &&
+                          Number(item.adjustedAmount) !== Number(item.baseAmount) && (
+                            <p className="text-xs text-muted-foreground line-through tabular-nums">
+                              {formatKRW(Number(item.baseAmount))}
+                            </p>
+                          )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {detail.note && (
+                    <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
+                      메모: {detail.note}
+                    </p>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full sm:w-auto mt-2 gap-2 rounded-xl font-bold select-none active:scale-95 transition-all text-xs sm:text-sm h-11 sm:h-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPdf(settlement.id);
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                    지급내역서 PDF 다운로드
+                  </Button>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </AnimatedCard>
   );
 }

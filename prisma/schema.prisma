@@ -364,27 +364,31 @@ model AuditLog {
 }
 
 model Settlement {
-  id          String           @id @default(cuid())
-  starId      String
-  startDate   DateTime
-  endDate     DateTime
-  totalAmount Decimal          @default(0) @db.Decimal(12, 2)
-  taxAmount   Decimal          @default(0) @db.Decimal(12, 2)
-  netAmount   Decimal          @default(0) @db.Decimal(12, 2)
-  status      SettlementStatus @default(PENDING)
-  note        String?
-  paymentDate DateTime?
-  confirmedAt DateTime?
-  confirmedBy String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  items       SettlementItem[]
-  history     SettlementHistory[]
-  star        User             @relation(fields: [starId], references: [id])
+  id                 String           @id @default(cuid())
+  starId             String
+  startDate          DateTime
+  endDate            DateTime
+  totalAmount        Decimal          @default(0) @db.Decimal(12, 2)
+  taxAmount          Decimal          @default(0) @db.Decimal(12, 2)
+  netAmount          Decimal          @default(0) @db.Decimal(12, 2)
+  status             SettlementStatus @default(PENDING)
+  note               String?
+  paymentDate        DateTime?
+  confirmedAt        DateTime?
+  confirmedBy        String?
+  cancellationReason String?
+  failureReason      String?
+  archivedAt         DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  items              SettlementItem[]
+  history            SettlementHistory[]
+  star               User             @relation(fields: [starId], references: [id])
 
   @@index([starId])
   @@index([status])
   @@index([starId, startDate])
+  @@index([archivedAt])
   @@map("settlements")
 }
 
@@ -624,6 +628,7 @@ enum SettlementStatus {
   PROCESSING
   COMPLETED
   FAILED
+  CANCELLED
 }
 
 enum CounselorStatus {

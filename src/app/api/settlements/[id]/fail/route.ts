@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
-const cancelSchema = z.object({
-    reason: z.string().trim().min(2, "취소 사유는 2자 이상 입력해주세요.").max(500, "취소 사유는 500자 이하로 입력해주세요."),
+const failSchema = z.object({
+    reason: z.string().trim().min(2, "실패 사유는 2자 이상 입력해주세요.").max(500, "실패 사유는 500자 이하로 입력해주세요."),
 });
 
 export async function PATCH(request: Request, { params }: Params) {
@@ -24,7 +24,7 @@ export async function PATCH(request: Request, { params }: Params) {
     }
     if (user.role !== "ADMIN") {
         return NextResponse.json(
-            { error: { code: "FORBIDDEN", message: "관리자만 정산을 수정할 수 있습니다." } },
+            { error: { code: "FORBIDDEN", message: "관리자만 정산 실패 처리를 할 수 있습니다." } },
             { status: 403 }
         );
     }
@@ -38,10 +38,10 @@ export async function PATCH(request: Request, { params }: Params) {
         body = {};
     }
 
-    const parsed = cancelSchema.safeParse(body);
+    const parsed = failSchema.safeParse(body);
     if (!parsed.success) {
         return NextResponse.json(
-            { error: { code: "MISSING_REASON", message: parsed.error.issues[0]?.message ?? "취소 사유가 필요합니다." } },
+            { error: { code: "MISSING_REASON", message: parsed.error.issues[0]?.message ?? "실패 사유가 필요합니다." } },
             { status: 400 }
         );
     }
@@ -56,16 +56,15 @@ export async function PATCH(request: Request, { params }: Params) {
                 throw { code: "NOT_FOUND", message: "정산을 찾을 수 없습니다.", status: 404 };
             }
 
-            assertCanTransit(current.status, SettlementStatus.PENDING);
+            assertCanTransit(current.status, SettlementStatus.FAILED);
 
+            const now = new Date();
             const result = await tx.settlement.update({
                 where: { id },
                 data: {
-                    status: SettlementStatus.PENDING,
-                    cancellationReason: parsed.data.reason,
-                    confirmedAt: null,
-                    confirmedBy: null,
-                    archivedAt: null,
+                    status: SettlementStatus.FAILED,
+                    failureReason: parsed.data.reason,
+                    archivedAt: now,
                 },
                 include: {
                     star: { select: { id: true, name: true, email: true } },
@@ -80,8 +79,8 @@ export async function PATCH(request: Request, { params }: Params) {
                 actorName: user.name ?? user.email ?? "관리자",
                 field: "status",
                 oldValue: current.status,
-                newValue: SettlementStatus.PENDING,
-                metadata: { cancellationReason: parsed.data.reason },
+                newValue: SettlementStatus.FAILED,
+                metadata: { failureReason: parsed.data.reason },
             });
 
             return result;
@@ -89,7 +88,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
         void createAuditLog({
             actorId: user.id,
-            action: "CANCEL_SETTLEMENT",
+            action: "FAIL_SETTLEMENT",
             entityType: "Settlement",
             entityId: id,
             metadata: { reason: parsed.data.reason },
@@ -107,9 +106,9 @@ export async function PATCH(request: Request, { params }: Params) {
             const e = err as { code: string; message: string; status: number };
             return NextResponse.json({ error: { code: e.code, message: e.message } }, { status: e.status });
         }
-        console.error("[settlements/cancel] Error:", err);
+        console.error("[settlements/fail] Error:", err);
         return NextResponse.json(
-            { error: { code: "INTERNAL_ERROR", message: "확정 취소 처리 중 오류가 발생했습니다." } },
+            { error: { code: "INTERNAL_ERROR", message: "정산 실패 처리 중 오류가 발생했습니다." } },
             { status: 500 }
         );
     }
