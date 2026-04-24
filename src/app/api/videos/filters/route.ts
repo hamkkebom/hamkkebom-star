@@ -9,7 +9,10 @@ export const dynamic = "force-dynamic";
  * 공개 영상 브라우저용 필터 데이터 (카테고리, 제작자, 상담사) 통합 조회
  */
 export async function GET() {
-  const publicFilter = { status: { in: [VideoStatus.APPROVED, VideoStatus.FINAL] } };
+  const publicFilter = {
+    status: { in: [VideoStatus.APPROVED, VideoStatus.FINAL] },
+    owner: { showVideosPublicly: true },
+  };
 
   const [categories, ownerRows, counselorRows] = await Promise.all([
     prisma.category.findMany({
