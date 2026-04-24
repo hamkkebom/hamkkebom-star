@@ -33,6 +33,7 @@ export async function GET(request: Request) {
   const q = searchParams.get("q")?.trim(); // Global search query
   const submissionStatusParam = searchParams.get("submissionStatus")?.trim();
   const includeVersions = searchParams.get("includeVersions") === "true";
+  const directUploadParam = searchParams.get("directUpload");
 
   if (sort !== "latest" && sort !== "oldest" && sort !== "popular") {
     return NextResponse.json(
@@ -127,6 +128,11 @@ export async function GET(request: Request) {
     ...statusFilter,
     ...submissionStatusFilter,
   };
+
+  // ADMIN이고 directUpload=true이면 submission 없는 영상만
+  if (user?.role === "ADMIN" && directUploadParam === "true") {
+    where.submissions = { none: {} };
+  }
 
   // 비관리자: showVideosPublicly=false 계정의 영상은 공개 페이지에서 숨김
   if (user?.role !== "ADMIN") {
@@ -278,6 +284,7 @@ export async function GET(request: Request) {
         ...restRow,
         submissionId: latestSubmission?.id ?? null,
         latestSubmissionStatus: latestSubmission?.status ?? null,
+        isDirectUpload: submissions.length === 0,
       };
     }
 
@@ -324,6 +331,7 @@ export async function GET(request: Request) {
       submissionCount: 1 + chainChildren.length,
       latestVersion: latestSubmission?.version ?? null,
       allSubmissions: olderVersions,
+      isDirectUpload: false,
     };
   });
 

@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageSquare,
+  Upload,
 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -114,6 +115,7 @@ type VideoRow = {
   owner: { id: string; name: string; chineseName?: string | null; email: string };
   category: { id: string; name: string; slug: string } | null;
   adEligible: boolean;
+  isDirectUpload?: boolean;
 };
 
 type EditVideoData = {
@@ -452,6 +454,7 @@ export default function AdminVideosPage() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [groupMode, setGroupMode] = useState(false);
   const [expandedVideoIds, setExpandedVideoIds] = useState<Set<string>>(new Set());
+  const [directUploadOnly, setDirectUploadOnly] = useState(false);
 
   const pageSize = 50;
 
@@ -508,7 +511,7 @@ export default function AdminVideosPage() {
 
   // 영상 목록 가져오기 (필터 적용)
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["admin-videos", page, sort, categoryId, ownerName, statusFilter, dateRange, groupMode],
+    queryKey: ["admin-videos", page, sort, categoryId, ownerName, statusFilter, dateRange, groupMode, directUploadOnly],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -521,6 +524,7 @@ export default function AdminVideosPage() {
       if (dateRange?.to) params.set("dateTo", dateRange.to.toISOString());
       if (statusFilter !== "ALL") params.set("submissionStatus", statusFilter);
       if (groupMode) params.set("includeVersions", "true");
+      if (directUploadOnly) params.set("directUpload", "true");
 
       const res = await fetch(`/api/videos?${params.toString()}`, { cache: "no-store" });
       if (!res.ok) throw new Error("영상을 불러오지 못했습니다.");
@@ -557,7 +561,7 @@ export default function AdminVideosPage() {
   useEffect(() => {
     setSelectedIds(new Set());
     setExpandedVideoIds(new Set());
-  }, [page, sort, categoryId, ownerName, statusFilter, dateRange]);
+  }, [page, sort, categoryId, ownerName, statusFilter, dateRange, directUploadOnly]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -626,8 +630,15 @@ export default function AdminVideosPage() {
         onClear: () => { setDateRange(undefined); setPage(1); },
       });
     }
+    if (directUploadOnly) {
+      chips.push({
+        key: "directUpload",
+        label: "직접 업로드만",
+        onClear: () => { setDirectUploadOnly(false); setPage(1); },
+      });
+    }
     return chips;
-  }, [statusFilter, categoryId, ownerName, dateRange, categories]);
+  }, [statusFilter, categoryId, ownerName, dateRange, categories, directUploadOnly]);
 
   const clearAllFilters = useCallback(() => {
     setStatusFilter("ALL");
@@ -635,6 +646,7 @@ export default function AdminVideosPage() {
     setOwnerName("");
     setSearchInput("");
     setDateRange(undefined);
+    setDirectUploadOnly(false);
     setPage(1);
   }, []);
 
@@ -843,6 +855,19 @@ export default function AdminVideosPage() {
                     {sf.label}
                   </button>
                 ))}
+                {/* 직접 업로드 필터 */}
+                <button
+                  onClick={() => { setDirectUploadOnly(prev => !prev); setPage(1); }}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-150",
+                    directUploadOnly
+                      ? "bg-indigo-500 text-white shadow-sm"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Upload className="w-3 h-3" />
+                  직접 업로드
+                </button>
               </div>
             </div>
           </CardHeader>
@@ -943,6 +968,12 @@ export default function AdminVideosPage() {
                             <Layers className="w-2.5 h-2.5" /> {row.submissionCount}
                           </span>
                         )}
+                        {row.isDirectUpload && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-indigo-500/80 text-white text-[9px] font-bold px-1.5 py-0 shadow-md">
+                            <Upload className="w-2.5 h-2.5" />
+                            직접
+                          </span>
+                        )}
                       </div>
 
                       {/* Info */}
@@ -1039,6 +1070,12 @@ export default function AdminVideosPage() {
                                         : "bg-muted text-muted-foreground"
                                     )}>
                                       {row.adEligible ? "광고 가능" : "광고 불가"}
+                                    </span>
+                                  )}
+                                  {row.isDirectUpload && (
+                                    <span className="inline-flex items-center gap-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 text-[10px] font-semibold">
+                                      <Upload className="w-2.5 h-2.5" />
+                                      직접 업로드
                                     </span>
                                   )}
                                 </div>
@@ -1223,6 +1260,16 @@ export default function AdminVideosPage() {
                               <div className="absolute top-2 right-2 z-10">
                                 <StatusPill status={row.latestSubmissionStatus ?? row.status} />
                               </div>
+
+                              {/* Direct upload badge */}
+                              {row.isDirectUpload && (
+                                <div className="absolute top-2 left-2 z-10">
+                                  <span className="inline-flex items-center gap-0.5 rounded-full bg-indigo-500/80 text-white text-[9px] font-bold px-1.5 py-0.5 shadow-md">
+                                    <Upload className="w-2.5 h-2.5" />
+                                    직접
+                                  </span>
+                                </div>
+                              )}
 
                               {/* Version count badge */}
                               {groupMode && (row.submissionCount ?? 0) > 1 && (
