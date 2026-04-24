@@ -28,6 +28,7 @@ import {
   ChevronRight,
   MessageSquare,
   Upload,
+  Highlighter,
 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -455,6 +456,7 @@ export default function AdminVideosPage() {
   const [groupMode, setGroupMode] = useState(false);
   const [expandedVideoIds, setExpandedVideoIds] = useState<Set<string>>(new Set());
   const [directUploadOnly, setDirectUploadOnly] = useState(false);
+  const [highlightDirectUpload, setHighlightDirectUpload] = useState(false);
 
   const pageSize = 50;
 
@@ -808,6 +810,20 @@ export default function AdminVideosPage() {
                     <span className="hidden sm:inline">{groupMode ? "버전 펼치기" : "버전 묶기"}</span>
                   </Button>
 
+                  {/* Highlight Direct Upload Toggle */}
+                  <Button
+                    variant={highlightDirectUpload ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "h-10 gap-1.5",
+                      highlightDirectUpload && "bg-indigo-500 hover:bg-indigo-600 border-indigo-500 text-white"
+                    )}
+                    onClick={() => setHighlightDirectUpload((prev) => !prev)}
+                  >
+                    <Highlighter className="w-4 h-4" />
+                    <span className="hidden sm:inline">직접 업로드 강조</span>
+                  </Button>
+
                   {/* View Toggle — desktop only */}
                   <div className="hidden md:flex items-center border border-border rounded-lg overflow-hidden h-10">
                     <button
@@ -1020,7 +1036,8 @@ export default function AdminVideosPage() {
                                 isSelected && "bg-primary/5",
                                 isFetching && "opacity-50",
                                 "hover:bg-muted/40",
-                                isSelected && "border-l-2 border-l-primary"
+                                isSelected && "border-l-2 border-l-primary",
+                                highlightDirectUpload && row.isDirectUpload && "bg-indigo-50/60 dark:bg-indigo-950/25 border-l-2 border-l-indigo-400"
                               )}
                             >
                               <TableCell className="pl-4 w-[40px]">
