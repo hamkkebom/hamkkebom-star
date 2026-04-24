@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
         prisma.video.findMany({
             where: {
                 status: { in: ["APPROVED", "FINAL"] },
+                owner: { showVideosPublicly: true },
                 OR: [
                     { title: { contains: q, mode: "insensitive" } },
                     { owner: { chineseName: { contains: q, mode: "insensitive" } } },

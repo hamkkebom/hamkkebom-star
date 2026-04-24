@@ -64,6 +64,7 @@ export async function GET(request: Request) {
         bankName: true,
         bankAccount: true,
         canDirectUpload: true,
+        showVideosPublicly: true,
       },
       orderBy: [{ createdAt: "desc" }],
       skip: (page - 1) * pageSize,

@@ -79,6 +79,7 @@ model User {
   suspendedReason     String?
   warningCount        Int            @default(0)
   canDirectUpload     Boolean        @default(false)
+  showVideosPublicly  Boolean        @default(true)
 
   // 제재 관계
   sanctions           UserSanction[] @relation("UserSanctions")

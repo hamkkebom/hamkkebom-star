@@ -279,6 +279,15 @@ export function UploadPageClient({
             </div>
           </div>
 
+          <div className="rounded-xl bg-indigo-100/70 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 px-4 py-3 text-sm text-indigo-700 dark:text-indigo-300 space-y-1">
+            <p className="font-semibold">이 기능은 관리자로부터 직접 업로드 권한을 받은 계정에만 표시됩니다.</p>
+            <ul className="list-disc list-inside text-xs text-indigo-600 dark:text-indigo-400 space-y-0.5 mt-1">
+              <li>프로젝트 배정 없이 바로 영상을 등록할 수 있습니다.</li>
+              <li>관리자 승인 절차 없이 업로드 즉시 공개됩니다.</li>
+              <li>제목과 썸네일을 입력하면 업로드 창이 열립니다.</li>
+            </ul>
+          </div>
+
           <div className="grid gap-4 md:grid-cols-12">
             <div className="md:col-span-8 space-y-4">
               <div className="space-y-2">

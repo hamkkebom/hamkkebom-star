@@ -10,6 +10,7 @@ export async function GET() {
     const videos = await prisma.video.findMany({
       where: {
         status: "APPROVED",
+        owner: { showVideosPublicly: true },
       },
       orderBy: {
         viewCount: "desc"

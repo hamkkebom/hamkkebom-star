@@ -93,6 +93,7 @@ type UserRow = {
   bankAccount?: string | null;
   avatarUrl?: string | null;
   canDirectUpload: boolean;
+  showVideosPublicly: boolean;
 };
 
 type UsersResponse = {
@@ -334,6 +335,21 @@ export default function AdminUsersPage() {
       toast.success(data.canDirectUpload ? "직접 업로드 권한이 부여되었습니다." : "직접 업로드 권한이 해제되었습니다.");
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setSelectedUser(prev => prev ? { ...prev, canDirectUpload: data.canDirectUpload } : null);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  // Video visibility toggle
+  const videoVisibilityMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/admin/users/${userId}/video-visibility`, { method: "PATCH" });
+      if (!res.ok) throw new Error((await res.json()).error?.message ?? "설정 변경에 실패했습니다.");
+      return (await res.json()).data as { id: string; showVideosPublicly: boolean };
+    },
+    onSuccess: (data) => {
+      toast.success(data.showVideosPublicly ? "영상이 공개 페이지에 표시됩니다." : "영상이 공개 페이지에서 숨겨집니다.");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setSelectedUser(prev => prev ? { ...prev, showVideosPublicly: data.showVideosPublicly } : null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -1498,6 +1514,53 @@ export default function AdminUsersPage() {
                         : "bg-muted text-muted-foreground"
                     )}>
                       {selectedUser.canDirectUpload ? "직접 업로드 활성화됨 — 이 계정은 프로젝트 없이 영상을 즉시 등록할 수 있습니다." : "비활성화 — 일반 프로젝트 기반 업로드 방식 적용"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Video Visibility Card */}
+                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                  <div className="bg-muted/50 px-5 py-3 border-b border-border">
+                    <h3 className="text-sm font-bold text-foreground">영상 공개 설정</h3>
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", selectedUser.showVideosPublicly ? "bg-emerald-500/10" : "bg-muted")}>
+                          {selectedUser.showVideosPublicly
+                            ? <Eye className="w-4 h-4 text-emerald-500" />
+                            : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">공개 페이지 노출</p>
+                          <p className="text-xs text-muted-foreground">탐색·검색·메인 등 공유 페이지에 영상 표시 여부</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => videoVisibilityMutation.mutate(selectedUser.id)}
+                        disabled={videoVisibilityMutation.isPending}
+                        className={cn(
+                          "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+                          selectedUser.showVideosPublicly ? "bg-emerald-500" : "bg-muted-foreground/30"
+                        )}
+                        role="switch"
+                        aria-checked={selectedUser.showVideosPublicly}
+                      >
+                        <span className={cn(
+                          "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform",
+                          selectedUser.showVideosPublicly ? "translate-x-6" : "translate-x-1"
+                        )} />
+                      </button>
+                    </div>
+                    <p className={cn(
+                      "mt-3 text-xs px-3 py-2 rounded-lg",
+                      selectedUser.showVideosPublicly
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {selectedUser.showVideosPublicly
+                        ? "공개 중 — 이 계정의 영상이 탐색·검색·메인 페이지에 노출됩니다."
+                        : "숨김 — 이 계정의 영상은 공개 페이지에 표시되지 않습니다."}
                     </p>
                   </div>
                 </div>

@@ -52,6 +52,7 @@ export async function GET(request: Request) {
 
   const where: Prisma.VideoWhereInput = {
     status: { in: [VideoStatus.APPROVED, VideoStatus.FINAL] },
+    owner: { showVideosPublicly: true },
     OR: [
       { title: { contains: q, mode: "insensitive" as const } },
       { description: { contains: q, mode: "insensitive" as const } },

@@ -128,6 +128,11 @@ export async function GET(request: Request) {
     ...submissionStatusFilter,
   };
 
+  // 비관리자: showVideosPublicly=false 계정의 영상은 공개 페이지에서 숨김
+  if (user?.role !== "ADMIN") {
+    where.AND = [...(Array.isArray(where.AND) ? (where.AND as unknown[]) : []), { owner: { showVideosPublicly: true } }];
+  }
+
   // 버전 그룹핑: root submission(parentId가 null)을 가진 Video만 표시
   // bumped 버전의 Video가 메인 리스트에 중복 노출되는 것을 방지
   if (includeVersions) {
