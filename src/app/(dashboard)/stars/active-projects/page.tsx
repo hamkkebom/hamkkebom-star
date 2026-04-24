@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { UploadSheet } from "@/components/video/upload-sheet";
+import { DirectUploadSheet } from "@/components/video/direct-upload-sheet";
 import { ProjectDetailSheet } from "@/components/project/project-detail-sheet";
 import {
   Calendar,
@@ -311,6 +312,21 @@ export default function ActiveProjectsPage() {
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [detailAssignment, setDetailAssignment] = useState<Assignment | null>(null);
 
+  // Direct upload sheet state
+  const [directUploadOpen, setDirectUploadOpen] = useState(false);
+
+  // Check if user has direct upload permission
+  const { data: meData } = useQuery({
+    queryKey: ["me-direct-upload"],
+    queryFn: async () => {
+      const res = await fetch("/api/users/me", { cache: "no-store" });
+      if (!res.ok) return null;
+      return res.json() as Promise<{ data: { canDirectUpload: boolean } }>;
+    },
+    staleTime: 60_000,
+  });
+  const canDirectUpload = meData?.data?.canDirectUpload ?? false;
+
   const openUploadSheet = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
     setUploadSheetOpen(true);
@@ -351,13 +367,26 @@ export default function ActiveProjectsPage() {
           </span>
           <span className="text-xs">프로젝트 관리</span>
         </motion.div>
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tighter">
-          진행 중 프로젝트
-          <span className="text-violet-500">.</span>
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          배정된 프로젝트의 진행 상황을 관리하고 영상을 제출하세요.
-        </p>
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter">
+              진행 중 프로젝트
+              <span className="text-violet-500">.</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              배정된 프로젝트의 진행 상황을 관리하고 영상을 제출하세요.
+            </p>
+          </div>
+          {canDirectUpload && (
+            <button
+              onClick={() => setDirectUploadOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all shrink-0"
+            >
+              <Upload className="w-4 h-4" />
+              직접 업로드
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats Bar */}
@@ -489,6 +518,9 @@ export default function ActiveProjectsPage() {
           </Link>
         </motion.div>
       )}
+
+      {/* Direct Upload Sheet */}
+      <DirectUploadSheet open={directUploadOpen} onOpenChange={setDirectUploadOpen} />
 
       {/* Upload Sheet — opens inline without navigating away */}
       {selectedAssignment && (
