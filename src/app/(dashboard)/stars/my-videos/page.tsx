@@ -122,9 +122,6 @@ export default function MyVideosPage() {
         </p>
       </div>
 
-      {/* 직접 업로드 영상 섹션 (있을 때만 표시) */}
-      <DirectVideoSection />
-
       <div className="flex items-start gap-3 rounded-xl border border-amber-200/50 bg-amber-50/50 p-4 text-sm text-amber-900/80 dark:border-amber-900/30 dark:bg-amber-950/30 dark:text-amber-200/80 transition-all hover:bg-amber-50/80 dark:hover:bg-amber-950/40">
         <Info className="h-5 w-5 shrink-0 text-amber-500 mt-0.5" />
         <div className="space-y-1">
@@ -140,6 +137,9 @@ export default function MyVideosPage() {
       </div>
 
       <SubmissionList />
+
+      {/* 직접 업로드 영상 섹션 (있을 때만 표시) */}
+      <DirectVideoSection />
     </div>
   );
 }
