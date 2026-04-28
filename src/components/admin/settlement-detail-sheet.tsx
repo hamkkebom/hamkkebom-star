@@ -13,6 +13,8 @@ import {
   Tag,
   Undo2,
   X,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -82,6 +84,7 @@ export type SettlementDetail = {
         id: string;
         title: string;
         customRate: number | null;
+        thumbnailPhash: string | null;
       } | null;
     } | null;
   }>;
@@ -109,16 +112,58 @@ function normalizeTitle(title: string): string {
   return title.replace(REVISION_SUFFIX_RE, "").trim();
 }
 
-type VersionWarning =
-  | { type: "revision_of"; baseTitle: string }
-  | { type: "has_revision"; revTitle: string }
-  | { type: "keyword" };
+type VersionWarning = {
+  // 제목 기반 매칭
+  titleType?: "revision_of" | "has_revision" | "keyword";
+  titleRelated?: string; // 관련 영상 제목 (있으면)
+  // 썸네일 pHash 기반 매칭
+  similarThumbnail?: { itemId: string; itemTitle: string; distance: number };
+};
+
+const PHASH_THRESHOLD = 12; // Hamming distance ≤ 12 → 시각적으로 매우 유사
+const HASH_HEX_LEN = 16;
+
+function hexToBin(hex: string): string {
+  let bin = "";
+  for (const c of hex) bin += parseInt(c, 16).toString(2).padStart(4, "0");
+  return bin;
+}
+
+function hammingDistance(hexA: string, hexB: string): number {
+  if (hexA.length !== hexB.length) return 64;
+  const a = hexToBin(hexA);
+  const b = hexToBin(hexB);
+  let d = 0;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++;
+  return d;
+}
+
+function minPhashDistance(phashA: string, phashB: string): number {
+  const arrA = phashA.split(",").filter((s) => s.length === HASH_HEX_LEN);
+  const arrB = phashB.split(",").filter((s) => s.length === HASH_HEX_LEN);
+  if (arrA.length === 0 || arrB.length === 0) return 64;
+  let min = 64;
+  for (const a of arrA) for (const b of arrB) {
+    const d = hammingDistance(a, b);
+    if (d < min) min = d;
+  }
+  return min;
+}
 
 function detectVersionWarnings(
   items: SettlementDetail["items"]
 ): Map<string, VersionWarning> {
   const warnings = new Map<string, VersionWarning>();
-  // title → itemId (SUBMISSION 타입만)
+  const ensure = (id: string): VersionWarning => {
+    let w = warnings.get(id);
+    if (!w) {
+      w = {};
+      warnings.set(id, w);
+    }
+    return w;
+  };
+
+  // ── 제목 기반 매칭 ──
   const titleToId = new Map<string, string>();
   for (const item of items) {
     if (item.itemType === "AI_TOOL_SUPPORT") continue;
@@ -130,17 +175,52 @@ function detectVersionWarnings(
     const title = item.submission?.video?.title ?? item.submission?.versionTitle;
     if (!title) continue;
     const baseTitle = normalizeTitle(title);
-    if (baseTitle === title) continue; // 수정본 키워드 없음
+    if (baseTitle === title) continue;
     const baseItemId = titleToId.get(baseTitle);
     if (baseItemId) {
-      warnings.set(item.id, { type: "revision_of", baseTitle });
-      if (!warnings.has(baseItemId)) {
-        warnings.set(baseItemId, { type: "has_revision", revTitle: title });
+      ensure(item.id).titleType = "revision_of";
+      ensure(item.id).titleRelated = baseTitle;
+      const baseW = ensure(baseItemId);
+      if (!baseW.titleType) {
+        baseW.titleType = "has_revision";
+        baseW.titleRelated = title;
       }
     } else {
-      warnings.set(item.id, { type: "keyword" });
+      ensure(item.id).titleType = "keyword";
     }
   }
+
+  // ── 썸네일 pHash 기반 매칭 ──
+  type PhashEntry = { itemId: string; title: string; phash: string };
+  const phashEntries: PhashEntry[] = [];
+  for (const item of items) {
+    if (item.itemType === "AI_TOOL_SUPPORT") continue;
+    const phash = item.submission?.video?.thumbnailPhash;
+    const title = item.submission?.video?.title ?? item.submission?.versionTitle ?? "";
+    if (phash && title) {
+      phashEntries.push({ itemId: item.id, title, phash });
+    }
+  }
+  // 모든 쌍 비교
+  for (let i = 0; i < phashEntries.length; i++) {
+    for (let j = i + 1; j < phashEntries.length; j++) {
+      const a = phashEntries[i];
+      const b = phashEntries[j];
+      const dist = minPhashDistance(a.phash, b.phash);
+      if (dist <= PHASH_THRESHOLD) {
+        const wa = ensure(a.itemId);
+        const wb = ensure(b.itemId);
+        // 가장 가까운 것만 유지
+        if (!wa.similarThumbnail || dist < wa.similarThumbnail.distance) {
+          wa.similarThumbnail = { itemId: b.itemId, itemTitle: b.title, distance: dist };
+        }
+        if (!wb.similarThumbnail || dist < wb.similarThumbnail.distance) {
+          wb.similarThumbnail = { itemId: a.itemId, itemTitle: a.title, distance: dist };
+        }
+      }
+    }
+  }
+
   return warnings;
 }
 
@@ -175,6 +255,24 @@ export function SettlementDetailSheet({
   // ---------------------------------------------------------------------------
   // Mutations
   // ---------------------------------------------------------------------------
+
+  const computePhashMutation = useMutation({
+    mutationFn: async (settlementId: string) => {
+      const res = await fetch(`/api/admin/videos/compute-phash`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settlementId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? "썸네일 hash 계산 실패");
+      return json.data as { processed: number; failed: number; total: number; message: string };
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+      onMutate();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const updateNoteMutation = useMutation({
     mutationFn: async ({ id, note }: { id: string; note: string }) => {
@@ -394,7 +492,40 @@ export function SettlementDetailSheet({
 
             {/* Items */}
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-muted-foreground">정산 항목 ({detail.items.length})</h4>
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="text-sm font-semibold text-muted-foreground">정산 항목 ({detail.items.length})</h4>
+                {(() => {
+                  const missingPhash = detail.items.filter(
+                    (it) =>
+                      it.itemType !== "AI_TOOL_SUPPORT" &&
+                      it.submission?.video &&
+                      !it.submission.video.thumbnailPhash
+                  ).length;
+                  if (missingPhash === 0) return null;
+                  return (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={computePhashMutation.isPending}
+                      onClick={() => computePhashMutation.mutate(detail.id)}
+                      title="아직 hash가 계산되지 않은 영상의 썸네일을 분석하여 시각적으로 비슷한 영상을 감지합니다"
+                    >
+                      {computePhashMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          분석 중...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          썸네일 분석 ({missingPhash}개)
+                        </>
+                      )}
+                    </Button>
+                  );
+                })()}
+              </div>
               <div className="space-y-2">
                 {detail.items.map((item) => {
                   const videoTitle = item.submission?.video?.title;
@@ -451,23 +582,32 @@ export function SettlementDetailSheet({
                                     영상 단가
                                   </span>
                                 )}
-                                {versionWarning && (
+                                {versionWarning?.titleType && (
                                   <span
                                     title={
-                                      versionWarning.type === "revision_of"
-                                        ? `"${versionWarning.baseTitle}" 의 수정본으로 보입니다`
-                                        : versionWarning.type === "has_revision"
-                                        ? `"${versionWarning.revTitle}" 이(가) 수정본으로 보입니다`
+                                      versionWarning.titleType === "revision_of"
+                                        ? `"${versionWarning.titleRelated}" 의 수정본으로 보입니다`
+                                        : versionWarning.titleType === "has_revision"
+                                        ? `"${versionWarning.titleRelated}" 이(가) 수정본으로 보입니다`
                                         : "제목에 수정본 키워드가 포함되어 있습니다"
                                     }
                                     className="inline-flex items-center gap-1 text-[10px] font-medium text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-1.5 py-0.5 rounded-full cursor-help"
                                   >
                                     <AlertTriangle className="h-2.5 w-2.5" />
-                                    {versionWarning.type === "revision_of"
-                                      ? "수정본 의심"
-                                      : versionWarning.type === "has_revision"
+                                    {versionWarning.titleType === "revision_of"
+                                      ? "제목 수정본 의심"
+                                      : versionWarning.titleType === "has_revision"
                                       ? "수정본 있음"
-                                      : "수정본 의심"}
+                                      : "수정본 키워드"}
+                                  </span>
+                                )}
+                                {versionWarning?.similarThumbnail && (
+                                  <span
+                                    title={`"${versionWarning.similarThumbnail.itemTitle}" 와(과) 썸네일이 매우 비슷합니다 (Hamming distance: ${versionWarning.similarThumbnail.distance})`}
+                                    className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-full cursor-help"
+                                  >
+                                    <Film className="h-2.5 w-2.5" />
+                                    썸네일 유사 ({versionWarning.similarThumbnail.distance})
                                   </span>
                                 )}
                               </div>

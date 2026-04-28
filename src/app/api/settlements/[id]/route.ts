@@ -38,6 +38,7 @@ export async function GET(_request: Request, { params }: Params) {
                   id: true,
                   title: true,
                   customRate: true,
+                  thumbnailPhash: true,
                 },
               },
             },
