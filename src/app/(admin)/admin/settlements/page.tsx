@@ -213,6 +213,19 @@ export default function AdminSettlementsPage() {
   });
   const [filterYear, setFilterYear] = useState<string>(() => searchParams.get("year") ?? "ALL");
 
+  // 페이지 이탈 시 미확정(PENDING/REVIEW) 정산 삭제
+  useEffect(() => {
+    const clearPending = () => {
+      navigator.sendBeacon("/api/settlements/clear-pending");
+    };
+    window.addEventListener("beforeunload", clearPending);
+    return () => {
+      window.removeEventListener("beforeunload", clearPending);
+      // 인앱 네비게이션(컴포넌트 언마운트) 시에도 삭제
+      fetch("/api/settlements/clear-pending", { method: "POST", keepalive: true }).catch(() => {});
+    };
+  }, []);
+
   // Sync state -> URL
   useEffect(() => {
     const params = new URLSearchParams();
@@ -220,8 +233,12 @@ export default function AdminSettlementsPage() {
     if (filterStatus !== "ALL") params.set("status", filterStatus);
     if (filterYear !== "ALL") params.set("year", filterYear);
     const qs = params.toString();
-    router.replace(qs ? `?${qs}` : "?", { scroll: false });
-  }, [filterScope, filterStatus, filterYear, router]);
+    const wantedSearch = qs ? `?${qs}` : "";
+    if (window.location.search === wantedSearch) return;
+    router.replace(wantedSearch || window.location.pathname, { scroll: false });
+    // router는 stable 참조이므로 deps 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterScope, filterStatus, filterYear]);
 
   // Cancel reason state
   const [cancelReason, setCancelReason] = useState("");

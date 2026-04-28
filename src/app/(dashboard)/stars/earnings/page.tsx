@@ -6,15 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   DollarSign,
   CheckCircle2,
-  Clock,
-  FileText,
   Download,
   ChevronDown,
-  Wallet,
   TrendingUp,
   BarChart3,
   Archive,
-  Inbox,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -34,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { StatCard } from "@/components/settlement/stat-card";
 import { AnimatedCard } from "@/components/settlement/animated-card";
@@ -122,7 +117,6 @@ const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
 
 export default function EarningsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"active" | "archive">("active");
   const [archiveYear, setArchiveYear] = useState<string>(String(CURRENT_YEAR));
 
   // 연간 수입 차트 데이터
@@ -138,16 +132,6 @@ export default function EarningsPage() {
     },
   });
 
-  // 진행 중 정산 (scope=active)
-  const { data: activeData, isLoading: activeLoading, isError: activeError, error: activeErrObj } = useQuery({
-    queryKey: ["my-settlements", "active"],
-    queryFn: async () => {
-      const res = await fetch("/api/settlements?scope=active&page=1&pageSize=50", { cache: "no-store" });
-      if (!res.ok) throw new Error("진행 중 정산 내역을 불러오지 못했습니다.");
-      return (await res.json()) as SettlementsResponse;
-    },
-  });
-
   // 지난 정산 (scope=archive + 연도)
   const { data: archiveData, isLoading: archiveLoading, isError: archiveError } = useQuery({
     queryKey: ["my-settlements", "archive", archiveYear],
@@ -158,7 +142,6 @@ export default function EarningsPage() {
       if (!res.ok) throw new Error("지난 정산 내역을 불러오지 못했습니다.");
       return (await res.json()) as SettlementsResponse;
     },
-    enabled: activeTab === "archive",
   });
 
   const { data: detailData, isLoading: detailLoading } = useQuery({
@@ -171,14 +154,7 @@ export default function EarningsPage() {
     enabled: !!expandedId,
   });
 
-  const activeRows = useMemo(() => activeData?.data ?? [], [activeData]);
   const archiveRows = useMemo(() => archiveData?.data ?? [], [archiveData]);
-
-  // 상단 카드 — 진행 중 기준
-  const pendingAmount = activeRows
-    .filter((s) => s.status === "PENDING" || s.status === "REVIEW" || s.status === "PROCESSING")
-    .reduce((sum, s) => sum + Number(s.totalAmount), 0);
-  const activeCount = activeData?.total ?? 0;
 
   // 아카이브 집계
   const archiveSummary = useMemo(() => {
@@ -230,8 +206,8 @@ export default function EarningsPage() {
         </p>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Stat Card */}
+      <div className="grid gap-4 md:grid-cols-1 max-w-xs">
         <StatCard
           title="누적 지급 완료"
           value={totalEarnedOverall}
@@ -239,22 +215,6 @@ export default function EarningsPage() {
           icon={CheckCircle2}
           iconColor="text-emerald-500"
           delay={0}
-        />
-        <StatCard
-          title="정산 진행 중"
-          value={pendingAmount}
-          suffix="원"
-          icon={Clock}
-          iconColor="text-amber-500"
-          delay={0.1}
-        />
-        <StatCard
-          title="진행 중 건수"
-          value={activeCount}
-          suffix="건"
-          icon={FileText}
-          iconColor="text-violet-500"
-          delay={0.2}
         />
       </div>
 
@@ -289,165 +249,109 @@ export default function EarningsPage() {
         </motion.div>
       )}
 
-      {/* Tabs: 진행 중 / 지난 정산 */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "active" | "archive")} className="space-y-4">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="active" className="gap-1.5">
-            <Inbox className="h-4 w-4" />
-            진행 중
-          </TabsTrigger>
-          <TabsTrigger value="archive" className="gap-1.5">
-            <Archive className="h-4 w-4" />
-            지난 정산
-          </TabsTrigger>
-        </TabsList>
+      {/* 지난 정산 */}
+      <div className="space-y-4">
+        {/* 연도 selector */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">연도</span>
+            <Select value={archiveYear} onValueChange={setArchiveYear}>
+              <SelectTrigger className="w-[120px] h-9">
+                <SelectValue placeholder="연도" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">전체</SelectItem>
+                {YEAR_OPTIONS.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}년
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-xs text-muted-foreground text-right">
+            {archiveYear === "ALL" ? "전체 연도" : `${archiveYear}년`} · 총 {archiveSummary.totalCount}건
+          </p>
+        </div>
 
-        {/* ============ 진행 중 탭 ============ */}
-        <TabsContent value="active" className="space-y-3">
-          {activeLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={`earn-sk-${i}`} className="h-20 w-full rounded-xl" />
-              ))}
-            </div>
-          ) : activeError ? (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-6 text-sm text-destructive">
-              {activeErrObj instanceof Error ? activeErrObj.message : "정산 내역을 불러오지 못했습니다."}
-            </div>
-          ) : activeRows.length === 0 ? (
-            <div className="rounded-xl border border-dashed px-4 py-14 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                <Wallet className="h-8 w-8 text-muted-foreground/60" />
+        {/* 연간 요약 카드 */}
+        {archiveSummary.totalCount > 0 && (
+          <Card className="bg-gradient-to-br from-emerald-50 to-violet-50 dark:from-emerald-950/20 dark:to-violet-950/20">
+            <CardContent className="p-4 grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">지급 완료 합계 (세전)</p>
+                <p className="text-base sm:text-lg font-bold tabular-nums mt-0.5">
+                  {formatKRW(archiveSummary.totalCompleted)}
+                </p>
               </div>
-              <h3 className="mb-1 text-lg font-semibold">현재 진행 중인 정산이 없습니다</h3>
-              <p className="text-sm text-muted-foreground">
-                영상이 승인되면 다음 정산 주기에 자동 반영됩니다.
-                <br />
-                지난 정산은 &ldquo;지난 정산&rdquo; 탭에서 확인하세요.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {activeRows.map((settlement, index) => (
-                <SettlementRowCard
-                  key={settlement.id}
-                  settlement={settlement}
-                  index={index}
-                  expanded={expandedId === settlement.id}
-                  onToggle={handleToggle}
-                  onPdf={handlePdfDownload}
-                  detail={detail}
-                  detailLoading={detailLoading}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+              <div>
+                <p className="text-xs text-muted-foreground">원천징수세</p>
+                <p className="text-base sm:text-lg font-bold tabular-nums mt-0.5 text-amber-600 dark:text-amber-400">
+                  -{formatKRW(archiveSummary.totalTax)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">실 지급액</p>
+                <p className="text-base sm:text-lg font-bold tabular-nums mt-0.5 text-emerald-600 dark:text-emerald-400">
+                  {formatKRW(archiveSummary.totalNet)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* ============ 지난 정산 탭 ============ */}
-        <TabsContent value="archive" className="space-y-4">
-          {/* 연도 selector + 연간 요약 */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">연도</span>
-              <Select value={archiveYear} onValueChange={setArchiveYear}>
-                <SelectTrigger className="w-[120px] h-9">
-                  <SelectValue placeholder="연도" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">전체</SelectItem>
-                  {YEAR_OPTIONS.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}년
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {/* 리스트 */}
+        {archiveLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={`arch-sk-${i}`} className="h-20 w-full rounded-xl" />
+            ))}
+          </div>
+        ) : archiveError ? (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-6 text-sm text-destructive">
+            지난 정산 내역을 불러오지 못했습니다.
+          </div>
+        ) : archiveRows.length === 0 ? (
+          <div className="rounded-xl border border-dashed px-4 py-14 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <Archive className="h-8 w-8 text-muted-foreground/60" />
             </div>
-            <p className="text-xs text-muted-foreground text-right">
-              {archiveYear === "ALL" ? "전체 연도" : `${archiveYear}년`} · 총 {archiveSummary.totalCount}건
+            <h3 className="mb-1 text-lg font-semibold">
+              {archiveYear === "ALL" ? "지난 정산이 없습니다" : `${archiveYear}년 정산 내역이 없습니다`}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              완료된 정산이 이곳에 보관됩니다.
             </p>
           </div>
-
-          {/* 연간 요약 카드 */}
-          {archiveSummary.totalCount > 0 && (
-            <Card className="bg-gradient-to-br from-emerald-50 to-violet-50 dark:from-emerald-950/20 dark:to-violet-950/20">
-              <CardContent className="p-4 grid grid-cols-3 gap-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">지급 완료 합계 (세전)</p>
-                  <p className="text-base sm:text-lg font-bold tabular-nums mt-0.5">
-                    {formatKRW(archiveSummary.totalCompleted)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">원천징수세</p>
-                  <p className="text-base sm:text-lg font-bold tabular-nums mt-0.5 text-amber-600 dark:text-amber-400">
-                    -{formatKRW(archiveSummary.totalTax)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">실 지급액</p>
-                  <p className="text-base sm:text-lg font-bold tabular-nums mt-0.5 text-emerald-600 dark:text-emerald-400">
-                    {formatKRW(archiveSummary.totalNet)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* 리스트 */}
-          {archiveLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={`arch-sk-${i}`} className="h-20 w-full rounded-xl" />
-              ))}
-            </div>
-          ) : archiveError ? (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-6 text-sm text-destructive">
-              지난 정산 내역을 불러오지 못했습니다.
-            </div>
-          ) : archiveRows.length === 0 ? (
-            <div className="rounded-xl border border-dashed px-4 py-14 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                <Archive className="h-8 w-8 text-muted-foreground/60" />
-              </div>
-              <h3 className="mb-1 text-lg font-semibold">
-                {archiveYear === "ALL" ? "지난 정산이 없습니다" : `${archiveYear}년 정산 내역이 없습니다`}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                완료 · 실패 · 취소된 정산이 이곳에 보관됩니다.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {archiveByMonth.map(([monthKey, monthRows]) => {
-                const [y, m] = monthKey.split("-");
-                return (
-                  <div key={monthKey} className="space-y-2">
-                    <h4 className="text-sm font-semibold text-muted-foreground sticky top-0 bg-background/95 backdrop-blur py-1 z-[1]">
-                      {y}년 {Number(m)}월 <span className="text-xs font-normal ml-1">({monthRows.length}건)</span>
-                    </h4>
-                    <div className="space-y-2">
-                      {monthRows.map((settlement, index) => (
-                        <SettlementRowCard
-                          key={settlement.id}
-                          settlement={settlement}
-                          index={index}
-                          expanded={expandedId === settlement.id}
-                          onToggle={handleToggle}
-                          onPdf={handlePdfDownload}
-                          detail={detail}
-                          detailLoading={detailLoading}
-                        />
-                      ))}
-                    </div>
+        ) : (
+          <div className="space-y-6">
+            {archiveByMonth.map(([monthKey, monthRows]) => {
+              const [y, m] = monthKey.split("-");
+              return (
+                <div key={monthKey} className="space-y-2">
+                  <h4 className="text-sm font-semibold text-muted-foreground sticky top-0 bg-background/95 backdrop-blur py-1 z-[1]">
+                    {y}년 {Number(m)}월 <span className="text-xs font-normal ml-1">({monthRows.length}건)</span>
+                  </h4>
+                  <div className="space-y-2">
+                    {monthRows.map((settlement, index) => (
+                      <SettlementRowCard
+                        key={settlement.id}
+                        settlement={settlement}
+                        index={index}
+                        expanded={expandedId === settlement.id}
+                        onToggle={handleToggle}
+                        onPdf={handlePdfDownload}
+                        detail={detail}
+                        detailLoading={detailLoading}
+                      />
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
