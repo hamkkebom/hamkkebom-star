@@ -120,12 +120,8 @@ export async function GET(_request: Request, { params }: Params) {
 
   if (includeSiblings) {
     try {
-      // parentId를 별도로 안전하게 조회
-      const parentInfo = await prisma.submission.findUnique({
-        where: { id },
-        select: { parentId: true },
-      });
-      const rootId = parentInfo?.parentId || id;
+      // submission은 이미 위에서 조회됨 — parentId, videoId 재사용
+      const rootId = submission.parentId || id;
 
       siblings = await prisma.submission.findMany({
         where: {
@@ -137,6 +133,8 @@ export async function GET(_request: Request, { params }: Params) {
               ],
             },
             { id: { not: id } },
+            // 같은 영상의 버전만 — 다른 영상 버전이 섞이지 않도록
+            { videoId: submission.videoId },
           ],
         },
         select: {
