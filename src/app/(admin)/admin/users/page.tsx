@@ -66,6 +66,7 @@ import {
   X,
   Send,
   Upload,
+  KeyRound,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { maskIdNumber } from "@/lib/settlement-utils";
@@ -447,6 +448,26 @@ export default function AdminUsersPage() {
     },
     onSuccess: () => {
       toast.success("매직링크를 전송했습니다.");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  // Reset password
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
+        method: "POST",
+      });
+      if (!res.ok)
+        throw new Error(
+          (await res.json()).error?.message ?? "비밀번호 초기화에 실패했습니다."
+        );
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast.success(data.data?.message ?? "비밀번호가 초기화되었습니다.");
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -999,6 +1020,15 @@ export default function AdminUsersPage() {
                                     승인 취소
                                   </DropdownMenuItem>
                                 )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    resetPasswordMutation.mutate(row.id)
+                                  }
+                                >
+                                  <KeyRound className="h-4 w-4 mr-2 text-amber-600" />
+                                  비밀번호 초기화
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
