@@ -115,13 +115,17 @@ export async function GET(_request: Request, { params }: Params) {
   // siblings 요청 시 추가 조회
   const url = new URL(_request.url);
   const includeSiblings = url.searchParams.get("includeSiblings") === "true";
-  type SiblingType = { id: string; version: string; versionTitle: string | null; status: string; createdAt: Date; thumbnailUrl: string | null; video: { thumbnailUrl: string | null; technicalSpec: { duration: number | null } | null } | null };
+  type SiblingType = { id: string; versionSlot: number; version: string; versionTitle: string | null; status: string; createdAt: Date; thumbnailUrl: string | null; _count: { feedbacks: number }; video: { thumbnailUrl: string | null; technicalSpec: { duration: number | null } | null } | null };
   let siblings: SiblingType[] = [];
 
   if (includeSiblings) {
     try {
-      // submission은 이미 위에서 조회됨 — parentId, videoId 재사용
       const rootId = submission.parentId || id;
+
+      // videoId가 null이면 parentId 체인만으로 필터, null이 아니면 videoId도 함께 필터
+      const videoIdFilter = submission.videoId != null
+        ? [{ videoId: submission.videoId }]
+        : [];
 
       siblings = await prisma.submission.findMany({
         where: {
@@ -133,17 +137,18 @@ export async function GET(_request: Request, { params }: Params) {
               ],
             },
             { id: { not: id } },
-            // 같은 영상의 버전만 — 다른 영상 버전이 섞이지 않도록
-            { videoId: submission.videoId },
+            ...videoIdFilter,
           ],
         },
         select: {
           id: true,
+          versionSlot: true,
           version: true,
           status: true,
           createdAt: true,
           thumbnailUrl: true,
           versionTitle: true,
+          _count: { select: { feedbacks: true } },
           video: {
             select: {
               thumbnailUrl: true,

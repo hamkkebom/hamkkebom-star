@@ -155,23 +155,10 @@ export default function ReviewDetailPage() {
     }
   };
 
-  const { data, isLoading, error } = useQuery<{ data: SubmissionDetail }>({
+  const { data, isLoading, error } = useQuery<{ data: SubmissionDetail & { siblings?: VersionSibling[] } }>({
     queryKey: ["submission-detail", id],
-    queryFn: () => fetch(`/api/submissions/${id}`).then((r) => r.json()),
+    queryFn: () => fetch(`/api/submissions/${id}?includeSiblings=true`).then((r) => r.json()),
     enabled: !!id,
-  });
-
-  const assignmentId = data?.data?.assignmentId;
-  const { data: versionData } = useQuery<{
-    data: VersionSibling[];
-    total: number;
-  }>({
-    queryKey: ["submission-versions", assignmentId],
-    queryFn: () =>
-      fetch(`/api/submissions?assignmentId=${assignmentId}&pageSize=50`).then((r) =>
-        r.json()
-      ),
-    enabled: !!assignmentId,
   });
 
   const approveMutation = useMutation({
@@ -265,12 +252,27 @@ export default function ReviewDetailPage() {
   });
 
   const versionSiblings = useMemo(() => {
-    const siblings = versionData?.data ?? [];
-    if (siblings.length === 0) return [];
-    return [...siblings].sort(
+    if (!data?.data) return [];
+    const sub = data.data;
+    const siblings = sub.siblings ?? [];
+    // 현재 버전 포함해서 정렬
+    const all: VersionSibling[] = [
+      {
+        id: sub.id,
+        versionSlot: sub.versionSlot,
+        version: sub.version,
+        versionTitle: sub.versionTitle,
+        streamUid: sub.streamUid,
+        status: sub.status,
+        createdAt: sub.createdAt,
+        _count: sub._count,
+      },
+      ...siblings,
+    ];
+    return all.sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
-  }, [versionData?.data]);
+  }, [data?.data]);
 
   if (isLoading) {
     return (
