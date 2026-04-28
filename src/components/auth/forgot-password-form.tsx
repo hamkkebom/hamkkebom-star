@@ -24,7 +24,7 @@ import {
 function buildResetRedirectUrl() {
   const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
   const appUrl = rawAppUrl.endsWith("/") ? rawAppUrl.slice(0, -1) : rawAppUrl;
-  return `${appUrl}/auth/reset-password`;
+  return `${appUrl}/auth/confirm`;
 }
 
 export function ForgotPasswordForm() {

@@ -57,7 +57,14 @@ export async function GET(request: Request) {
         });
     }
 
-    // 설정 페이지로 리다이렉트
+    // 비밀번호 재설정 플로우는 reset-password 페이지로 리다이렉트
+    if (type === "recovery") {
+        return NextResponse.redirect(
+            new URL("/auth/reset-password", requestUrl.origin)
+        );
+    }
+
+    // 그 외(이메일 변경, 회원가입 등)는 설정 페이지로 리다이렉트
     return NextResponse.redirect(
         new URL("/stars/settings", requestUrl.origin)
     );
