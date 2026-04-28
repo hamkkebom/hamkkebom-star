@@ -173,6 +173,12 @@ importers:
       remeda:
         specifier: ^2.33.6
         version: 2.33.6
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
+      sharp-phash:
+        specifier: ^2.2.0
+        version: 2.2.0(sharp@0.34.5)
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -264,9 +270,6 @@ importers:
       shadcn:
         specifier: ^3.8.4
         version: 3.8.5(@types/node@20.19.32)(typescript@5.9.3)
-      sharp:
-        specifier: ^0.34.5
-        version: 0.34.5
       tailwindcss:
         specifier: 4.1.18
         version: 4.1.18
@@ -7079,6 +7082,12 @@ packages:
   shadcn@3.8.5:
     resolution: {integrity: sha512-jPRx44e+eyeV7xwY3BLJXcfrks00+M0h5BGB9l6DdcBW4BpAj4x3lVmVy0TXPEs2iHEisxejr62sZAAw6B1EVA==}
     hasBin: true
+
+  sharp-phash@2.2.0:
+    resolution: {integrity: sha512-/gBoes9EycJkt/2aakKl9BeSGxFbPpZ5lCDtpRRlnU+vkqqcdXi8YLIlXnJsTtTBmaL82zh1bPkV7uZSSIsj8w==}
+    engines: {node: '>= 10'}
+    peerDependencies:
+      sharp: '>= 0.32.0'
 
   sharp@0.34.5:
     resolution: {integrity: sha512-Ou9I5Ft9WNcCbXrU9cMgPBcCK8LiwLqcbywW3t4oDV37n1pzpuNLsYiAV8eODnjbtQlSDwZ2cUEeQz4E54Hltg==}
@@ -15892,6 +15901,10 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - typescript
+
+  sharp-phash@2.2.0(sharp@0.34.5):
+    dependencies:
+      sharp: 0.34.5
 
   sharp@0.34.5:
     dependencies:
