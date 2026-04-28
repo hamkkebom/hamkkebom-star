@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Film,
-
+  AlertTriangle,
   CheckCircle2,
   Pencil,
   Save,
@@ -98,6 +98,53 @@ export interface SettlementDetailSheetProps {
 }
 
 // ---------------------------------------------------------------------------
+// Version warning detection
+// ---------------------------------------------------------------------------
+
+// 제목 끝의 수정본·버전 관련 접미사를 제거해 base title 추출
+const REVISION_SUFFIX_RE =
+  /(\s+(\d+차\s*)?(수정본|수정|v\d+|재제출|개선본|보완본|재업))+$/i;
+
+function normalizeTitle(title: string): string {
+  return title.replace(REVISION_SUFFIX_RE, "").trim();
+}
+
+type VersionWarning =
+  | { type: "revision_of"; baseTitle: string }
+  | { type: "has_revision"; revTitle: string }
+  | { type: "keyword" };
+
+function detectVersionWarnings(
+  items: SettlementDetail["items"]
+): Map<string, VersionWarning> {
+  const warnings = new Map<string, VersionWarning>();
+  // title → itemId (SUBMISSION 타입만)
+  const titleToId = new Map<string, string>();
+  for (const item of items) {
+    if (item.itemType === "AI_TOOL_SUPPORT") continue;
+    const title = item.submission?.video?.title ?? item.submission?.versionTitle;
+    if (title) titleToId.set(title, item.id);
+  }
+  for (const item of items) {
+    if (item.itemType === "AI_TOOL_SUPPORT") continue;
+    const title = item.submission?.video?.title ?? item.submission?.versionTitle;
+    if (!title) continue;
+    const baseTitle = normalizeTitle(title);
+    if (baseTitle === title) continue; // 수정본 키워드 없음
+    const baseItemId = titleToId.get(baseTitle);
+    if (baseItemId) {
+      warnings.set(item.id, { type: "revision_of", baseTitle });
+      if (!warnings.has(baseItemId)) {
+        warnings.set(baseItemId, { type: "has_revision", revTitle: title });
+      }
+    } else {
+      warnings.set(item.id, { type: "keyword" });
+    }
+  }
+  return warnings;
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -118,6 +165,12 @@ export function SettlementDetailSheet({
   // Adjusted amount inline editing state
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingAmount, setEditingAmount] = useState("");
+
+  // 버전 미등록 수정본 감지
+  const versionWarnings = useMemo(
+    () => detectVersionWarnings(detail?.items ?? []),
+    [detail?.items]
+  );
 
   // ---------------------------------------------------------------------------
   // Mutations
@@ -355,6 +408,8 @@ export function SettlementDetailSheet({
                       ? "AI 툴 지원비"
                       : videoTitle ?? item.submission?.versionTitle ?? "작품료");
 
+                  const versionWarning = versionWarnings.get(item.id);
+
                   return (
                     <Card
                       key={item.id}
@@ -384,7 +439,7 @@ export function SettlementDetailSheet({
                                   <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 mt-0.5">
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                 {item.submission && (
                                   <p className="text-xs text-muted-foreground">
                                     {item.submission.version} · {new Intl.DateTimeFormat("ko-KR").format(new Date(item.submission.createdAt))}
@@ -394,6 +449,25 @@ export function SettlementDetailSheet({
                                   <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full">
                                     <Tag className="h-2.5 w-2.5" />
                                     영상 단가
+                                  </span>
+                                )}
+                                {versionWarning && (
+                                  <span
+                                    title={
+                                      versionWarning.type === "revision_of"
+                                        ? `"${versionWarning.baseTitle}" 의 수정본으로 보입니다`
+                                        : versionWarning.type === "has_revision"
+                                        ? `"${versionWarning.revTitle}" 이(가) 수정본으로 보입니다`
+                                        : "제목에 수정본 키워드가 포함되어 있습니다"
+                                    }
+                                    className="inline-flex items-center gap-1 text-[10px] font-medium text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-1.5 py-0.5 rounded-full cursor-help"
+                                  >
+                                    <AlertTriangle className="h-2.5 w-2.5" />
+                                    {versionWarning.type === "revision_of"
+                                      ? "수정본 의심"
+                                      : versionWarning.type === "has_revision"
+                                      ? "수정본 있음"
+                                      : "수정본 의심"}
                                   </span>
                                 )}
                               </div>
