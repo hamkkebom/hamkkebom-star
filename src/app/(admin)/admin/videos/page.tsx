@@ -29,6 +29,7 @@ import {
   MessageSquare,
   Upload,
   Highlighter,
+  Check,
 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -268,6 +269,76 @@ function KpiCard({
   );
 }
 
+// ─── Status Changer Dropdown ────────────────────────────────
+
+function StatusChangerDropdown({
+  currentStatus,
+  submissionId,
+  onSelect,
+  isPending,
+  align = "start",
+}: {
+  currentStatus: string;
+  submissionId: string | null;
+  onSelect: (submissionId: string, status: SubmissionStatusKey) => void;
+  isPending: boolean;
+  align?: "start" | "end" | "center";
+}) {
+  if (!submissionId) {
+    return <StatusPill status={currentStatus} />;
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={cn(
+            "group inline-flex items-center gap-1 rounded-full transition-all",
+            "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            isPending && "opacity-60 pointer-events-none"
+          )}
+          disabled={isPending}
+        >
+          <StatusPill status={currentStatus} />
+          <ChevronDown className={cn(
+            "w-3 h-3 text-muted-foreground transition-transform duration-150",
+            "group-hover:text-foreground group-data-[state=open]:rotate-180"
+          )} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={align} className="w-44 p-1.5">
+        <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+          상태 변경
+        </div>
+        {(Object.keys(SUBMISSION_STATUS_CONFIG) as SubmissionStatusKey[]).map((s) => {
+          const cfg = SUBMISSION_STATUS_CONFIG[s];
+          const isCurrent = currentStatus === s;
+          return (
+            <DropdownMenuItem
+              key={s}
+              disabled={isCurrent}
+              onClick={() => !isCurrent && onSelect(submissionId, s)}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm cursor-pointer",
+                isCurrent && "opacity-50 cursor-default"
+              )}
+            >
+              <span className={cn(
+                "flex items-center justify-center w-5 h-5 rounded-full shrink-0",
+                cfg.pillClass
+              )}>
+                <cfg.icon className="w-3 h-3" />
+              </span>
+              <span className="flex-1">{cfg.label}</span>
+              {isCurrent && <Check className="w-3.5 h-3.5 text-muted-foreground ml-auto" />}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 // ─── Video Edit Dialog ──────────────────────────────────────
 
 function VideoEditDialog({
@@ -440,6 +511,7 @@ function VideoThumbnail({
 // ─── Main Page Component ────────────────────────────────────
 
 export default function AdminVideosPage() {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("latest");
   const [categoryId, setCategoryId] = useState("all");
@@ -651,6 +723,27 @@ export default function AdminVideosPage() {
     setDirectUploadOnly(false);
     setPage(1);
   }, []);
+
+  const changeStatusMutation = useMutation({
+    mutationFn: async ({ submissionId, status, reason }: { submissionId: string; status: SubmissionStatusKey; reason?: string }) => {
+      const res = await fetch(`/api/admin/submissions/${submissionId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, reason }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error?.message ?? "상태 변경에 실패했습니다.");
+      }
+      return res.json();
+    },
+    onSuccess: (_, vars) => {
+      const label = SUBMISSION_STATUS_CONFIG[vars.status]?.label ?? vars.status;
+      toast.success(`상태가 "${label}"으로 변경되었습니다.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-videos"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -1078,7 +1171,13 @@ export default function AdminVideosPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <StatusPill status={row.latestSubmissionStatus ?? row.status} />
+                                  <StatusChangerDropdown
+                                    currentStatus={row.latestSubmissionStatus ?? row.status}
+                                    submissionId={row.submissionId}
+                                    onSelect={(subId, status) => changeStatusMutation.mutate({ submissionId: subId, status })}
+                                    isPending={changeStatusMutation.isPending}
+                                    align="start"
+                                  />
                                   {row.latestSubmissionStatus === "APPROVED" && (
                                     <span className={cn(
                                       "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
@@ -1170,6 +1269,7 @@ export default function AdminVideosPage() {
                                       {row.submissionId ? "상세보기" : "피드백 기록 없음"}
                                     </TooltipContent>
                                   </Tooltip>
+
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -1273,9 +1373,15 @@ export default function AdminVideosPage() {
                                 </div>
                               </div>
 
-                              {/* Status badge */}
+                              {/* Status badge — clickable changer */}
                               <div className="absolute top-2 right-2 z-10">
-                                <StatusPill status={row.latestSubmissionStatus ?? row.status} />
+                                <StatusChangerDropdown
+                                  currentStatus={row.latestSubmissionStatus ?? row.status}
+                                  submissionId={row.submissionId}
+                                  onSelect={(subId, status) => changeStatusMutation.mutate({ submissionId: subId, status })}
+                                  isPending={changeStatusMutation.isPending}
+                                  align="end"
+                                />
                               </div>
 
                               {/* Direct upload badge */}
@@ -1637,6 +1743,40 @@ export default function AdminVideosPage() {
                 >
                   <Download className="w-5 h-5 mr-2 text-muted-foreground" /> 썸네일 다운로드
                 </Button>
+
+                {selectedMobileVideo.submissionId && (
+                  <div className="mt-3 rounded-2xl border border-border/50 overflow-hidden">
+                    <div className="px-4 py-2.5 bg-muted/40 border-b border-border/50">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">상태 변경</span>
+                    </div>
+                    <div className="p-3 grid grid-cols-2 gap-2">
+                      {(Object.keys(SUBMISSION_STATUS_CONFIG) as SubmissionStatusKey[]).map((s) => {
+                        const cfg = SUBMISSION_STATUS_CONFIG[s];
+                        const isCurrent = (selectedMobileVideo.latestSubmissionStatus ?? selectedMobileVideo.status) === s;
+                        return (
+                          <button
+                            key={s}
+                            disabled={isCurrent || changeStatusMutation.isPending}
+                            onClick={() => {
+                              changeStatusMutation.mutate({ submissionId: selectedMobileVideo.submissionId!, status: s });
+                              setSelectedMobileVideo(null);
+                            }}
+                            className={cn(
+                              "flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all border",
+                              isCurrent
+                                ? cn(cfg.pillClass, "ring-2 ring-offset-1 ring-current opacity-100 cursor-default")
+                                : "bg-muted/40 border-border/50 text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95"
+                            )}
+                          >
+                            <cfg.icon className="w-4 h-4 shrink-0" />
+                            <span className="truncate">{cfg.label}</span>
+                            {isCurrent && <Check className="w-3.5 h-3.5 ml-auto shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </SheetContent>
