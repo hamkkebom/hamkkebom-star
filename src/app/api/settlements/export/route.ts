@@ -176,6 +176,19 @@ export async function POST(request: Request) {
     // ── 영상제작비 품의서 시트 요약 테이블 동적 채우기 ──────────────────
     const formWs = wb.getWorksheet('영상제작비 품의서');
     if (formWs) {
+        // 템플릿에 정적 이미지(지급인원 요약 표 그림)가 Row 16 위치에 박혀 있어
+        // 동적으로 쓰는 셀과 겹쳐 "위에도 아래에도" 보이는 문제 발생.
+        // 해당 그림만 제거하고, 아래쪽 "활용 가능 영상" 그림은 그대로 둔다.
+        const media = (formWs as unknown as { _media?: Array<{ range?: { tl?: { row?: number } } }> })._media;
+        if (Array.isArray(media)) {
+            for (let i = media.length - 1; i >= 0; i--) {
+                const tlRow = media[i]?.range?.tl?.row;
+                if (typeof tlRow === 'number' && tlRow >= 14 && tlRow < 19) {
+                    media.splice(i, 1);
+                }
+            }
+        }
+
         const grandPeople = settlements.length;
         let grandVideos = 0, grandWorkFee = 0, grandAiFee = 0;
         let grandTotal = 0, grandTax = 0, grandNet = 0;
@@ -203,7 +216,16 @@ export async function POST(request: Request) {
 
         // 헤더 행 (Row 16)
         const labels = ['지급인원', '납품영상수', '총 작품료', 'AI툴 지원료', '총 지급액', '총 세금', '실지급액'];
+        const emptyBorder: Partial<ExcelJS.Borders> = {};
+        const noFill: ExcelJS.Fill = { type: 'pattern', pattern: 'none' };
         const hRow = formWs.getRow(16);
+        // 행 전체를 비워서 잔여 셀이 겹치지 않게 함
+        for (let c = 1; c <= 20; c++) {
+            const cell = hRow.getCell(c);
+            cell.value = null;
+            cell.border = emptyBorder;
+            cell.fill = noFill;
+        }
         labels.forEach((label, i) => {
             const c = hRow.getCell(2 + i); // B~H
             c.value = label;
@@ -212,12 +234,18 @@ export async function POST(request: Request) {
             c.font = { bold: true, size: 10, name: 'Malgun Gothic' };
             c.alignment = centerMid;
         });
-        hRow.height = 18;
+        hRow.height = 22;
         hRow.commit();
 
         // 값 행 (Row 17)
         const vals = [grandPeople, grandVideos, grandWorkFee, grandAiFee, grandTotal, grandTax, grandNet];
         const vRow = formWs.getRow(17);
+        for (let c = 1; c <= 20; c++) {
+            const cell = vRow.getCell(c);
+            cell.value = null;
+            cell.border = emptyBorder;
+            cell.fill = noFill;
+        }
         vals.forEach((val, i) => {
             const c = vRow.getCell(2 + i);
             c.value = val;
@@ -227,11 +255,14 @@ export async function POST(request: Request) {
             c.alignment = i < 2 ? centerMid : rightMid;
             if (i >= 2) c.numFmt = '#,##0';
         });
-        vRow.height = 20;
+        vRow.height = 22;
         vRow.commit();
 
         // 인쇄 영역 고정 — 양식 밖으로 튀어나오지 않도록
         formWs.pageSetup.printArea = 'A1:I34';
+        formWs.pageSetup.fitToPage = true;
+        formWs.pageSetup.fitToWidth = 1;
+        formWs.pageSetup.fitToHeight = 1;
     }
 
     // 파일명 생성: YY.MM AI 영상제작비.xlsx
