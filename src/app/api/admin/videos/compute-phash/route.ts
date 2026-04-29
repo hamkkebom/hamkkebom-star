@@ -73,6 +73,7 @@ export async function POST(request: Request) {
 
   let success = 0;
   let failed = 0;
+  const errors: string[] = [];
   for (const video of videos) {
     try {
       const hash = await computeVideoPhash(video.streamUid, video.technicalSpec?.duration ?? null);
@@ -84,19 +85,28 @@ export async function POST(request: Request) {
         success++;
       } else {
         failed++;
+        errors.push(`${video.id.slice(0, 8)}: 썸네일/서명 토큰 발급 실패 또는 모든 프레임 처리 실패`);
       }
     } catch (err) {
       console.error(`[compute-phash] video ${video.id} 실패:`, err);
       failed++;
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`${video.id.slice(0, 8)}: ${msg}`);
     }
   }
+
+  const message =
+    success === 0 && failed > 0
+      ? `${failed}개 영상 모두 분석 실패`
+      : `${success}개 영상 처리 완료${failed > 0 ? ` (${failed}개 실패)` : ""}`;
 
   return NextResponse.json({
     data: {
       processed: success,
       failed,
       total: videos.length,
-      message: `${success}개 영상 처리 완료${failed > 0 ? ` (${failed}개 실패)` : ""}`,
+      errors: errors.slice(0, 5),
+      message,
     },
   });
 }

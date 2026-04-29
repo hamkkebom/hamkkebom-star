@@ -287,13 +287,41 @@ export function SettlementDetailSheet({
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error?.message ?? "썸네일 hash 계산 실패");
-      return json.data as { processed: number; failed: number; total: number; message: string };
+      return json.data as {
+        processed: number;
+        failed: number;
+        total: number;
+        errors?: string[];
+        message: string;
+      };
     },
     onSuccess: (data) => {
-      toast.success(data.message);
+      const description = data.errors && data.errors.length > 0
+        ? data.errors.join("\n") + (data.failed > data.errors.length ? `\n…외 ${data.failed - data.errors.length}건` : "")
+        : undefined;
+      if (data.failed > 0 && data.processed === 0) {
+        toast.error(data.message, {
+          id: "phash-progress",
+          description: description ?? "콘솔에서 자세한 오류를 확인하세요.",
+          duration: 12000,
+        });
+      } else if (data.failed > 0) {
+        toast.warning(data.message, {
+          id: "phash-progress",
+          description,
+          duration: 10000,
+        });
+      } else {
+        toast.success(data.message, { id: "phash-progress" });
+      }
       onMutate();
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) =>
+      toast.error(err.message, {
+        id: "phash-progress",
+        description: "네트워크 오류 또는 서버 오류일 수 있습니다. 잠시 후 다시 시도하세요.",
+        duration: 10000,
+      }),
   });
 
   const updateNoteMutation = useMutation({
@@ -548,7 +576,17 @@ export function SettlementDetailSheet({
                       size="sm"
                       className="h-7 text-xs"
                       disabled={computePhashMutation.isPending}
-                      onClick={() => computePhashMutation.mutate(detail.id)}
+                      onClick={() => {
+                        toast.loading(
+                          `${missingPhash}개 영상 썸네일 분석 중...`,
+                          {
+                            id: "phash-progress",
+                            description: `영상당 약 3~6초 소요됩니다. 예상 시간: 최대 ${Math.ceil(missingPhash * 6)}초`,
+                            duration: Infinity,
+                          }
+                        );
+                        computePhashMutation.mutate(detail.id);
+                      }}
                       title="아직 hash가 계산되지 않은 영상의 썸네일을 분석하여 시각적으로 비슷한 영상을 감지합니다"
                     >
                       {computePhashMutation.isPending ? (
