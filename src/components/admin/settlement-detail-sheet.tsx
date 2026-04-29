@@ -15,6 +15,8 @@ import {
   X,
   Sparkles,
   Loader2,
+  Trash2,
+  Check,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -246,11 +248,31 @@ export function SettlementDetailSheet({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingAmount, setEditingAmount] = useState("");
 
+  // 항목 삭제 확인 state
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+
   // 버전 미등록 수정본 감지
   const versionWarnings = useMemo(
     () => detectVersionWarnings(detail?.items ?? []),
     [detail?.items]
   );
+
+  // 중복 항목 감지 (같은 submissionId가 2개 이상)
+  const duplicateItemIds = useMemo(() => {
+    const seen = new Map<string, string>();
+    const dupes = new Set<string>();
+    for (const item of detail?.items ?? []) {
+      const sid = item.submission?.id;
+      if (!sid) continue;
+      if (seen.has(sid)) {
+        dupes.add(item.id);
+        dupes.add(seen.get(sid)!);
+      } else {
+        seen.set(sid, item.id);
+      }
+    }
+    return dupes;
+  }, [detail?.items]);
 
   // ---------------------------------------------------------------------------
   // Mutations
@@ -346,6 +368,24 @@ export function SettlementDetailSheet({
       onMutate();
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "금액 수정에 실패했습니다."),
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: async ({ settlementId, itemId }: { settlementId: string; itemId: string }) => {
+      const res = await fetch(`/api/settlements/${settlementId}/items/${itemId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message ?? "항목 삭제에 실패했습니다.");
+      }
+    },
+    onSuccess: () => {
+      toast.success("항목이 삭제되었습니다.");
+      setDeletingItemId(null);
+      onMutate();
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "항목 삭제에 실패했습니다."),
   });
 
   // ---------------------------------------------------------------------------
@@ -610,6 +650,12 @@ export function SettlementDetailSheet({
                                     썸네일 유사 ({versionWarning.similarThumbnail.distance})
                                   </span>
                                 )}
+                                {duplicateItemIds.has(item.id) && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded-full">
+                                    <AlertTriangle className="h-2.5 w-2.5" />
+                                    중복
+                                  </span>
+                                )}
                               </div>
                               {/* 영상 단가 설정 UI */}
                               {videoId && item.itemType !== "AI_TOOL_SUPPORT" && (
@@ -746,17 +792,49 @@ export function SettlementDetailSheet({
                               <div className="flex items-center gap-1">
                                 <p className="text-sm font-semibold tabular-nums">{formatKRW(Number(item.finalAmount))}</p>
                                 {(detail.status === "PENDING" || detail.status === "PROCESSING") && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => {
-                                      setEditingItemId(item.id);
-                                      setEditingAmount(String(item.adjustedAmount !== null ? Number(item.adjustedAmount) : Number(item.finalAmount)));
-                                    }}
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
+                                  deletingItemId === item.id ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 text-destructive hover:text-destructive"
+                                        onClick={() => deleteItemMutation.mutate({ settlementId: detail.id, itemId: item.id })}
+                                        disabled={deleteItemMutation.isPending}
+                                      >
+                                        <Check className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5"
+                                        onClick={() => setDeletingItemId(null)}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => {
+                                          setEditingItemId(item.id);
+                                          setEditingAmount(String(item.adjustedAmount !== null ? Number(item.adjustedAmount) : Number(item.finalAmount)));
+                                        }}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                                        onClick={() => setDeletingItemId(item.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )
                                 )}
                               </div>
                             )}

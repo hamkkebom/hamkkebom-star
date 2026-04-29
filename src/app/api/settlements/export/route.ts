@@ -173,6 +173,67 @@ export async function POST(request: Request) {
         row.commit();
     });
 
+    // ── 영상제작비 품의서 시트 요약 테이블 동적 채우기 ──────────────────
+    const formWs = wb.getWorksheet('영상제작비 품의서');
+    if (formWs) {
+        const grandPeople = settlements.length;
+        let grandVideos = 0, grandWorkFee = 0, grandAiFee = 0;
+        let grandTotal = 0, grandTax = 0, grandNet = 0;
+
+        settlements.forEach((s) => {
+            const amt = Number(s.totalAmount);
+            const workItems = s.items.filter(i => i.itemType !== 'AI_TOOL_SUPPORT');
+            const aiItems   = s.items.filter(i => i.itemType === 'AI_TOOL_SUPPORT');
+            const incomeTax = Math.floor(amt * 0.03);
+            const localTax  = Math.floor(amt * 0.003);
+            grandVideos  += workItems.length;
+            grandWorkFee += workItems.reduce((acc, i) => acc + Number(i.finalAmount), 0);
+            grandAiFee   += aiItems.reduce((acc, i) => acc + Number(i.finalAmount), 0);
+            grandTotal   += amt;
+            grandTax     += incomeTax + localTax;
+            grandNet     += amt - (incomeTax + localTax);
+        });
+
+        const thin = { style: 'thin' as const };
+        const border = { top: thin, left: thin, bottom: thin, right: thin };
+        const salmonFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCD5B4' } };
+        const whiteFill: ExcelJS.Fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        const centerMid = { horizontal: 'center' as const, vertical: 'middle' as const };
+        const rightMid  = { horizontal: 'right'  as const, vertical: 'middle' as const };
+
+        // 헤더 행 (Row 16)
+        const labels = ['지급인원', '납품영상수', '총 작품료', 'AI툴 지원료', '총 지급액', '총 세금', '실지급액'];
+        const hRow = formWs.getRow(16);
+        labels.forEach((label, i) => {
+            const c = hRow.getCell(2 + i); // B~H
+            c.value = label;
+            c.border = border;
+            c.fill = salmonFill;
+            c.font = { bold: true, size: 10, name: 'Malgun Gothic' };
+            c.alignment = centerMid;
+        });
+        hRow.height = 18;
+        hRow.commit();
+
+        // 값 행 (Row 17)
+        const vals = [grandPeople, grandVideos, grandWorkFee, grandAiFee, grandTotal, grandTax, grandNet];
+        const vRow = formWs.getRow(17);
+        vals.forEach((val, i) => {
+            const c = vRow.getCell(2 + i);
+            c.value = val;
+            c.border = border;
+            c.fill = whiteFill;
+            c.font = { bold: i === 6, size: 10, name: 'Malgun Gothic' };
+            c.alignment = i < 2 ? centerMid : rightMid;
+            if (i >= 2) c.numFmt = '#,##0';
+        });
+        vRow.height = 20;
+        vRow.commit();
+
+        // 인쇄 영역 고정 — 양식 밖으로 튀어나오지 않도록
+        formWs.pageSetup.printArea = 'A1:I34';
+    }
+
     // 파일명 생성: YY.MM AI 영상제작비.xlsx
     const firstDate = new Date(settlements[0].startDate);
     const yy = String(firstDate.getFullYear()).slice(2);

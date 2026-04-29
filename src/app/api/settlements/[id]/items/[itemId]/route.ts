@@ -129,3 +129,86 @@ export async function PATCH(request: Request, { params }: Params) {
     },
   });
 }
+
+export async function DELETE(_request: Request, { params }: Params) {
+  const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "인증이 필요합니다." } },
+      { status: 401 }
+    );
+  }
+  if (user.role !== "ADMIN") {
+    return NextResponse.json(
+      { error: { code: "FORBIDDEN", message: "관리자만 삭제할 수 있습니다." } },
+      { status: 403 }
+    );
+  }
+
+  const { id, itemId } = await params;
+
+  const settlement = await prisma.settlement.findUnique({
+    where: { id },
+    select: { id: true, status: true },
+  });
+
+  if (!settlement) {
+    return NextResponse.json(
+      { error: { code: "NOT_FOUND", message: "정산을 찾을 수 없습니다." } },
+      { status: 404 }
+    );
+  }
+
+  if (settlement.status !== "PENDING" && settlement.status !== "PROCESSING") {
+    return NextResponse.json(
+      { error: { code: "FORBIDDEN", message: "완료된 정산은 수정할 수 없습니다." } },
+      { status: 403 }
+    );
+  }
+
+  const item = await prisma.settlementItem.findFirst({
+    where: { id: itemId, settlementId: id },
+  });
+
+  if (!item) {
+    return NextResponse.json(
+      { error: { code: "NOT_FOUND", message: "정산 항목을 찾을 수 없습니다." } },
+      { status: 404 }
+    );
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.settlementItem.delete({ where: { id: itemId } });
+
+    const allItems = await tx.settlementItem.findMany({
+      where: { settlementId: id },
+      select: { finalAmount: true },
+    });
+
+    const totalAmount = allItems.reduce(
+      (sum, i) => sum + Number(i.finalAmount),
+      0
+    );
+
+    await tx.settlement.update({
+      where: { id },
+      data: { totalAmount },
+    });
+
+    return { totalAmount };
+  });
+
+  void createAuditLog({
+    actorId: user.id,
+    action: "DELETE_SETTLEMENT_ITEM",
+    entityType: "SettlementItem",
+    entityId: itemId,
+    metadata: { settlementId: id },
+    changes: {
+      itemType: { from: item.itemType, to: null },
+      finalAmount: { from: Number(item.finalAmount), to: null },
+    },
+  });
+
+  return NextResponse.json({ data: { totalAmount: result.totalAmount } });
+}
