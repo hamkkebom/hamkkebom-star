@@ -17,6 +17,7 @@ import {
   Loader2,
   Trash2,
   Check,
+  Music,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -93,6 +94,8 @@ export type SettlementDetail = {
         title: string;
         customRate: number | null;
         thumbnailPhash: string | null;
+        audioPhash: string | null;
+        streamUid: string | null;
       } | null;
     } | null;
   }>;
@@ -126,9 +129,12 @@ type VersionWarning = {
   titleRelated?: string; // 관련 영상 제목 (있으면)
   // 썸네일 pHash 기반 매칭
   similarThumbnail?: { itemId: string; itemTitle: string; distance: number };
+  // 오디오 pHash 기반 매칭
+  similarAudio?: { itemId: string; itemTitle: string; distance: number };
 };
 
-const PHASH_THRESHOLD = 12; // Hamming distance ≤ 12 → 시각적으로 매우 유사
+const PHASH_THRESHOLD = 12;  // Hamming distance ≤ 12 → 시각적으로 매우 유사
+const APHASH_THRESHOLD = 8;  // 평균 Hamming distance ≤ 8 → 오디오 매우 유사
 const HASH_HEX_LEN = 16;
 
 function hexToBin(hex: string): string {
@@ -156,6 +162,17 @@ function minPhashDistance(phashA: string, phashB: string): number {
     if (d < min) min = d;
   }
   return min;
+}
+
+// 오디오 해시: unit-to-unit 평균 Hamming distance
+function avgAphashDistance(aphashA: string, aphashB: string): number {
+  const arrA = aphashA.split(",").filter((s) => s.length === HASH_HEX_LEN);
+  const arrB = aphashB.split(",").filter((s) => s.length === HASH_HEX_LEN);
+  if (arrA.length === 0 || arrB.length === 0) return 64;
+  const len = Math.min(arrA.length, arrB.length);
+  let total = 0;
+  for (let i = 0; i < len; i++) total += hammingDistance(arrA[i], arrB[i]);
+  return Math.round(total / len);
 }
 
 function detectVersionWarnings(
@@ -224,6 +241,35 @@ function detectVersionWarnings(
         }
         if (!wb.similarThumbnail || dist < wb.similarThumbnail.distance) {
           wb.similarThumbnail = { itemId: a.itemId, itemTitle: a.title, distance: dist };
+        }
+      }
+    }
+  }
+
+  // ── 오디오 pHash 기반 매칭 ──
+  type AphashEntry = { itemId: string; title: string; aphash: string };
+  const aphashEntries: AphashEntry[] = [];
+  for (const item of items) {
+    if (item.itemType === "AI_TOOL_SUPPORT") continue;
+    const aphash = item.submission?.video?.audioPhash;
+    const title = item.submission?.video?.title ?? item.submission?.versionTitle ?? "";
+    if (aphash && title) {
+      aphashEntries.push({ itemId: item.id, title, aphash });
+    }
+  }
+  for (let i = 0; i < aphashEntries.length; i++) {
+    for (let j = i + 1; j < aphashEntries.length; j++) {
+      const a = aphashEntries[i];
+      const b = aphashEntries[j];
+      const dist = avgAphashDistance(a.aphash, b.aphash);
+      if (dist <= APHASH_THRESHOLD) {
+        const wa = ensure(a.itemId);
+        const wb = ensure(b.itemId);
+        if (!wa.similarAudio || dist < wa.similarAudio.distance) {
+          wa.similarAudio = { itemId: b.itemId, itemTitle: b.title, distance: dist };
+        }
+        if (!wb.similarAudio || dist < wb.similarAudio.distance) {
+          wb.similarAudio = { itemId: a.itemId, itemTitle: a.title, distance: dist };
         }
       }
     }
@@ -325,6 +371,52 @@ export function SettlementDetailSheet({
     onError: (err: Error) =>
       toast.error(err.message, {
         id: "phash-progress",
+        description: "네트워크 오류 또는 서버 오류일 수 있습니다. 잠시 후 다시 시도하세요.",
+        duration: 10000,
+      }),
+  });
+
+  const computeAphashMutation = useMutation({
+    mutationFn: async (settlementId: string) => {
+      const res = await fetch(`/api/admin/videos/compute-aphash`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settlementId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? "오디오 hash 계산 실패");
+      return json.data as {
+        processed: number;
+        failed: number;
+        total: number;
+        errors?: string[];
+        message: string;
+      };
+    },
+    onSuccess: (data) => {
+      const description = data.errors && data.errors.length > 0
+        ? data.errors.join("\n") + (data.failed > data.errors.length ? `\n…외 ${data.failed - data.errors.length}건` : "")
+        : undefined;
+      if (data.failed > 0 && data.processed === 0) {
+        toast.error(data.message, {
+          id: "aphash-progress",
+          description: description ?? "콘솔에서 자세한 오류를 확인하세요.",
+          duration: 12000,
+        });
+      } else if (data.failed > 0) {
+        toast.warning(data.message, {
+          id: "aphash-progress",
+          description,
+          duration: 10000,
+        });
+      } else {
+        toast.success(data.message, { id: "aphash-progress" });
+      }
+      onMutate();
+    },
+    onError: (err: Error) =>
+      toast.error(err.message, {
+        id: "aphash-progress",
         description: "네트워크 오류 또는 서버 오류일 수 있습니다. 잠시 후 다시 시도하세요.",
         duration: 10000,
       }),
@@ -568,79 +660,156 @@ export function SettlementDetailSheet({
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <h4 className="text-sm font-semibold text-muted-foreground">정산 항목 ({detail.items.length})</h4>
-                {(() => {
-                  const missingPhash = detail.items.filter(
-                    (it) =>
-                      it.itemType !== "AI_TOOL_SUPPORT" &&
-                      it.submission?.video &&
-                      !it.submission.video.thumbnailPhash
-                  ).length;
-                  if (missingPhash === 0) return null;
-                  return (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            disabled={computePhashMutation.isPending}
-                            onClick={() => {
-                              toast.loading(
-                                `${missingPhash}개 영상 썸네일 분석 중...`,
-                                {
-                                  id: "phash-progress",
-                                  description: `영상당 약 3~6초 소요됩니다. 예상 시간: 최대 ${Math.ceil(missingPhash * 6)}초`,
-                                  duration: Infinity,
-                                }
-                              );
-                              computePhashMutation.mutate(detail.id);
-                            }}
+                <div className="flex items-center gap-1">
+                  {/* 썸네일 분석 버튼 */}
+                  {(() => {
+                    const missingPhash = detail.items.filter(
+                      (it) =>
+                        it.itemType !== "AI_TOOL_SUPPORT" &&
+                        it.submission?.video &&
+                        !it.submission.video.thumbnailPhash
+                    ).length;
+                    if (missingPhash === 0) return null;
+                    return (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs"
+                              disabled={computePhashMutation.isPending}
+                              onClick={() => {
+                                toast.loading(
+                                  `${missingPhash}개 영상 썸네일 분석 중...`,
+                                  {
+                                    id: "phash-progress",
+                                    description: `영상당 약 3~6초 소요됩니다. 예상 시간: 최대 ${Math.ceil(missingPhash * 6)}초`,
+                                    duration: Infinity,
+                                  }
+                                );
+                                computePhashMutation.mutate(detail.id);
+                              }}
+                            >
+                              {computePhashMutation.isPending ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  분석 중...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  썸네일 분석 ({missingPhash}개)
+                                </>
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="bottom"
+                            align="end"
+                            className="max-w-[240px] p-3 space-y-2 text-left"
                           >
-                            {computePhashMutation.isPending ? (
-                              <>
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                분석 중...
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="h-3 w-3 mr-1" />
-                                썸네일 분석 ({missingPhash}개)
-                              </>
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          side="bottom"
-                          align="end"
-                          className="max-w-[240px] p-3 space-y-2 text-left"
-                        >
-                          <p className="font-semibold text-xs leading-tight">썸네일로 중복 영상을 감지합니다</p>
-                          <div className="space-y-1.5 pt-0.5">
-                            {(
-                              [
-                                ["1", "프레임 캡처", "영상의 5개 시점에서 이미지를 가져옵니다"],
-                                ["2", "지문 생성", "각 프레임을 64-bit 해시로 압축합니다"],
-                                ["3", "전체 비교", "정산 내 모든 영상 지문을 교차 비교합니다"],
-                                ["4", "배지 표시", "유사 영상 카드에 '썸네일 유사' 배지가 붙습니다"],
-                              ] as const
-                            ).map(([num, title, desc]) => (
-                              <div key={num} className="flex gap-2 items-start">
-                                <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500/30 text-[10px] font-bold leading-none">
-                                  {num}
-                                </span>
-                                <div className="min-w-0">
-                                  <span className="font-medium text-[11px]">{title}</span>
-                                  <span className="block text-[10px] opacity-70 leading-tight">{desc}</span>
+                            <p className="font-semibold text-xs leading-tight">썸네일로 중복 영상을 감지합니다</p>
+                            <div className="space-y-1.5 pt-0.5">
+                              {(
+                                [
+                                  ["1", "프레임 캡처", "영상의 5개 시점에서 이미지를 가져옵니다"],
+                                  ["2", "지문 생성", "각 프레임을 64-bit 해시로 압축합니다"],
+                                  ["3", "전체 비교", "정산 내 모든 영상 지문을 교차 비교합니다"],
+                                  ["4", "배지 표시", "유사 영상 카드에 '썸네일 유사' 배지가 붙습니다"],
+                                ] as const
+                              ).map(([num, title, desc]) => (
+                                <div key={num} className="flex gap-2 items-start">
+                                  <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500/30 text-[10px] font-bold leading-none">
+                                    {num}
+                                  </span>
+                                  <div className="min-w-0">
+                                    <span className="font-medium text-[11px]">{title}</span>
+                                    <span className="block text-[10px] opacity-70 leading-tight">{desc}</span>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  );
-                })()}
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })()}
+                  {/* 오디오 분석 버튼 */}
+                  {(() => {
+                    const missingAphash = detail.items.filter(
+                      (it) =>
+                        it.itemType !== "AI_TOOL_SUPPORT" &&
+                        it.submission?.video?.streamUid &&
+                        !it.submission.video.audioPhash
+                    ).length;
+                    if (missingAphash === 0) return null;
+                    return (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs"
+                              disabled={computeAphashMutation.isPending}
+                              onClick={() => {
+                                toast.loading(
+                                  `${missingAphash}개 영상 오디오 분석 중...`,
+                                  {
+                                    id: "aphash-progress",
+                                    description: `영상당 약 5~10초 소요됩니다. 예상 시간: 최대 ${Math.ceil(missingAphash * 10)}초`,
+                                    duration: Infinity,
+                                  }
+                                );
+                                computeAphashMutation.mutate(detail.id);
+                              }}
+                            >
+                              {computeAphashMutation.isPending ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  분석 중...
+                                </>
+                              ) : (
+                                <>
+                                  <Music className="h-3 w-3 mr-1" />
+                                  오디오 분석 ({missingAphash}개)
+                                </>
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="bottom"
+                            align="end"
+                            className="max-w-[240px] p-3 space-y-2 text-left"
+                          >
+                            <p className="font-semibold text-xs leading-tight">노래로 중복 영상을 감지합니다</p>
+                            <div className="space-y-1.5 pt-0.5">
+                              {(
+                                [
+                                  ["1", "오디오 추출", "영상 중반부 8초 구간의 소리를 가져옵니다"],
+                                  ["2", "지문 생성", "파형 패턴을 512-bit 해시로 압축합니다"],
+                                  ["3", "전체 비교", "정산 내 모든 영상 오디오를 교차 비교합니다"],
+                                  ["4", "배지 표시", "유사 영상 카드에 '오디오 유사' 배지가 붙습니다"],
+                                ] as const
+                              ).map(([num, title, desc]) => (
+                                <div key={num} className="flex gap-2 items-start">
+                                  <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500/30 text-[10px] font-bold leading-none">
+                                    {num}
+                                  </span>
+                                  <div className="min-w-0">
+                                    <span className="font-medium text-[11px]">{title}</span>
+                                    <span className="block text-[10px] opacity-70 leading-tight">{desc}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })()}
+                </div>
               </div>
               <div className="space-y-2">
                 {detail.items.map((item) => {
@@ -724,6 +893,15 @@ export function SettlementDetailSheet({
                                   >
                                     <Film className="h-2.5 w-2.5" />
                                     썸네일 유사 ({versionWarning.similarThumbnail.distance})
+                                  </span>
+                                )}
+                                {versionWarning?.similarAudio && (
+                                  <span
+                                    title={`"${versionWarning.similarAudio.itemTitle}" 와(과) 오디오가 매우 비슷합니다 (평균 Hamming distance: ${versionWarning.similarAudio.distance})`}
+                                    className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full cursor-help"
+                                  >
+                                    <Music className="h-2.5 w-2.5" />
+                                    오디오 유사 ({versionWarning.similarAudio.distance})
                                   </span>
                                 )}
                                 {duplicateItemIds.has(item.id) && (

@@ -39,6 +39,8 @@ export async function GET(_request: Request, { params }: Params) {
                   title: true,
                   customRate: true,
                   thumbnailPhash: true,
+                  audioPhash: true,
+                  streamUid: true,
                 },
               },
             },

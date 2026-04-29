@@ -273,6 +273,7 @@ model Video {
   customRate      Decimal?            @db.Decimal(10, 2)
   videoSubject    VideoSubject?
   thumbnailPhash  String?             // 콤마로 구분된 프레임 perceptual hash (16자리 hex × N)
+  audioPhash      String?             // 콤마로 구분된 오디오 perceptual hash (16자리 hex × 8)
   mediaPlacements MediaPlacement[]
   submissions     Submission[]
   eventLogs       VideoEventLog[]
