@@ -663,13 +663,19 @@ export function SettlementDetailSheet({
                 <div className="flex items-center gap-1">
                   {/* 썸네일 분석 버튼 */}
                   {(() => {
-                    const missingPhash = detail.items.filter(
-                      (it) =>
-                        it.itemType !== "AI_TOOL_SUPPORT" &&
-                        it.submission?.video &&
-                        !it.submission.video.thumbnailPhash
+                    const videoItems = detail.items.filter(
+                      (it) => it.itemType !== "AI_TOOL_SUPPORT" && it.submission?.video
+                    );
+                    const missingPhash = videoItems.filter(
+                      (it) => !it.submission!.video!.thumbnailPhash
                     ).length;
-                    if (missingPhash === 0) return null;
+                    if (videoItems.length === 0) return null;
+                    if (missingPhash === 0) return (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground px-2 py-0.5">
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                        썸네일 분석됨
+                      </span>
+                    );
                     return (
                       <TooltipProvider>
                         <Tooltip>
@@ -737,13 +743,19 @@ export function SettlementDetailSheet({
                   })()}
                   {/* 오디오 분석 버튼 */}
                   {(() => {
-                    const missingAphash = detail.items.filter(
-                      (it) =>
-                        it.itemType !== "AI_TOOL_SUPPORT" &&
-                        it.submission?.video?.streamUid &&
-                        !it.submission.video.audioPhash
+                    const streamItems = detail.items.filter(
+                      (it) => it.itemType !== "AI_TOOL_SUPPORT" && it.submission?.video?.streamUid
+                    );
+                    const missingAphash = streamItems.filter(
+                      (it) => !it.submission!.video!.audioPhash
                     ).length;
-                    if (missingAphash === 0) return null;
+                    if (streamItems.length === 0) return null;
+                    if (missingAphash === 0) return (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground px-2 py-0.5">
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                        오디오 분석됨
+                      </span>
+                    );
                     return (
                       <TooltipProvider>
                         <Tooltip>
