@@ -31,6 +31,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { GlowBadge } from "@/components/settlement/glow-badge";
 import { NumberTicker } from "@/components/settlement/number-ticker";
@@ -571,36 +577,68 @@ export function SettlementDetailSheet({
                   ).length;
                   if (missingPhash === 0) return null;
                   return (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs"
-                      disabled={computePhashMutation.isPending}
-                      onClick={() => {
-                        toast.loading(
-                          `${missingPhash}개 영상 썸네일 분석 중...`,
-                          {
-                            id: "phash-progress",
-                            description: `영상당 약 3~6초 소요됩니다. 예상 시간: 최대 ${Math.ceil(missingPhash * 6)}초`,
-                            duration: Infinity,
-                          }
-                        );
-                        computePhashMutation.mutate(detail.id);
-                      }}
-                      title="아직 hash가 계산되지 않은 영상의 썸네일을 분석하여 시각적으로 비슷한 영상을 감지합니다"
-                    >
-                      {computePhashMutation.isPending ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          분석 중...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          썸네일 분석 ({missingPhash}개)
-                        </>
-                      )}
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs"
+                            disabled={computePhashMutation.isPending}
+                            onClick={() => {
+                              toast.loading(
+                                `${missingPhash}개 영상 썸네일 분석 중...`,
+                                {
+                                  id: "phash-progress",
+                                  description: `영상당 약 3~6초 소요됩니다. 예상 시간: 최대 ${Math.ceil(missingPhash * 6)}초`,
+                                  duration: Infinity,
+                                }
+                              );
+                              computePhashMutation.mutate(detail.id);
+                            }}
+                          >
+                            {computePhashMutation.isPending ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                분석 중...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                썸네일 분석 ({missingPhash}개)
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="bottom"
+                          align="end"
+                          className="max-w-[240px] p-3 space-y-2 text-left"
+                        >
+                          <p className="font-semibold text-xs leading-tight">썸네일로 중복 영상을 감지합니다</p>
+                          <div className="space-y-1.5 pt-0.5">
+                            {(
+                              [
+                                ["1", "프레임 캡처", "영상의 5개 시점에서 이미지를 가져옵니다"],
+                                ["2", "지문 생성", "각 프레임을 64-bit 해시로 압축합니다"],
+                                ["3", "전체 비교", "정산 내 모든 영상 지문을 교차 비교합니다"],
+                                ["4", "배지 표시", "유사 영상 카드에 '썸네일 유사' 배지가 붙습니다"],
+                              ] as const
+                            ).map(([num, title, desc]) => (
+                              <div key={num} className="flex gap-2 items-start">
+                                <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500/30 text-[10px] font-bold leading-none">
+                                  {num}
+                                </span>
+                                <div className="min-w-0">
+                                  <span className="font-medium text-[11px]">{title}</span>
+                                  <span className="block text-[10px] opacity-70 leading-tight">{desc}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   );
                 })()}
               </div>
