@@ -173,19 +173,69 @@ export async function POST(request: Request) {
         row.commit();
     });
 
-    // ── 지급상세내역 컬럼 너비 자동 조정 ─────────────────────────────
-    // 헤더(Row 4)와 데이터 행 모두 스캔해 컬럼별 최대 표시 길이 기준으로 width 산정.
-    // 한글 1자 ≈ 2 ASCII 폭으로 가중. 너비 = max(헤더, 셀) + 여유 2, 최소 6, 최대 32.
+    // ── 지급상세내역 헤더 정리 + 컬럼 너비 자동 조정 ────────────────
+    // 템플릿 헤더에 줄바꿈(\n)이나 richText로 박혀 있어 좁은 셀에서 잘려 보이던 문제.
+    // 우선 헤더를 plain text + bold 단일 라인으로 정리해 가독성을 확보.
+    const HEADER_LABELS: Record<number, string> = {
+        2: "No.",
+        3: "성함",
+        4: "연락처",
+        5: "주민번호",
+        6: "시작일",
+        7: "총지급금액",
+        8: "소득세 (3%)",
+        9: "지방소득세 (0.3%)",
+        10: "세금 합계",
+        11: "실지급액",
+        12: "납품 영상수",
+        13: "작품료",
+        14: "AI툴 지원비",
+        15: "은행",
+        16: "지급계좌",
+        17: "이메일주소",
+    };
+    for (const [colStr, label] of Object.entries(HEADER_LABELS)) {
+        const colNum = Number(colStr);
+        const headerCell = ws.getRow(HEADER_ROW).getCell(colNum);
+        const prevStyle = headerCell.style;
+        headerCell.value = label;
+        headerCell.style = {
+            ...prevStyle,
+            font: { ...(prevStyle.font ?? {}), bold: true, name: "Malgun Gothic", size: 10 },
+            alignment: {
+                ...(prevStyle.alignment ?? {}),
+                horizontal: "center",
+                vertical: "middle",
+                wrapText: false, // 단일 라인 — 컬럼 너비로 맞춤
+            },
+        };
+    }
+
+    // 너비 계산: 헤더(Row 4) + 데이터 행 모두 스캔. 한글 1자 ≈ 2 ASCII 폭.
+    // formula 셀은 .result 사용, richText는 fragment text 합침, \n은 공백 처리.
     const colVisualWidth = (v: unknown): number => {
         if (v === null || v === undefined) return 0;
         let s: string;
         if (typeof v === "number") {
-            s = v.toLocaleString();          // 12345 → "12,345"
+            s = v.toLocaleString();
         } else if (v instanceof Date) {
             s = v.toLocaleDateString();
+        } else if (typeof v === "object") {
+            const obj = v as Record<string, unknown>;
+            // formula 셀: { formula, result }
+            if ("result" in obj) return colVisualWidth(obj.result);
+            // richText: { richText: [{text}, ...] }
+            const rt = (obj as { richText?: { text?: string }[] }).richText;
+            if (Array.isArray(rt)) {
+                s = rt.map((r) => r.text ?? "").join("");
+            } else {
+                s = String(v);
+            }
         } else {
             s = String(v);
         }
+        // 줄바꿈은 공백으로 대체 — wrap 없이 단일 라인 가정한 폭 산정
+        s = s.replace(/\r?\n/g, " ");
         let w = 0;
         for (const ch of s) {
             // 한글/한자/전각: 폭 ~2, ASCII: ~1
@@ -200,9 +250,12 @@ export async function POST(request: Request) {
             const w = colVisualWidth(ws.getRow(r).getCell(c).value);
             if (w > maxW) maxW = w;
         }
-        const width = Math.min(32, Math.max(6, maxW + 2));
+        // 헤더 가독성 위해 최소 8, 최대 32. 한글 헤더는 width=ASCII단위×0.95 정도 필요.
+        const width = Math.min(32, Math.max(8, Math.ceil(maxW * 0.95) + 2));
         ws.getColumn(c).width = width;
     }
+    // 헤더 행 높이를 살짝 키워 읽기 편하게
+    ws.getRow(HEADER_ROW).height = 22;
 
     // ── 영상제작비 품의서 시트 요약 테이블 동적 채우기 ──────────────────
     const formWs = wb.getWorksheet('영상제작비 품의서');
