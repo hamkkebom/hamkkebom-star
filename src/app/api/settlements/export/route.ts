@@ -173,6 +173,37 @@ export async function POST(request: Request) {
         row.commit();
     });
 
+    // ── 지급상세내역 컬럼 너비 자동 조정 ─────────────────────────────
+    // 헤더(Row 4)와 데이터 행 모두 스캔해 컬럼별 최대 표시 길이 기준으로 width 산정.
+    // 한글 1자 ≈ 2 ASCII 폭으로 가중. 너비 = max(헤더, 셀) + 여유 2, 최소 6, 최대 32.
+    const colVisualWidth = (v: unknown): number => {
+        if (v === null || v === undefined) return 0;
+        let s: string;
+        if (typeof v === "number") {
+            s = v.toLocaleString();          // 12345 → "12,345"
+        } else if (v instanceof Date) {
+            s = v.toLocaleDateString();
+        } else {
+            s = String(v);
+        }
+        let w = 0;
+        for (const ch of s) {
+            // 한글/한자/전각: 폭 ~2, ASCII: ~1
+            w += /[ㄱ-힝一-鿿＀-￯]/.test(ch) ? 2 : 1;
+        }
+        return w;
+    };
+    const dataLastRow = ws.rowCount;
+    for (let c = 2; c <= 17; c++) {            // B~Q
+        let maxW = 0;
+        for (let r = HEADER_ROW; r <= dataLastRow; r++) {
+            const w = colVisualWidth(ws.getRow(r).getCell(c).value);
+            if (w > maxW) maxW = w;
+        }
+        const width = Math.min(32, Math.max(6, maxW + 2));
+        ws.getColumn(c).width = width;
+    }
+
     // ── 영상제작비 품의서 시트 요약 테이블 동적 채우기 ──────────────────
     const formWs = wb.getWorksheet('영상제작비 품의서');
     if (formWs) {
