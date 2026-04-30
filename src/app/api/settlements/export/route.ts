@@ -176,6 +176,18 @@ export async function POST(request: Request) {
     // ── 영상제작비 품의서 시트 요약 테이블 동적 채우기 ──────────────────
     const formWs = wb.getWorksheet('영상제작비 품의서');
     if (formWs) {
+        // 템플릿에 박혀 있던 정적 PNG(지급인원 요약 표 그림)를 제거해
+        // 동적 셀과 겹쳐 보이는 문제를 막는다. 아래쪽 "활용 가능 영상" 그림(Row 19~)은 보존.
+        const media = (formWs as unknown as { _media?: Array<{ range?: { tl?: { row?: number } } }> })._media;
+        if (Array.isArray(media)) {
+            for (let i = media.length - 1; i >= 0; i--) {
+                const tlRow = media[i]?.range?.tl?.row;
+                if (typeof tlRow === 'number' && tlRow >= 14 && tlRow < 18) {
+                    media.splice(i, 1);
+                }
+            }
+        }
+
         const grandPeople = settlements.length;
         let grandVideos = 0, grandWorkFee = 0, grandAiFee = 0;
         let grandTotal = 0, grandTax = 0, grandNet = 0;
@@ -196,28 +208,43 @@ export async function POST(request: Request) {
 
         const thin = { style: 'thin' as const };
         const border = { top: thin, left: thin, bottom: thin, right: thin };
-        const salmonFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCD5B4' } };
-        const whiteFill: ExcelJS.Fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        // 원본 PNG(지급인원 표)와 같은 연두색 헤더
+        const greenFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6E0B4' } };
+        const whiteFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        const noFill: ExcelJS.Fill    = { type: 'pattern', pattern: 'none' };
+        const emptyBorder: Partial<ExcelJS.Borders> = {};
         const centerMid = { horizontal: 'center' as const, vertical: 'middle' as const };
         const rightMid  = { horizontal: 'right'  as const, vertical: 'middle' as const };
 
-        // 헤더 행 (Row 16)
+        // 헤더 행 (Row 16) — 잔여 셀/스타일 제거 후 새로 작성
         const labels = ['지급인원', '납품영상수', '총 작품료', 'AI툴 지원료', '총 지급액', '총 세금', '실지급액'];
         const hRow = formWs.getRow(16);
+        for (let c = 1; c <= 20; c++) {
+            const cell = hRow.getCell(c);
+            cell.value = null;
+            cell.border = emptyBorder;
+            cell.fill = noFill;
+        }
         labels.forEach((label, i) => {
             const c = hRow.getCell(2 + i); // B~H
             c.value = label;
             c.border = border;
-            c.fill = salmonFill;
-            c.font = { bold: true, size: 10, name: 'Malgun Gothic' };
+            c.fill = greenFill;
+            c.font = { bold: true, size: 10, name: 'Malgun Gothic', color: { argb: 'FF000000' } };
             c.alignment = centerMid;
         });
-        hRow.height = 18;
+        hRow.height = 22;
         hRow.commit();
 
         // 값 행 (Row 17)
         const vals = [grandPeople, grandVideos, grandWorkFee, grandAiFee, grandTotal, grandTax, grandNet];
         const vRow = formWs.getRow(17);
+        for (let c = 1; c <= 20; c++) {
+            const cell = vRow.getCell(c);
+            cell.value = null;
+            cell.border = emptyBorder;
+            cell.fill = noFill;
+        }
         vals.forEach((val, i) => {
             const c = vRow.getCell(2 + i);
             c.value = val;
@@ -227,11 +254,14 @@ export async function POST(request: Request) {
             c.alignment = i < 2 ? centerMid : rightMid;
             if (i >= 2) c.numFmt = '#,##0';
         });
-        vRow.height = 20;
+        vRow.height = 22;
         vRow.commit();
 
         // 인쇄 영역 고정 — 양식 밖으로 튀어나오지 않도록
         formWs.pageSetup.printArea = 'A1:I34';
+        formWs.pageSetup.fitToPage = true;
+        formWs.pageSetup.fitToWidth = 1;
+        formWs.pageSetup.fitToHeight = 1;
     }
 
     // 파일명 생성: YY.MM AI 영상제작비.xlsx
