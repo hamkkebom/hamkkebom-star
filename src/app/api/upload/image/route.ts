@@ -88,13 +88,33 @@ export async function POST(request: Request) {
         const ext = (file.name.split(".").pop() || "").toLowerCase();
         const typeOk = ALLOWED_TYPES.has(file.type);
         const extOk = ALLOWED_EXTS.has(ext);
+
+        // iPhone HEIC/HEIF 명시적 안내 — "지원되지 않습니다"보다 구체적인 해결책 제시
+        const isHeic =
+            file.type === "image/heic" ||
+            file.type === "image/heif" ||
+            ext === "heic" ||
+            ext === "heif";
+        if (isHeic) {
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "BAD_REQUEST",
+                        message:
+                            "iPhone HEIC/HEIF 형식은 지원되지 않습니다. 사진 앱에서 'JPG로 내보내기' 또는 설정 → 카메라 → 포맷을 '높은 호환성'으로 변경한 후 다시 시도해주세요.",
+                    },
+                },
+                { status: 400 }
+            );
+        }
+
         // MIME이나 확장자 중 하나라도 허용 목록에 있으면 통과 (브라우저 간 호환)
         if (!typeOk && !extOk) {
             return NextResponse.json(
                 {
                     error: {
                         code: "BAD_REQUEST",
-                        message: `지원되지 않는 파일 형식입니다. (JPEG, PNG, WebP, GIF만 가능 — 받은 type="${file.type}", ext=".${ext}")`,
+                        message: `지원되지 않는 파일 형식입니다. (JPG, PNG, WebP, GIF만 가능 — 받은 type="${file.type || "(없음)"}", 확장자=".${ext || "(없음)"}")`,
                     },
                 },
                 { status: 400 }
@@ -139,8 +159,18 @@ export async function POST(request: Request) {
                 size: file.size,
                 err,
             });
+            // S3/R2 에러 객체에서 가능한 한 구체적인 사유 추출 (유저가 원인을 알 수 있도록)
+            type S3Err = { name?: string; message?: string; $metadata?: { httpStatusCode?: number } };
+            const e = err as S3Err;
+            const detail = [e.name, e.message].filter(Boolean).join(": ") || "알 수 없는 오류";
+            const httpStatus = e.$metadata?.httpStatusCode;
             return NextResponse.json(
-                { error: { code: "R2_PUT_FAILED", message: "R2 업로드에 실패했습니다. 잠시 후 다시 시도해주세요." } },
+                {
+                    error: {
+                        code: "R2_PUT_FAILED",
+                        message: `이미지 저장에 실패했습니다 (${detail}${httpStatus ? `, HTTP ${httpStatus}` : ""}). 잠시 후 다시 시도하거나, 다른 이미지로 시도해주세요.`,
+                    },
+                },
                 { status: 502 }
             );
         }

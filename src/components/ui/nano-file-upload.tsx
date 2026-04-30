@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useDropzone, DropzoneOptions } from "react-dropzone";
+import { useDropzone, DropzoneOptions, FileRejection } from "react-dropzone";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { UploadCloud, X, Image as ImageIcon } from "lucide-react";
 
@@ -17,12 +18,49 @@ interface NanoFileUploadProps {
     label?: string;
 }
 
+/** dropzone이 반환하는 rejection 코드를 한국어 사유로 변환 */
+function describeRejection(rejection: FileRejection, maxSize: number): string {
+    const fileName = rejection.file.name || "파일";
+    const fileSize = rejection.file.size;
+    const ext = (fileName.split(".").pop() || "").toLowerCase();
+
+    for (const err of rejection.errors) {
+        switch (err.code) {
+            case "file-too-large": {
+                const sizeMB = (fileSize / (1024 * 1024)).toFixed(1);
+                const limitMB = (maxSize / (1024 * 1024)).toFixed(0);
+                return `${fileName}: 크기가 ${sizeMB}MB로 너무 큽니다 (최대 ${limitMB}MB)`;
+            }
+            case "file-invalid-type": {
+                // iPhone HEIC/HEIF는 별도 안내
+                if (ext === "heic" || ext === "heif" || rejection.file.type === "image/heic" || rejection.file.type === "image/heif") {
+                    return `${fileName}: iPhone HEIC/HEIF 형식은 지원되지 않습니다. 사진 앱에서 JPG로 내보낸 후 다시 업로드해주세요.`;
+                }
+                return `${fileName}: 지원되지 않는 형식입니다 (JPG, PNG, WebP, GIF만 가능${ext ? ` — 받은 확장자: .${ext}` : ""})`;
+            }
+            case "too-many-files":
+                return "한 번에 한 개의 파일만 업로드할 수 있습니다.";
+            case "file-too-small":
+                return `${fileName}: 파일이 너무 작습니다.`;
+            default:
+                return `${fileName}: ${err.message || err.code}`;
+        }
+    }
+    return `${fileName}: 알 수 없는 이유로 업로드할 수 없습니다.`;
+}
+
 export function NanoFileUpload({
     previewUrl,
     onFileSelect,
     disabled = false,
     className,
-    accept = { "image/*": [] },
+    accept = {
+        // 명시적으로 허용 형식만 — 서버 ALLOWED_TYPES와 일치
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/png": [".png"],
+        "image/webp": [".webp"],
+        "image/gif": [".gif"],
+    },
     maxSize = 10 * 1024 * 1024, // 10MB
     label = "썸네일 이미지 업로드",
 }: NanoFileUploadProps) {
@@ -67,8 +105,22 @@ export function NanoFileUpload({
         [onFileSelect]
     );
 
+    const onDropRejected = React.useCallback(
+        (rejections: FileRejection[]) => {
+            // 거부된 파일에 대한 명확한 사유를 토스트로 노출.
+            // 이전엔 조용히 무시되어 유저가 왜 안 올라가는지 몰랐음.
+            for (const rejection of rejections) {
+                toast.error("이미지 업로드 불가", {
+                    description: describeRejection(rejection, maxSize),
+                });
+            }
+        },
+        [maxSize]
+    );
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
+        onDropRejected,
         accept,
         maxSize,
         disabled,
