@@ -96,7 +96,7 @@ export async function DELETE(_request: Request, { params }: Params) {
 
   const settlement = await prisma.settlement.findUnique({
     where: { id },
-    select: { id: true, status: true },
+    select: { id: true, status: true, archivedAt: true },
   });
 
   if (!settlement) {
@@ -106,9 +106,11 @@ export async function DELETE(_request: Request, { params }: Params) {
     );
   }
 
-  if (settlement.status === SettlementStatus.COMPLETED) {
+  // 활성(미아카이브) 상태에서 확정된 정산은 송금이 진행 중이므로 보호.
+  // 아카이브된 정산은 어드민이 의도적으로 정리/재생성 하려는 케이스로, 확정 여부와 무관하게 삭제 허용.
+  if (settlement.status === SettlementStatus.COMPLETED && !settlement.archivedAt) {
     return NextResponse.json(
-      { error: { code: "FORBIDDEN", message: "확정된 정산은 삭제할 수 없습니다." } },
+      { error: { code: "FORBIDDEN", message: "확정된 정산은 삭제할 수 없습니다. (아카이브로 이동된 정산만 삭제 가능)" } },
       { status: 403 }
     );
   }

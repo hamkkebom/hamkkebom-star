@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
   const settlements = await prisma.settlement.findMany({
     where: { id: { in: ids } },
-    select: { id: true, status: true, starId: true },
+    select: { id: true, status: true, starId: true, archivedAt: true },
   });
 
   const results: { success: number; failed: number; errors: { id: string; reason: string }[] } = {
@@ -111,8 +111,10 @@ export async function POST(request: Request) {
         });
         results.success++;
       } else if (action === "DELETE") {
-        if (s.status === SettlementStatus.COMPLETED) {
-          results.errors.push({ id: s.id, reason: "확정된 정산은 삭제할 수 없습니다." });
+        // 아카이브된 정산(archivedAt != null)은 어드민이 정리/재생성 하려는 케이스로
+        // 확정 여부와 무관하게 삭제 허용. 활성 상태에서 COMPLETED만 송금 보호 차원에서 차단.
+        if (s.status === SettlementStatus.COMPLETED && !s.archivedAt) {
+          results.errors.push({ id: s.id, reason: "확정된 정산은 삭제할 수 없습니다. (아카이브로 이동된 정산만 삭제 가능)" });
           results.failed++;
           continue;
         }
