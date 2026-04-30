@@ -161,13 +161,30 @@ export async function POST(request: Request) {
       });
       const starById = new Map(stars.map((star) => [star.id, star]));
 
-      // Find existing settlements that overlap with the date range
+      // 아카이브된 정산(archivedAt != null)은 이미 정리된 것으로 간주하고 삭제해 submissionId unique 해제
+      const archivedOverlapping = await tx.settlement.findMany({
+        where: {
+          starId: { in: starIds },
+          startDate: { lt: endDate },
+          endDate: { gt: startDate },
+          archivedAt: { not: null },
+        },
+        select: { id: true },
+      });
+      if (archivedOverlapping.length > 0) {
+        const archivedIds = archivedOverlapping.map(s => s.id);
+        await tx.settlementItem.deleteMany({ where: { settlementId: { in: archivedIds } } });
+        await tx.settlement.deleteMany({ where: { id: { in: archivedIds } } });
+      }
+
+      // Find existing settlements that overlap with the date range (archived 제외)
       const existingSettlements = await tx.settlement.findMany({
         where: {
           starId: { in: starIds },
           status: { in: [SettlementStatus.PENDING, SettlementStatus.REVIEW, SettlementStatus.PROCESSING, SettlementStatus.COMPLETED] },
           startDate: { lt: endDate },
           endDate: { gt: startDate },
+          archivedAt: null,
         },
         select: { id: true, starId: true, status: true, startDate: true, endDate: true },
       });
