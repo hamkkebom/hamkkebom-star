@@ -176,6 +176,14 @@ export async function POST(request: Request) {
     // ── 영상제작비 품의서 시트 요약 테이블 동적 채우기 ──────────────────
     const formWs = wb.getWorksheet('영상제작비 품의서');
     if (formWs) {
+        // 품의일자(C5)를 다운로드 시점 기준 오늘 날짜로 갱신 (템플릿엔 2026-01-07로 박혀 있음)
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const dateCell = formWs.getCell('C5');
+        const prevStyle = dateCell.style;
+        dateCell.value = todayStr;
+        dateCell.style = prevStyle; // 기존 스타일(가운데 정렬, 폰트 등) 보존
+
         // 템플릿에 박혀 있던 정적 PNG(지급인원 요약 표 그림)를 제거해
         // 동적 셀과 겹쳐 보이는 문제를 막는다. 아래쪽 "활용 가능 영상" 그림(Row 19~)은 보존.
         const media = (formWs as unknown as { _media?: Array<{ range?: { tl?: { row?: number } } }> })._media;
