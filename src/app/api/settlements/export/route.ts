@@ -40,7 +40,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "정산 ID를 선택해주세요." }, { status: 400 });
     }
 
-    // 정산 데이터 가져오기
+    // 정산 데이터 가져오기 — 카테고리별 영상 수 집계 위해 video.category 포함
     const settlements = await prisma.settlement.findMany({
         where: { id: { in: settlementIds } },
         include: {
@@ -53,6 +53,17 @@ export async function POST(request: Request) {
             },
             items: {
                 orderBy: { createdAt: "asc" },
+                include: {
+                    submission: {
+                        select: {
+                            video: {
+                                select: {
+                                    category: { select: { name: true } },
+                                },
+                            },
+                        },
+                    },
+                },
             },
         },
         orderBy: { createdAt: "asc" },
@@ -61,6 +72,12 @@ export async function POST(request: Request) {
     if (settlements.length === 0) {
         return NextResponse.json({ error: "정산 데이터가 없습니다." }, { status: 404 });
     }
+
+    // 전체 카테고리 목록 (영상이 0건인 카테고리도 표시하기 위해 별도 조회)
+    const allCategories = await prisma.category.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+    });
 
     // 기존 템플릿 파일 로드
     const templatePath = path.join(process.cwd(), "public", "25.12 Ai 영상제작비.xlsx");
@@ -268,17 +285,26 @@ export async function POST(request: Request) {
         dateCell.value = todayStr;
         dateCell.style = prevStyle; // 기존 스타일(가운데 정렬, 폰트 등) 보존
 
-        // 템플릿에 박혀 있던 정적 PNG(지급인원 요약 표 그림)를 제거해
-        // 동적 셀과 겹쳐 보이는 문제를 막는다. 아래쪽 "활용 가능 영상" 그림(Row 19~)은 보존.
+        // 템플릿에 박혀 있던 정적 PNG 두 개(지급인원 표 + 활용 가능 영상)를 모두 제거.
+        // 그 자리에 동적 셀 표(지급인원 + 카테고리별 영상 수)로 대체.
         const media = (formWs as unknown as { _media?: Array<{ range?: { tl?: { row?: number } } }> })._media;
         if (Array.isArray(media)) {
             for (let i = media.length - 1; i >= 0; i--) {
                 const tlRow = media[i]?.range?.tl?.row;
-                if (typeof tlRow === 'number' && tlRow >= 14 && tlRow < 18) {
+                if (typeof tlRow === 'number' && tlRow >= 14 && tlRow < 30) {
                     media.splice(i, 1);
                 }
             }
         }
+
+        // ⚠ 카테고리 표가 row 27/28을 덮을 수 있으므로, 그 자리에 박혀 있던
+        // "붙임" 텍스트를 미리 캡처해 두고 표 작성 후 안전한 row로 복원한다.
+        type SavedCell = { value: ExcelJS.CellValue; style: Partial<ExcelJS.Style> };
+        const savedNote1: SavedCell = { value: formWs.getCell('C27').value, style: formWs.getCell('C27').style };
+        const savedNote2: SavedCell = { value: formWs.getCell('C28').value, style: formWs.getCell('C28').style };
+        // 미리 비워서 카테고리 셀 작성 시 잔재 충돌 없도록
+        formWs.getCell('C27').value = null;
+        formWs.getCell('C28').value = null;
 
         const grandPeople = settlements.length;
         let grandVideos = 0, grandWorkFee = 0, grandAiFee = 0;
@@ -345,8 +371,139 @@ export async function POST(request: Request) {
         vRow.height = 22;
         vRow.commit();
 
-        // 인쇄 영역 고정 — 양식 밖으로 튀어나오지 않도록
-        formWs.pageSetup.printArea = 'A1:I34';
+        // ── 활용 가능 영상 PNG 제거 자리에 "카테고리별 영상 수" 표 ────────
+        // 1) 정산 항목에서 video.category.name별 카운트 집계
+        type ItemWithCat = {
+            itemType: string;
+            submission?: { video?: { category?: { name: string } | null } | null } | null;
+        };
+        const categoryCounts = new Map<string, number>();
+        for (const settlement of settlements) {
+            for (const item of settlement.items as ItemWithCat[]) {
+                if (item.itemType === 'AI_TOOL_SUPPORT') continue; // 영상이 아닌 항목은 제외
+                const catName = item.submission?.video?.category?.name ?? '미분류';
+                categoryCounts.set(catName, (categoryCounts.get(catName) ?? 0) + 1);
+            }
+        }
+
+        // 2) 표시할 항목 = 모든 카테고리(0건 포함) + 미분류(있을 때만)
+        const categoryEntries: Array<{ name: string; count: number }> = allCategories.map((c) => ({
+            name: c.name,
+            count: categoryCounts.get(c.name) ?? 0,
+        }));
+        if (categoryCounts.has('미분류')) {
+            categoryEntries.push({ name: '미분류', count: categoryCounts.get('미분류') ?? 0 });
+        }
+        const totalCount = categoryEntries.reduce((s, e) => s + e.count, 0);
+
+        // 3) 표 영역: 제목(R19, B-I 병합) + 카테고리 행(2개씩, R20부터) + 합계 행
+        // 양식 하단 "붙임" / 회사명 텍스트가 row 27/28/33 에 있으므로,
+        // 카테고리가 많아 충돌하면 그 텍스트를 아래로 이동시켜 자리 확보.
+        const TABLE_START = 19;
+        formWs.mergeCells(TABLE_START, 2, TABLE_START, 9); // B19:I19
+        const titleCell = formWs.getCell(TABLE_START, 2);
+        titleCell.value = '카테고리별 영상 수';
+        titleCell.style = {
+            fill: salmonFill,
+            border,
+            font: { bold: true, size: 11, name: 'Malgun Gothic', color: { argb: 'FF000000' } },
+            alignment: { horizontal: 'center', vertical: 'middle' },
+        };
+        formWs.getRow(TABLE_START).height = 24;
+
+        const leftAlignMid = { horizontal: 'left' as const, vertical: 'middle' as const, indent: 1, shrinkToFit: true };
+        const numAlignMid  = { horizontal: 'right' as const, vertical: 'middle' as const, indent: 1 };
+
+        const ROWS_NEEDED = Math.ceil(categoryEntries.length / 2);
+        for (let i = 0; i < categoryEntries.length; i += 2) {
+            const r = TABLE_START + 1 + Math.floor(i / 2);
+            const left = categoryEntries[i];
+            const right = categoryEntries[i + 1];
+
+            // 좌측 항목: B-C 병합(이름) + D(카운트)
+            formWs.mergeCells(r, 2, r, 3);
+            const ln = formWs.getCell(r, 2);
+            ln.value = left.name;
+            ln.style = {
+                fill: whiteFill, border,
+                font: { size: 10, name: 'Malgun Gothic', color: { argb: 'FF000000' } },
+                alignment: leftAlignMid,
+            };
+            const lc = formWs.getCell(r, 4);
+            lc.value = left.count;
+            lc.style = {
+                fill: whiteFill, border,
+                font: { size: 10, name: 'Malgun Gothic', bold: true, color: { argb: 'FF000000' } },
+                alignment: numAlignMid,
+                numFmt: '#,##0',
+            };
+
+            // 우측 항목: E-F 병합(이름) + G(카운트). 짝이 없으면 빈 셀(테두리만 유지)
+            formWs.mergeCells(r, 5, r, 6);
+            const rn = formWs.getCell(r, 5);
+            const rc = formWs.getCell(r, 7);
+            if (right) {
+                rn.value = right.name;
+                rn.style = {
+                    fill: whiteFill, border,
+                    font: { size: 10, name: 'Malgun Gothic', color: { argb: 'FF000000' } },
+                    alignment: leftAlignMid,
+                };
+                rc.value = right.count;
+                rc.style = {
+                    fill: whiteFill, border,
+                    font: { size: 10, name: 'Malgun Gothic', bold: true, color: { argb: 'FF000000' } },
+                    alignment: numAlignMid,
+                    numFmt: '#,##0',
+                };
+            } else {
+                rn.value = '';
+                rn.style = { fill: whiteFill, border };
+                rc.value = '';
+                rc.style = { fill: whiteFill, border };
+            }
+            // H/I 컬럼은 표 외부 — 아무 처리 안 함
+            formWs.getRow(r).height = 20;
+        }
+
+        // 합계 행
+        const sumRow = TABLE_START + 1 + ROWS_NEEDED;
+        formWs.mergeCells(sumRow, 2, sumRow, 6); // B-F
+        const sumLabel = formWs.getCell(sumRow, 2);
+        sumLabel.value = '총 영상 수';
+        sumLabel.style = {
+            fill: salmonFill, border,
+            font: { bold: true, size: 10, name: 'Malgun Gothic', color: { argb: 'FF000000' } },
+            alignment: { horizontal: 'center', vertical: 'middle' },
+        };
+        formWs.mergeCells(sumRow, 7, sumRow, 9); // G-I
+        const sumValue = formWs.getCell(sumRow, 7);
+        sumValue.value = totalCount;
+        sumValue.style = {
+            fill: whiteFill, border,
+            font: { bold: true, size: 10, name: 'Malgun Gothic', color: { argb: 'FF000000' } },
+            alignment: numAlignMid,
+            numFmt: '#,##0"건"',
+        };
+        formWs.getRow(sumRow).height = 22;
+
+        // 4) 사전에 저장해 둔 "붙임" 텍스트를 표 아래 안전한 row 로 복원
+        const noteToRow = sumRow + 2;
+        const noteToRow2 = sumRow + 3;
+        if (savedNote1.value) {
+            const dst = formWs.getCell(`C${noteToRow}`);
+            dst.value = savedNote1.value;
+            dst.style = savedNote1.style;
+        }
+        if (savedNote2.value) {
+            const dst = formWs.getCell(`C${noteToRow2}`);
+            dst.value = savedNote2.value;
+            dst.style = savedNote2.style;
+        }
+
+        // 인쇄 영역 — "붙임" + 회사명(B33) 까지 모두 포함되도록 확장
+        const printAreaEnd = Math.max(34, noteToRow2 + 6);
+        formWs.pageSetup.printArea = `A1:I${printAreaEnd}`;
         formWs.pageSetup.fitToPage = true;
         formWs.pageSetup.fitToWidth = 1;
         formWs.pageSetup.fitToHeight = 1;
