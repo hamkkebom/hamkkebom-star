@@ -460,9 +460,15 @@ export default function AdminSettlementsPage() {
         const err = (await res.json()) as { error?: { message?: string } };
         throw new Error(err.error?.message ?? "폴더 삭제에 실패했습니다.");
       }
+      return (await res.json()) as { data: { deletedSettlementCount: number } };
     },
-    onSuccess: async () => {
-      toast.success("폴더가 삭제되었습니다. (정산은 미분류로 이동됩니다)");
+    onSuccess: async (result) => {
+      const n = result?.data?.deletedSettlementCount ?? 0;
+      toast.success(
+        n > 0
+          ? `폴더와 안에 있던 정산 ${n}건이 삭제되었습니다.`
+          : "폴더가 삭제되었습니다.",
+      );
       setFolderManageTarget(null);
       if (archiveFolderView === folderManageTarget?.id) setArchiveFolderView(null);
       await queryClient.invalidateQueries({ queryKey: ["settlement-folders"] });
@@ -940,7 +946,7 @@ export default function AdminSettlementsPage() {
                               className="text-destructive focus:text-destructive"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm(`"${folder.name}" 폴더를 삭제하시겠습니까?\n안에 있는 정산은 미분류로 이동됩니다.`)) {
+                                if (confirm(`"${folder.name}" 폴더를 삭제하시겠습니까?\n안에 들어있는 정산도 함께 삭제됩니다. (되돌릴 수 없음)`)) {
                                   deleteFolderMutation.mutate(folder.id);
                                 }
                               }}
