@@ -102,54 +102,119 @@ export function UploadDropzone({
       setProgress(0);
       setStreamUid(null);
 
-      try {
-        // 1. 업로드 URL 발급
-        const urlResponse = await fetch("/api/submissions/upload-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ maxDurationSeconds: 3600 }),
-        });
+      // Cloudflare Stream basic POST는 200MB가 한계 — 그 이상은 TUS 청크 업로드 사용.
+      // 3분 넘는 영상은 흔히 200MB 초과해서 basic POST가 실패하던 문제를 우회.
+      const TUS_THRESHOLD_BYTES = 150 * 1024 * 1024; // 150MB (안전 마진 포함)
+      const useTus = file.size > TUS_THRESHOLD_BYTES;
 
-        if (!urlResponse.ok) {
-          throw new Error("업로드 URL 발급에 실패했습니다.");
+      try {
+        let uid: string;
+
+        if (useTus) {
+          // ── TUS 경로: 청크 업로드로 대용량(>150MB) 지원 ──
+          const tusRes = await fetch("/api/submissions/tus-create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              uploadLength: file.size,
+              filename: file.name,
+              maxDurationSeconds: 3600,
+            }),
+          });
+          if (!tusRes.ok) {
+            const errBody = await tusRes.json().catch(() => null);
+            const msg = errBody?.error?.message ?? "TUS 업로드 세션 발급에 실패했습니다.";
+            throw new Error(msg);
+          }
+          const { data: tusData } = (await tusRes.json()) as {
+            data: { tusUrl: string; uid: string };
+          };
+          uid = tusData.uid;
+
+          setStatus("uploading");
+
+          // PATCH 청크 — 50MB 단위
+          const CHUNK_SIZE = 50 * 1024 * 1024;
+          let offset = 0;
+          while (offset < file.size) {
+            const end = Math.min(offset + CHUNK_SIZE, file.size);
+            const chunk = file.slice(offset, end);
+            const startOffset = offset;
+
+            await new Promise<void>((resolve, reject) => {
+              const xhr = new XMLHttpRequest();
+              xhr.open("PATCH", tusData.tusUrl, true);
+              xhr.setRequestHeader("Tus-Resumable", "1.0.0");
+              xhr.setRequestHeader("Upload-Offset", String(startOffset));
+              xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
+
+              xhr.upload.addEventListener("progress", (e) => {
+                if (e.lengthComputable) {
+                  const totalLoaded = startOffset + e.loaded;
+                  setProgress(Math.round((totalLoaded / file.size) * 100));
+                }
+              });
+              xhr.addEventListener("load", () => {
+                if (xhr.status >= 200 && xhr.status < 300) resolve();
+                else reject(new Error(`청크 업로드 실패 (${startOffset}~${end}): HTTP ${xhr.status}`));
+              });
+              xhr.addEventListener("error", () =>
+                reject(new Error("업로드 중 네트워크 오류")),
+              );
+              xhr.send(chunk);
+            });
+
+            offset = end;
+          }
+        } else {
+          // ── Basic POST 경로: 작은 파일(<150MB) ──
+          const urlResponse = await fetch("/api/submissions/upload-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ maxDurationSeconds: 3600 }),
+          });
+
+          if (!urlResponse.ok) {
+            throw new Error("업로드 URL 발급에 실패했습니다.");
+          }
+
+          const { data: urlData } = (await urlResponse.json()) as {
+            data: { uploadUrl: string; uid: string };
+          };
+          uid = urlData.uid;
+
+          setStatus("uploading");
+
+          await new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", urlData.uploadUrl, true);
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            xhr.upload.addEventListener("progress", (e) => {
+              if (e.lengthComputable) {
+                setProgress(Math.round((e.loaded / e.total) * 100));
+              }
+            });
+
+            xhr.addEventListener("load", () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                resolve();
+              } else {
+                reject(new Error(`업로드 실패: ${xhr.status}`));
+              }
+            });
+
+            xhr.addEventListener("error", () =>
+              reject(new Error("업로드 중 네트워크 오류")),
+            );
+            xhr.send(formData);
+          });
         }
 
-        const { data: urlData } = (await urlResponse.json()) as {
-          data: { uploadUrl: string; uid: string };
-        };
-
-        // 2. 파일 업로드 (XHR for progress)
-        setStatus("uploading");
-
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open("POST", urlData.uploadUrl, true);
-
-          const formData = new FormData();
-          formData.append("file", file);
-
-          xhr.upload.addEventListener("progress", (e) => {
-            if (e.lengthComputable) {
-              setProgress(Math.round((e.loaded / e.total) * 100));
-            }
-          });
-
-          xhr.addEventListener("load", () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              resolve();
-            } else {
-              reject(new Error(`업로드 실패: ${xhr.status}`));
-            }
-          });
-
-          xhr.addEventListener("error", () =>
-            reject(new Error("업로드 중 네트워크 오류")),
-          );
-          xhr.send(formData);
-        });
-
         // 업로드 완료 — 제출 대기 상태로 전환
-        setStreamUid(urlData.uid);
+        setStreamUid(uid);
         setStatus("uploaded");
         setProgress(100);
       } catch (error) {

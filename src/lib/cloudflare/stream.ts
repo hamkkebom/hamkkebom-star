@@ -72,6 +72,65 @@ export async function createTusUploadUrl(
 }
 
 // ---------------------------------------------------------------------------
+// TUS Direct Creator Upload (대용량 영상용 — basic POST의 200MB 한계 우회)
+// ---------------------------------------------------------------------------
+
+export interface TusSessionResult {
+  tusUrl: string;
+  uid: string;
+}
+
+/**
+ * Cloudflare Stream TUS 업로드 세션을 생성합니다.
+ * Basic POST(/direct_upload)의 200MB 한계를 우회하기 위해 사용.
+ * 클라이언트는 반환된 tusUrl에 PATCH 청크를 보내 업로드합니다.
+ *
+ * @see https://developers.cloudflare.com/stream/uploading-videos/resumable-uploads/
+ */
+export async function createTusSession(
+  uploadLength: number,
+  filename: string,
+  maxDurationSeconds = 3600
+): Promise<TusSessionResult> {
+  if (!isConfigured()) {
+    return {
+      tusUrl: `https://upload.videodelivery.net/tus/mock-${crypto.randomUUID()}`,
+      uid: `mock-${crypto.randomUUID()}`,
+    };
+  }
+
+  const metadata = [
+    `name ${Buffer.from(filename, "utf-8").toString("base64")}`,
+    `maxDurationSeconds ${Buffer.from(String(maxDurationSeconds)).toString("base64")}`,
+    `requiresignedurls ${Buffer.from("true").toString("base64")}`,
+    `creator ${Buffer.from("hamkkebom-star").toString("base64")}`,
+  ].join(",");
+
+  const response = await fetch(`${BASE_URL}?direct_user=true`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${API_TOKEN}`,
+      "Tus-Resumable": "1.0.0",
+      "Upload-Length": String(uploadLength),
+      "Upload-Metadata": metadata,
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(`Cloudflare Stream TUS 세션 생성 실패: ${response.status} ${text}`);
+  }
+
+  const tusUrl = response.headers.get("Location");
+  const uid = response.headers.get("stream-media-id");
+  if (!tusUrl || !uid) {
+    throw new Error("Cloudflare Stream TUS 응답에 Location 또는 stream-media-id 헤더가 없습니다.");
+  }
+
+  return { tusUrl, uid };
+}
+
+// ---------------------------------------------------------------------------
 // 영상 상태 조회
 // ---------------------------------------------------------------------------
 
