@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         const approvedSubmissions = await prisma.submission.findMany({
             where: {
                 status: SubmissionStatus.APPROVED,
-                reviewedAt: {
+                createdAt: {
                     gte: startDate,
                     lte: endDate,
                 },

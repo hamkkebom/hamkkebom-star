@@ -105,11 +105,13 @@ export async function POST(request: Request) {
       const startDate = new Date(startDateStr + "T00:00:00.000Z");
       const endDate = new Date(endDateStr + "T23:59:59.999Z");
 
-      // 해당 월에 승인된 제출물 조회 (영상 단가 포함)
+      // 해당 월에 STAR가 업로드한 승인 제출물 조회 (영상 단가 포함).
+      // 기간 기준은 createdAt(작성자 업로드 시점) — 어드민 승인 후 메모/단가 등이
+      // 수정되어도 정산 월이 흔들리지 않게 함.
       const approvedSubmissions = await tx.submission.findMany({
         where: {
           status: SubmissionStatus.APPROVED,
-          updatedAt: {
+          createdAt: {
             gte: startDate,
             lt: endDate,
           },
