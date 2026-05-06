@@ -463,7 +463,11 @@ export async function POST(request: Request) {
                 rc.value = '';
                 rc.style = { fill: whiteFill, border };
             }
-            // H/I 컬럼은 표 외부 — 아무 처리 안 함
+            // H-I: 테두리만 채워서 헤더(B-I 병합)와 우측 경계 맞춤
+            formWs.mergeCells(r, 8, r, 9);
+            const hc = formWs.getCell(r, 8);
+            hc.value = '';
+            hc.style = { fill: whiteFill, border };
             formWs.getRow(r).height = 20;
         }
 
