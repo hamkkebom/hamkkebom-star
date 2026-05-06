@@ -187,6 +187,16 @@ const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
 // Helpers
 // ---------------------------------------------------------------------------
 
+// toISOString().slice(0,10) would shift dates by -9h for KST users (UTC+9 midnight → UTC prev-day).
+// Use local date parts to preserve the date the admin actually selected in the calendar.
+function toLocalDateStr(date: Date | undefined): string | undefined {
+  if (!date) return undefined;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function getStarDisplayName(star: { name: string; chineseName?: string | null }): string {
   return star.chineseName || star.name;
 }
@@ -351,8 +361,8 @@ export default function AdminSettlementsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          startDate: genDateRange?.from?.toISOString().slice(0, 10),
-          endDate: (genDateRange?.to ?? genDateRange?.from)?.toISOString().slice(0, 10),
+          startDate: genDateRange?.from ? toLocalDateStr(genDateRange.from) : undefined,
+          endDate: toLocalDateStr(genDateRange?.to ?? genDateRange?.from),
           confirmDeletePending: true,
         }),
       });
