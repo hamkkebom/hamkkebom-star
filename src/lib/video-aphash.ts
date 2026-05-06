@@ -27,7 +27,11 @@ const HASH_HEX_LEN = 16;
 
 function getFfmpegPath(): string {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require("ffmpeg-static") as string;
+  const p = require("ffmpeg-static") as string | null;
+  if (!p) {
+    throw new Error("ffmpeg-static 바이너리 경로를 찾을 수 없음 (postinstall 미실행 가능성)");
+  }
+  return p;
 }
 
 function binaryStringToHex(bits: number[], start: number, len: number): string {
@@ -84,14 +88,16 @@ function hammingDistance(hexA: string, hexB: string): number {
  *
  * @param streamUid Cloudflare Stream uid
  * @param durationSeconds 영상 길이 (없으면 앞부분 분석)
- * @returns "hash1,hash2,...,hash8" 또는 null (실패 시)
+ * @returns 정상 시 "hash1,hash2,...,hash8". 실패 시 구체적 메시지로 throw.
  */
 export async function computeVideoAphash(
   streamUid: string,
   durationSeconds: number | null
-): Promise<string | null> {
+): Promise<string> {
   const token = await getSignedPlaybackToken(streamUid);
-  if (!token) return null;
+  if (!token) {
+    throw new Error("Cloudflare 서명 토큰 발급 실패 (env 또는 영상 권한 확인 필요)");
+  }
 
   const hlsUrl = `https://videodelivery.net/${token}/manifest/video.m3u8`;
 
@@ -106,30 +112,44 @@ export async function computeVideoAphash(
   try {
     const ffmpegPath = getFfmpegPath();
 
-    await execFileAsync(
-      ffmpegPath,
-      [
-        "-ss", String(startTime),
-        "-i", hlsUrl,
-        "-t", String(ANALYSIS_SECONDS),
-        "-vn",                      // 영상 트랙 제외
-        "-acodec", "pcm_s16le",    // 16-bit LE PCM
-        "-ar", String(SAMPLE_RATE), // 8kHz
-        "-ac", "1",                // 모노
-        "-f", "s16le",             // raw format
-        "-y",
-        tmpPcm,
-      ],
-      { timeout: 40_000 }
-    );
+    try {
+      await execFileAsync(
+        ffmpegPath,
+        [
+          "-ss", String(startTime),
+          "-i", hlsUrl,
+          "-t", String(ANALYSIS_SECONDS),
+          "-vn",                      // 영상 트랙 제외
+          "-acodec", "pcm_s16le",    // 16-bit LE PCM
+          "-ar", String(SAMPLE_RATE), // 8kHz
+          "-ac", "1",                // 모노
+          "-f", "s16le",             // raw format
+          "-y",
+          tmpPcm,
+        ],
+        { timeout: 40_000, maxBuffer: 10 * 1024 * 1024 }
+      );
+    } catch (err) {
+      const e = err as NodeJS.ErrnoException & { stderr?: string; signal?: string };
+      if (e.code === "ENOENT") {
+        throw new Error(`ffmpeg 실행 파일 없음 (path=${ffmpegPath}). serverExternalPackages 또는 postinstall 확인 필요`);
+      }
+      if (e.signal === "SIGTERM" || /timed?out/i.test(String(e.message))) {
+        throw new Error("ffmpeg 시간 초과 (HLS 다운로드 40초 초과)");
+      }
+      const stderrTail = (e.stderr ?? "").split("\n").slice(-3).join(" ").trim();
+      throw new Error(`ffmpeg 실행 실패: ${e.message}${stderrTail ? ` | ${stderrTail}` : ""}`);
+    }
 
-    const rawPcm = await readFile(tmpPcm);
-    if (rawPcm.length < SAMPLE_RATE * 2) return null; // 1초 미만이면 실패
+    const rawPcm = await readFile(tmpPcm).catch(() => null);
+    if (!rawPcm) {
+      throw new Error("ffmpeg 출력 PCM 파일 읽기 실패");
+    }
+    if (rawPcm.length < SAMPLE_RATE * 2) {
+      throw new Error(`PCM 길이 부족 (${rawPcm.length}바이트, 1초 미만)`);
+    }
 
     return pcmToAudioHash(rawPcm);
-  } catch (err) {
-    console.error(`[video-aphash] ${streamUid} 실패:`, err);
-    return null;
   } finally {
     await unlink(tmpPcm).catch(() => {});
   }

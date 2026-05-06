@@ -78,16 +78,11 @@ export async function POST(request: Request) {
   for (const video of videos) {
     try {
       const hash = await computeVideoAphash(video.streamUid, video.technicalSpec?.duration ?? null);
-      if (hash) {
-        await prisma.video.update({
-          where: { id: video.id },
-          data: { audioPhash: hash },
-        });
-        success++;
-      } else {
-        failed++;
-        errors.push(`${video.id.slice(0, 8)}: 오디오 추출 또는 hash 계산 실패`);
-      }
+      await prisma.video.update({
+        where: { id: video.id },
+        data: { audioPhash: hash },
+      });
+      success++;
     } catch (err) {
       console.error(`[compute-aphash] video ${video.id} 실패:`, err);
       failed++;

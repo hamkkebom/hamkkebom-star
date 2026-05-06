@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
+  // 네이티브 바이너리/네이티브 모듈은 번들에 포함되면 __dirname/native binding이
+  // 깨져 런타임에 ENOENT 등으로 실패함. 외부 패키지로 두어 node_modules에서 직접 로드.
+  serverExternalPackages: ["ffmpeg-static", "sharp", "sharp-phash"],
   experimental: {
     optimizePackageImports: [
       "lucide-react",
