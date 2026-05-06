@@ -362,6 +362,7 @@ export async function POST(request: Request) {
             return {
               settlementId: createdSettlement.id,
               submissionId: null,
+              videoId: d.videoId,
               starId: star.id,
               itemType: "DIRECT_UPLOAD",
               description: `[직접 업로드] ${d.title}`,

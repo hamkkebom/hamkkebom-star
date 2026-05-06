@@ -83,6 +83,7 @@ export type SettlementDetail = {
     finalAmount: number;
     description: string | null;
     itemType: string;
+    videoId: string | null;
     submission: {
       id: string;
       versionTitle: string | null;
@@ -826,10 +827,11 @@ export function SettlementDetailSheet({
               <div className="space-y-2">
                 {detail.items.map((item) => {
                   const videoTitle = item.submission?.video?.title;
-                  const videoId = item.submission?.video?.id;
+                  const videoId = item.submission?.video?.id ?? item.videoId ?? null;
                   const videoCustomRate = item.submission?.video?.customRate;
                   const submissionId = item.submission?.id;
-                  const isClickable = !!submissionId;
+                  const isDirectUpload = item.itemType === "DIRECT_UPLOAD";
+                  const isClickable = !!submissionId || (isDirectUpload && !!item.videoId);
                   const hasCustomRate = videoCustomRate !== null && videoCustomRate !== undefined;
                   const displayTitle = item.description
                     ?? (item.itemType === "AI_TOOL_SUPPORT"
@@ -856,8 +858,10 @@ export function SettlementDetailSheet({
                                 <p
                                   className={`text-sm font-medium truncate ${isClickable ? "cursor-pointer group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" : ""}`}
                                   onClick={() => {
-                                    if (isClickable) {
+                                    if (submissionId) {
                                       window.open(`/admin/reviews/${submissionId}`, "_blank");
+                                    } else if (isDirectUpload && item.videoId) {
+                                      window.open(`/videos/${item.videoId}`, "_blank");
                                     }
                                   }}
                                 >

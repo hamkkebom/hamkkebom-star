@@ -285,6 +285,7 @@ model Video {
   comments        VideoComment[]
   bookmarks       VideoBookmark[]
   boardPosts      BoardPost[]
+  settlementItems SettlementItem[]
   category        Category?           @relation(fields: [categoryId], references: [id])
   counselor       Counselor?          @relation(fields: [counselorId], references: [id])
   owner           User                @relation(fields: [ownerId], references: [id])
@@ -417,20 +418,23 @@ model SettlementItem {
   settlementId   String
   submissionId   String?    @unique
   starId         String
+  videoId        String?
   baseAmount     Decimal    @db.Decimal(10, 2)
   adjustedAmount Decimal?   @db.Decimal(10, 2)
   finalAmount    Decimal    @db.Decimal(10, 2)
   description    String?
   itemType       String     @default("SUBMISSION")
-  // itemType values: SUBMISSION | AI_TOOL_SUPPORT | BONUS | DEDUCTION | PENALTY | TRANSPORT | EQUIPMENT | OTHER
+  // itemType values: SUBMISSION | AI_TOOL_SUPPORT | DIRECT_UPLOAD | BONUS | DEDUCTION | PENALTY | TRANSPORT | EQUIPMENT | OTHER
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   settlement     Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
   star           User       @relation(fields: [starId], references: [id])
   submission     Submission? @relation(fields: [submissionId], references: [id])
+  video          Video?      @relation(fields: [videoId], references: [id])
 
   @@index([starId])
   @@index([settlementId])
+  @@index([videoId])
   @@map("settlement_items")
 }
 
