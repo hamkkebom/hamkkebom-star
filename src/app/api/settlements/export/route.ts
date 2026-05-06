@@ -386,11 +386,12 @@ export async function POST(request: Request) {
             }
         }
 
-        // 2) 표시할 항목 = 모든 카테고리(0건 포함) + 미분류(있을 때만)
-        const categoryEntries: Array<{ name: string; count: number }> = allCategories.map((c) => ({
-            name: c.name,
-            count: categoryCounts.get(c.name) ?? 0,
-        }));
+        // 2) 표시할 항목 = 실제로 영상이 있는 카테고리만 + 미분류(있을 때만)
+        // 0건 카테고리까지 모두 표시하면 양식이 길어져 하단 텍스트(붙임 등)가 밀리는
+        // 문제가 있어 실값이 있는 항목만 노출하도록 필터링.
+        const categoryEntries: Array<{ name: string; count: number }> = allCategories
+            .map((c) => ({ name: c.name, count: categoryCounts.get(c.name) ?? 0 }))
+            .filter((e) => e.count > 0);
         if (categoryCounts.has('미분류')) {
             categoryEntries.push({ name: '미분류', count: categoryCounts.get('미분류') ?? 0 });
         }
