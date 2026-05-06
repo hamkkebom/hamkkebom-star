@@ -163,7 +163,9 @@ export async function POST(request: Request) {
       });
       const starById = new Map(stars.map((star) => [star.id, star]));
 
-      // 아카이브된 정산(archivedAt != null)은 이미 정리된 것으로 간주하고 삭제해 submissionId unique 해제
+      // 아카이브된 정산 조회 — COMPLETED vs 비-COMPLETED 분리
+      // COMPLETED 아카이브: 이미 지급 확정된 기록이므로 절대 삭제하지 않음 (폴더 내 0건 방지)
+      // 비-COMPLETED 아카이브: submissionId unique 해제가 필요하므로 삭제
       const archivedOverlapping = await tx.settlement.findMany({
         where: {
           starId: { in: starIds },
@@ -173,18 +175,20 @@ export async function POST(request: Request) {
         },
         select: { id: true, starId: true, status: true },
       });
-      if (archivedOverlapping.length > 0) {
-        const archivedIds = archivedOverlapping.map(s => s.id);
-        await tx.settlementItem.deleteMany({ where: { settlementId: { in: archivedIds } } });
-        await tx.settlement.deleteMany({ where: { id: { in: archivedIds } } });
-      }
 
-      // 아카이브된 COMPLETED 정산이 있는 STAR는 재생성 금지
       const archivedCompletedStarIds = new Set(
         archivedOverlapping
           .filter(s => s.status === SettlementStatus.COMPLETED)
           .map(s => s.starId)
       );
+
+      // 비-COMPLETED 아카이브만 삭제 (COMPLETED는 폴더 기록 보존)
+      const archivedNonCompleted = archivedOverlapping.filter(s => s.status !== SettlementStatus.COMPLETED);
+      if (archivedNonCompleted.length > 0) {
+        const deleteIds = archivedNonCompleted.map(s => s.id);
+        await tx.settlementItem.deleteMany({ where: { settlementId: { in: deleteIds } } });
+        await tx.settlement.deleteMany({ where: { id: { in: deleteIds } } });
+      }
 
       // Find existing settlements that overlap with the date range (archived 제외)
       const existingSettlements = await tx.settlement.findMany({
