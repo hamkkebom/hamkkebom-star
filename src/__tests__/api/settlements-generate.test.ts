@@ -17,6 +17,7 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/generated/prisma/client", () => ({
   SettlementStatus: { PENDING: "PENDING", COMPLETED: "COMPLETED" },
   SubmissionStatus: { PENDING: "PENDING", APPROVED: "APPROVED", REJECTED: "REJECTED" },
+  VideoStatus: { DRAFT: "DRAFT", PENDING: "PENDING", APPROVED: "APPROVED", FINAL: "FINAL" },
   Prisma: {
     Decimal: class {
       value: number;

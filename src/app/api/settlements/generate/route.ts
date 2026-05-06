@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Prisma, SettlementStatus, SubmissionStatus } from "@/generated/prisma/client";
+import { Prisma, SettlementStatus, SubmissionStatus, VideoStatus } from "@/generated/prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-helpers";
@@ -127,7 +127,27 @@ export async function POST(request: Request) {
         },
       });
 
-      if (approvedSubmissions.length === 0) {
+      // 직접 업로드 영상 조회: Submission이 없는 APPROVED 영상.
+      // STAR가 canDirectUpload 권한으로 올린 영상은 검토/승인 절차 없이 바로 APPROVED 상태로 저장되며,
+      // 정산에서도 동일하게 작품료로 산정한다. itemType="DIRECT_UPLOAD" 로 식별.
+      const directUploads = await tx.video.findMany({
+        where: {
+          status: VideoStatus.APPROVED,
+          createdAt: {
+            gte: startDate,
+            lt: endDate,
+          },
+          submissions: { none: {} },
+        },
+        select: {
+          id: true,
+          title: true,
+          ownerId: true,
+          customRate: true,
+        },
+      });
+
+      if (approvedSubmissions.length === 0 && directUploads.length === 0) {
         throw {
           code: "NO_SUBMISSIONS",
           message: "해당 기간에 승인된 제출물이 없습니다.",
@@ -148,7 +168,24 @@ export async function POST(request: Request) {
         return acc;
       }, {});
 
-      const starIds = Object.keys(groupedByStar);
+      // STAR별로 직접 업로드 영상 그룹화 (영상 단가 보존)
+      type DirectUploadEntry = { videoId: string; title: string; customRate: number | null };
+      const directByStar = directUploads.reduce<Record<string, DirectUploadEntry[]>>((acc, v) => {
+        if (!acc[v.ownerId]) {
+          acc[v.ownerId] = [];
+        }
+        acc[v.ownerId].push({
+          videoId: v.id,
+          title: v.title,
+          customRate: v.customRate ? Number(v.customRate) : null,
+        });
+        return acc;
+      }, {});
+
+      const starIds = Array.from(new Set([
+        ...Object.keys(groupedByStar),
+        ...Object.keys(directByStar),
+      ]));
 
       // STAR 정보 조회 (baseRate + 등급 단가 포함)
       const stars = await tx.user.findMany({
@@ -212,15 +249,21 @@ export async function POST(request: Request) {
       // Dry-run: 실제 쓰기 없이 예측 결과만 반환
       if (dryRun) {
         const starNameById = new Map(stars.map(s => [s.id, s.name]));
-        const plan = Object.entries(groupedByStar).map(([starId, subs]) => {
+        const plan = starIds.map((starId) => {
           const star = starById.get(starId);
+          const subs = groupedByStar[starId] ?? [];
+          const directs = directByStar[starId] ?? [];
           const starBaseRate = star?.baseRate ?? star?.grade?.baseRate ?? null;
-          const hasAnyRate = starBaseRate !== null || subs.some(s => s.customRate !== null);
+          const hasAnyRate =
+            starBaseRate !== null
+            || subs.some(s => s.customRate !== null)
+            || directs.some(d => d.customRate !== null);
           const willSkip = !hasAnyRate || completedStarIds.has(starId);
           return {
             starId,
             starName: starNameById.get(starId) ?? starId,
             submissionCount: subs.length,
+            directUploadCount: directs.length,
             willSkip,
             skipReason: !hasAnyRate ? "기본 단가 미설정" : completedStarIds.has(starId) ? "이미 확정된 정산 존재" : null,
           };
@@ -254,15 +297,21 @@ export async function POST(request: Request) {
       const completedStars: { id: string; name: string }[] = [];
 
       const settlements = await Promise.all(
-        Object.entries(groupedByStar).map(async ([starId, submissions]) => {
+        starIds.map(async (starId) => {
           const star = starById.get(starId);
 
           if (!star) {
             return null;
           }
 
+          const submissions = groupedByStar[starId] ?? [];
+          const directs = directByStar[starId] ?? [];
+
           const starBaseRate = star.baseRate ?? star.grade?.baseRate ?? null;
-          const hasAnyRate = starBaseRate !== null || submissions.some(s => s.customRate !== null);
+          const hasAnyRate =
+            starBaseRate !== null
+            || submissions.some(s => s.customRate !== null)
+            || directs.some(d => d.customRate !== null);
 
           if (!hasAnyRate) {
             skippedStars.push({
@@ -301,9 +350,32 @@ export async function POST(request: Request) {
             };
           });
 
-          await tx.settlementItem.createMany({
-            data: itemsData,
+          if (itemsData.length > 0) {
+            await tx.settlementItem.createMany({
+              data: itemsData,
+            });
+          }
+
+          // 직접 업로드 영상 정산 항목 생성 (Submission 없음)
+          const directItemsData = directs.map((d) => {
+            const rate = d.customRate ?? defaultRate;
+            return {
+              settlementId: createdSettlement.id,
+              submissionId: null,
+              starId: star.id,
+              itemType: "DIRECT_UPLOAD",
+              description: `[직접 업로드] ${d.title}`,
+              baseAmount: rate,
+              finalAmount: rate,
+              adjustedAmount: null,
+            };
           });
+
+          if (directItemsData.length > 0) {
+            await tx.settlementItem.createMany({
+              data: directItemsData,
+            });
+          }
 
           const userAiToolSupportFee = star.aiToolSupportFee !== null ? Number(star.aiToolSupportFee) : aiToolSupportFee;
           if (userAiToolSupportFee > 0) {
@@ -321,10 +393,9 @@ export async function POST(request: Request) {
             });
           }
 
-          const totalAmount = itemsData.reduce(
-            (sum, item) => sum + item.finalAmount,
-            0
-          ) + userAiToolSupportFee;
+          const submissionsTotal = itemsData.reduce((sum, item) => sum + item.finalAmount, 0);
+          const directsTotal = directItemsData.reduce((sum, item) => sum + item.finalAmount, 0);
+          const totalAmount = submissionsTotal + directsTotal + userAiToolSupportFee;
 
           const { incomeTax, localTax } = calculateTax(totalAmount);
           const taxAmount = incomeTax + localTax;
@@ -335,6 +406,8 @@ export async function POST(request: Request) {
             data: { totalAmount, taxAmount, netAmount },
           });
 
+          const itemCount = itemsData.length + directItemsData.length + (userAiToolSupportFee > 0 ? 1 : 0);
+
           // History 기록
           await recordSettlementHistoryTx(tx, {
             settlementId: createdSettlement.id,
@@ -344,14 +417,14 @@ export async function POST(request: Request) {
             metadata: {
               startDate: startDateStr,
               endDate: endDateStr,
-              itemCount: itemsData.length + (userAiToolSupportFee > 0 ? 1 : 0),
+              itemCount,
               totalAmount,
             },
           });
 
           return {
             ...updatedSettlement,
-            itemCount: itemsData.length + (userAiToolSupportFee > 0 ? 1 : 0),
+            itemCount,
           };
         })
       );
