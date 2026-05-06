@@ -205,7 +205,6 @@ export default function AdminSettlementsPage() {
   const searchParams = useSearchParams();
 
   // Filter — URL-synced
-  const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>(undefined);
   const [filterStatus, setFilterStatus] = useState<string>(() => searchParams.get("status") ?? "ALL");
   const [filterScope, setFilterScope] = useState<ScopeValue>(() => {
     const s = searchParams.get("scope");
@@ -295,13 +294,11 @@ export default function AdminSettlementsPage() {
   const queryString = useMemo(() => {
     const params = new URLSearchParams({ page: "1", pageSize: "50" });
     params.set("scope", filterScope);
-    if (filterDateRange?.from) params.set("startDate", filterDateRange.from.toISOString().slice(0, 10));
-    if (filterDateRange?.to) params.set("endDate", filterDateRange.to.toISOString().slice(0, 10));
     if (filterStatus !== "ALL") params.set("status", filterStatus);
     if (filterYear !== "ALL") params.set("year", filterYear);
     if (filterScope === "archive" && archiveFolderView) params.set("folderId", archiveFolderView);
     return params.toString();
-  }, [filterDateRange, filterStatus, filterScope, filterYear, archiveFolderView]);
+  }, [filterStatus, filterScope, filterYear, archiveFolderView]);
 
   // ---------------------------------------------------------------------------
   // Queries
@@ -1025,30 +1022,6 @@ export default function AdminSettlementsPage() {
           {/* Filter Bar */}
           <AnimatedCard delay={0.15}>
             <div className="flex flex-wrap items-center gap-3 p-4">
-              <div className="flex gap-2 items-center">
-                <Input
-                  type="date"
-                  placeholder="시작일"
-                  value={filterDateRange?.from?.toISOString().slice(0, 10) ?? ""}
-                  onChange={(e) => {
-                    const from = e.target.value ? new Date(e.target.value) : undefined;
-                    setFilterDateRange(from ? { from, to: filterDateRange?.to } : undefined);
-                  }}
-                  className="w-40"
-                />
-                <span className="text-muted-foreground">~</span>
-                <Input
-                  type="date"
-                  placeholder="종료일"
-                  value={filterDateRange?.to?.toISOString().slice(0, 10) ?? ""}
-                  onChange={(e) => {
-                    const to = e.target.value ? new Date(e.target.value) : undefined;
-                    setFilterDateRange(prev => prev ? { from: prev.from, to } : undefined);
-                  }}
-                  className="w-40"
-                />
-              </div>
-
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="상태" />
