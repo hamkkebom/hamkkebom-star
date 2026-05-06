@@ -171,13 +171,20 @@ export async function POST(request: Request) {
           endDate: { gt: startDate },
           archivedAt: { not: null },
         },
-        select: { id: true },
+        select: { id: true, starId: true, status: true },
       });
       if (archivedOverlapping.length > 0) {
         const archivedIds = archivedOverlapping.map(s => s.id);
         await tx.settlementItem.deleteMany({ where: { settlementId: { in: archivedIds } } });
         await tx.settlement.deleteMany({ where: { id: { in: archivedIds } } });
       }
+
+      // 아카이브된 COMPLETED 정산이 있는 STAR는 재생성 금지
+      const archivedCompletedStarIds = new Set(
+        archivedOverlapping
+          .filter(s => s.status === SettlementStatus.COMPLETED)
+          .map(s => s.starId)
+      );
 
       // Find existing settlements that overlap with the date range (archived 제외)
       const existingSettlements = await tx.settlement.findMany({
@@ -193,7 +200,10 @@ export async function POST(request: Request) {
 
       const conflictingActive = existingSettlements.filter(s => s.status !== SettlementStatus.COMPLETED);
       const completedConflicts = existingSettlements.filter(s => s.status === SettlementStatus.COMPLETED);
-      const completedStarIds = new Set(completedConflicts.map(s => s.starId));
+      const completedStarIds = new Set([
+        ...completedConflicts.map(s => s.starId),
+        ...archivedCompletedStarIds,
+      ]);
 
       // Dry-run: 실제 쓰기 없이 예측 결과만 반환
       if (dryRun) {
