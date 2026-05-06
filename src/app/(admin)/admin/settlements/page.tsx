@@ -212,23 +212,31 @@ export default function AdminSettlementsPage() {
     return (s === "archive" || s === "all" || s === "active") ? s : "active";
   });
   const [filterYear, setFilterYear] = useState<string>(() => searchParams.get("year") ?? "ALL");
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const t = searchParams.get("tab");
+    return (t === "list" || t === "stars" || t === "settings" || t === "dashboard") ? t : "dashboard";
+  });
 
-  // 페이지 이탈 시 미확정(PENDING/REVIEW) 정산 삭제
+  // 페이지 이탈(브라우저 close/새로고침/하드 네비) 시에만 미확정(PENDING/REVIEW) 정산 삭제.
+  // ⚠️ 과거에는 useEffect cleanup에서도 fetch를 호출했으나, HMR/StrictMode/일시적 리마운트
+  // 등으로 cleanup이 의도치 않게 자주 발생하여 PENDING 정산이 삭제되며 페이지가
+  // 초기 상태로 되돌아가는 문제가 있었음. pagehide/beforeunload만 사용해 안전하게 처리.
   useEffect(() => {
     const clearPending = () => {
       navigator.sendBeacon("/api/settlements/clear-pending");
     };
     window.addEventListener("beforeunload", clearPending);
+    window.addEventListener("pagehide", clearPending);
     return () => {
       window.removeEventListener("beforeunload", clearPending);
-      // 인앱 네비게이션(컴포넌트 언마운트) 시에도 삭제
-      fetch("/api/settlements/clear-pending", { method: "POST", keepalive: true }).catch(() => {});
+      window.removeEventListener("pagehide", clearPending);
     };
   }, []);
 
   // Sync state -> URL
   useEffect(() => {
     const params = new URLSearchParams();
+    if (activeTab !== "dashboard") params.set("tab", activeTab);
     if (filterScope !== "active") params.set("scope", filterScope);
     if (filterStatus !== "ALL") params.set("status", filterStatus);
     if (filterYear !== "ALL") params.set("year", filterYear);
@@ -238,7 +246,7 @@ export default function AdminSettlementsPage() {
     router.replace(wantedSearch || window.location.pathname, { scroll: false });
     // router는 stable 참조이므로 deps 제외
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterScope, filterStatus, filterYear]);
+  }, [activeTab, filterScope, filterStatus, filterYear]);
 
   // Cancel reason state
   const [cancelReason, setCancelReason] = useState("");
@@ -674,7 +682,7 @@ export default function AdminSettlementsPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="dashboard" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="dashboard" className="gap-1.5">
             <TrendingUp className="h-4 w-4" />
