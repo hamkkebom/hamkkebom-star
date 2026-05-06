@@ -102,33 +102,26 @@ export async function computeVideoAphash(
   const hlsUrl = `https://videodelivery.net/${token}/manifest/video.m3u8`;
 
   // 영상 중반부(20% 지점)부터 분석 (인트로 묵음 회피)
+  // - HLS는 input 앞 seek(-ss before -i)가 0바이트로 빠지는 케이스가 있어
+  //   output seek(-ss after -i)를 사용해 정확도 우선.
   const startTime =
     durationSeconds && durationSeconds > 20
       ? Math.floor(durationSeconds * 0.2)
       : 0;
 
   const tmpPcm = join(tmpdir(), `aphash-${streamUid}-${Date.now()}.raw`);
+  const ffmpegPath = getFfmpegPath();
 
-  try {
-    const ffmpegPath = getFfmpegPath();
-
+  /**
+   * ffmpeg 한 번 실행. 실패 사유를 구체적 메시지로 throw, 성공 시 stderr 반환.
+   */
+  async function runFfmpeg(args: string[]): Promise<string> {
     try {
-      await execFileAsync(
-        ffmpegPath,
-        [
-          "-ss", String(startTime),
-          "-i", hlsUrl,
-          "-t", String(ANALYSIS_SECONDS),
-          "-vn",                      // 영상 트랙 제외
-          "-acodec", "pcm_s16le",    // 16-bit LE PCM
-          "-ar", String(SAMPLE_RATE), // 8kHz
-          "-ac", "1",                // 모노
-          "-f", "s16le",             // raw format
-          "-y",
-          tmpPcm,
-        ],
-        { timeout: 40_000, maxBuffer: 10 * 1024 * 1024 }
-      );
+      const r = await execFileAsync(ffmpegPath, args, {
+        timeout: 40_000,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      return r.stderr ?? "";
     } catch (err) {
       const e = err as NodeJS.ErrnoException & { stderr?: string; signal?: string };
       if (e.code === "ENOENT") {
@@ -137,13 +130,66 @@ export async function computeVideoAphash(
       if (e.signal === "SIGTERM" || /timed?out/i.test(String(e.message))) {
         throw new Error("ffmpeg 시간 초과 (HLS 다운로드 40초 초과)");
       }
-      const stderrTail = (e.stderr ?? "").split("\n").slice(-3).join(" ").trim();
-      throw new Error(`ffmpeg 실행 실패: ${e.message}${stderrTail ? ` | ${stderrTail}` : ""}`);
+      const tail = (e.stderr ?? "").split("\n").slice(-3).join(" ").trim();
+      throw new Error(`ffmpeg 실행 실패: ${e.message}${tail ? ` | ${tail}` : ""}`);
+    }
+  }
+
+  /** stderr에서 의미 있는 마지막 몇 줄만 추출 (info 라인 제외) */
+  function tailStderr(stderr: string): string {
+    const lines = stderr.split("\n").map((l) => l.trim()).filter(Boolean);
+    // 명백한 noise(빌드/버전 헤더, [info] 등) 제외
+    const meaningful = lines.filter((l) =>
+      !/^ffmpeg version|^built with|^configuration:|^lib(av|sw|post)|^\s*Stream #|^\[info\]/i.test(l),
+    );
+    return meaningful.slice(-3).join(" | ");
+  }
+
+  let lastStderr = "";
+
+  try {
+    // 1차: 영상 중반부에서 추출 (output seek)
+    lastStderr = await runFfmpeg([
+      "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
+      "-i", hlsUrl,
+      "-ss", String(startTime),
+      "-t", String(ANALYSIS_SECONDS),
+      "-vn",
+      "-acodec", "pcm_s16le",
+      "-ar", String(SAMPLE_RATE),
+      "-ac", "1",
+      "-f", "s16le",
+      "-y",
+      tmpPcm,
+    ]);
+
+    let rawPcm = await readFile(tmpPcm).catch(() => null);
+
+    // 2차: 0바이트면 처음부터 다시 시도 (seek 없이)
+    if (!rawPcm || rawPcm.length === 0) {
+      lastStderr = await runFfmpeg([
+        "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
+        "-i", hlsUrl,
+        "-t", String(ANALYSIS_SECONDS),
+        "-vn",
+        "-acodec", "pcm_s16le",
+        "-ar", String(SAMPLE_RATE),
+        "-ac", "1",
+        "-f", "s16le",
+        "-y",
+        tmpPcm,
+      ]);
+      rawPcm = await readFile(tmpPcm).catch(() => null);
     }
 
-    const rawPcm = await readFile(tmpPcm).catch(() => null);
     if (!rawPcm) {
       throw new Error("ffmpeg 출력 PCM 파일 읽기 실패");
+    }
+    if (rawPcm.length === 0) {
+      const tail = tailStderr(lastStderr);
+      throw new Error(
+        `ffmpeg 출력 0바이트 — HLS 접근 실패 또는 오디오 트랙 없음 가능${tail ? ` | ${tail}` : ""}`,
+      );
     }
     if (rawPcm.length < SAMPLE_RATE * 2) {
       throw new Error(`PCM 길이 부족 (${rawPcm.length}바이트, 1초 미만)`);
