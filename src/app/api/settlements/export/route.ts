@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     }
 
     // 정산 데이터 가져오기 — 카테고리별 영상 수 집계 위해 video.category 포함
+    // folder.name 도 함께 fetch — 다운로드 파일명을 폴더명으로 쓰기 위함
     const settlements = await prisma.settlement.findMany({
         where: { id: { in: settlementIds } },
         include: {
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
                     email: true, aiToolSupportFee: true,
                 },
             },
+            folder: { select: { name: true } },
             items: {
                 orderBy: { createdAt: "asc" },
                 include: {
@@ -516,11 +518,24 @@ export async function POST(request: Request) {
         formWs.pageSetup.fitToHeight = 1;
     }
 
-    // 파일명 생성: YY.MM AI 영상제작비.xlsx
-    const firstDate = new Date(settlements[0].startDate);
-    const yy = String(firstDate.getFullYear()).slice(2);
-    const mm = String(firstDate.getMonth() + 1).padStart(2, "0");
-    const fileName = `${yy}.${mm} AI 영상제작비.xlsx`;
+    // 파일명 생성:
+    //   1순위 — 모든 정산이 같은 폴더에 속하면 그 폴더명 (예: "2026년4월정산.xlsx")
+    //   2순위 — 폴더가 없거나 여러 폴더가 섞여 있으면 기존 "YY.MM AI 영상제작비.xlsx"
+    const folderNames = new Set(
+        settlements.map((s) => s.folder?.name).filter((n): n is string => Boolean(n))
+    );
+    let fileName: string;
+    if (folderNames.size === 1 && settlements.every((s) => s.folder?.name)) {
+        const folderName = [...folderNames][0];
+        // Windows/macOS 파일명 금지 문자 제거 (\ / : * ? " < > |)
+        const safe = folderName.replace(/[\\/:*?"<>|]/g, "_").trim();
+        fileName = `${safe || "정산"}.xlsx`;
+    } else {
+        const firstDate = new Date(settlements[0].startDate);
+        const yy = String(firstDate.getFullYear()).slice(2);
+        const mm = String(firstDate.getMonth() + 1).padStart(2, "0");
+        fileName = `${yy}.${mm} AI 영상제작비.xlsx`;
+    }
 
     // 버퍼 생성 및 반환
     const buffer = await wb.xlsx.writeBuffer();
