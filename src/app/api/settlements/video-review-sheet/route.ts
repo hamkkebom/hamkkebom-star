@@ -36,6 +36,7 @@ export async function POST(request: Request) {
                             video: { select: { id: true, title: true } },
                         },
                     },
+                    video: { select: { id: true, title: true } },
                 },
             },
         },
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
     for (const settlement of settlements) {
         const starName = settlement.star.chineseName || settlement.star.name;
 
-        const videoItems = settlement.items.filter((item) => item.submission?.video);
+        const videoItems = settlement.items.filter((item) => item.submission?.video || item.video);
 
         if (videoItems.length === 0) continue;
 
@@ -110,7 +111,7 @@ export async function POST(request: Request) {
 
         for (const item of videoItems) {
             seq++;
-            const video = item.submission!.video!;
+            const video = (item.submission?.video ?? item.video)!;
             const videoUrl = appUrl ? `${appUrl}/videos/${video.id}` : `/videos/${video.id}`;
             const isStripe = seq % 2 === 0;
             const rowFill  = isStripe ? stripeFill : groupFill;
