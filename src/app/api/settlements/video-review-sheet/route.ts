@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
  * POST /api/settlements/video-review-sheet
  *
  * 아카이브 정산에 포함된 영상 목록을 점검용 시트로 다운로드합니다.
- * 컬럼: No. | Star명 | 영상 제목 | 정산 기간 | 금액(원) | 링크 | 비고
+ * 컬럼: No. | Star명 | 영상 제목 | 금액(원) | 링크 | 비고
  */
 export async function POST(request: Request) {
     const user = await getAuthUser();
@@ -65,9 +65,8 @@ export async function POST(request: Request) {
         { key: "no",     width: 6  },
         { key: "star",   width: 16 },
         { key: "title",  width: 38 },
-        { key: "period", width: 22 },
         { key: "amount", width: 14 },
-        { key: "link",   width: 44 },
+        { key: "link",   width: 72 },
         { key: "note",   width: 22 },
     ];
 
@@ -83,7 +82,7 @@ export async function POST(request: Request) {
     const baseFont = { name: "Malgun Gothic", size: 10 } as const;
 
     // ── 헤더 행 ─────────────────────────────────────────────────────
-    const HEADERS = ["No.", "Star명", "영상 제목", "정산 기간", "금액(원)", "링크", "비고"];
+    const HEADERS = ["No.", "Star명", "영상 제목", "금액(원)", "링크", "비고"];
     const hRow = ws.addRow(HEADERS);
     hRow.height = 24;
     hRow.eachCell((cell) => {
@@ -101,13 +100,8 @@ export async function POST(request: Request) {
 
     for (const settlement of settlements) {
         const starName = settlement.star.chineseName || settlement.star.name;
-        const start = new Date(settlement.startDate);
-        const end   = new Date(settlement.endDate);
-        const fmt   = (d: Date) =>
-            `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-        const period = `${fmt(start)} ~ ${fmt(end)}`;
 
-        const videoItems = settlement.items.filter((i) => i.submission?.video);
+        const videoItems = settlement.items.filter((item) => item.submission?.video);
 
         if (videoItems.length === 0) continue;
 
@@ -125,7 +119,6 @@ export async function POST(request: Request) {
                 seq,
                 starName,
                 video.title ?? "",
-                period,
                 Number(item.finalAmount),
                 videoUrl,
                 "",
@@ -133,8 +126,8 @@ export async function POST(request: Request) {
             dRow.height = 20;
 
             dRow.eachCell({ includeEmpty: true }, (cell, col) => {
-                const isAmountCol = col === 5;
-                const isLinkCol   = col === 6;
+                const isAmountCol = col === 4;
+                const isLinkCol   = col === 5;
                 cell.style = {
                     fill: rowFill,
                     border,
@@ -151,7 +144,7 @@ export async function POST(request: Request) {
             });
 
             // 링크 셀: hyperlink 객체로 교체
-            const linkCell = dRow.getCell(6);
+            const linkCell = dRow.getCell(5);
             linkCell.value = { text: videoUrl, hyperlink: videoUrl };
         }
 
@@ -165,15 +158,15 @@ export async function POST(request: Request) {
 
     // ── 합계 행 ──────────────────────────────────────────────────────
     const summaryFill: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4472C4" } };
-    const totalRow = ws.addRow(["", `총 ${seq}건`, "", "", { formula: `SUM(E2:E${seq + 1})` }, "", ""]);
+    const totalRow = ws.addRow(["", `총 ${seq}건`, "", { formula: `SUM(D2:D${seq + 1})` }, "", ""]);
     totalRow.height = 22;
     totalRow.eachCell({ includeEmpty: true }, (cell, col) => {
         cell.style = {
             fill: summaryFill,
             border,
             font: { ...baseFont, bold: true, color: { argb: "FFFFFFFF" } },
-            alignment: { horizontal: col === 5 ? "right" : "center", vertical: "middle" },
-            numFmt: col === 5 ? "#,##0" : undefined,
+            alignment: { horizontal: col === 4 ? "right" : "center", vertical: "middle" },
+            numFmt: col === 4 ? "#,##0" : undefined,
         };
     });
 
