@@ -397,11 +397,13 @@ export async function POST(request: Request) {
         }
         const totalCount = categoryEntries.reduce((s, e) => s + e.count, 0);
 
-        // 3) 표 영역: 제목(R19, B-I 병합) + 카테고리 행(2개씩, R20부터) + 합계 행
+        // 3) 표 영역: 제목(R19, B-H 병합) + 카테고리 행(2개씩, R20부터) + 합계 행
+        //    위쪽 지급인원 표가 B-H(7칸) 폭이므로 카테고리 표도 동일 폭으로 맞춰야
+        //    우측으로 한 칸 튀어나오는 현상이 사라짐.
         // 양식 하단 "붙임" / 회사명 텍스트가 row 27/28/33 에 있으므로,
         // 카테고리가 많아 충돌하면 그 텍스트를 아래로 이동시켜 자리 확보.
         const TABLE_START = 19;
-        formWs.mergeCells(TABLE_START, 2, TABLE_START, 9); // B19:I19
+        formWs.mergeCells(TABLE_START, 2, TABLE_START, 8); // B19:H19 (위쪽 지급인원 표 B-H 와 폭 일치)
         const titleCell = formWs.getCell(TABLE_START, 2);
         titleCell.value = '카테고리별 영상 수';
         titleCell.style = {
@@ -463,8 +465,7 @@ export async function POST(request: Request) {
                 rc.value = '';
                 rc.style = { fill: whiteFill, border };
             }
-            // H-I: 테두리만 채워서 헤더(B-I 병합)와 우측 경계 맞춤
-            formWs.mergeCells(r, 8, r, 9);
+            // H: 테두리만 채워서 헤더(B-H 병합)와 우측 경계 맞춤
             const hc = formWs.getCell(r, 8);
             hc.value = '';
             hc.style = { fill: whiteFill, border };
@@ -481,7 +482,7 @@ export async function POST(request: Request) {
             font: { bold: true, size: 10, name: 'Malgun Gothic', color: { argb: 'FF000000' } },
             alignment: { horizontal: 'center', vertical: 'middle' },
         };
-        formWs.mergeCells(sumRow, 7, sumRow, 9); // G-I
+        formWs.mergeCells(sumRow, 7, sumRow, 8); // G-H (위쪽 지급인원 표 우측 끝 H 와 일치)
         const sumValue = formWs.getCell(sumRow, 7);
         sumValue.value = totalCount;
         sumValue.style = {
@@ -507,8 +508,9 @@ export async function POST(request: Request) {
         }
 
         // 인쇄 영역 — "붙임" + 회사명(B33) 까지 모두 포함되도록 확장
+        // 표 폭이 B-H 로 정렬되어 있으므로 인쇄 영역도 H 까지로 맞춤
         const printAreaEnd = Math.max(34, noteToRow2 + 6);
-        formWs.pageSetup.printArea = `A1:I${printAreaEnd}`;
+        formWs.pageSetup.printArea = `A1:H${printAreaEnd}`;
         formWs.pageSetup.fitToPage = true;
         formWs.pageSetup.fitToWidth = 1;
         formWs.pageSetup.fitToHeight = 1;
