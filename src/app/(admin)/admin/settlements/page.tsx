@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { downloadSettlementsExcel } from "@/lib/settlement-excel";
+import { downloadSettlementsExcel, downloadVideoReviewSheet } from "@/lib/settlement-excel";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -651,6 +651,21 @@ export default function AdminSettlementsPage() {
     }
   }, [selectedIds, rows]);
 
+  const [videoReviewDownloading, setVideoReviewDownloading] = useState(false);
+  const handleVideoReviewSheetDownload = useCallback(async () => {
+    const ids = selectedIds.size > 0 ? Array.from(selectedIds) : rows.map((r) => r.id);
+    if (ids.length === 0) return;
+    setVideoReviewDownloading(true);
+    try {
+      await downloadVideoReviewSheet(ids);
+      toast.success(`${ids.length}건의 영상 점검 시트를 다운로드했습니다.`);
+    } catch {
+      toast.error("영상 점검 시트 다운로드에 실패했습니다.");
+    } finally {
+      setVideoReviewDownloading(false);
+    }
+  }, [selectedIds, rows]);
+
   const handleBulkAction = useCallback(async () => {
     if (!bulkAction || selectedIds.size === 0) return;
     setIsBulking(true);
@@ -1072,6 +1087,7 @@ export default function AdminSettlementsPage() {
               )}
 
               <div className="ml-auto flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
+                {/* 품의서 다운로드 (아카이브에선 이름 변경) */}
                 <Button
                   variant="outline"
                   onClick={handleExcelDownload}
@@ -1079,8 +1095,28 @@ export default function AdminSettlementsPage() {
                   className="gap-1.5 w-full md:w-auto"
                 >
                   <Download className="h-4 w-4" />
-                  {selectedIds.size > 0 ? `${selectedIds.size}건 엑셀 다운로드` : "전체 엑셀 다운로드"}
+                  {filterScope === "archive"
+                    ? selectedIds.size > 0
+                      ? `${selectedIds.size}건 품의서 다운로드`
+                      : "영상 제작비 품의서 다운로드"
+                    : selectedIds.size > 0
+                      ? `${selectedIds.size}건 엑셀 다운로드`
+                      : "전체 엑셀 다운로드"}
                 </Button>
+                {/* 영상 점검 시트 — 아카이브 탭에서만 표시 */}
+                {filterScope === "archive" && (
+                  <Button
+                    variant="outline"
+                    onClick={handleVideoReviewSheetDownload}
+                    disabled={videoReviewDownloading || rows.length === 0}
+                    className="gap-1.5 w-full md:w-auto"
+                  >
+                    <FileText className="h-4 w-4" />
+                    {selectedIds.size > 0
+                      ? `${selectedIds.size}건 점검 시트`
+                      : "영상 점검 시트 다운로드"}
+                  </Button>
+                )}
               </div>
             </div>
           </AnimatedCard>
